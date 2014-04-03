@@ -1,0 +1,5 @@
+
+
+To install:
+
+$make install -f Makefile.main INSTALL_DIR=~/.usr/
