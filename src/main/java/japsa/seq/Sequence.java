@@ -1,0 +1,276 @@
+/*****************************************************************************
+ * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
+ *                                                                           *
+ * Redistribution and use in source and binary forms, with or without        *
+ * modification, are permitted provided that the following conditions        *
+ * are met:                                                                  * 
+ *                                                                           *
+ * 1. Redistributions of source code must retain the above copyright notice, *
+ *    this list of conditions and the following disclaimer.                  *
+ * 2. Redistributions in binary form must reproduce the above copyright      *
+ *    notice, this list of conditions and the following disclaimer in the    *
+ *    documentation and/or other materials provided with the distribution.   *
+ * 3. Neither the names of the institutions nor the names of the contributors*
+ *    may be used to endorse or promote products derived from this software  *
+ *    without specific prior written permission.                             *
+ *                                                                           *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS   *
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, *
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR    *
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR         *
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,     *
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,       *
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR        *
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF    *
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING      *
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS        *
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
+ ****************************************************************************/
+
+/*                           Revision History                                
+ * 04/01/2012 - Minh Duc Cao: Created                                        
+ *  
+ ****************************************************************************/
+
+package japsa.seq;
+
+import japsa.seq.Alphabet;
+
+import java.util.Arrays;
+import java.util.Random;
+
+
+
+
+/**
+ * Implement a sequence in which the data are stored in a byte array, a byte for
+ * a element of the sequence. The byte array object is not changleble, though the
+ * value in each element (base) can be changed.
+ * 
+ * @author Minh Duc Cao (minhduc \dot cao \at gmail \dot com) * 
+ */
+public class Sequence extends AbstractSequence {	
+	/**
+	 * The array to hold the sequence
+	 */
+	private final byte[] byteSeq;
+
+	/**
+	 * Create an empty sequence with a specified length
+	 * 
+	 * @param alphabet
+	 * 
+	 */
+	public Sequence(Alphabet alphabet, int length) {
+		super(alphabet);
+		byteSeq = new byte[length];
+	}
+
+	public Sequence(Alphabet alphabet, int length, String name) {
+		super(alphabet, name);
+		byteSeq = new byte[length];
+	}
+
+	/**
+	 * Construct a sequence from a sequence of characters.
+	 * @param alphabet
+	 * @param charSeq
+	 * @param name
+	 */
+	@Deprecated
+	public Sequence(Alphabet alphabet, char[] charSeq, String name) {
+		super(alphabet, name);
+		byteSeq = new byte[charSeq.length];
+		for (int i = 0; i < byteSeq.length; i++) {
+			byteSeq[i] = (byte) alphabet.char2int(charSeq[i]);
+		}
+	}
+
+	@Deprecated
+	public Sequence(Alphabet alphabet, char[] charSeq) {
+		this(alphabet, charSeq, "");
+	}
+
+	/**
+	 * Copy the byte array up to the length
+	 * 
+	 * @param alphabet
+	 * @param byteArray
+	 * @param length
+	 */
+
+	public Sequence(Alphabet alphabet, byte[] byteArray, int length) {
+		super(alphabet);
+		byteSeq = Arrays.copyOf(byteArray, length);
+	}
+
+	public Sequence(Alphabet alphabet, byte[] byteArray, int length, String name) {
+		super(alphabet, name);
+		byteSeq = Arrays.copyOf(byteArray, length);
+	}
+
+	public Sequence(Alphabet alphabet, byte[] byteArray) {
+		this(alphabet, byteArray, byteArray.length);
+	}
+
+	public Sequence(Alphabet alphabet, byte[] byteArray, String name) {
+		this(alphabet, byteArray, byteArray.length, name);
+	}
+	
+	public Sequence(Alphabet alphabet, byte[] byteArray, String name, String desc) {
+		this(alphabet, byteArray, byteArray.length, name);
+		setDesc(desc);
+	}
+
+	/**
+	 * Return the length of the sequence
+	 * 
+	 * @see japsa.seq.AbstractSequence#length()
+	 */
+	@Override
+	public int length() {
+		return byteSeq.length;
+	}
+
+	/*
+	 * @see bio.seq.AbstractSequence#symbolAt(int)
+	 */
+	@Override
+	public int symbolAt(int loc) {
+		return byteSeq[loc];// This should convert into an int
+	}
+
+	public byte getBase(int loc) {
+		return byteSeq[loc];
+	}
+
+	/**
+	 * Return the reverse complement of this sequence. The operation is only
+	 * allowed when the alphabet is DNA
+	 * @return
+	 */
+	public Sequence reverseComplement() {
+		//Only have reverse complement if the sequence is DNA
+		if (!(alphabet() instanceof Alphabet.DNA)) {
+			throw new RuntimeException(
+					"ReverseComplement only applied for DNA sequences");
+		}
+
+		Sequence newSeq = new Sequence(alphabet(), byteSeq.length);
+
+		for (int i = 0; i < byteSeq.length / 2; i++) {
+			newSeq.byteSeq[i] = (byte) (3 - byteSeq[byteSeq.length - i - 1]);
+			newSeq.byteSeq[newSeq.byteSeq.length - i - 1] = (byte) (3 - byteSeq[i]);
+		}
+		return newSeq;
+	}
+
+
+	/**
+	 * Return a sequence which include it self and its rev comp ie acctgggg ->
+	 * acctggg|cccaggt
+	 * 
+	 * @return
+	 */
+	public Sequence withReverseComplement() {
+		Sequence newSeq = new Sequence(alphabet(), this.byteSeq,
+				this.byteSeq.length * 2);
+
+		for (int i = length(); i < newSeq.length(); i++) {
+			newSeq.setBase(newSeq.length() - i - 1, (byte) (3 - byteSeq[i]));
+		}
+		return newSeq;
+	}
+
+	/**
+	 * Concatenate a sequence with another
+	 * @param anotherSeq
+	 */
+
+	public Sequence concatenate(Sequence anotherSeq) {				
+		if (this.alphabet() != anotherSeq.alphabet())
+			throw new RuntimeException("The alphabets do not match");
+		
+		Sequence newSeq = new Sequence(alphabet(), length() + anotherSeq.length());
+		
+		for (int j = 0; j < anotherSeq.length(); j++) {
+			newSeq.byteSeq[byteSeq.length + j] = anotherSeq.byteSeq[j];
+		}
+
+		return newSeq;
+	}
+	
+	public byte[] toBytes() {
+		return byteSeq;
+	}
+
+	/**
+	 * @param loc
+	 * @param base
+	 */
+	public void setBase(int loc, byte base) {
+		byteSeq[loc] = base;
+	}
+	
+	public void setSymbol(int loc, int symbol){
+		byteSeq[loc] = (byte) symbol;
+	}
+		
+	/**
+	 * Clone the sequence
+	 */
+	public Sequence clone(){
+		return new Sequence(alphabet(), byteSeq, getName(), getDesc());
+	}
+	
+	/**
+	 * Create a random sequence with some length and some frequency distribution
+	 * @param alphabet
+	 * @param length
+	 * @param freqs
+	 * @param rand a random generator
+	 * @return
+	 */
+	public static Sequence random(Alphabet alphabet, int length, double [] freqs, Random rand){
+		if (freqs.length != alphabet.size()){
+			throw new RuntimeException("Frequencies array should have the same size as alphabet");
+		}
+		Sequence seq = new Sequence(alphabet, length);
+		
+		//setting accumulation distribution
+		double [] accum = new double[freqs.length];		
+		accum[0] = freqs[0];
+		for (int i = 1; i < freqs.length;i++){
+			accum[i] = accum[i-1] + freqs[i];
+		}
+		
+		//normalise, just in case
+		double sum = accum[accum.length-1];
+		for (int i = 0; i < freqs.length;i++){
+			accum[i] /= sum;
+		}		
+		//java.util.Random rand = new java.util.Random();		
+		
+		for (int x = 0; x < seq.length();x++){
+			double r = rand.nextDouble();
+			for (byte i = 0; i < accum.length; i++){
+				if (accum[i] >= r){
+					seq.byteSeq[x] = i;
+					break;
+				}
+			}
+		}
+		
+		return seq;
+	}
+	/**
+	 * Create a random sequence
+	 * @param alphabet
+	 * @param length
+	 * @param freqs
+	 * @return
+	 */
+	public static Sequence random(Alphabet alphabet, int length, double [] freqs){
+		return random(alphabet, length, freqs, new Random());
+	}
+}
