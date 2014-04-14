@@ -60,7 +60,7 @@ public class Japsa2TR {
 	public static void main(String[] args) throws IOException{
 		/*********************** Setting up script ****************************/		 
 		String scriptName = "jsa.trv.jsa2tr";
-		String desc = "Convert tandem repeat annotation in JAPSA format to TR format, extract neccessary information as well\n";		
+		String desc = "Convert tandem repeat annotation in JAPSA format to TR format\n";		
 		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
 		/**********************************************************************/
 		cmdLine.addString("input", null,

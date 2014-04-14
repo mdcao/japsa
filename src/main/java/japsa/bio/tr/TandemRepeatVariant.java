@@ -373,4 +373,16 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	public int compareTo(TandemRepeatVariant o) {
 		return tandemRepeat.compareTo(o.tandemRepeat);
 	}
+	
+	/**
+	 * Write the variant to bed file. Currently use only the first heterozygous 
+	 * variant is written out.
+	 * TODO: Handle heterozygous case 
+	 * @param out
+	 * @throws IOException
+	 */
+	public void writeBED(SequenceOutputStream out) throws IOException{
+		out.write((tandemRepeat.getParent()+'\t' + (getStart()-1) + '\t' + getEnd()+
+				'\t' + tandemRepeat.getUnit() + '\t' + this.var  + '\t' + (tandemRepeat.getStrand() == '-'?'-':'+') + '\t' + tandemRepeat.getUnitNo() +'\n'));
+	}
 }

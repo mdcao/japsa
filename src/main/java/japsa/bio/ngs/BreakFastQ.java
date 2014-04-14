@@ -62,7 +62,7 @@ public class BreakFastQ {
 		/**********************************************************************/
 
 		cmdLine.addStdInputFile();			
-		cmdLine.addString("output", null, "Name of output fastq file", true);
+		cmdLine.addString("output", null, "Name of output fastq file, output files will be added with suffix P<index>_", true);
 		cmdLine.addInt("size", 50000000, "The number of reads per file, a negative number for not spliting");
 		cmdLine.addInt("begin", 0, "Begin position of a read (1-index, inclusive) - 0 for not trimming");
 		cmdLine.addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");

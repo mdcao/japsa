@@ -56,7 +56,7 @@ import java.util.Iterator;
  * 
  */
 @Deployable(scriptName = "jsa.trv.parseTRF",
-            scriptDesc = "Parse trf output to bff format")
+            scriptDesc = "Parse trf output to japsa format")
 public class ParseTRF{
 	
 	/**

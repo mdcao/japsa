@@ -34,11 +34,9 @@
 package japsa.bio.tr;
 
 import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -84,11 +82,9 @@ public class TRV2Bed {
 		/**********************************************************************/
 
 		String inFile = cmdLine.getStringVal("input");
-		String outFile = cmdLine.getStringVal("output");
-		
-		
-		BufferedReader in = SequenceReader.openFile(inFile);
-		ArrayList<TandemRepeat> trs = TandemRepeat.readFromFile(in, new ArrayList<String>());
+		String outFile = cmdLine.getStringVal("output");		
+			
+		ArrayList<TandemRepeatVariant> trs = TandemRepeatVariant.readFromFile(inFile);
 		
 		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(outFile);		
 		for (int i = 0; i < trs.size();i++){

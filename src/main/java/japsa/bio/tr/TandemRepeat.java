@@ -333,14 +333,10 @@ public class TandemRepeat
 			}
 		}		
 		for (int i =0; i < headers.length; i++){
-			if (i ==0){
-				out.write('#');
-				out.write('H');
-				out.write(':');
-				//ps.print("#H:");
+			if (i == 0){
+				out.write("#H:");
 			}else
 				out.write('\t');
-				//ps.print("\t");
 			
 			out.write(headers[i]);
 		}

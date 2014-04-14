@@ -69,7 +69,7 @@ public class FileFormatConverter {
 
 		cmdLine.addStdInputFile();
 		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addString("format", "bff", "Format of output file. Options : japsa, fasta and phylip");
+		cmdLine.addString("format", "jsa", "Format of output file. Options : japsa, fasta and phylip");
 		cmdLine.addStdAlphabet();
 		cmdLine.addStdHelp();
 
