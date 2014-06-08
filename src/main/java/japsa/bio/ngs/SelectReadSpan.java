@@ -174,10 +174,7 @@ public class SelectReadSpan {
 				bamWriter.addAlignment(sam);
 				count ++;
 				continue;
-			}		
-			
-			
-			
+			}
 		}
 		bamWriter.close();
 		samReader.close();

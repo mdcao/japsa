@@ -36,6 +36,7 @@ package japsa.bio.ngs;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.BufferedReader;
@@ -54,31 +55,18 @@ public class BreakFastQ {
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException{
-
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.ngs.breakfastq";
-		String desc = "Break a fastq file to smaller ones and trim reads if required\n";
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
+		/*********************** Setting up script ****************************/
+		Deployable annotation = BreakFastQ.class.getAnnotation(Deployable.class);		 		
+		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
 		/**********************************************************************/
 
 		cmdLine.addStdInputFile();			
 		cmdLine.addString("output", null, "Name of output fastq file, output files will be added with suffix P<index>_", true);
-		cmdLine.addInt("size", 50000000, "The number of reads per file, a negative number for not spliting");
+		cmdLine.addInt("size", 10000000, "The number of reads per file, a negative number for not spliting");
 		cmdLine.addInt("begin", 0, "Begin position of a read (1-index, inclusive) - 0 for not trimming");
 		cmdLine.addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");
 
-		cmdLine.addStdHelp();		
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
+		args = cmdLine.stdParseLine(args);			
 		/**********************************************************************/		
 
 		String output = cmdLine.getStringVal("output");
@@ -89,14 +77,8 @@ public class BreakFastQ {
 		int size = cmdLine.getIntVal("size");
 		
 		if (begin > end) {
-			System.err.println("Begin "+(begin) + " must be smaller than end (" + end +")");
-			System.exit(-1);
-		}
-		//example
-		//@ERR091787.1 HSQ955_155:1:1101:1266:2037/1
-		//TGCAGNGGTAAATTGACCCAAGAAACTTATTTAAGACTATCAGCT
-		//+
-		//@BCFF#2B>CFHHIJIJJJJJIJJIJJJGHJIIIJIJJIJJIJJJ	
+			Logging.exit("Begin "+(begin) + " must be smaller than end (" + end +")", -1);			
+		}	
 
 		if (size == 0)
 			size = -1;
@@ -125,8 +107,11 @@ public class BreakFastQ {
 			if (begin > 0) {
 				seq = seq.substring(begin - 1 , end);
 				qual = qual.substring(begin - 1 ,end);
+			}else if (end > 0){
+				seq = seq.substring(0 , end);
+				qual = qual.substring(0 ,end);
 			}
-
+			
 			if (count == size){
 				//write this file
 				outStream.close();
@@ -148,7 +133,7 @@ public class BreakFastQ {
 			outStream.write(qual);
 			outStream.write('\n');
 		}//while
-		System.out.println("Write " + countAll + " reads to " + index + " files" );
+		Logging.info("Write " + countAll + " reads to " + index + " files" );
 		outStream.close();
 	}
 }

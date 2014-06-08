@@ -82,6 +82,11 @@ public class FastqSequence extends Sequence {
 	}
 	
 	
+	/* (non-Javadoc)
+	 * @see japsa.seq.AbstractSequence#write(japsa.seq.SequenceOutputStream)
+	 * 
+	 * Write in fastq format to output stream
+	 */
 	public void write(SequenceOutputStream out) throws IOException{		
 		out.write('@');
 		out.write(getName());

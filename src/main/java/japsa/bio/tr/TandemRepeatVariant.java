@@ -38,6 +38,7 @@ import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
+import japsa.util.Logging;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -228,7 +229,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 			if (TandemRepeat.chrHd.equals(hds[i]))
 				sb.append(this.tandemRepeat.getChr());
 			else if (TandemRepeat.idHd.equals(hds[i]))
-				sb.append(tandemRepeat.getID()+"\t");
+				sb.append(tandemRepeat.getID());
 			else if (TandemRepeat.startHd.equals(hds[i]))
 				sb.append(this.tandemRepeat.getStart());
 			else if (TandemRepeat.endHd.equals(hds[i]))
@@ -293,8 +294,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 
 		}//while
 		
-		//TODO: use log
-		System.out.println("## Read in " + trfList.size() + " TRs");
+		Logging.info("Read in " + trfList.size() + " TRs");
 		return trfList;
 	}
 

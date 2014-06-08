@@ -34,41 +34,46 @@
 
 package japsa.util;
 
+import java.io.PrintStream;
+
 /**
  * @author minhduc
  *
  */
 public class Logging {
 	private static String prefix = "#";
-
+	
+	private static PrintStream infoStr = System.err;
+	private static PrintStream errorStr = System.err;
+	private static PrintStream warnStr = System.err;
+	
+	
 	/**
 	 * A simple logging system
 	 */
 	public Logging() {
 		// TODO Auto-generated constructor stub
 	}	
-	
 	/**
 	 * @param args
 	 */
 	
 	public static void info(String msg) {
-		System.out.println(prefix+msg);
+		infoStr.println(prefix+msg);
 
 	}
 	
 	public static void warn(String msg) {
-		System.err.println(prefix+msg);
+		warnStr.println(prefix+msg);
 	}
 	
 	public static void error(String msg) {
-		System.err.println(prefix+msg);
+		errorStr.println(prefix+msg);
 	}
 	
 	public static void exit(String msg, int status) {
-		error(msg);
-		//TODO: close any out stream
+		error(msg);		
 		System.exit(status);
+		
 	}
-
 }

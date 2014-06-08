@@ -81,7 +81,10 @@ public class RawFormatReader extends SequenceReader{
 	}
 
 	public static Sequence read (InputStream ins, Alphabet alphabet) throws IOException{
-		return (new RawFormatReader(ins)).nextSequence(alphabet);
+		RawFormatReader reader = new RawFormatReader(ins);
+		Sequence seq = reader.nextSequence(alphabet);
+		reader.close();
+		return seq;
 	}
 
 	/**

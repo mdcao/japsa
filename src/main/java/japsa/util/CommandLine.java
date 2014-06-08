@@ -44,6 +44,7 @@ package japsa.util;
 public class CommandLine {
 	
 	private String usg = "";
+	private String desc = "";
 		
 	private int maxOptions = 100;
 	private String[] opts;
@@ -77,7 +78,12 @@ public class CommandLine {
 	public CommandLine(String usageMsg) {
 		this(100);
 		usg = usageMsg;
-	}	
+	}
+	
+	public CommandLine(String usageMsg, String desc) {
+		this(usageMsg);
+		this.desc = desc;
+	}
 
 	public Object[] getDefaults() {
 		return defaults;
@@ -108,7 +114,6 @@ public class CommandLine {
 	}
 
 	private static String indentLines(String s, int indent) {
-		//System.out.println("sfdsfds");
 		String[] lines = s.split("\n");
 		StringBuffer res = new StringBuffer();
 		for (int i = 0; i < lines.length; i++) {
@@ -318,6 +323,26 @@ public class CommandLine {
 		}
 		return match;
 	}
+	
+	
+		
+	
+	public String[] stdParseLine(String[] args) {
+		addStdHelp();		
+		/**********************************************************************/
+		String[] ret = parseLine(args);
+		if (getBooleanVal("help")){
+			System.out.println(desc + "\n" + usage());			
+			System.exit(0);
+		}
+		
+		if (errors != null) {
+			System.err.println(errors + usage());
+			System.exit(-1);
+		}	
+		/**********************************************************************/
+		return ret;
+	}
 
 	public String[] parseLine(String[] args) {
 		int i = 0;
@@ -371,8 +396,7 @@ public class CommandLine {
 						break;
 					case 'i':
 						if (args[i].indexOf("=") >= 0)
-							values[o] = new Integer(args[i].substring(args[i]
-									.indexOf("=") + 1));
+							values[o] = new Integer(args[i].substring(args[i].indexOf("=") + 1));
 						else {
 							values[o] = new Integer(args[i + 1]);
 							i++;
@@ -380,8 +404,7 @@ public class CommandLine {
 						break;
 					case 'f':
 						if (args[i].indexOf("=") >= 0)
-							values[o] = new Double(args[i].substring(args[i]
-									.indexOf("=") + 1));
+							values[o] = new Double(args[i].substring(args[i].indexOf("=") + 1));
 						else {
 							values[o] = new Double(args[i + 1]);
 							i++;

@@ -91,9 +91,19 @@ public class FastaReader extends SequenceReader{
 			if (!nextByte()) return false;
 		}
 	}
+	/**
+	 * Read the first sequence from an input stream
+	 * @param ins
+	 * @param alphabet
+	 * @return
+	 * @throws IOException
+	 */
 
 	public static Sequence read (InputStream ins, Alphabet alphabet) throws IOException{
-		return (new FastaReader(ins)).nextSequence(alphabet);
+		FastaReader reader = new FastaReader(ins);
+		Sequence seq = (reader).nextSequence(alphabet);
+		reader.close();
+		return seq;
 	}
 
 	/**

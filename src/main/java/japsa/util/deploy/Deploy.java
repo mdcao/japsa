@@ -38,6 +38,7 @@ package japsa.util.deploy;
 import japsa.bio.ngs.AlignmentEvaluation;
 import japsa.bio.ngs.BreakBam;
 import japsa.bio.ngs.BreakFastQ;
+import japsa.bio.ngs.CountReadInRegion;
 import japsa.bio.ngs.SelectReadIntersect;
 import japsa.bio.ngs.SelectReadSpan;
 import japsa.bio.phylo.XMDistance;
@@ -92,8 +93,10 @@ public class Deploy {
 		tools.add(BreakFastQ.class);
 		tools.add(SelectReadIntersect.class);
 		tools.add(SelectReadSpan.class);
-		tools.add(AlignmentEvaluation.class);
-//		tools.add(HomopolymerCompression.class);
+		tools.add(AlignmentEvaluation.class);		
+		tools.add(CountReadInRegion.class);
+		
+//		tools.add(CountReadInRegion.class);		
 
 		//jsa.str.*
 		tools.add(ParseTRF.class);		

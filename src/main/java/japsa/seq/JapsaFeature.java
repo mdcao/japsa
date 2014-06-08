@@ -35,6 +35,7 @@
 
 package japsa.seq;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -286,6 +287,41 @@ public class JapsaFeature implements Comparable<JapsaFeature> {
 	public void writeBED(SequenceOutputStream out) throws IOException{
 		out.write((this.parent+'\t' + (start-1) + "\t" + end+
 				'\t' + id + '\t' + score + '\t' + (strand == '-'?'-':'+') + '\n'));
+	}
+	/**
+	 * Return a list of features from a bed file
+	 * @param fileName
+	 * @return
+	 * @throws IOException
+	 */
+	public static ArrayList<JapsaFeature> readBED(String fileName) throws IOException{
+		ArrayList<JapsaFeature>  ret = new ArrayList<JapsaFeature> ();
+		BufferedReader in = SequenceReader.openFile(fileName);
+		String line = "";
+		
+		while ( (line = in.readLine()) != null){
+			String [] toks = line.trim().split("\t");
+			
+			//Set the minimal information
+			JapsaFeature feature = new JapsaFeature(1+Integer.parseInt(toks[1]), Integer.parseInt(toks[2]));			
+			feature.setParent(toks[0]);
+			
+			if(toks.length > 3)
+				feature.setID(toks[3]);
+			
+			if(toks.length > 4)
+				feature.setScore(Double.parseDouble(toks[4]));
+			
+			if(toks.length > 5)
+				feature.setStrand(toks[5].charAt(0));
+			
+			
+			ret.add(feature);
+		}//while		
+		
+		in.close();
+		
+		return ret;
 	}
 
 	/**

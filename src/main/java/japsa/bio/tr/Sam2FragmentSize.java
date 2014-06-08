@@ -38,7 +38,6 @@
 
 package japsa.bio.tr;
 
-
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -57,9 +56,7 @@ import net.sf.samtools.SAMFileReader.ValidationStringency;
 
 
 /**
- * FIXME: Need to test
- * @author minhduc Standardise SAM format, the data from the following are
- *         supported: - JGIHeazlewood2011: (1001 Arabidopsis Genomes)
+ * @author minhduc
  * 
  */
 @Deployable(scriptName = "jsa.trv.sam2fragment",
@@ -68,10 +65,9 @@ public class Sam2FragmentSize {
 	static int checkPoint = 2000000;
 	public static void main(String[] args) throws Exception {	
 
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.trv.sam2fragment";
-		String desc = "Convert a sam file to list of fragment sizes\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
+		/*********************** Setting up script ****************************/
+		Deployable annotation = Sam2FragmentSize.class.getAnnotation(Deployable.class);		 		
+		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]");
 		/**********************************************************************/
 
 		cmdLine.addString("input", "-", "Name of input sam/bam file (- for from standard input)",true);
@@ -82,14 +78,12 @@ public class Sam2FragmentSize {
 		cmdLine.addInt("max",1000,"The maxmum size of a fragment");		
 
 		cmdLine.addBoolean("2", true, "Whether filter out reads with flag 0x002 turned off");
-
 		cmdLine.addStdHelp();
-
 
 		/**********************************************************************/
 		args = cmdLine.parseLine(args);
 		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
+			System.out.println(annotation.scriptDesc() + "\n" + cmdLine.usage());	
 			System.exit(0);
 		}
 		if (cmdLine.errors() != null) {

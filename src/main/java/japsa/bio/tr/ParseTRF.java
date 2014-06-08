@@ -36,13 +36,13 @@
 
 package japsa.bio.tr;
 
-
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.BufferedReader;
@@ -56,7 +56,7 @@ import java.util.Iterator;
  * 
  */
 @Deployable(scriptName = "jsa.trv.parseTRF",
-            scriptDesc = "Parse trf output to japsa format")
+            scriptDesc = "Parse trf output to jsa, bed or tr format")
 public class ParseTRF{
 	
 	/**
@@ -69,36 +69,30 @@ public class ParseTRF{
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.trv.parseTRF";
-		String desc = "Parse trf output to jsa, bed or tr format\n";// + Sequence.AUTHOR;		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [params]");
-		/**********************************************************************/
-		
+		/*********************** Setting up script ****************************/
+		Deployable annotation = ParseTRF.class.getAnnotation(Deployable.class);		 		
+		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]");
+		/**********************************************************************/	
+
 		//cmdLine.addStdInputFile();
 		cmdLine.addString("input", null, "Name of the input file (output of TRF), - for standard input", true);
 		cmdLine.addString("output", "-", "Name of output file, - for standard output");
 		cmdLine.addString("format", "jsa", "Format of the output file. Options: jsa, bed, tr");
 		cmdLine.addString("sequence", null, "Name of the sequence file (has to be the same file to run TRF)");
 		cmdLine.addInt("max", 6,"Maximum unit size");
-		cmdLine.addInt("min", 2,"Minimum unit size");
+		cmdLine.addInt("min", 2,"Minimum unit size");		
 		
-		
-		cmdLine.addStdHelp();
-		
+		cmdLine.addStdHelp();		
 		/**********************************************************************/
 		args = cmdLine.parseLine(args);		
-		
 		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
+			System.out.println(annotation.scriptDesc() + "\n" + cmdLine.usage());			
 			System.exit(0);
-		}
-		
+		}		
 		if (cmdLine.errors() != null) {
 			System.err.println(cmdLine.errors() + cmdLine.usage());
 			System.exit(-1);
-		}
-		
+		}		
 		/**********************************************************************/	
 
 		String inputFile = cmdLine.getStringVal("input");
@@ -218,10 +212,10 @@ public class ParseTRF{
 					if (tr.getScore() > lastTR.getScore()){
 						anno.remove(lastTR);
 						skip ++;retain --;
-						System.err.println("Skip [" + lastTR.getStart() + " " + lastTR.getEnd() + "](" +lastTR.getScore()+") because of [" + tr.getStart() + " " + tr.getEnd() + "](" +tr.getScore() +")");
+						Logging.warn("Skip [" + lastTR.getStart() + " " + lastTR.getEnd() + "](" +lastTR.getScore()+") because of [" + tr.getStart() + " " + tr.getEnd() + "](" +tr.getScore() +")");
 					}else{
 						skip ++;
-						System.err.println("Skip [" + tr.getStart() + " " + tr.getEnd() + "](" +tr.getScore()+") because of [" + lastTR.getStart() + " " + lastTR.getEnd() + "](" +lastTR.getScore() +")");
+						Logging.warn("Skip [" + tr.getStart() + " " + tr.getEnd() + "](" +tr.getScore()+") because of [" + lastTR.getStart() + " " + lastTR.getEnd() + "](" +lastTR.getScore() +")");
 						continue;
 					}
 				}
@@ -229,36 +223,14 @@ public class ParseTRF{
 				anno.add(tr);
 				retain ++;
 				lastTR = tr;
-			}//if 	
-			
-			// int period = Integer.parseInt(tokens[2]);
-			
-
-			/*
-			double thisScore = Double.parseDouble(tokens[7]);
-			//Check if overlapping with the last feature
-			if (lastFeature != null && lastFeature.getStart() < feature.getEnd() && feature.getStart() < lastFeature.getEnd()){					
-				if (thisScore < lastScore){
-					System.err.println("Skip [" + feature.getStart() + " " + feature.getEnd() + "](" +thisScore+"$"+factor+"$) because of [" + lastFeature.getStart() + " " + lastFeature.getEnd() + "](" +lastScore+"!"+lastFactor+"!)");
-					continue;//this feature is not as good as the previous one => igrnored					
-				}else{				
-					//Remove the last feature
-					anno.remove(lastFeature);
-					System.err.println("Skip [" + lastFeature.getStart() + " " + lastFeature.getEnd() + "](" +lastScore+"$"+lastFactor+"$) because of [" + feature.getStart() + " " + feature.getEnd() + "](" +thisScore+"!"+factor+"!)");					
-				}				
-			}
-			anno.add(feature);
-			lastFeature = feature;
-			lastScore = thisScore;
-			lastFactor = factor;
-			*/
+			}//if
 		}// while
 		
 		if (anno != null)
 			write(seq, anno, out, format);
 			
 		out.close();			
-		System.out.println("# Retain " + retain + " records, skip " + skip + " because of overlapping and filter "+ filter + " of irrelevant period size");
+		Logging.info(" Retain " + retain + " records, skip " + skip + " because of overlapping and filter "+ filter + " of irrelevant period size");
 	}
 	
 	/**
@@ -275,10 +247,8 @@ public class ParseTRF{
 	throws IOException{		 
 		if ("bed".equals(format))
 			anno.writeBED(out);
-		else if (format.startsWith("tr")){
-			
-			String[] headers = TandemRepeat.STANDARD_HEADER;
-			
+		else if (format.startsWith("tr")){			
+			String[] headers = TandemRepeat.STANDARD_HEADER;			
 			
 			String desc = anno.getDescription();			
 			String [] toks = desc.split("\n");
@@ -300,9 +270,11 @@ public class ParseTRF{
 			}			
 			out.write('\n');
 			
-		}else//default jsa format
+		}else{//default jsa format
+			anno.sortFeatures();
 			JapsaAnnotation.write(seq, anno, out);
-			//anno.write(out);		
+			//anno.write(out);
+		}
 	}
 }
 
