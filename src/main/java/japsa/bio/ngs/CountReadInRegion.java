@@ -66,9 +66,9 @@ public class CountReadInRegion {
 		Deployable annotation = CountReadInRegion.class.getAnnotation(Deployable.class);		 		
 		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options] <s1.bam> <s2.bam> <s3.bam> ..." , annotation.scriptDesc());
 
-		cmdLine.addString("strFile", null, "Name of the regions file in str");	
+		cmdLine.addString("xafFile", null, "Name of the regions file in xaf");	
 		cmdLine.addString("bedFile", null, "Name of the regions file in bed\n"+
-		                                   "Either strFile or bedFile has to be specified");
+		                                   "Either xafFile or bedFile has to be specified");
 				
 		cmdLine.addString("output", "-", "Name of output file, - for from standard out.");
 
@@ -92,7 +92,7 @@ public class CountReadInRegion {
 		int filter = cmdLine.getIntVal("filterBits");		
 		boolean contained = cmdLine.getBooleanVal("contained");
 		
-		String strFile = cmdLine.getStringVal("strFile");
+		String strFile = cmdLine.getStringVal("xafFile");
 		String bedFile = cmdLine.getStringVal("bedFile");
 		
 		if (strFile!= null &&  bedFile != null){
@@ -101,7 +101,7 @@ public class CountReadInRegion {
 			System.exit(-1);			
 		}
 		if (strFile== null &&  bedFile == null){
-			System.err.println("##ERROR: only one of bedFile and strFile is specified");
+			System.err.println("##ERROR: one of bedFile and xafFile has to be specified");
 			System.err.println(cmdLine.usage());
 			System.exit(-1);			
 		}
