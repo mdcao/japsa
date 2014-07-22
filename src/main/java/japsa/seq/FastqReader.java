@@ -101,7 +101,7 @@ public class FastqReader extends SequenceReader{
 		
 		//read sequence		
 		while (nextByte() && !eol){//read header			
-			int nucleotide = alphabet.byte2index(currentByte);
+			byte nucleotide = alphabet.byte2index(currentByte);
 			if (nucleotide >= 0){//valid nucleotide				
 				//ensure the sequence array is big enough
 				if (seqIndex >= seq.length) {// Full
@@ -120,7 +120,7 @@ public class FastqReader extends SequenceReader{
 					qual = new byte[newLength];
 				}
 				//next symbol
-				seq[seqIndex++] = (byte) nucleotide;
+				seq[seqIndex++] = nucleotide;
 				//seqIndex++;					
 			}else{
 				throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for alphabet {" + alphabet + "} at the line  " + lineNo); 

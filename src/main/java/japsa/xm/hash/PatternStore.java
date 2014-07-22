@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
+ * Copyright (c) 2010 Minh Duc Cao, Monash University.  All rights reserved. *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright      *
  *    notice, this list of conditions and the following disclaimer in the    *
  *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the names of the institutions nor the names of the contributors*
+ * 3. Neither the name of Monash University nor the names of its contributors*
  *    may be used to endorse or promote products derived from this software  *
  *    without specific prior written permission.                             *
  *                                                                           *
@@ -27,61 +27,59 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
- *  
- ****************************************************************************/
+package japsa.xm.hash;
 
-package japsa.bio.tr;
-
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.util.CommandLine;
-import japsa.util.deploy.Deployable;
-
-import java.io.BufferedReader;
+import japsa.util.IntIterator;
 
 /**
- * FIXME: Need to test
- * @author minhduc
+ * @author Minh Duc Cao
  * 
  */
-@Deployable(scriptName = "jsa.trv.sortFragment",
-            scriptDesc = "Sort fragment file")
-public class SortFragmentFile {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.stv.sortFragment";
-		String desc = "Sort fragment file\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
+public interface PatternStore {
 
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addStdHelp();		
+	/**
+	 * Clear every thing in the hash table
+	 */
+	public void clear();
 
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
+	/**
+	 * Next index key designed from a base
+	 * 
+	 * @param baseInd
+	 *            : a new base
+	 */
+	public void nextKey(int baseInd);
 
-		String output = cmdLine.getStringVal("output");
-		String input = cmdLine.getStringVal("input");
+	/**
+	 * Put a value (position) in to current key
+	 * 
+	 * @param val
+	 */
+	public void putCurrentValue(int val);
 
-		BufferedReader in = SequenceReader.openFile(input);
+	/**
+	 * Return the iterator of all previous candidate copy experts
+	 * 
+	 * @return
+	 */
+	public IntIterator copyIterator();
 
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
-		PEFragment.LinkedPEFragment.read(in, out, 1000);
-		out.close();
+	/**
+	 * Return the iterator of all previous candidate palin experts
+	 * 
+	 * @return
+	 */
+	public IntIterator palinIterator();
 
-	}
+	/**
+	 * Return the iterator of all previous candidate copy and palin experts They
+	 * are in fact the combination of both copy and palin experts
+	 * 
+	 * @return
+	 */
+	public IntIterator iterator();
+
+	// Summary of what is stored
+	public void printSummary();
 
 }

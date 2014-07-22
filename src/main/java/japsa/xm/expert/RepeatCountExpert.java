@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
+ * Copyright (c) 2010 Minh Duc Cao, Monash University.  All rights reserved. *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright      *
  *    notice, this list of conditions and the following disclaimer in the    *
  *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the names of the institutions nor the names of the contributors*
+ * 3. Neither the name of Monash University nor the names of its contributors*
  *    may be used to endorse or promote products derived from this software  *
  *    without specific prior written permission.                             *
  *                                                                           *
@@ -27,17 +27,78 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/**************************     REVISION HISTORY    **************************
- * File: AlphabetInterface.java
- * 19/11/2013 - Minh Duc Cao: Created
- * TODO: REMOVE THIS LINE ONLY WHEN THE CLASS IS COMPLETED
- ****************************************************************************/
-
-package japsa.seq;
-
 /**
- * @author Minh Duc Cao (http://www.caominhduc.org/)
+ * Written by Chris Mears, modified and maintained by Minh Duc Cao
  */
-public interface AlphabetInterface {
+package japsa.xm.expert;
 
+import japsa.seq.AbstractSequence;
+import japsa.util.MyBitSet;
+
+public class RepeatCountExpert extends RepeatExpert {
+	
+	int countRight;
+	int count;
+
+	public RepeatCountExpert(AbstractSequence seq, int start, MyBitSet b, int type) {
+		super(seq, start, b, type);
+		expertType = type;
+
+		count = 1;
+		countRight = 0;
+
+	}
+
+	public double probability(int character) {
+		double prob = (countRight + .01) / (count);
+		if (prob <= 0 || prob >= 1) {
+			System.err.println("Error " + prob + "  " + count + "   "
+					+ countRight);
+			(new Exception()).printStackTrace();
+			System.exit(1);
+		}
+		int match;
+
+		if (expertType != PALIN_TYPE)
+			match = character;
+		else
+			//FIXME: make reverse complement more explicitly
+			match = 3 - character;
+
+		if (seq.symbolAt(currentPointer) == match)
+			return prob;
+		else
+			return (1 - prob) / (Expert.alphabet().size() - 1);
+	}
+
+	public double update(int actual) {
+
+		if ((currentPointer - start) * expertType >= length)
+			return -1;
+
+		int match;
+		if (expertType != PALIN_TYPE)
+			match = actual;
+		else
+			match = 3 - actual;
+
+		// Recent prediction
+		double prob = probability(actual);
+
+		// Remove previous history element
+		countRight += (seq.symbolAt(currentPointer) == match) ? 1 : 0;
+		count++;
+
+		currentPointer += expertType;
+
+		updateCost(prob);
+
+		return prob;
+	}	
+	
+	public RepeatExpert duplicate(AbstractSequence aSeq, int startPos, MyBitSet b) {
+		return new RepeatCountExpert(aSeq, startPos, b, expertType);
+	}
+
+	
 }

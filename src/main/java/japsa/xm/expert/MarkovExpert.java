@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
+ * Copyright (c) 2010 Minh Duc Cao, Monash University.  All rights reserved. *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright      *
  *    notice, this list of conditions and the following disclaimer in the    *
  *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the names of the institutions nor the names of the contributors*
+ * 3. Neither the name of Monash University nor the names of its contributors*
  *    may be used to endorse or promote products derived from this software  *
  *    without specific prior written permission.                             *
  *                                                                           *
@@ -27,61 +27,93 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
- *  
- ****************************************************************************/
+package japsa.xm.expert;
 
-package japsa.bio.tr;
+public class MarkovExpert extends Expert {
+	private Markov markov;
 
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.util.CommandLine;
-import japsa.util.deploy.Deployable;
+	public MarkovExpert(int order) {
+		this(order, 1);
+	}
+	
+	public MarkovExpert(int order,double pseudocount) {
+		super();
+		markov = new Markov(order, pseudocount);
+	}	
 
-import java.io.BufferedReader;
-
-/**
- * FIXME: Need to test
- * @author minhduc
- * 
- */
-@Deployable(scriptName = "jsa.trv.sortFragment",
-            scriptDesc = "Sort fragment file")
-public class SortFragmentFile {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.stv.sortFragment";
-		String desc = "Sort fragment file\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
-
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addStdHelp();		
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
+	public void learn(byte[] aSeq) {
+		for (int i = 0; i < aSeq.length; i++) {
+			markov.update(aSeq[i]);
 		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
 
-		String output = cmdLine.getStringVal("output");
-		String input = cmdLine.getStringVal("input");
+	}
+	
+	public double probability(int character) {
+		return markov.probability(character);
+	}
 
-		BufferedReader in = SequenceReader.openFile(input);
 
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
-		PEFragment.LinkedPEFragment.read(in, out, 1000);
-		out.close();
+	public double update(int actual){
+		double costActual = markov.probability(actual);
+		updateCost(costActual);
+		markov.update(actual);
 
+		return costActual;
+
+	}
+	
+
+
+	public String toString() {
+		return "ME";
+	}
+
+	public void learn() {
 	}
 
 }
+
+class Markov {
+	private double[] charCounts;
+	private double[] countTotal;	
+	
+	private int currentInd = 0;// index of current context	
+
+	public Markov(int order) {
+		this(order,1);
+	}
+	/**
+	 * Create a Markov model with a order and a psuedocount
+	 * @param order
+	 * @param psudecount
+	 */
+	public Markov(int order, double pseudocount) {
+		//this.order = order;
+		int MASK = (int) Math.pow(Expert.alphabet().size(), order);
+		if (order >= 0) {
+			charCounts = new double[MASK * Expert.alphabet().size()];
+			countTotal = new double[MASK];
+			
+			//Initlinise
+			for (int i = 0; i < charCounts.length; i++)
+				charCounts[i] = pseudocount;
+			
+			for (int i = 0; i < countTotal.length; i++)
+				countTotal[i] = pseudocount * Expert.alphabet().size();
+		}
+	}
+
+	public void update(int a) {
+		countTotal[currentInd]++;
+		currentInd = currentInd * Expert.alphabet().size() + a;
+		charCounts[currentInd]++;
+		currentInd = currentInd % countTotal.length;
+	}
+
+	public double probability(int a) {
+		return  charCounts[currentInd * Expert.alphabet().size() + a]
+				/ countTotal[currentInd];
+	}
+}
+
+

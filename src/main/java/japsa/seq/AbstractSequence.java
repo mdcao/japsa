@@ -53,7 +53,7 @@ import java.io.IOException;
  */
 
 public abstract class AbstractSequence implements
-Comparable<japsa.seq.AbstractSequence> {
+Comparable<japsa.seq.AbstractSequence>, CharSequence {
 
 	/**
 	 * The alphabet of the sequence, this should not be changed during the time
@@ -214,7 +214,7 @@ Comparable<japsa.seq.AbstractSequence> {
 	 */
 	public void writeStream(SequenceOutputStream out) throws IOException {
 		for (int i = 0; i < length(); i++) {
-			out.write(charAt(i));			
+			out.print(charAt(i));			
 		}
 	}
 
@@ -228,20 +228,20 @@ Comparable<japsa.seq.AbstractSequence> {
 	 * @throws IOException
 	 */
 	public void writeFasta(SequenceOutputStream out) throws IOException {
-		out.write('>');
-		out.write(name);
+		out.print('>');
+		out.print(name);
 		if (desc.length() > 0){
-			out.write(' ');
-			out.write(desc);
+			out.print(' ');
+			out.print(desc);
 		}
-		out.write('\n');
+		out.print('\n');
 
 		for (int i = 0; i < length(); i++) {
-			out.write(charAt(i));
+			out.print(charAt(i));
 			if (i % 60 == 59)
-				out.write('\n');
+				out.print('\n');
 		}
-		out.write('\n');
+		out.print('\n');
 	}
 
 
@@ -265,9 +265,9 @@ Comparable<japsa.seq.AbstractSequence> {
 		if (desc.length() > 0){
 			String [] toks = desc.trim().split("\n");
 			for (int i = 0; i < toks.length; i++){
-				out.write(JapsaFileFormat.SEQUENCE_COMMENT);
-				out.write(toks[i]);
-				out.write('\n');
+				out.print(JapsaFileFormat.SEQUENCE_COMMENT);
+				out.print(toks[i]);
+				out.print('\n');
 			}		
 		}
 	}
@@ -280,14 +280,14 @@ Comparable<japsa.seq.AbstractSequence> {
 	 * @throws IOException
 	 */
 	public void writeJSA(SequenceOutputStream out) throws IOException{
-		out.write(JapsaFileFormat.HEADER);
-		out.write(JapsaFileFormat.DELIMITER);
-		out.write(name);
-		out.write(JapsaFileFormat.DELIMITER);
-		out.writeNumber(length());
-		out.write(JapsaFileFormat.DELIMITER);
-		out.write(alphabet.getName());
-		out.write('\n');
+		out.print(JapsaFileFormat.HEADER);
+		out.print(JapsaFileFormat.DELIMITER);
+		out.print(name);
+		out.print(JapsaFileFormat.DELIMITER);
+		out.print(length());
+		out.print(JapsaFileFormat.DELIMITER);
+		out.print(alphabet.getName());
+		out.print('\n');
 		
 		writeDescription(out);
 		
@@ -296,17 +296,17 @@ Comparable<japsa.seq.AbstractSequence> {
 		for (int x = 0; x < length(); x++) {
 			char c = charAt(x);
 			if (x % JapsaFileFormat.CHAR_PER_LINE == 0) {
-				out.write('\n');
-				out.writeNumber(x+1, radixSize);
-				out.write(' ');
-				out.write(' ');				
+				out.print('\n');
+				out.print(x+1, radixSize);
+				out.print(' ');
+				out.print(' ');				
 			} else if (x % JapsaFileFormat.CHAR_PER_BLOCK == 0) {
-				out.write(' ');
+				out.print(' ');
 			}
-			out.write(c);
+			out.print(c);
 		}
-		out.write('\n');
-		out.write('\n');
+		out.print('\n');
+		out.print('\n');
 	}
 
 
@@ -328,7 +328,7 @@ Comparable<japsa.seq.AbstractSequence> {
 	 * @param out
 	 * @throws IOException
 	 */
-	public void write(SequenceOutputStream out) throws IOException{
+	public void print(SequenceOutputStream out) throws IOException{
 		writeJSA(out);
 	}
 

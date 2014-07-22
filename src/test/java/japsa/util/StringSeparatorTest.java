@@ -27,61 +27,99 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
- *  
+/**************************     REVISION HISTORY    **************************
+ * File: StringSeparatorTest.java
+ * 14/11/2013 - Minh Duc Cao: Created
+ *
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.util;
 
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.util.CommandLine;
-import japsa.util.deploy.Deployable;
+import static org.junit.Assert.*;
 
-import java.io.BufferedReader;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
- * FIXME: Need to test
- * @author minhduc
- * 
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
  */
-@Deployable(scriptName = "jsa.trv.sortFragment",
-            scriptDesc = "Sort fragment file")
-public class SortFragmentFile {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.stv.sortFragment";
-		String desc = "Sort fragment file\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
+public class StringSeparatorTest {
 
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addStdHelp();		
+	/**
+	 * @throws java.lang.Exception
+	 */
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+	}
 
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
+	/**
+	 * @throws java.lang.Exception
+	 */
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+	}
+
+	/**
+	 * @throws java.lang.Exception
+	 */
+	@Before
+	public void setUp() throws Exception {
+	}
+
+	/**
+	 * @throws java.lang.Exception
+	 */
+	@After
+	public void tearDown() throws Exception {
+	}
+
+	/**
+	 * Test method for {@link japsa.util.StringSeparator#StringSeparator(java.lang.String, char, int)}.
+	 */
+	@Test
+	public void testStringSeparator() {
+		StringSeparator sts = new StringSeparator("  This is a test  of the asfsdf",' ');
+		while (sts.hasNext()){
+			System.out.println(sts.next());
+			
 		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
+		System.out.println("DONE");
+		//fail("Not yet implemented");
+	}
 
-		String output = cmdLine.getStringVal("output");
-		String input = cmdLine.getStringVal("input");
+	/**
+	 * Test method for {@link japsa.util.StringSeparator#reset()}.
+	 */
+	@Test
+	public void testReset() {
+		fail("Not yet implemented");
+	}
 
-		BufferedReader in = SequenceReader.openFile(input);
+	/**
+	 * Test method for {@link japsa.util.StringSeparator#hasNext()}.
+	 */
+	@Test
+	public void testHasNext() {
+		fail("Not yet implemented");
+	}
 
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
-		PEFragment.LinkedPEFragment.read(in, out, 1000);
-		out.close();
+	/**
+	 * Test method for {@link japsa.util.StringSeparator#next()}.
+	 */
+	@Test
+	public void testNext() {
+		fail("Not yet implemented");
+	}
 
+	/**
+	 * Test method for {@link japsa.util.StringSeparator#remove()}.
+	 */
+	@Test
+	public void testRemove() {
+		fail("Not yet implemented");
 	}
 
 }

@@ -38,10 +38,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Stack;
 import java.util.StringTokenizer;
-import java.util.Vector;
 
 
 
@@ -565,18 +565,18 @@ public class PhylogenyTree {
 	}
 
 	public Iterator<PhylogenyTree> getInternalIterator() {
-		Vector<PhylogenyTree> v = new Vector<PhylogenyTree>();
+		ArrayList<PhylogenyTree> v = new ArrayList<PhylogenyTree>();
 		this.addInternalTrees(v);
 		return v.iterator();
 	}
 
 	public Iterator<PhylogenyTree> getLeafIterator() {
-		Vector<PhylogenyTree> v = new Vector<PhylogenyTree>();
+		ArrayList<PhylogenyTree> v = new ArrayList<PhylogenyTree>();
 		this.addLeafTrees(v);
 		return v.iterator();
 	}
 
-	private void addInternalTrees(Vector<PhylogenyTree> v) {
+	private void addInternalTrees(ArrayList<PhylogenyTree> v) {
 		// Preorder
 		if (!isLeaf()) {
 			v.add(this);
@@ -585,7 +585,7 @@ public class PhylogenyTree {
 		}
 	}
 
-	private void addLeafTrees(Vector<PhylogenyTree> v) {
+	private void addLeafTrees(ArrayList<PhylogenyTree> v) {
 		// Preorder
 		if (!isLeaf()) {
 			children[0].addLeafTrees(v);
@@ -684,10 +684,6 @@ public class PhylogenyTree {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public static void main(String[] args) throws Exception {
-
 	}
 
 	public static void writeNexus(Sequence[] seqs, PrintStream ps)

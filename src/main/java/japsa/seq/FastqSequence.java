@@ -80,6 +80,16 @@ public class FastqSequence extends Sequence {
 		super(alphabet, byteArray, length, name);
 		this.quality = Arrays.copyOf(quality, length);		
 	}
+	/**
+	 * Create a fastq from 4 strings: name, seq, +, and quality
+	 * @param alphabet
+	 * @param toks
+	 */
+	public FastqSequence(Alphabet alphabet, String [] toks) {	
+		super(alphabet, toks[1], toks[0]);
+		this.quality = toks[3].getBytes();		
+	}
+
 	
 	
 	/* (non-Javadoc)
@@ -87,24 +97,44 @@ public class FastqSequence extends Sequence {
 	 * 
 	 * Write in fastq format to output stream
 	 */
-	public void write(SequenceOutputStream out) throws IOException{		
-		out.write('@');
-		out.write(getName());
-		out.write('\n');
+	public void print(SequenceOutputStream out) throws IOException{		
+		out.print('@');
+		out.print(getName());
+		out.print('\n');
 		
 		for (int i = 0; i < length();i++)
-			out.write(charAt(i));
-		out.write('\n');
+			out.print(charAt(i));
+		out.print('\n');
 		
-		out.write('+');		
-		out.write('\n');				
+		out.print('+');		
+		out.print('\n');				
 		
 		out.write(quality);
-		out.write('\n');		
+		out.print('\n');		
 	}
 	
 	public byte getQualByte(int loc){
 		return quality[loc];
 	}
 	
+	/**
+	 * Convert to a string. This method is only for convenient and is very slow
+	 */
+	public String toString(){
+		StringBuilder sb = new StringBuilder();
+		sb.append('@');
+		sb.append(getName());
+		sb.append('\n');
+		
+		for (int i = 0; i < length();i++)
+			sb.append(charAt(i));
+		sb.append("\n+\n");
+						
+		
+		for (int i = 0; i < quality.length; i++)
+			sb.append(quality[i]);
+		//out.print('\n');		
+		
+		return sb.toString();
+	}
 }

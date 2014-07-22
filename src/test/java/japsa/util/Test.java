@@ -27,60 +27,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
- *  
+/**************************     REVISION HISTORY    **************************
+ * File: Test.java
+ * 15/11/2013 - Minh Duc Cao: Created
+ *
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.util;
 
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.util.CommandLine;
-import japsa.util.deploy.Deployable;
-
-import java.io.BufferedReader;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 
 /**
- * FIXME: Need to test
- * @author minhduc
- * 
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
  */
-@Deployable(scriptName = "jsa.trv.sortFragment",
-            scriptDesc = "Sort fragment file")
-public class SortFragmentFile {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.stv.sortFragment";
-		String desc = "Sort fragment file\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
+public class Test {
 
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addStdHelp();		
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
-
-		String output = cmdLine.getStringVal("output");
-		String input = cmdLine.getStringVal("input");
-
-		BufferedReader in = SequenceReader.openFile(input);
-
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
-		PEFragment.LinkedPEFragment.read(in, out, 1000);
-		out.close();
+	/**
+	 * @param args
+	 * @throws ClassNotFoundException 
+	 * @throws SecurityException 
+	 * @throws NoSuchMethodException 
+	 */
+	public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, SecurityException {		
+		Method method = Class.forName("java.util.HashMap").getMethod("put", Object.class, Object.class);
+		//get method parameter types, prints "[class java.lang.Object, class java.lang.Object]"
+		System.out.println(Arrays.toString(method.getParameterTypes()));
+		//get method return type, return "class java.lang.Object", class reference for void
+		System.out.println(method.getReturnType());
+		//get method modifiers
+		System.out.println(Modifier.toString(method.getModifiers())); //prints "public"
 
 	}
 

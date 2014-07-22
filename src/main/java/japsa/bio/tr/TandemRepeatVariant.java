@@ -58,16 +58,24 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	varHd    = "var",                 //06
 	varHd2    = "var2",                 //06
 	confidenceHd = "confidence",      //07
+	
 	meanHd   = "mean",                //08
 	stdHd    = "std",                 //09
 	eviHd  = "evidence" ;             //10  
 
-	//sb.append("DisOriMid");   sb.append("\t"); //21
-	//sb.append("DisOriOut");   sb.append("\t"); //22
+	//public static String[] STANDARD_HEADERS  = {TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, varHd, confidenceHd, meanHd, stdHd,eviHd}; 
+	//public static String[] STANDARD_HEADERS2 = {TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, varHd, meanHd, stdHd};
 
-	public static String[] STANDARD_HEADERS  = {TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, varHd, confidenceHd, meanHd, stdHd,eviHd}; 
-	public static String[] STANDARD_HEADERS2 = {TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, varHd, meanHd, stdHd};
+	public static String[] STANDARD_HEADERS  = 
+		{TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, 
+		TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
+		varHd, confidenceHd, stdHd, eviHd};
 
+	public static String[] STANDARD_HEADERS2 = 
+		{TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, 
+		TandemRepeat.endHd, TandemRepeat.periodHd, 
+		TandemRepeat.unitNoHd, varHd, stdHd};
+	
 	TandemRepeat tandemRepeat;
 	/**
 	 * @return the tandemRepeat
@@ -86,6 +94,8 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	double var; //the variations
 	double var2;//second allele
 	double confidence, evidence;//The confident is in probability (i.e., 1-10^phred
+	
+	 @Deprecated
 	double mean = 0, std = 10;//a bland distribution
 
 	//public String start;
@@ -109,13 +119,17 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	}
 	/**
 	 * @return the mean
+	 * @Deprecated: mean will be removed in the new future
 	 */
+	 @Deprecated
 	public double getMean() {
 		return mean;
 	}
 	/**
 	 * @param mean the mean to set
+	 *  @Deprecated: mean will be removed
 	 */
+	 @Deprecated
 	public void setMean(double mean) {
 		this.mean = mean;
 	}
@@ -346,19 +360,24 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	}
 
 	public static void write(ArrayList<TandemRepeatVariant> trvList, SequenceOutputStream out) throws IOException{
-		write(trvList, out, STANDARD_HEADERS);
+		print(trvList, out, STANDARD_HEADERS);
 	}
 
-	public static void write(ArrayList<TandemRepeatVariant> trvList, SequenceOutputStream out, String [] headers) throws IOException{
-		out.write("#H:" + headers[0]);
-		for (int i=1; i < headers.length; i++)
-			out.write("\t"+headers[i]);
-		out.write('\n');
+	public static void print(ArrayList<TandemRepeatVariant> trvList, SequenceOutputStream out, String [] headers) throws IOException{
+		printHeader(out,headers);
 		for (int i = 0; i < trvList.size(); i++){
-			out.write(trvList.get(i).toString(headers));	
-			out.write('\n');
+			out.print(trvList.get(i).toString(headers));	
+			out.print('\n');
 		}
 	}
+	
+	public static void printHeader(SequenceOutputStream out, String [] headers) throws IOException{
+		out.print("#H:" + headers[0]);
+		for (int i=1; i < headers.length; i++)
+			out.print("\t"+headers[i]);
+		out.print('\n');
+	}
+	
 
 
 	public String toString(){
@@ -382,7 +401,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	 * @throws IOException
 	 */
 	public void writeBED(SequenceOutputStream out) throws IOException{
-		out.write((tandemRepeat.getParent()+'\t' + (getStart()-1) + '\t' + getEnd()+
+		out.print((tandemRepeat.getParent()+'\t' + (getStart()-1) + '\t' + getEnd()+
 				'\t' + tandemRepeat.getUnit() + '\t' + this.var  + '\t' + (tandemRepeat.getStrand() == '-'?'-':'+') + '\t' + tandemRepeat.getUnitNo() +'\n'));
 	}
 }

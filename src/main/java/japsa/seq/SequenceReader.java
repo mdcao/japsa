@@ -208,7 +208,8 @@ public abstract class SequenceReader implements Closeable{
 	
 	/**
 	 * Open a file for other read operations. If the file is zipped, this method
-	 * open an unzipped reader stream for normal reading.
+	 * open an unzipped reader stream for normal reading. If the file name 
+	 * supplied as a "-", it will return the stream from standard input.
 	 * 
 	 * TODO: it seems like this method returns too many level or wrap
 	 * @param fileName
@@ -217,15 +218,30 @@ public abstract class SequenceReader implements Closeable{
 	 * @throws IOException
 	 */
 	public static BufferedReader openFile(String fileName) throws IOException {
-		BufferedReader in = null;
-		int magic;
 		
 		InputStream is;
 		if ("-".equals(fileName))
 			is = new BufferedInputStream(System.in);
 		else
 			is = new BufferedInputStream(new FileInputStream(fileName));
+		
+		return openFile(is);
+	}
 	
+
+	/**
+	 * Open an input stream for other read operations. If stream is zipped, this method
+	 * open an unzipped reader stream for normal reading.
+	 * 
+	 * TODO: it seems like this method returns too many level or wrap
+	 * @param is the input stream
+	 * @return the buffered reader associate with the file
+	 * @throws IOException
+	 */
+	
+	public static BufferedReader openFile(InputStream is) throws IOException {
+		int magic;		
+		
 		is.mark(4);
 		magic = is.read();
 		magic += is.read() * 256;
@@ -233,9 +249,8 @@ public abstract class SequenceReader implements Closeable{
 		
 		if (magic == GZIPInputStream.GZIP_MAGIC)
 			is = new GZIPInputStream(is);
-	
-		in = new BufferedReader(new InputStreamReader(is));
-		return in;
+		
+		return new BufferedReader(new InputStreamReader(is));
 	}
 	
 	/**

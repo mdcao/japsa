@@ -126,12 +126,12 @@ public class BreakFastQ {
 			count ++;
 			countAll ++;
 			
-			outStream.write(name);
-			outStream.write('\n');
-			outStream.write(seq);
-			outStream.write("\n+\n");		
-			outStream.write(qual);
-			outStream.write('\n');
+			outStream.print(name);
+			outStream.print('\n');
+			outStream.print(seq);
+			outStream.print("\n+\n");		
+			outStream.print(qual);
+			outStream.print('\n');
 		}//while
 		Logging.info("Write " + countAll + " reads to " + index + " files" );
 		outStream.close();

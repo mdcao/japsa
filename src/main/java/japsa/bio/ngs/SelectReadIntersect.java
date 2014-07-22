@@ -59,8 +59,7 @@ import net.sf.samtools.SAMRecordIterator;
 /**
  *A program to filter reads that intersect with a STR regions from a bam/sam file
  *
- *FIXME: Generalise to any kinds of regions, not just STR
- *FIXME: Need to test with writing to bam and sam file  
+ *FIXME: Generalise to any kinds of regions, not just STR 
  */
 
 @Deployable(scriptName = "jsa.ngs.selectIntesect",
@@ -276,7 +275,7 @@ public class SelectReadIntersect {
 			if (set.remove(sam.getReadName())){
 				bamWriter.addAlignment(sam);
 				continue;
-			}			
+			}		
 
 			if (sam.getMappingQuality() < qual)
 				continue;

@@ -40,9 +40,7 @@ import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 
 /**
@@ -83,16 +81,10 @@ public class SequenceStats {
 			alphabet = Alphabet.DNA16();
 
 		String input = cmdLine.getStringVal("input");
+		
 
-		InputStream in;
-		if ("-".equals(input)) {
-			in = System.in;
-		}else{
-			in = new FileInputStream(input);
-		}
-
-		SequenceReader reader = SequenceReader.getReader(in);
-		int total = 0;
+		SequenceReader reader = SequenceReader.getReader(input);
+		long total = 0;
 		int numSeq = 0;
 		Sequence seq;
 		while ((seq = reader.nextSequence(alphabet))!= null){

@@ -27,61 +27,67 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
+/**************************     REVISION HISTORY    **************************
+ * 01/01/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
 
-package japsa.bio.tr;
-
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.util.CommandLine;
-import japsa.util.deploy.Deployable;
-
-import java.io.BufferedReader;
+package japsa.test;
 
 /**
- * FIXME: Need to test
- * @author minhduc
- * 
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
+ *
  */
-@Deployable(scriptName = "jsa.trv.sortFragment",
-            scriptDesc = "Sort fragment file")
-public class SortFragmentFile {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.stv.sortFragment";
-		String desc = "Sort fragment file\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
+public class Timer {
 
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addStdHelp();		
+	/**
+	 * Timer class, largely based on the class of the same name of Lloyd 
+	 * Allison (http://allisons.org/ll)
+	 * @param args
+	 */
+	private final long milliSecs0;
+	long last;
 
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
+	public Timer() {
+		milliSecs0 = System.currentTimeMillis(); // msecs since Jan. 1 1970
+		last = milliSecs0;
+		Runtime runtime = Runtime.getRuntime();
+		System.out.println("#processors=" + runtime.availableProcessors()
+				+ ", maxMemory=" + runtime.maxMemory() / 1000000.0 + " MB");
+	}// constructor
 
-		String output = cmdLine.getStringVal("output");
-		String input = cmdLine.getStringVal("input");
+	public void mark(String msg) {
+		final long now = System.currentTimeMillis();
+		System.out.println(msg + ":" + " increment=" + (now - last) / 1000.0
+				+ " sec" + " (total=" + (now - milliSecs0) / 1000.0 + ")");
+		last = now;
+	}// mark()
 
-		BufferedReader in = SequenceReader.openFile(input);
-
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
-		PEFragment.LinkedPEFragment.read(in, out, 1000);
-		out.close();
-
+	
+	public void systemStatus(){
+		Runtime s_runtime = Runtime.getRuntime();
+		long tMem     = s_runtime.totalMemory(),
+		      freeMem =s_runtime.freeMemory();	
+		long useMem = tMem - freeMem;
+		
+		System.out.println("Total memory " + tMem + " bytes (" + (tMem >> 20) + "MB)" );
+		System.out.println("Free  memory " + freeMem + " bytes (" + (freeMem >> 20) + "MB)" );
+		System.out.println("Used  memory " + useMem + " bytes (" + (useMem >> 20) + "MB)" );		
 	}
+	
+	public static void main(String[] args) {
+		System.out.println("-- test Timer.java --");
+		Timer t = new Timer();
+		t.mark("tick");
+		final int n = 10000;
+		int[][] a = new int[n][n];
+		int sum = 0;
+		for (int i = 0; i < n; i++)
+			for (int j = 0; j < n; j++)
+				sum += a[i][j];
+		System.out.println(sum);
+		t.mark("tock");
+		System.out.println("-- done --");
+	}// main()
 
 }

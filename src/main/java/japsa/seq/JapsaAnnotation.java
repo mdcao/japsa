@@ -457,9 +457,9 @@ public class JapsaAnnotation {
 	 */
 	public void writeDescription(SequenceOutputStream out) throws IOException{		
 		for (int i = 0; i < annoDescription.size(); i++) {
-			out.write(JapsaFileFormat.ANNOTATION_COMMENT);			
-			out.write(annoDescription.get(i));
-			out.write('\n');
+			out.print(JapsaFileFormat.ANNOTATION_COMMENT);			
+			out.print(annoDescription.get(i));
+			out.print('\n');
 		}
 	}
 
@@ -472,20 +472,20 @@ public class JapsaAnnotation {
 
 	private void writeAnnotation(SequenceOutputStream out, boolean needSort) throws IOException{
 
-		out.write(JapsaFileFormat.HEADER);
-		out.write(JapsaFileFormat.DELIMITER);
-		out.write(annotationID);
-		out.write(JapsaFileFormat.DELIMITER);
+		out.print(JapsaFileFormat.HEADER);
+		out.print(JapsaFileFormat.DELIMITER);
+		out.print(annotationID);
+		out.print(JapsaFileFormat.DELIMITER);
 		if (seq != null)
-			out.writeNumber(seq.length());
-		out.write(JapsaFileFormat.DELIMITER);
+			out.print(seq.length());
+		out.print(JapsaFileFormat.DELIMITER);
 		if (seq != null)
-			out.write(seq.alphabet().getName());
+			out.print(seq.alphabet().getName());
 
-		out.write('\n');
+		out.print('\n');
 
 		writeDescription(out);
-		out.write('\n');
+		out.print('\n');
 
 		if (needSort && !isSort())
 			sortFeatures();
@@ -494,7 +494,7 @@ public class JapsaAnnotation {
 
 		while (iter.hasNext()) {
 			iter.next().write(out);
-			out.write('\n');
+			out.print('\n');
 		}		
 	}
 	
@@ -555,7 +555,7 @@ public class JapsaAnnotation {
 		else if (sequence == null)
 			anno.writeAnnotation(out);
 		else if (anno == null)
-			sequence.write(out);
+			sequence.print(out);
 		else {// Both are not null
 			//char[] charSeq = sequence.charSequence();
 			
@@ -564,14 +564,14 @@ public class JapsaAnnotation {
 				seqID = sequence.getName();
 
 			//FIXME: Unify all the write header
-			out.write(JapsaFileFormat.HEADER);
-			out.write(JapsaFileFormat.DELIMITER);
-			out.write(seqID);
-			out.write(JapsaFileFormat.DELIMITER);
-			out.writeNumber(sequence.length());
-			out.write(JapsaFileFormat.DELIMITER);
-			out.write(sequence.alphabet().getName());
-			out.write('\n');
+			out.print(JapsaFileFormat.HEADER);
+			out.print(JapsaFileFormat.DELIMITER);
+			out.print(seqID);
+			out.print(JapsaFileFormat.DELIMITER);
+			out.print(sequence.length());
+			out.print(JapsaFileFormat.DELIMITER);
+			out.print(sequence.alphabet().getName());
+			out.print('\n');
 			
 			sequence.writeDescription(out);
 			anno.writeDescription(out);
@@ -597,7 +597,7 @@ public class JapsaAnnotation {
 				while (x >= nextFeatureFinish - 1) {
 					writeFeature = true;
 					JapsaFeature finishedF = fin.remove();
-					out.write('\n');					
+					out.print('\n');					
 					finishedF.writeEnd(out);
 
 					if (fin.size() > 0) {
@@ -610,8 +610,8 @@ public class JapsaAnnotation {
 				while (x == nextFeature.getStart() - 1) {// The java cordinate
 					// off to print feature
 					writeFeature = true;
-					out.write('\n');
-					out.write('\n');					
+					out.print('\n');
+					out.print('\n');					
 					nextFeature.write(out);
 
 					// Add this feature to the fin list only if its length > 0
@@ -643,32 +643,32 @@ public class JapsaAnnotation {
 					writeFeature = false;
 					int offset = x % JapsaFileFormat.CHAR_PER_LINE;
 					if (offset != 0) {				
-						out.writeNumber(x+1,10);
-						out.write(' ');
-						out.write(' ');
+						out.print(x+1,10);
+						out.print(' ');
+						out.print(' ');
 
 						for (int ii = 0; ii < offset; ii++) {
 							if (ii % JapsaFileFormat.CHAR_PER_BLOCK == 0)
-								out.write(' ');
-							out.write(' ');
+								out.print(' ');
+							out.print(' ');
 						}
 					}
 				}
 				// write the symbol
 				if (x % JapsaFileFormat.CHAR_PER_LINE == 0){					
-					out.write('\n');
-					out.writeNumber(x+1,10);
-					out.write(' ');
-					out.write(' ');			
+					out.print('\n');
+					out.print(x+1,10);
+					out.print(' ');
+					out.print(' ');			
 				}
 
 				if (x % JapsaFileFormat.CHAR_PER_BLOCK == 0)
-					out.write(' ');
+					out.print(' ');
 
-				out.write(sequence.charAt(x));
+				out.print(sequence.charAt(x));
 				//charSeq[x]);
 			}
-			out.write('\n');			
+			out.print('\n');			
 			//out.flush();			
 		}
 	}

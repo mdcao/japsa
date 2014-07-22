@@ -31,6 +31,7 @@
  * 31/01/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
+
 package japsa.bio.ngs;
 
 import japsa.util.CommandLine;

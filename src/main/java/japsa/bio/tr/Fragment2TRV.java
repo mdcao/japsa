@@ -406,18 +406,18 @@ public class Fragment2TRV {
 		String[] headers = {TandemRepeat.chrHd, TandemRepeat.startHd, TandemRepeat.endHd, 
 				TandemRepeat.periodHd, TandemRepeat.unitNoHd, TandemRepeatVariant.varHd, TandemRepeatVariant.confidenceHd, TandemRepeatVariant.meanHd, TandemRepeatVariant.stdHd};
 
-		out.write("#H:" + headers[0]);
+		out.print("#H:" + headers[0]);
 		for (int i=1; i < headers.length; i++)
-			out.write("\t"+headers[i]);
-		out.write('\n');
+			out.print("\t"+headers[i]);
+		out.print('\n');
 		for (int i = 0; i < trvList.size(); i++){
-			out.write(trvList.get(i).toString(headers));
+			out.print(trvList.get(i).toString(headers));
 			//if (ansList != null){
 			//	out.print("\t"+ansList.get(i).getVar());
 			//	for (int xx = 0; xx < checkVar.length; xx++)
 			//		out.print("\t"+checkVar[xx][i]);
 			//}
-			out.write('\n');
+			out.print('\n');
 		}
 	}
 
@@ -649,7 +649,7 @@ public class Fragment2TRV {
 		String[] headers = TandemRepeatVariant.STANDARD_HEADERS;
 		//{ShortTandemRepeat.chrHd, ShortTandemRepeat.startHd, ShortTandemRepeat.endHd, ShortTandemRepeat.periodHd, ShortTandemRepeat.unitNoHd, STRVariation.varHd, STRVariation.confidenceHd, STRVariation.meanHd, STRVariation.stdHd};
 
-		TandemRepeatVariant.write(trvList, out, headers);
+		TandemRepeatVariant.print(trvList, out, headers);
 
 		//out.write(("#H:" + headers[0]).getBytes());
 		//for (int i=1; i < headers.length; i++)

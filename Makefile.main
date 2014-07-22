@@ -52,7 +52,7 @@ JAR_FILE=japsa.jar
 LIB_DIR=libs
 
 #List of external libraries
-EXT_LIBS=colloquial.jar commons-math3-3.0.jar sam-1.84.jar
+EXT_LIBS=colloquial.jar commons-math3-3.0.jar sam-1.84.jar jhdf5.jar jhdfobj.jar
 
 ###########################################################################
 ##What this scripts does:
@@ -109,7 +109,7 @@ clean:
 ##############################################################################
 
 ifndef INSTALL_DIR
-INSTALL_DIR=~/.usr
+INSTALL_DIR=~/.usr/local
 endif
 
 install: jar

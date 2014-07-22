@@ -251,7 +251,8 @@ public class TandemRepeat
 			if (line.startsWith("#H:"))
 				headers = line.substring(3).split("\\t");
 			else if (line.startsWith("#")){
-				desc.add(line);
+				if (desc != null)
+					desc.add(line);
 				continue;
 			}else
 				trfList.add(read(line, headers));
@@ -328,23 +329,23 @@ public class TandemRepeat
 	throws IOException{
 		if (dList != null){
 			for (int index = 0; index < dList.size(); index++) {
-				out.write(dList.get(index));
-				out.write('\n');
+				out.print(dList.get(index));
+				out.print('\n');
 			}
 		}		
 		for (int i =0; i < headers.length; i++){
 			if (i == 0){
-				out.write("#H:");
+				out.print("#H:");
 			}else
-				out.write('\t');
+				out.print('\t');
 			
-			out.write(headers[i]);
+			out.print(headers[i]);
 		}
-		out.write('\n');
+		out.print('\n');
 		
 		for (int index = 0; index < trs.size(); index++) {
-			out.write(trs.get(index).toString(headers,collapseForm));
-			out.write('\n');
+			out.print(trs.get(index).toString(headers,collapseForm));
+			out.print('\n');
 		}
 		
 	}
@@ -396,7 +397,7 @@ public class TandemRepeat
 	 * 
 	 */
 	public void writeBED(SequenceOutputStream out) throws IOException{
-		out.write((this.getParent()+'\t' + (getStart()-1) + '\t' + getEnd()+
+		out.print((this.getParent()+'\t' + (getStart()-1) + '\t' + getEnd()+
 				'\t' + unit + '\t' + getScore() + '\t' + (getStrand() == '-'?'-':'+') + '\t' + unitNo +'\n'));
 	}	
 }

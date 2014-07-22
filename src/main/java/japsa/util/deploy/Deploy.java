@@ -96,7 +96,7 @@ public class Deploy {
 		tools.add(AlignmentEvaluation.class);		
 		tools.add(CountReadInRegion.class);
 		
-//		tools.add(CountReadInRegion.class);		
+//		tools.add(VNTRLongReads.class);		
 
 		//jsa.str.*
 		tools.add(ParseTRF.class);		
@@ -107,6 +107,8 @@ public class Deploy {
 		tools.add(VCF2TRV.class);		
 		tools.add(Japsa2TR.class);
 		tools.add(TRV2Bed.class);	
+		//tools.add(VNTRLongReads.class);
+		
 
 		//jsa.phylo
 		tools.add(XMDistance.class);
@@ -176,8 +178,8 @@ public class Deploy {
 				out.println("#!/bin/sh");						
 
 
-				out.println("case $MEM in '')MEM=7000m;;*);;esac\n");
-				out.println("java -Xmx$MEM -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -classpath " + cp + ":${CLASS_PATH} " +  tool.getCanonicalName() + " $@");				
+				out.println("\ncase $JSA_MEM in\n  '')JSA_MEM=7000m;;\n  *);;\nesac\n\n");
+				out.println("java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -classpath " + cp + " " +  tool.getCanonicalName() + " $@");				
 				out.close();
 
 				Runtime.getRuntime().exec("chmod a+x "+file.getCanonicalPath());				

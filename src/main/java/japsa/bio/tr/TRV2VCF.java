@@ -100,15 +100,15 @@ public class TRV2VCF {
 		
 		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(outFile);
 		
-		out.write("##fileformat=VCFv4.0\n");
+		out.print("##fileformat=VCFv4.0\n");
 		//out.write("##fileDate="+ System. );
-		out.write("##source=STRViper\n");
-		out.write("##reference="+refFile+"\n");
+		out.print("##source=STRViper\n");
+		out.print("##reference="+refFile+"\n");
 
-		out.write("##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of Samples With Data\">\n");
-		out.write("##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total Depth\">\n");
-		out.write("##FILTER=<ID=q3,Description=\"Quality below 3 (~50%)\">\n");
-		out.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
+		out.print("##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of Samples With Data\">\n");
+		out.print("##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total Depth\">\n");
+		out.print("##FILTER=<ID=q3,Description=\"Quality below 3 (~50%)\">\n");
+		out.print("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
 
 
 		
@@ -152,7 +152,7 @@ public class TRV2VCF {
 				for (int i = end + nuc - 1; i < end; i ++ ){
 					ref.append(seq.charAt(i));					
 				}				
-				out.write(trv.getChr() + '\t' + (end + nuc) +"\t.\t"+ref+"\t"+seq.charAt(end + nuc - 1)+"\t" 
+				out.print(trv.getChr() + '\t' + (end + nuc) +"\t.\t"+ref+"\t"+seq.charAt(end + nuc - 1)+"\t" 
 						+  qual + "\t"  //qual 
 						+ (qual>3?"PASS":"q3")+"\t" //filter
 						+ "NS=" + trv.evidence + "\t" 
@@ -169,7 +169,7 @@ public class TRV2VCF {
 					if (ind >= unit.length())
 						ind = 0;
 				}//for
-				out.write(trv.getChr() + '\t' + (end + nuc) +"\t.\t"+seq.charAt(end- 1)+'\t' + alt + "\t"
+				out.print(trv.getChr() + '\t' + (end + nuc) +"\t.\t"+seq.charAt(end- 1)+'\t' + alt + "\t"
 						+  qual + "\t"  //qual 
 						+ (qual>3?"PASS":"q3")+"\t" //filter
 						+ "NS=" + trv.evidence + "\t" 

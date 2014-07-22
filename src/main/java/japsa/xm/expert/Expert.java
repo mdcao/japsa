@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
+ * Copyright (c) 2010 Minh Duc Cao, Monash University.  All rights reserved. *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright      *
  *    notice, this list of conditions and the following disclaimer in the    *
  *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the names of the institutions nor the names of the contributors*
+ * 3. Neither the name of Monash University nor the names of its contributors*
  *    may be used to endorse or promote products derived from this software  *
  *    without specific prior written permission.                             *
  *                                                                           *
@@ -27,61 +27,100 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
- *  
- ****************************************************************************/
+package japsa.xm.expert;
 
-package japsa.bio.tr;
+import japsa.seq.Alphabet;
 
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.util.CommandLine;
-import japsa.util.deploy.Deployable;
 
-import java.io.BufferedReader;
+public abstract class Expert {
 
-/**
- * FIXME: Need to test
- * @author minhduc
- * 
- */
-@Deployable(scriptName = "jsa.trv.sortFragment",
-            scriptDesc = "Sort fragment file")
-public class SortFragmentFile {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.stv.sortFragment";
-		String desc = "Sort fragment file\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
+	public static int CONTEXT_LENGTH = 20;// Just a defaut value
+	public static int HASH_SIZE = 11;
+	
+	// Evaluation of experts
+	protected double posteriorProb = 1;
+	// History of prediction
+	private double[] history;
+	private int ind = 0;
+	private static Alphabet alphabet = null;
 
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addStdHelp();		
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
+	/**
+	 * Set the alphabet only it had not been set
+	 * 
+	 * @param anAlphabet
+	 */
+	public static void setAlphabet(Alphabet anAlphabet) {
+		if (alphabet != null && alphabet != anAlphabet) {
+			throw new RuntimeException("Alphabet aready set to " + alphabet);
 		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
-
-		String output = cmdLine.getStringVal("output");
-		String input = cmdLine.getStringVal("input");
-
-		BufferedReader in = SequenceReader.openFile(input);
-
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
-		PEFragment.LinkedPEFragment.read(in, out, 1000);
-		out.close();
+		alphabet = anAlphabet;
 
 	}
 
+	public static Alphabet alphabet() {
+		return alphabet;
+	}
+
+
+	public Expert() {
+		this(1.0);
+		
+	}
+			
+	public Expert(double prior) {
+		history = new double[CONTEXT_LENGTH];
+		posteriorProb = prior;
+
+		//pre-compute this so no need to recompute 1.0/seq.alphabet().size() again
+		history[0] =  1.0/ alphabet.size();
+		posteriorProb *= history[0]; 
+
+		for (int i = 1; i < CONTEXT_LENGTH; i++) {
+			history[i] = history[0]; 
+			posteriorProb *= history[i];
+		}
+	}	
+	
+	/**
+	 * 
+	 * @param prob
+	 */
+	protected void updateCost(double prob) {
+		posteriorProb = posteriorProb * prob / history[ind];
+		history[ind] = prob;
+
+		ind = (ind + 1) % history.length;
+	}
+
+	
+	// More is actually more
+	public double posteriorProb() {
+		return posteriorProb;
+	}
+
+	
+	/**
+	 * The probability of current charactor
+	 * 
+	 * @param character
+	 * @return
+	 */
+	public abstract double probability(int character);
+
+	/**
+	 * When update a position, the expert need to get the cost of current
+	 * prediction, this cost needed for rating expert return neg if out of bound
+	 */
+
+	public abstract double update(int actual);	
+
+	
+	
+	public static void setContext(int context) {
+		CONTEXT_LENGTH = context;
+	}
+
+	public static void setParams(int alSize, int context) {		
+		setContext(context);
+	}
 }

@@ -125,16 +125,16 @@ public class VCF2TRV {
 			
 		SequenceOutputStream outS = SequenceOutputStream.makeOutputStream(out);
 		if (cmdLine.getBooleanVal("haploid")){
-			outS.write("#H:chr\tID\tstart\tend\tperiod\t"+sample+"var\tconfidence\n");
+			outS.print("#H:chr\tID\tstart\tend\tperiod\t"+sample+"var\tconfidence\n");
 			for (int i = 0; i < samtoolList.size(); i++){
 				TandemRepeatVariant trv = samtoolList.get(i); 
-				outS.write(trv.getChr()+"\t"+ trv.tandemRepeat.getID()+"\t"+trv.getStart()+"\t"+trv.getEnd()+"\t" + trv.tandemRepeat.getPeriod() + "\t" + (trv.var+trv.var2)/2+"\t" + trv.confidence + "\n");
+				outS.print(trv.getChr()+"\t"+ trv.tandemRepeat.getID()+"\t"+trv.getStart()+"\t"+trv.getEnd()+"\t" + trv.tandemRepeat.getPeriod() + "\t" + (trv.var+trv.var2)/2+"\t" + trv.confidence + "\n");
 			}
 		}else{
-			outS.write("#H:chr\tID\tstart\tend\tperiod\t"+sample+"var\t"+sample+"var2\tconfidence\n");
+			outS.print("#H:chr\tID\tstart\tend\tperiod\t"+sample+"var\t"+sample+"var2\tconfidence\n");
 			for (int i = 0; i < samtoolList.size(); i++){
 				TandemRepeatVariant trv = samtoolList.get(i); 
-				outS.write(trv.getChr()+"\t"+trv.tandemRepeat.getID()+"\t"+trv.getStart()+"\t"+trv.getEnd()+"\t" +trv.tandemRepeat.getPeriod() + "\t" + trv.var+"\t"+trv.var2+"\t" + trv.confidence + "\n");
+				outS.print(trv.getChr()+"\t"+trv.tandemRepeat.getID()+"\t"+trv.getStart()+"\t"+trv.getEnd()+"\t" +trv.tandemRepeat.getPeriod() + "\t" + trv.var+"\t"+trv.var2+"\t" + trv.confidence + "\n");
 			}			
 		}
 		outS.close();

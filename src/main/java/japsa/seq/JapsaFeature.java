@@ -262,7 +262,7 @@ public class JapsaFeature implements Comparable<JapsaFeature> {
 	 * @throws IOException
 	 */
 	public void write(SequenceOutputStream out) throws IOException{		
-		out.write(JapsaFileFormat.FEATURE_START + this.type + 
+		out.print(JapsaFileFormat.FEATURE_START + this.type + 
 				  JapsaFileFormat.DELIMITER + this.start
 				+ JapsaFileFormat.DELIMITER + this.end
 				+ JapsaFileFormat.DELIMITER + this.id
@@ -273,9 +273,9 @@ public class JapsaFeature implements Comparable<JapsaFeature> {
 		
 		
 		for (int i = 0; i < featureDesc.size(); i++) {
-			out.write(JapsaFileFormat.COMMENT);
-			out.write(featureDesc.get(i));
-			out.write('\n');			
+			out.print(JapsaFileFormat.COMMENT);
+			out.print(featureDesc.get(i));
+			out.print('\n');			
 		}
 	}
 	
@@ -285,7 +285,7 @@ public class JapsaFeature implements Comparable<JapsaFeature> {
 	 * 
 	 */
 	public void writeBED(SequenceOutputStream out) throws IOException{
-		out.write((this.parent+'\t' + (start-1) + "\t" + end+
+		out.print((this.parent+'\t' + (start-1) + "\t" + end+
 				'\t' + id + '\t' + score + '\t' + (strand == '-'?'-':'+') + '\n'));
 	}
 	/**
@@ -373,7 +373,7 @@ public class JapsaFeature implements Comparable<JapsaFeature> {
 	 * @throws IOException
 	 */
 	public void writeEnd(SequenceOutputStream out) throws IOException{
-		out.write(JapsaFileFormat.FEATURE_END + this.type + 
+		out.print(JapsaFileFormat.FEATURE_END + this.type + 
 				  JapsaFileFormat.DELIMITER + this.start
 				+ JapsaFileFormat.DELIMITER + this.end
 				+ JapsaFileFormat.DELIMITER + this.id

@@ -126,7 +126,7 @@ public class Sam2FragmentSize {
 
 		SequenceOutputStream ps = SequenceOutputStream.makeOutputStream(outFile);		
 		SAMFileHeader samHeader = samReader.getFileHeader();
-		ps.write(samHeader.getTextHeader());
+		ps.print(samHeader.getTextHeader());
 
 		int totalRead = 0, pairedRead = 0, pairs = 0, outPair = 0;				
 		int numF = 0, numI = 0, maxF = 0, maxI = 0, minF = 10000, minI = 10000;
@@ -286,14 +286,14 @@ public class Sam2FragmentSize {
 			System.err.println ("#####"+hashPair.values().iterator().next().readID);
 		}
 
-		ps.write ("#param : min = " + min + " max = " +max+"\n");
+		ps.print ("#param : min = " + min + " max = " +max+"\n");
 		double mean = sumF/numF;
 
-		ps.write("#Fragment: min = " + minF + " max = " + maxF + " = " + numF + " mean = " + mean + " std=" + (Math.sqrt((sumFSQ - numF * mean * mean)/numF)) + "\n\n");
+		ps.print("#Fragment: min = " + minF + " max = " + maxF + " = " + numF + " mean = " + mean + " std=" + (Math.sqrt((sumFSQ - numF * mean * mean)/numF)) + "\n\n");
 
 		mean = sumI/numI;
-		ps.write("#Insert: min = " + minI + " max = " + maxI + " = " + numI + " mean = " + mean + " std=" + (Math.sqrt((sumISQ - numI * mean * mean)/numI)) + "\n\n");		
-		ps.write("##"+totalRead+"#"+pairedRead+"#"+pairs+"#"+outPair+"\n");
+		ps.print("#Insert: min = " + minI + " max = " + maxI + " = " + numI + " mean = " + mean + " std=" + (Math.sqrt((sumISQ - numI * mean * mean)/numI)) + "\n\n");		
+		ps.print("##"+totalRead+"#"+pairedRead+"#"+pairs+"#"+outPair+"\n");
 
 
 		samReader.close();		

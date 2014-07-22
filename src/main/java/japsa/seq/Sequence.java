@@ -76,19 +76,13 @@ public class Sequence extends AbstractSequence {
 	 * @param alphabet
 	 * @param charSeq
 	 * @param name
-	 */
-	@Deprecated
+	 */	
 	public Sequence(Alphabet alphabet, char[] charSeq, String name) {
 		super(alphabet, name);
 		byteSeq = new byte[charSeq.length];
 		for (int i = 0; i < byteSeq.length; i++) {
 			byteSeq[i] = (byte) alphabet.char2int(charSeq[i]);
 		}
-	}
-
-	@Deprecated
-	public Sequence(Alphabet alphabet, char[] charSeq) {
-		this(alphabet, charSeq, "");
 	}
 
 	/**
@@ -117,10 +111,17 @@ public class Sequence extends AbstractSequence {
 		this(alphabet, byteArray, byteArray.length, name);
 	}
 	
-	public Sequence(Alphabet alphabet, byte[] byteArray, String name, String desc) {
-		this(alphabet, byteArray, byteArray.length, name);
-		setDesc(desc);
+	//public Sequence(Alphabet alphabet, byte[] byteArray, String name, String desc) {
+	//	this(alphabet, byteArray, byteArray.length, name);
+	//	setDesc(desc);
+	//}
+	
+	
+	public Sequence(Alphabet alphabet, String seqStr, String name) {
+		this(alphabet, seqStr.toCharArray(),name);		
+		//setDesc(desc);
 	}
+	
 
 	/**
 	 * Return the length of the sequence
@@ -142,44 +143,6 @@ public class Sequence extends AbstractSequence {
 
 	public byte getBase(int loc) {
 		return byteSeq[loc];
-	}
-
-	/**
-	 * Return the reverse complement of this sequence. The operation is only
-	 * allowed when the alphabet is DNA
-	 * @return
-	 */
-	public Sequence reverseComplement() {
-		//Only have reverse complement if the sequence is DNA
-		if (!(alphabet() instanceof Alphabet.DNA)) {
-			throw new RuntimeException(
-					"ReverseComplement only applied for DNA sequences");
-		}
-
-		Sequence newSeq = new Sequence(alphabet(), byteSeq.length);
-
-		for (int i = 0; i < byteSeq.length / 2; i++) {
-			newSeq.byteSeq[i] = (byte) (3 - byteSeq[byteSeq.length - i - 1]);
-			newSeq.byteSeq[newSeq.byteSeq.length - i - 1] = (byte) (3 - byteSeq[i]);
-		}
-		return newSeq;
-	}
-
-
-	/**
-	 * Return a sequence which include it self and its rev comp ie acctgggg ->
-	 * acctggg|cccaggt
-	 * 
-	 * @return
-	 */
-	public Sequence withReverseComplement() {
-		Sequence newSeq = new Sequence(alphabet(), this.byteSeq,
-				this.byteSeq.length * 2);
-
-		for (int i = length(); i < newSeq.length(); i++) {
-			newSeq.setBase(newSeq.length() - i - 1, (byte) (3 - byteSeq[i]));
-		}
-		return newSeq;
 	}
 
 	/**
@@ -220,7 +183,9 @@ public class Sequence extends AbstractSequence {
 	 * Clone the sequence
 	 */
 	public Sequence clone(){
-		return new Sequence(alphabet(), byteSeq, getName(), getDesc());
+		Sequence seq = new Sequence(alphabet(), byteSeq, getName());
+		seq.setDesc(getDesc());
+		return seq;
 	}
 	
 	/**
@@ -272,5 +237,14 @@ public class Sequence extends AbstractSequence {
 	 */
 	public static Sequence random(Alphabet alphabet, int length, double [] freqs){
 		return random(alphabet, length, freqs, new Random());
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.CharSequence#subSequence(int, int)
+	 */
+	@Override
+	public Sequence subSequence(int start, int end) {
+		byte [] newSeq = Arrays.copyOfRange(byteSeq, start, end); 
+		return new Sequence(alphabet(), newSeq);
 	}
 }

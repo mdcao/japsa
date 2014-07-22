@@ -125,15 +125,15 @@ public class CountReadInRegion {
 		char sep = '\t';
 		
 		int notCount = 0;
-		os.write("#H:chr\tID\tstart\tend");
+		os.print("#H:chr\tID\tstart\tend");
 		
 		SAMFileReader [] readers = new SAMFileReader[args.length];
 		for (int i = 0; i < readers.length; i++){
 			File file = new File(args[i]);		
-			os.write("\t" + file.getName().replace(".sam", "").replace(".bam",""));
+			os.print("\t" + file.getName().replace(".sam", "").replace(".bam",""));
 			readers[i] = new SAMFileReader(file);
 		}
-		os.write("\n");
+		os.print("\n");
 		
 		
 		for (JapsaFeature str:myList){
@@ -143,7 +143,7 @@ public class CountReadInRegion {
 			if (start < 0 ) 
 				start = 0;
 			//TODO: check if end > chr.length
-			os.write(str.getParent() + sep + str.getID() + sep + str.getStart() + sep + str.getEnd());
+			os.print(str.getParent() + sep + str.getID() + sep + str.getStart() + sep + str.getEnd());
 
 			for (int i = 0; i < readers.length; i++){
 				SAMRecordIterator iter = readers[i].query(str.getParent(), start, end, contained);
@@ -163,10 +163,10 @@ public class CountReadInRegion {
 					count ++;
 				}//while			
 				iter.close();			
-				os.write(sep);
-				os.writeNumber(count);
+				os.print(sep);
+				os.print(count);
 			}//for
-			os.write("\n");
+			os.print("\n");
 		}//for
 		for (int i = 0; i < readers.length; i++){
 			readers[i].close();

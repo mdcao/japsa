@@ -136,25 +136,25 @@ public class FileFormatConverter {
 		int length = seq.length();
 		int charPerLine = length + 12;
 
-		out.write(seqs.size()+ "   " + length+"\n");
+		out.print(seqs.size()+ "   " + length+"\n");
 		int count = 0;
 
 		while (true) {
 			for (int i = 0; i < seqs.size(); i++) {
 				seq = seqs.get(i);
 				if (count == 0) {
-					out.write((seq.getName() + "             ").substring(0, 10) + "  ");
+					out.print((seq.getName() + "             ").substring(0, 10) + "  ");
 				}
 
 				for (int x = count; x < count + charPerLine && x < length; x++) {
 					if (x % 10 == 0 && x > count)
-						out.write(' ');
-					out.write(seq.charAt(x));
+						out.print(' ');
+					out.print(seq.charAt(x));
 				}
-				out.write('\n');
+				out.print('\n');
 			}
 
-			out.write('\n');
+			out.print('\n');
 
 			count += charPerLine;
 			if (count >= length)

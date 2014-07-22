@@ -36,7 +36,6 @@ package japsa.seq;
 
 import japsa.util.JapsaMath;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,8 +45,10 @@ import java.util.zip.GZIPOutputStream;
 /**
  * This is a re-implementation of the standard BufferedOutputStream class.
  * Note this class is not synchronised.
- * 
- * 
+ * Methods write() are used for native types (such as a byte or an int which 
+ * is also convereted to byte. For writing the actual value (string, numbers, 
+ * char etc, use methods print().
+ *  
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  *
  */
@@ -96,19 +97,7 @@ public class SequenceOutputStream  extends OutputStream {
 		}
 		buf = new byte[size];
 	}
-
 	
-	/**
-	 * Create a stream on top of a file output stream from a file name.
-	 * 
-	 * This method is made @Deprecated, should use makeOutputStream instead
-	 * @param fileName
-	 * @throws FileNotFoundException	 * 
-	 */
-	@Deprecated
-	public SequenceOutputStream(String fileName) throws FileNotFoundException{
-		this (new FileOutputStream(fileName));
-	}
 	/**
 	 * Create an output stream to a file. If the file name ends with .gz, a gzip
 	 * stream is created.
@@ -148,36 +137,6 @@ public class SequenceOutputStream  extends OutputStream {
 		write(b, 0, b.length);
 	}
 
-
-
-	/**
-	 * Closes this output stream and releases any system resources
-	 * associated with the stream.
-	 * <p>
-	 * The <code>close</code> method of <code>FilterOutputStream</code>
-	 * calls its <code>flush</code> method, and then calls the
-	 * <code>close</code> method of its underlying output stream.
-	 *
-	 * @exception  IOException  if an I/O error occurs.
-	 */
-	public void close() throws IOException {
-		try {
-			flush();
-		} catch (IOException ignored) {
-		}
-		out.close();
-	}
-
-
-
-	/** Flush the internal buffer */
-	private void flushBuffer() throws IOException {
-		if (count > 0) {
-			out.write(buf, 0, count);
-			count = 0;
-		}
-	}
-
 	/**
 	 * Writes the specified byte to output stream.
 	 *
@@ -202,62 +161,7 @@ public class SequenceOutputStream  extends OutputStream {
 		}
 		buf[count++] = b;
 	}
-	
-	/**
-	 * Write the character to the stream
-	 * @param c
-	 * @throws IOException
-	 */
-	
-	public void write(char c) throws IOException {
-		if (count >= buf.length) {
-			flushBuffer();
-		}
-		buf[count++] = (byte) c;
-	}
-	
-	
-	/**
-	 * Write every byte of the string to the stream
-	 * @param str
-	 * @throws IOException
-	 */
-	public void write(String str)throws IOException {
-		write(str.getBytes());
-	}
-	
-	
-	/**
-	 * Write the string presenting the number to the stream
-	 * @param num: the number to write
-	 * @throws IOException
-	 */
-	public void writeNumber(int num)throws IOException {
-		//FIXME: this is slow
-		write(Integer.toString(num));		
-	}
-	
-	public void writeNumber(long num)throws IOException {
-		//FIXME: this is slow
-		write(Long.toString(num));		
-	}
-	
-	
-	public void writeNumber(long num, int fm)throws IOException {
-		write(JapsaMath.formatLong((int)num,fm));		
-	}
-	
-	/**
-	 * Write the string presenting the number in fm spaces, right justified, to
-	 * the stream. 
-	 * @param num: the number to write
-	 * @param fm: the number of spaces
-	 * @throws IOException
-	 */
-	public void writeNumber(int num, int fm)throws IOException {
-		//FIXME: this is slow
-		write(JapsaMath.formatInt(num,fm));		
-	}
+
 
 	/**
 	 * Writes <code>len</code> bytes from the specified byte array
@@ -301,5 +205,91 @@ public class SequenceOutputStream  extends OutputStream {
 		flushBuffer();
 		out.flush();
 	}
+
+	/**
+	 * Closes this output stream and releases any system resources
+	 * associated with the stream.
+	 * <p>
+	 * The <code>close</code> method of <code>FilterOutputStream</code>
+	 * calls its <code>flush</code> method, and then calls the
+	 * <code>close</code> method of its underlying output stream.
+	 *
+	 * @exception  IOException  if an I/O error occurs.
+	 */
+	public void close() throws IOException {
+		try {
+			flush();
+		} catch (IOException ignored) {
+		}
+		out.close();
+	}
+
+
+
+	/** Flush the internal buffer */
+	private void flushBuffer() throws IOException {
+		if (count > 0) {
+			out.write(buf, 0, count);
+			count = 0;
+		}
+	}
+
+
+	
+	/**
+	 * Write the character to the stream
+	 * @param c
+	 * @throws IOException
+	 */
+	
+	public void print(char c) throws IOException {
+		if (count >= buf.length) {
+			flushBuffer();
+		}
+		buf[count++] = (byte) c;
+	}
+	
+	
+	/**
+	 * Write every byte of the string to the stream
+	 * @param str
+	 * @throws IOException
+	 */
+	public void print(String str)throws IOException {
+		write(str.getBytes());
+	}
+	
+	
+	/**
+	 * Write the string presenting the number to the stream
+	 * @param num: the number to write
+	 * @throws IOException
+	 */
+	public void print(int num)throws IOException {
+		//FIXME: this is slow
+		print(Integer.toString(num));		
+	}
+	
+	public void print(long num)throws IOException {
+		//FIXME: this is slow
+		print(Long.toString(num));		
+	}
+	
+	
+	public void print(long num, int fm)throws IOException {
+		write(JapsaMath.formatLong((int)num,fm));		
+	}
+	
+	/**
+	 * Write the string presenting the number in fm spaces, right justified, to
+	 * the stream. 
+	 * @param num: the number to write
+	 * @param fm: the number of spaces
+	 * @throws IOException
+	 */
+	public void print(int num, int fm)throws IOException {
+		write(JapsaMath.formatInt(num,fm));		
+	}
+
 
 }

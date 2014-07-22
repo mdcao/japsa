@@ -254,21 +254,21 @@ public class ParseTRF{
 			String [] toks = desc.split("\n");
 			for (int i = 0;i < toks.length;i++)
 				if (toks[i].length() > 0)
-					out.write("##" + toks[i]+"\n");
+					out.print("##" + toks[i]+"\n");
 				
 			//write out the header
-			out.write("#H:" + headers[0]);
+			out.print("#H:" + headers[0]);
 			for (int i = 1; i < headers.length; i++)
-				 out.write("\t" + headers[i]);
+				 out.print("\t" + headers[i]);
 			 
-			out.write('\n');
+			out.print('\n');
 			Iterator<JapsaFeature> trIter =  anno.iterator();
 			
 			while (trIter.hasNext()){
 				TandemRepeat tr = (TandemRepeat) trIter.next();
-				out.write(tr.toString(headers, false) + "\n");
+				out.print(tr.toString(headers, false) + "\n");
 			}			
-			out.write('\n');
+			out.print('\n');
 			
 		}else{//default jsa format
 			anno.sortFeatures();

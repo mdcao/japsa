@@ -27,61 +27,65 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
+/**************************     REVISION HISTORY    **************************
+ * 01/01/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.test;
 
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.util.CommandLine;
-import japsa.util.deploy.Deployable;
 
-import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 
 /**
- * FIXME: Need to test
- * @author minhduc
- * 
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
+ *
  */
-@Deployable(scriptName = "jsa.trv.sortFragment",
-            scriptDesc = "Sort fragment file")
-public class SortFragmentFile {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.stv.sortFragment";
-		String desc = "Sort fragment file\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
-
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addStdHelp();		
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
+public class Test {
+	  private final static Logger LOGGER = Logger.getLogger(Test.class.getName());
+	  public final static boolean DEBUG_MODE = false;
+	  
+	  public final static int DEBUG_LEVEL = 1;
+	  
+	  public final static int PRODUCTION = 0;
+	  public final static int WARNING = 1;
+	  public final static int DEBUG = 2;
+	  
+	  
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws IOException{
+		String s = "45";
+		String [] ss = s.split("h");
+		for (int i = 0; i < ss.length;i++)
+			System.out.println(ss[i]);
+		
+		LOGGER.log(Level.FINE, "fine");
+		
+		LOGGER.log(Level.INFO, "info");
+		
+		
+		Timer timer = new Timer();		
+		//bio.la.Sequence japsa.seq = bio.la.Sequence.fasta(bio.la.Alphabet.dna, args[0], new java.util.Random());
+		//System.out.println(japsa.seq.length());		
+		
+		//FastaFileReader reader = new FastaFileReader(args[0]);
+		//japsa.seq.Sequence japsa.seq = reader.readFasta(null);
+		//System.out.println(japsa.seq.length());
+		Random random = new Random();
+		double x = 1;
+		for (int i = 1; i <= 100000000;i++){
+			x += ((double)i)/208;			
 		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
-
-		String output = cmdLine.getStringVal("output");
-		String input = cmdLine.getStringVal("input");
-
-		BufferedReader in = SequenceReader.openFile(input);
-
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
-		PEFragment.LinkedPEFragment.read(in, out, 1000);
-		out.close();
-
+		
+		timer.mark("done");
+		
+		LOGGER.log(Level.INFO, "done");
 	}
-
 }

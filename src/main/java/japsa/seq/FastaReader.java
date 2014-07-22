@@ -140,7 +140,7 @@ public class FastaReader extends SequenceReader{
 
 		while (true){
 			if (nextByte()){
-				int nucleotide = alphabet.byte2index(currentByte);
+				byte nucleotide = alphabet.byte2index(currentByte);
 
 				if (nucleotide >= 0){//valid nucleotide				
 					//ensure the sequence array is big enough
@@ -159,7 +159,7 @@ public class FastaReader extends SequenceReader{
 						seq = Arrays.copyOf(seq, newLength);
 					}
 					//next symbol
-					seq[seqIndex++] = (byte)nucleotide;
+					seq[seqIndex++] = nucleotide;
 					//seqIndex++;					
 				}else  if(currentByte == 62){
 					//start of a new sequence
@@ -349,7 +349,7 @@ public class FastaReader extends SequenceReader{
 
 					if (seqMode){//reading header
 						//reading sequence					
-						int nucleotide = alphabet.byte2index(currentByte);
+						byte nucleotide = alphabet.byte2index(currentByte);
 						//assert nucleotide < alphabet.size()
 						if (nucleotide >= 0){
 							if (seqIndex >= seq.length) {// Full
@@ -366,7 +366,7 @@ public class FastaReader extends SequenceReader{
 								// create new array of byte
 								seq = Arrays.copyOf(seq, newLength);
 							}
-							seq[seqIndex++] = (byte)nucleotide;
+							seq[seqIndex++] = nucleotide;
 							//seqIndex++;					
 						}else  if(currentByte == 62){
 							//start of a new sequence
