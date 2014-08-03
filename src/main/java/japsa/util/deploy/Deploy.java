@@ -37,7 +37,7 @@ package japsa.util.deploy;
 
 import japsa.bio.ngs.AlignmentEvaluation;
 import japsa.bio.ngs.BreakBam;
-import japsa.bio.ngs.BreakFastQ;
+import japsa.bio.ngs.FastQTrim;
 import japsa.bio.ngs.CountReadInRegion;
 import japsa.bio.ngs.SelectReadIntersect;
 import japsa.bio.ngs.SelectReadSpan;
@@ -90,7 +90,7 @@ public class Deploy {
 
 		//jsa.nsg.*
 		tools.add(BreakBam.class);
-		tools.add(BreakFastQ.class);
+		tools.add(FastQTrim.class);
 		tools.add(SelectReadIntersect.class);
 		tools.add(SelectReadSpan.class);
 		tools.add(AlignmentEvaluation.class);		

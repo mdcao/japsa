@@ -116,10 +116,21 @@ public class Sequence extends AbstractSequence {
 	//	setDesc(desc);
 	//}
 	
+	/**
+	 * Construct a sequence with an alphabet from the string represent the 
+	 * sequence and the name
+	 * @param alphabet
+	 * @param seqStr
+	 * @param name
+	 */
 	
 	public Sequence(Alphabet alphabet, String seqStr, String name) {
-		this(alphabet, seqStr.toCharArray(),name);		
-		//setDesc(desc);
+		//this(alphabet, seqStr.toCharArray(),name);		
+		this(alphabet,seqStr.length(),name);	
+		
+		for (int i = 0; i < byteSeq.length; i++) {
+			byteSeq[i] = (byte) alphabet.char2int(seqStr.charAt(i));
+		}
 	}
 	
 

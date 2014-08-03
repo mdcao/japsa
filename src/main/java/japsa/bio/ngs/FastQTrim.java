@@ -47,25 +47,27 @@ import java.io.IOException;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  * Program to break a fastq file to smaller pieces
  */
-@Deployable(scriptName = "jsa.ngs.breakfastq",
-           scriptDesc = "Break a fastq file to smaller ones and trim reads if required")
-public class BreakFastQ {
+@Deployable(scriptName = "jsa.ngs.fastqtrim",
+           scriptDesc = "Trim reads from a fastq file and break the file to smaller ones")
+public class FastQTrim {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException{
 		/*********************** Setting up script ****************************/
-		Deployable annotation = BreakFastQ.class.getAnnotation(Deployable.class);		 		
+		Deployable annotation = FastQTrim.class.getAnnotation(Deployable.class);		 		
 		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
 		/**********************************************************************/
 
 		cmdLine.addStdInputFile();			
+		
 		cmdLine.addString("output", null, "Name of output fastq file, output files will be added with suffix P<index>_", true);
-		cmdLine.addInt("size", 10000000, "The number of reads per file, a negative number for not spliting");
+		cmdLine.addInt("size", 0, "The number of reads per file, a negative number for not spliting");
 		cmdLine.addInt("begin", 0, "Begin position of a read (1-index, inclusive) - 0 for not trimming");
-		cmdLine.addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");
-
+		cmdLine.addBoolean("trim", false, "Whether to trim Ns at the 3' end. Note this will trim before begin/end trimming");
+		cmdLine.addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");	
+		
 		args = cmdLine.stdParseLine(args);			
 		/**********************************************************************/		
 
@@ -75,8 +77,9 @@ public class BreakFastQ {
 		int begin = cmdLine.getIntVal("begin");
 		int end = cmdLine.getIntVal("end");			
 		int size = cmdLine.getIntVal("size");
+		boolean trim = cmdLine.getBooleanVal("trim");
 		
-		if (begin > end) {
+		if (end > 0 && begin >= end) {
 			Logging.exit("Begin "+(begin) + " must be smaller than end (" + end +")", -1);			
 		}	
 
@@ -99,18 +102,37 @@ public class BreakFastQ {
 				throw new RuntimeException(name + " unexpected at read " + countAll);
 
 			//standardise read name: replace ' ' space by a '_'
-			name = name.replace(' ', '_');
+			//name = name.replace(' ', '_');
 			String seq = reader.readLine();
 			reader.readLine();//'+'
 			String qual = reader.readLine();
+			if (trim){
+				int lastIndex = seq.length();
+				while (lastIndex > 0 && seq.charAt(lastIndex - 1) =='N'){
+					lastIndex --;
+				}
+				if (lastIndex < seq.length()){
+					seq = seq.substring(0 , lastIndex);
+					qual = qual.substring(0 , lastIndex);
+				}
+			}
 			
 			if (begin > 0) {
-				seq = seq.substring(begin - 1 , end);
-				qual = qual.substring(begin - 1 ,end);
-			}else if (end > 0){
+				if (begin > seq.length()){
+					seq  = "";
+					qual = "";
+				}else if (seq.length() > end){
+					seq = seq.substring(begin - 1 , end);
+					qual = qual.substring(begin - 1 ,end);
+				}else{
+					seq = seq.substring(begin - 1);
+					qual = qual.substring(begin - 1);
+				}
+			}else if (end > 0 && end < seq.length()){
 				seq = seq.substring(0 , end);
 				qual = qual.substring(0 ,end);
 			}
+			
 			
 			if (count == size){
 				//write this file

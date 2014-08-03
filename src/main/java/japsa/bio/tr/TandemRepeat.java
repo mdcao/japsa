@@ -37,6 +37,7 @@ package japsa.bio.tr;
 
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceOutputStream;
+import japsa.seq.XAFReader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -56,8 +57,8 @@ public class TandemRepeat
 	/**
 	 * Header
 	 */
-	public static String
-	chrHd    = "chr",                 //01
+	public static String	
+	chromHd    = "chrom",                 //01
 	idHd    = "ID",
 	startHd  = "start",               //02
 	endHd    = "end",                 //03
@@ -72,6 +73,12 @@ public class TandemRepeat
 	annotationHd   =   "Annotations"      //11
 	;
 	
+	
+	/**
+	 * This field is deprecated, changes to chrom
+	 */
+	@Deprecated
+	static String chrHd    = "chr";                 //01
 	//Property of a TR -- start, end are with regards to the reference genome	
 	private int     period = 2;
 	private double unitNo; //the length number of units on the ref
@@ -81,9 +88,9 @@ public class TandemRepeat
 	
 	
 	//String repSeq = "";	
-	public static String [] STANDARD_HEADER={chrHd, idHd, startHd, endHd, periodHd, unitNoHd, scoreHd};
-	public static String [] FULL_HEADER={chrHd, idHd, startHd, endHd, periodHd, unitHd, unitNoHd, scoreHd, entropyHd, pMatchHd,  pIndelHd};
-	public static String [] FULL_HEADER_WITH_ANNOTATIONS={chrHd, idHd, startHd, endHd, periodHd, unitHd, unitNoHd, scoreHd, entropyHd, pMatchHd,  pIndelHd, annotationHd};
+	public static String [] STANDARD_HEADER={chromHd, idHd, startHd, endHd, periodHd, unitNoHd, scoreHd};
+	public static String [] FULL_HEADER={chromHd, idHd, startHd, endHd, periodHd, unitHd, unitNoHd, scoreHd, entropyHd, pMatchHd,  pIndelHd};
+	public static String [] FULL_HEADER_WITH_ANNOTATIONS={chromHd, idHd, startHd, endHd, periodHd, unitHd, unitNoHd, scoreHd, entropyHd, pMatchHd,  pIndelHd, annotationHd};
 	
 	/**
 	 * @param chr
@@ -154,13 +161,55 @@ public class TandemRepeat
 			
 		}
 	}
+	/**
+	 * Read a repeat from using a xaf reader
+	 * @param reader
+	 * @return
+	 */
+	public static TandemRepeat read(XAFReader reader){
+		TandemRepeat rec = new TandemRepeat();
+		ArrayList<?> headerList = reader.getHeaderList();
+		for (int i = 0; i< headerList.size(); i++){
+			String fieldStr = headerList.get(i).toString();
+			if (TandemRepeat.chromHd.equals(fieldStr))
+				rec.setChr(reader.getField(i));
+			else if (TandemRepeat.idHd.equals(fieldStr))
+				rec.setID(reader.getField(i));			
+			else if (TandemRepeat.startHd.equals(fieldStr))
+				rec.setStart(Integer.parseInt(reader.getField(i)));
+			else if (TandemRepeat.endHd.equals(fieldStr))
+				rec.setEnd(Integer.parseInt(reader.getField(i)));
+			else if (TandemRepeat.periodHd.equals(fieldStr))
+				rec.setPeriod(Integer.parseInt(reader.getField(i)));			
+			else if (TandemRepeat.unitHd.equals(fieldStr))
+				rec.unit = reader.getField(i);
+			else if (TandemRepeat.unitNoHd.equals(fieldStr))
+				rec.setUnitNo(Double.parseDouble(reader.getField(i)));
+			else if (TandemRepeat.scoreHd.equals(fieldStr))
+				rec.setScore((Double.parseDouble(reader.getField(i))));
+			else if (TandemRepeat.entropyHd.equals(fieldStr))
+				rec.entropy = (Double.parseDouble(reader.getField(i)));
+			else if (TandemRepeat.pMatchHd.equals(fieldStr))
+				rec.pMatch = (Double.parseDouble(reader.getField(i)));
+			else if (TandemRepeat.pIndelHd.equals(fieldStr))
+				rec.pIndel = (Double.parseDouble(reader.getField(i)));
+			else if (TandemRepeat.annotationHd.equals(fieldStr))
+				rec.annotations = reader.getField(i);
+			//TODO: To be removed
+			else if (TandemRepeat.chrHd.equals(fieldStr))
+				rec.setChr(reader.getField(i));
+		}
+		return rec;
+	}
 	
 	/**
 	 * Parse the short tandem repeat from a line with a given header
+	 * This method has been replaced by a xaf reader
 	 * @param line
 	 * @param hds
 	 * @return
 	 */
+	@Deprecated
 	public static TandemRepeat read(String line, String [] hds){		
 		TandemRepeat rec = new TandemRepeat();
 		String [] toks = line.trim().split("\\t");
@@ -232,11 +281,13 @@ public class TandemRepeat
 	
 	/**
 	 * Read a list of short tandem repeats from a TR file
+	 * This function will be soon replaced by xaf reader
 	 * @param in
 	 * @param desc
 	 * @return
 	 * @throws IOException
 	 */
+	@Deprecated
 	public static ArrayList<TandemRepeat> readFromFile(BufferedReader in, ArrayList<String> desc) throws IOException{
 		
 		//Start with the default header

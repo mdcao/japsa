@@ -155,6 +155,10 @@ public abstract class Alphabet {
 	public abstract byte byte2index(byte byteRead);
 
 
+	public static Alphabet.DNA DNA() {
+		return DNA16.INSTANCE;
+	}
+	
 	public static Alphabet.DNA16 DNA16() {
 		return DNA16.INSTANCE;
 	}
@@ -167,6 +171,7 @@ public abstract class Alphabet {
 	public static Alphabet DNA6() {
 		return DNA6.INSTANCE;
 	}
+	
 	public static Alphabet.Protein PROTEIN() {
 		return Protein.INSTANCE;
 	}
@@ -181,7 +186,7 @@ public abstract class Alphabet {
 
 		String alpU = alp.toUpperCase();
 		if (alpU.equals("DNA"))
-			return DNA5();
+			return DNA16();
 		if (alpU.equals("DNA4"))
 			return DNA4();
 		if (alpU.equals("DNA5"))

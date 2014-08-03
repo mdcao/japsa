@@ -56,26 +56,38 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 
 	public static String 
 	varHd    = "var",                 //06
-	varHd2    = "var2",                 //06
+	var2Hd    = "var2",                 //06
 	confidenceHd = "confidence",      //07
 	
 	meanHd   = "mean",                //08
 	stdHd    = "std",                 //09
-	eviHd  = "evidence" ;             //10  
+	eviHd  = "evidence",             //10
+	evi2Hd  = "evidence2" ;             //10
+	
 
 	//public static String[] STANDARD_HEADERS  = {TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, varHd, confidenceHd, meanHd, stdHd,eviHd}; 
 	//public static String[] STANDARD_HEADERS2 = {TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, varHd, meanHd, stdHd};
 
 	public static String[] STANDARD_HEADERS  = 
-		{TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, 
+		{TandemRepeat.chromHd, TandemRepeat.idHd, TandemRepeat.startHd, 
 		TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
 		varHd, confidenceHd, stdHd, eviHd};
 
 	public static String[] STANDARD_HEADERS2 = 
-		{TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, 
+		{TandemRepeat.chromHd, TandemRepeat.idHd, TandemRepeat.startHd, 
 		TandemRepeat.endHd, TandemRepeat.periodHd, 
 		TandemRepeat.unitNoHd, varHd, stdHd};
 	
+	public static String[] SIMPLE_HEADERS  = 
+		{TandemRepeat.chromHd, TandemRepeat.idHd, TandemRepeat.startHd, 
+		TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
+		varHd, eviHd};
+	
+	public static String[] SIMPLE_HEADERS2  = 
+		{TandemRepeat.chromHd, TandemRepeat.idHd, TandemRepeat.startHd, 
+		TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
+		varHd, eviHd, var2Hd, evi2Hd};
+			
 	TandemRepeat tandemRepeat;
 	/**
 	 * @return the tandemRepeat
@@ -94,6 +106,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	double var; //the variations
 	double var2;//second allele
 	double confidence, evidence;//The confident is in probability (i.e., 1-10^phred
+	double evidence2;
 	
 	 @Deprecated
 	double mean = 0, std = 10;//a bland distribution
@@ -201,7 +214,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 		String [] toks = line.trim().split("\\t");
 
 		for (int i = 0; i < hds.length; i++ ){
-			if (TandemRepeat.chrHd.equals(hds[i]))
+			if (TandemRepeat.chromHd.equals(hds[i]))
 				rec.tandemRepeat.setChr(toks[i]);
 			else if (TandemRepeat.idHd.equals(hds[i]))
 				rec.tandemRepeat.setID(toks[i]);	
@@ -215,7 +228,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 				rec.tandemRepeat.setUnitNo(Double.parseDouble(toks[i]));
 			else if (varHd.equals(hds[i]))
 				rec.var = Double.parseDouble(toks[i]);
-			else if (varHd2.equals(hds[i]))
+			else if (var2Hd.equals(hds[i]))
 				rec.var2 = Double.parseDouble(toks[i]);
 			else if (confidenceHd.equals(hds[i]))
 				rec.confidence = Double.parseDouble(toks[i]);
@@ -240,7 +253,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 			if (i > 0) 
 				sb.append("\t");
 
-			if (TandemRepeat.chrHd.equals(hds[i]))
+			if (TandemRepeat.chromHd.equals(hds[i]))
 				sb.append(this.tandemRepeat.getChr());
 			else if (TandemRepeat.idHd.equals(hds[i]))
 				sb.append(tandemRepeat.getID());
@@ -254,6 +267,8 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 				sb.append(this.tandemRepeat.getUnitNo());			
 			else if (varHd.equals(hds[i]))
 				sb.append(this.var);
+			else if (var2Hd.equals(hds[i]))
+				sb.append(this.var2);
 			else if (confidenceHd.equals(hds[i]))
 				sb.append(this.confidence);
 			else if (meanHd.equals(hds[i]))
@@ -262,6 +277,8 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 				sb.append(this.std);
 			else if (eviHd.equals(hds[i]))
 				sb.append(this.evidence);
+			else if (evi2Hd.equals(hds[i]))
+				sb.append(this.evidence2);
 		}		
 		return sb.toString();		
 	}
@@ -285,6 +302,9 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 
 	public void addEvidence(double moreEvi){
 		evidence += moreEvi;
+	}
+	public void addEvidence2(double moreEvi){
+		evidence2 += moreEvi;
 	}	
 
 
