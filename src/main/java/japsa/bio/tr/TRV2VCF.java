@@ -88,7 +88,7 @@ public class TRV2VCF {
 		String inFile = cmdLine.getStringVal("input");
 		String refFile = cmdLine.getStringVal("reference");		
 		String outFile = cmdLine.getStringVal("output");
-		Alphabet alphalbet = Alphabet.getAlphabet(cmdLine.getStringVal("alphabet"));
+		Alphabet alphalbet = Alphabet.getAlphabet(cmdLine.getStringVal("dna"));
 		
 		if ("-".equals(refFile)){
 			System.err.println("ERROR: reference must be from some files");

@@ -249,6 +249,9 @@ public class SequenceOutputStream  extends OutputStream {
 		buf[count++] = (byte) c;
 	}
 	
+	public void println() throws IOException {
+		print('\n');
+	}
 	
 	/**
 	 * Write every byte of the string to the stream
@@ -273,6 +276,16 @@ public class SequenceOutputStream  extends OutputStream {
 	public void print(long num)throws IOException {
 		//FIXME: this is slow
 		print(Long.toString(num));		
+	}
+	
+	public void print(float num)throws IOException {
+		//FIXME: this is slow
+		print(Float.toString(num));		
+	}
+	
+	public void print(double num)throws IOException {
+		//FIXME: this is slow
+		print(Double.toString(num));		
 	}
 	
 	

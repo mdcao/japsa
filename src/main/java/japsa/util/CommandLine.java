@@ -470,7 +470,7 @@ public class CommandLine {
 	}
 	
 	public void addStdAlphabet(){
-		addString("alphabet", "DNA", "Alphabet of the input file. Options: DNA (extended DNA), DNA4\n(ACGT), DNA5(ACGTN), DNA16 and Protein");
+		addString("dna", "DNA", "Alphabet of the input file. Options: DNA (extended DNA), DNA4\n(ACGT), DNA5(ACGTN), DNA16 and Protein");
 	}
 	
 	public void addStdHelp(){

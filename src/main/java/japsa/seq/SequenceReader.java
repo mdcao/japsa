@@ -310,8 +310,15 @@ public abstract class SequenceReader implements Closeable{
 		return null;
 	}	
 	
-	
-	public static ArrayList<Sequence> readMulti(String fileName, Alphabet alphabet) throws IOException{
+	/**
+	 * Read all sequences and return an array list
+	 * 
+	 * @param fileName
+	 * @param dna
+	 * @return
+	 * @throws IOException
+	 */
+	public static ArrayList<Sequence> readAll(String fileName, Alphabet alphabet) throws IOException{
 		ArrayList<Sequence> seqs = new ArrayList<Sequence>();
 		SequenceReader reader = getReader(fileName);
 		while (true){

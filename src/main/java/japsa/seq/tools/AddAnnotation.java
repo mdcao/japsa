@@ -96,7 +96,7 @@ public class AddAnnotation {
 		int up =          cmdLine.getIntVal("upStr") ;
 		int down =          cmdLine.getIntVal("downStr") ;
 
-		//Get alphabet 		
+		//Get dna 		
 		
 		JapsaFileFormat jsaReader = new  JapsaFileFormat(input);
 		JapsaFileFormat annoReader = new  JapsaFileFormat(annoFile);

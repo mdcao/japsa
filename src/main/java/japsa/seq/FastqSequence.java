@@ -57,7 +57,7 @@ public class FastqSequence extends Sequence {
 	
 	/**
 	 * Create a fastq record
-	 * @param alphabet
+	 * @param dna
 	 * @param byteArray
 	 * @param quality
 	 * @param name
@@ -69,7 +69,7 @@ public class FastqSequence extends Sequence {
 		
 	/**
 	 * Create a fastq record with a fix length
-	 * @param alphabet
+	 * @param dna
 	 * @param byteArray
 	 * @param quality
 	 * @param length
@@ -82,7 +82,7 @@ public class FastqSequence extends Sequence {
 	}
 	/**
 	 * Create a fastq from 4 strings: name, seq, +, and quality
-	 * @param alphabet
+	 * @param dna
 	 * @param toks
 	 */
 	public FastqSequence(Alphabet alphabet, String [] toks) {	

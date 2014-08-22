@@ -35,7 +35,7 @@
 package japsa.seq;
 
 /**
- * The class implements an alphabet, ideally of small size (so that every label
+ * The class implements an dna, ideally of small size (so that every label
  * can be mapped to a char, so maximum  65,535). 
  * 
  * The class also provides several alphabets for use, including DNA and Protein
@@ -44,7 +44,7 @@ package japsa.seq;
  * 
  */
 public abstract class Alphabet {
-	// Internally, an alphabet is an array of chars
+	// Internally, an dna is an array of chars
 	/**
 	 * List of labels in chars
 	 */
@@ -52,7 +52,7 @@ public abstract class Alphabet {
 	private final String name;		
 
 	/**
-	 * Construction an alphabet from name and list of symbols
+	 * Construction an dna from name and list of symbols
 	 * @param aName
 	 * @param chars
 	 */
@@ -65,14 +65,14 @@ public abstract class Alphabet {
 
 	/**
 	 * 
-	 * @return the size of the alphabet
+	 * @return the size of the dna
 	 */
 	public int size() {
 		return symbolList.length;
 	}
 
 	/**
-	 * Convert a character to its index in the alphabet
+	 * Convert a character to its index in the dna
 	 * 
 	 * @param c
 	 *            : the character need to convert
@@ -126,7 +126,7 @@ public abstract class Alphabet {
 	public abstract boolean match(int a, int b);	
 	
 	/**
-	 * Return the representing of the alphabet
+	 * Return the representing of the dna
 	 */
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
@@ -138,7 +138,7 @@ public abstract class Alphabet {
 	}
 
 	/**
-	 * Get the name of the alphabet
+	 * Get the name of the dna
 	 * @return
 	 */
 	public String getName() {
@@ -147,7 +147,7 @@ public abstract class Alphabet {
 	
 	/**
 	 * Fast conversion of a byte reading from a stream to byte index.
-	 * As such, the method should only be used for very small alphabet (<=256)
+	 * As such, the method should only be used for very small dna (<=256)
 	 * 
 	 * @param byteRead
 	 * @return
@@ -198,7 +198,7 @@ public abstract class Alphabet {
 		if (alpU.equals("PROTEIN"))
 			return PROTEIN();
 
-		throw new RuntimeException("Unknown alphabet. Currently only DNA, DNA4, " +
+		throw new RuntimeException("Unknown dna. Currently only DNA, DNA4, " +
 		"DNA5, DNA6, DNA16 and Protein are recognised");
 	}	
 
@@ -219,7 +219,7 @@ public abstract class Alphabet {
 		public static final int N = 4, X = 5;
 		public static final int GAP = 5;
 		
-		//Extended alphabet, no particular reason for these values
+		//Extended dna, no particular reason for these values
 		//TODO: Have a better way to assign values to these characters
 		public static final int R = 6, Y = 7, H = 8, V = 9, D = 10, B = 11, M = 12, W = 13, K = 14, S = 15;		
 		
@@ -1839,7 +1839,7 @@ public abstract class Alphabet {
 		
 		static Protein INSTANCE = new Protein();
 		/**
-		 * Constructor for protein alphabet.
+		 * Constructor for protein dna.
 		 * @param chars
 		 */
 		private Protein() {
@@ -2164,7 +2164,7 @@ public abstract class Alphabet {
 		
 		static ProteinExtention INSTANCE = new ProteinExtention();
 		/**
-		 * Constructor for protein alphabet.
+		 * Constructor for protein dna.
 		 * @param chars
 		 */
 		private ProteinExtention() {
@@ -2187,7 +2187,7 @@ public abstract class Alphabet {
 		}
 	}
 	/**
-	 * A custom alphabet
+	 * A custom dna
 	 * @author Minh Duc Cao (http://www.caominhduc.org/)
 	 */
 	public class CustomAlphabet extends Alphabet{		

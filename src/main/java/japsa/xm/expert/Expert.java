@@ -45,7 +45,7 @@ public abstract class Expert {
 	private static Alphabet alphabet = null;
 
 	/**
-	 * Set the alphabet only it had not been set
+	 * Set the dna only it had not been set
 	 * 
 	 * @param anAlphabet
 	 */

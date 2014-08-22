@@ -74,8 +74,8 @@ public class SequenceStats {
 		}	
 		/**********************************************************************/
 
-		//Get alphabet 		
-		String alphabetOption = cmdLine.getStringVal("alphabet");		
+		//Get dna 		
+		String alphabetOption = cmdLine.getStringVal("dna");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
 			alphabet = Alphabet.DNA16();

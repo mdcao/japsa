@@ -34,7 +34,9 @@
 
 package japsa.seq.nanopore;
 
-import java.util.Vector;
+import java.io.BufferedReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import ncsa.hdf.object.FileFormat;
 import ncsa.hdf.object.Group;
@@ -43,7 +45,11 @@ import ncsa.hdf.object.h5.H5CompoundDS;
 import ncsa.hdf.object.h5.H5ScalarDS;
 import japsa.seq.Alphabet.DNA;
 import japsa.seq.FastqSequence;
+import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
+import japsa.util.CommandLine;
 import japsa.util.Logging;
+import japsa.util.deploy.Deployable;
 
 /**
  * Read nanopore data (read sequence, events, alignment, models etc) from a raw
@@ -51,21 +57,88 @@ import japsa.util.Logging;
  * @author minhduc
  *
  */
-public class NanoporeReader {
+@Deployable(scriptName = "jsa.np.f5reader", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 file")
+public class NanoporeReader{
+	public static void main(String[] args) throws OutOfMemoryError, Exception {
+		/*********************** Setting up script ****************************/
+		Deployable annotation = NanoporeReader.class.getAnnotation(Deployable.class);
+		CommandLine cmdLine = new CommandLine("\nUsage: "
+				+ annotation.scriptName() + " [options] f1.fast5 f2.fast5 ...",
+				annotation.scriptDesc());
+
+		cmdLine.addString("output", "-",
+				"Name of the output file, -  for stdout");
+		cmdLine.addString("type", "fastq", 
+				"Type of data to be extracted:\n" 
+						+ "fastq: sequence read in fastq format");
+		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");			
+
+		args = cmdLine.stdParseLine(args);
+		/**********************************************************************/
+
+		String type = cmdLine.getStringVal("type");
+		String output = cmdLine.getStringVal("output");
+		String f5list = cmdLine.getStringVal("f5list");
+
+		ArrayList<String> fileList = new ArrayList<String>();
+		if (f5list != null){
+			BufferedReader bf = SequenceReader.openFile(f5list);
+			String line;
+			while ((line = bf.readLine()) != null){
+				fileList.add(line.trim());
+			}
+			bf.close();
+		}
+
+		for (int i = 0; i < args.length; i++){
+			fileList.add(args[i]);
+		}
+
+		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);		
+		//if (type.equals("fastq"))
+		{//write in fastq
+			for (String fileName:fileList){
+				Logging.info("Open " + fileName);
+				try{				
+					NanoporeReader reader = new NanoporeReader(fileName);
+
+					FastqSequence fq;
+
+					fq = reader.getSeqTemplate();
+					if (fq != null)
+						fq.print(sos);
+
+					fq = reader.getSeqComplement();
+					if (fq != null)
+						fq.print(sos);
+
+					fq = reader.getSeq2D();
+					if (fq != null)
+						fq.print(sos);
+				}catch (Exception e){
+					Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
+				}
+			}//for			
+		}//if - else
+		sos.close();		
+	}//main	
+
+
 	BaseCallEvents bcCompEvents = null, bcTempEvents = null;
 	BaseCallAlignment2D bcAlignment2D = null;
 	BaseCallAlignmentHairpin bcAlignmentHairpin = null;
 	BaseCallModel bcCompModel = null, bcTempModel = null;
 	DetectedEvents events;
 	FastqSequence seqTemplate = null, seqComplement = null, seq2D = null;
-	
-	
-	
-	
-	public NanoporeReader (String fileName) throws OutOfMemoryError, Exception{
+
+	FileFormat f5File;
+
+
+	public NanoporeReader (String fileName) throws OutOfMemoryError, Exception{		
 		FileFormat fileFormat = FileFormat.getFileFormat(FileFormat.FILE_TYPE_HDF5);
 
-		FileFormat f5File = fileFormat.createInstance(fileName, FileFormat.READ);
+		//Logging.info("Open " + fileName);
+		f5File = fileFormat.createInstance(fileName, FileFormat.READ);
 		if (f5File == null) 
 			throw new RuntimeException("Unable to open file " + fileName);
 
@@ -73,11 +146,10 @@ public class NanoporeReader {
 
 		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
 
-		readGroup(root);
-
+		readGroup(root);		
 		// close file resource
 		f5File.close();		
-	}
+	}	
 
 	/**
 	 * Get base call events for complement strand
@@ -86,6 +158,7 @@ public class NanoporeReader {
 	public BaseCallEvents getBcCompEvents() {
 		return bcCompEvents;
 	}
+
 
 	/**
 	 * Get base call events for template strand
@@ -155,7 +228,6 @@ public class NanoporeReader {
 	public FastqSequence getSeq2D() {
 		return seq2D;
 	}
-	
 
 	/**
 	 * Recursively print a group and its members.
@@ -174,10 +246,12 @@ public class NanoporeReader {
 				readGroup((Group) member);
 			}else if (member instanceof H5CompoundDS){ 
 				String fullName = member.getFullName();
-				
-				Vector<Object> dat = (Vector<Object>)  (((H5CompoundDS) member).getData());				
-				
+
+				//Logging.info(member.getClass() +" ");				
+				List<Object> dat = (List<Object>)  (((H5CompoundDS) member).getData());
+
 				if (dat != null){
+					/********************************************************/
 					if (fullName.endsWith("BaseCalled_2D/Alignment")){
 						Logging.info("Read " + fullName);
 						bcAlignment2D = new BaseCallAlignment2D();
@@ -247,16 +321,16 @@ public class NanoporeReader {
 						events = new DetectedEvents();						
 						events.mean =  (double[]) dat.get(0);						
 						events.stdv =  (double[]) dat.get(1);
-						events.start =  (double[]) dat.get(2);
-						events.length =  (double[]) dat.get(3);
+						events.start =  (long[]) dat.get(2);
+						events.length =  (long[]) dat.get(3);
 					}else if (fullName.endsWith("HairpinAlign/Alignment")){
 						Logging.info("Read " + fullName);
 						bcAlignmentHairpin = new BaseCallAlignmentHairpin();
 						bcAlignmentHairpin.template =  (long[]) dat.get(0);
 						bcAlignmentHairpin.complement =  (long[]) dat.get(1);						
 					}
+					/********************************************************/
 				}
-
 			}else if (member instanceof H5ScalarDS){
 				String fullName = member.getFullName(); 
 				if (fullName.endsWith("Fastq")){
@@ -279,7 +353,7 @@ public class NanoporeReader {
 
 			}
 		}
-	}	
+	}
 
 	public static class BaseCallModel{		
 		String [] kmer;
@@ -308,15 +382,8 @@ public class NanoporeReader {
 
 	public static class DetectedEvents{
 		int dim;
-		double [] mean, stdv, start, length;
-	}
-
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		double [] mean, stdv;
+		long [] start,length;
 	}
 
 }

@@ -93,7 +93,7 @@ public class RawFormatReader extends SequenceReader{
 	 * IOException will be thrown.
 	 * 
 	 * @param in
-	 * @param alphabet: the alphabet, if not specified, the default is DNA16
+	 * @param dna: the dna, if not specified, the default is DNA16
 	 * @return
 	 * @throws IOException
 	 */
@@ -126,7 +126,7 @@ public class RawFormatReader extends SequenceReader{
 				seq[seqIndex++] = (byte) nucleotide;
 				//seqIndex++;					
 			}else if(nucleotide == -1){
-				throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for alphabet {" + alphabet + "} at the line  " + lineNo);
+				throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for dna {" + alphabet + "} at the line  " + lineNo);
 			}			
 			if (!nextByte())
 				break;

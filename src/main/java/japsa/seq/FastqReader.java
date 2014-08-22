@@ -123,7 +123,7 @@ public class FastqReader extends SequenceReader{
 				seq[seqIndex++] = nucleotide;
 				//seqIndex++;					
 			}else{
-				throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for alphabet {" + alphabet + "} at the line  " + lineNo); 
+				throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for dna {" + alphabet + "} at the line  " + lineNo); 
 			}			
 		}//while
 		

@@ -94,7 +94,7 @@ public class FastaReader extends SequenceReader{
 	/**
 	 * Read the first sequence from an input stream
 	 * @param ins
-	 * @param alphabet
+	 * @param dna
 	 * @return
 	 * @throws IOException
 	 */
@@ -112,7 +112,7 @@ public class FastaReader extends SequenceReader{
 	 * IOException will be thrown.
 	 * 
 	 * @param in
-	 * @param alphabet: the alphabet, if not specified, the default is DNA16
+	 * @param dna: the dna, if not specified, the default is DNA16
 	 * @return
 	 * @throws IOException
 	 */
@@ -167,7 +167,7 @@ public class FastaReader extends SequenceReader{
 					return makeSequence(alphabet, seq, seqIndex, header.toString().trim());
 				}else{
 					if (nucleotide == -1){
-						throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for alphabet {" + alphabet + "} at the line  " + lineNo);						
+						throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for dna {" + alphabet + "} at the line  " + lineNo);						
 					}
 				}
 			}//if
@@ -181,7 +181,7 @@ public class FastaReader extends SequenceReader{
 	
 	/**
 	 * This method is created as for reusable
-	 * @param alphabet
+	 * @param dna
 	 * @param byteArray
 	 * @param length
 	 * @param name
@@ -308,7 +308,7 @@ public class FastaReader extends SequenceReader{
 		 * IOException will be thrown.
 		 * 
 		 * @param in
-		 * @param alphabet: the alphabet, if not specified, the default is DNA16
+		 * @param dna: the dna, if not specified, the default is DNA16
 		 * @return
 		 * @throws IOException
 		 */
@@ -350,7 +350,7 @@ public class FastaReader extends SequenceReader{
 					if (seqMode){//reading header
 						//reading sequence					
 						byte nucleotide = alphabet.byte2index(currentByte);
-						//assert nucleotide < alphabet.size()
+						//assert nucleotide < dna.size()
 						if (nucleotide >= 0){
 							if (seqIndex >= seq.length) {// Full
 								int newLength = seq.length * 2;
@@ -375,7 +375,7 @@ public class FastaReader extends SequenceReader{
 							return new Sequence(alphabet, seq, seqIndex, header.toString());
 						}else{
 							if (nucleotide == -1){
-								throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for alphabet {" + alphabet + "} for sequence  " + seqNo);							
+								throw new RuntimeException("Unexecpected character '" + (char) currentByte + "' for dna {" + alphabet + "} for sequence  " + seqNo);							
 							}
 						}
 					}//mode == 0

@@ -21,7 +21,11 @@
  ****************************************************************************/
 
 package japsa.util;
-
+/**
+ * A resizeable array of int. This array bypass safe checks
+ * @author minhduc
+ *
+ */
 public final class IntArray {
 
     private int[] buf;

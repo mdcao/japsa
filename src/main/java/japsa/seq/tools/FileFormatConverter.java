@@ -90,8 +90,8 @@ public class FileFormatConverter {
 		String format = cmdLine.getStringVal("format");
 		String input = cmdLine.getStringVal("input");
 
-		//Get alphabet 		
-		String alphabetOption = cmdLine.getStringVal("alphabet");		
+		//Get dna 		
+		String alphabetOption = cmdLine.getStringVal("dna");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
 			alphabet = Alphabet.DNA5();

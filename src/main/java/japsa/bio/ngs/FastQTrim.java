@@ -45,7 +45,7 @@ import java.io.IOException;
 
 /**
  * @author Minh Duc Cao (http://www.caominhduc.org/)
- * Program to break a fastq file to smaller pieces
+ * Program to trim reads in a fastq file and split the file to smaller pieces
  */
 @Deployable(scriptName = "jsa.ngs.fastqtrim",
            scriptDesc = "Trim reads from a fastq file and break the file to smaller ones")
@@ -131,8 +131,7 @@ public class FastQTrim {
 			}else if (end > 0 && end < seq.length()){
 				seq = seq.substring(0 , end);
 				qual = qual.substring(0 ,end);
-			}
-			
+			}			
 			
 			if (count == size){
 				//write this file
@@ -155,7 +154,7 @@ public class FastQTrim {
 			outStream.print(qual);
 			outStream.print('\n');
 		}//while
-		Logging.info("Write " + countAll + " reads to " + index + " files" );
 		outStream.close();
+		Logging.info("Write " + countAll + " reads to " + index + " files" );		
 	}
 }

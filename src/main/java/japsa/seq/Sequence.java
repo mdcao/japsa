@@ -35,6 +35,7 @@
 package japsa.seq;
 
 import japsa.seq.Alphabet;
+import japsa.util.ByteArray;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -58,7 +59,7 @@ public class Sequence extends AbstractSequence {
 	/**
 	 * Create an empty sequence with a specified length
 	 * 
-	 * @param alphabet
+	 * @param dna
 	 * 
 	 */
 	public Sequence(Alphabet alphabet, int length) {
@@ -73,7 +74,7 @@ public class Sequence extends AbstractSequence {
 
 	/**
 	 * Construct a sequence from a sequence of characters.
-	 * @param alphabet
+	 * @param dna
 	 * @param charSeq
 	 * @param name
 	 */	
@@ -84,11 +85,23 @@ public class Sequence extends AbstractSequence {
 			byteSeq[i] = (byte) alphabet.char2int(charSeq[i]);
 		}
 	}
+	
+	/**
+	 * Construct a sequence from a ByteArray object.
+	 * @param alphabet
+	 * @param bArray
+	 * @param name
+	 */
+	public Sequence(Alphabet alphabet, ByteArray bArray, String name) {
+		super(alphabet, name);		
+		byteSeq = bArray.toArray();
+	}
+
 
 	/**
 	 * Copy the byte array up to the length
 	 * 
-	 * @param alphabet
+	 * @param dna
 	 * @param byteArray
 	 * @param length
 	 */
@@ -111,21 +124,21 @@ public class Sequence extends AbstractSequence {
 		this(alphabet, byteArray, byteArray.length, name);
 	}
 	
-	//public Sequence(Alphabet alphabet, byte[] byteArray, String name, String desc) {
-	//	this(alphabet, byteArray, byteArray.length, name);
+	//public Sequence(Alphabet dna, byte[] byteArray, String name, String desc) {
+	//	this(dna, byteArray, byteArray.length, name);
 	//	setDesc(desc);
 	//}
 	
 	/**
-	 * Construct a sequence with an alphabet from the string represent the 
+	 * Construct a sequence with an dna from the string represent the 
 	 * sequence and the name
-	 * @param alphabet
+	 * @param dna
 	 * @param seqStr
 	 * @param name
 	 */
 	
 	public Sequence(Alphabet alphabet, String seqStr, String name) {
-		//this(alphabet, seqStr.toCharArray(),name);		
+		//this(dna, seqStr.toCharArray(),name);		
 		this(alphabet,seqStr.length(),name);	
 		
 		for (int i = 0; i < byteSeq.length; i++) {
@@ -201,7 +214,7 @@ public class Sequence extends AbstractSequence {
 	
 	/**
 	 * Create a random sequence with some length and some frequency distribution
-	 * @param alphabet
+	 * @param dna
 	 * @param length
 	 * @param freqs
 	 * @param rand a random generator
@@ -209,7 +222,7 @@ public class Sequence extends AbstractSequence {
 	 */
 	public static Sequence random(Alphabet alphabet, int length, double [] freqs, Random rand){
 		if (freqs.length != alphabet.size()){
-			throw new RuntimeException("Frequencies array should have the same size as alphabet");
+			throw new RuntimeException("Frequencies array should have the same size as dna");
 		}
 		Sequence seq = new Sequence(alphabet, length);
 		
@@ -241,7 +254,7 @@ public class Sequence extends AbstractSequence {
 	}
 	/**
 	 * Create a random sequence
-	 * @param alphabet
+	 * @param dna
 	 * @param length
 	 * @param freqs
 	 * @return

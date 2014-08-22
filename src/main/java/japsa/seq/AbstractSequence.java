@@ -56,7 +56,7 @@ public abstract class AbstractSequence implements
 Comparable<japsa.seq.AbstractSequence>, CharSequence {
 
 	/**
-	 * The alphabet of the sequence, this should not be changed during the time
+	 * The dna of the sequence, this should not be changed during the time
 	 * life of the sequence
 	 */
 	private final Alphabet alphabet;
@@ -66,7 +66,7 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 
 	/**
 	 *  
-	 * @param alphabet
+	 * @param dna
 	 */
 	public AbstractSequence(Alphabet alphabet) {
 		this.alphabet = alphabet;
@@ -77,8 +77,8 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 		this.name = name;
 	}
 	/**
-	 * Construct a sequence with given alphabet, name and descriptions
-	 * @param alphabet
+	 * Construct a sequence with given dna, name and descriptions
+	 * @param dna
 	 * @param name
 	 * @param desc
 	 */
@@ -122,7 +122,7 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 
 
 	/**
-	 * Return the alphabet of the sequence
+	 * Return the dna of the sequence
 	 * 
 	 * @return
 	 */
@@ -187,7 +187,7 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 	 * Check if this sequence matches another sequence. Return 0 if they match, 
 	 * return a negative value if the alphabets or lengths differ, a positive 
 	 * number of the first mismatched base. The definition of match is 
-	 * characterised by the alphabet. For example, if DNA5, A matches A and
+	 * characterised by the dna. For example, if DNA5, A matches A and
 	 * does not match C or N, while N matches every other symbol and itself.
 	 * 
 	 * Note that if japsa.seq A matches japsa.seq B, the reverse does not neccessarily hold.
