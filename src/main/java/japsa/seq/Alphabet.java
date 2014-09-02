@@ -229,7 +229,22 @@ public abstract class Alphabet {
 		private DNA(String name, char[] chars) {
 			super(name, chars);			
 		}		
-		public abstract int complement(int sy);		
+		public abstract int complement(int sy);
+		
+		
+		public static Sequence complement(Sequence seq){			
+			if (seq.alphabet() instanceof DNA){
+				DNA dna = (DNA) seq.alphabet();
+				Sequence comp = new Sequence(dna, seq.length());
+				int j = 0;
+				for (int i = seq.length() - 1; i >=0;i--){
+					comp.setBase(j++, (byte) dna.complement(seq.getBase(i)));					
+				}
+				return comp;
+			}else{
+				throw new RuntimeException(seq.alphabet() + " is not DNA");
+			}
+		}
 	}
 	
 	/**

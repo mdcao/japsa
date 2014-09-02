@@ -63,7 +63,8 @@ public class BreakSequenceFile {
 		/**********************************************************************/
 
 		cmdLine.addStdInputFile();//input
-		cmdLine.addStdAlphabet();//dna		
+		//cmdLine.addStdDNA();//dna		
+		cmdLine.addStdAlphabet();
 		
 		cmdLine.addString("output", "out_", "Prefix of the output files");
 		cmdLine.addString("format", "jsa", "Format of output files. Options : japsa or fasta");
@@ -82,7 +83,7 @@ public class BreakSequenceFile {
 		/**********************************************************************/
 
 		//Get dna 		
-		String alphabetOption = cmdLine.getStringVal("dna");		
+		String alphabetOption = cmdLine.getStringVal("alphabet");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
 			alphabet = Alphabet.DNA5();

@@ -49,33 +49,23 @@ import java.io.IOException;
  */
 @Deployable(scriptName = "jsa.seq.stats",
            scriptDesc = "Show statistical composition of sequences stored in a file (or from STDIN)")
-public class SequenceStats {
-	/*********************** Setting up script ****************************/
-	static String scriptName = "jsa.seq.stats";	
-	static String desc = "Show statistical composition of sequences stored in a file (or from STDIN)\n";		
-	static CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-	/**********************************************************************/
-
+public class SequenceStats {	
 	public static void main(String[] args) throws IOException {		
-		/************************ Set up options ******************************/
-		cmdLine.addStdInputFile();
-		cmdLine.addStdAlphabet();//aphabet
-		cmdLine.addStdHelp();//help
 
-		/********************** Standard processing ***************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
+		/*********************** Setting up script ****************************/
+		Deployable annotation = SequenceStats.class.getAnnotation(Deployable.class);
+		CommandLine cmdLine = new CommandLine("\nUsage: "
+				+ annotation.scriptName() + " [options] ",
+				annotation.scriptDesc());
+		
+		cmdLine.addStdInputFile();
+		cmdLine.addStdAlphabet();//aphabet		
+		
+		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 
 		//Get dna 		
-		String alphabetOption = cmdLine.getStringVal("dna");		
+		String alphabetOption = cmdLine.getStringVal("alphabet");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
 			alphabet = Alphabet.DNA16();
@@ -94,6 +84,7 @@ public class SequenceStats {
 			System.out.println(seq.getDesc());
 			getComposition(seq);
 		}
+		reader.close();
 		System.out.println("Total = " + total + " bases in " + numSeq + " sequences.");
 	}
 
@@ -129,6 +120,5 @@ public class SequenceStats {
 					(others * 100.0 / seq.length()));
 
 	}
-
 
 }

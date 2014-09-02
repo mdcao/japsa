@@ -468,9 +468,10 @@ public class CommandLine {
 	public void addStdOutputFile(){
 		addString("output", null, "Name of the output file, - for standard output", true);
 	}
+
 	
 	public void addStdAlphabet(){
-		addString("dna", "DNA", "Alphabet of the input file. Options: DNA (extended DNA), DNA4\n(ACGT), DNA5(ACGTN), DNA16 and Protein");
+		addString("alphabet", "DNA", "Alphabet of the input file. Options: DNA (DNA=DNA16), DNA4\n(ACGT), DNA5(ACGTN), DNA16 and Protein");
 	}
 	
 	public void addStdHelp(){

@@ -68,7 +68,8 @@ public class TRV2VCF {
 				"Name of the input file in trv, - for standard in",true);		
 		cmdLine.addString("reference", null,
 				"File containing the reference genome",true);		
-		cmdLine.addStdAlphabet();		
+		//cmdLine.addStdDNA();		
+		cmdLine.addStdAlphabet();
 		cmdLine.addString("output", "-",
 				"Name of the output file ( - for standard output)");
 
@@ -88,7 +89,7 @@ public class TRV2VCF {
 		String inFile = cmdLine.getStringVal("input");
 		String refFile = cmdLine.getStringVal("reference");		
 		String outFile = cmdLine.getStringVal("output");
-		Alphabet alphalbet = Alphabet.getAlphabet(cmdLine.getStringVal("dna"));
+		Alphabet alphalbet = Alphabet.getAlphabet(cmdLine.getStringVal("alphabet"));
 		
 		if ("-".equals(refFile)){
 			System.err.println("ERROR: reference must be from some files");

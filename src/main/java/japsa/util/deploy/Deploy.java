@@ -54,9 +54,11 @@ import japsa.bio.tr.VCF2TRV;
 import japsa.seq.nanopore.NanoporeReader;
 import japsa.seq.tools.AddAnnotation;
 import japsa.seq.tools.AnnotateRegions;
+import japsa.seq.tools.AnnotationFormater;
 import japsa.seq.tools.Bed2Japsa;
 import japsa.seq.tools.BreakSequenceFile;
 import japsa.seq.tools.FileFormatConverter;
+import japsa.seq.tools.SequenceSort;
 import japsa.seq.tools.SequenceStats;
 import japsa.util.CommandLine;
 import japsa.util.StringSeparator;
@@ -76,16 +78,19 @@ import java.util.Date;
 public class Deploy {
 	@SuppressWarnings("rawtypes")
 	private static ArrayList<Class> tools = new ArrayList<Class>();
-	private static String VERSION = "1.4-8b";
+	private static String VERSION = "1.4-9a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
 		tools.add(SequenceStats.class);
+		tools.add(SequenceSort.class);		
 		tools.add(Bed2Japsa.class);
 		tools.add(BreakSequenceFile.class);
 		tools.add(FileFormatConverter.class);
 		tools.add(AddAnnotation.class);
 		tools.add(AnnotateRegions.class);
+		tools.add(AnnotationFormater.class);
+		
 		//tools.add(MarkovCompress.class);
 
 

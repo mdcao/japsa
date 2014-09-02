@@ -36,6 +36,8 @@ package japsa.seq.nanopore;
 
 import java.io.BufferedReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import ncsa.hdf.object.FileFormat;
@@ -48,6 +50,7 @@ import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.IntArray;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
@@ -57,7 +60,7 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.np.f5reader", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 file")
+@Deployable(scriptName = "jsa.np.f5reader", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
 public class NanoporeReader{
 	public static void main(String[] args) throws OutOfMemoryError, Exception {
 		/*********************** Setting up script ****************************/
@@ -70,15 +73,21 @@ public class NanoporeReader{
 				"Name of the output file, -  for stdout");
 		cmdLine.addString("type", "fastq", 
 				"Type of data to be extracted:\n" 
-						+ "fastq: sequence read in fastq format");
+					+ "fastq: sequence read in fastq format");
+		cmdLine.addInt("minLength", 0, 
+				"Minimum sequence length");
+		
+		cmdLine.addBoolean("stats", false, "Compute statistics of reads");		
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");			
 
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 
-		String type = cmdLine.getStringVal("type");
+		String type   = cmdLine.getStringVal("type");
 		String output = cmdLine.getStringVal("output");
 		String f5list = cmdLine.getStringVal("f5list");
+		int minLength  = cmdLine.getIntVal("minLength");
+		boolean stats  = cmdLine.getBooleanVal("stats");
 
 		ArrayList<String> fileList = new ArrayList<String>();
 		if (f5list != null){
@@ -94,9 +103,12 @@ public class NanoporeReader{
 			fileList.add(args[i]);
 		}
 
-		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);		
+		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
+		//int maxLength = 0, minLength = Integer.MAX_VALUE;
+		int tempCount = 0, compCount = 0, twoDCount = 0;		
+		IntArray lengths = new IntArray();		
 		//if (type.equals("fastq"))
-		{//write in fastq
+		{
 			for (String fileName:fileList){
 				Logging.info("Open " + fileName);
 				try{				
@@ -105,22 +117,73 @@ public class NanoporeReader{
 					FastqSequence fq;
 
 					fq = reader.getSeqTemplate();
-					if (fq != null)
+					if (fq != null && fq.length() >= minLength){
 						fq.print(sos);
+						if (stats){						
+							lengths.add(fq.length());	
+							tempCount ++;
+						}
+					}
 
 					fq = reader.getSeqComplement();
-					if (fq != null)
+					if (fq != null && fq.length() >= minLength){
 						fq.print(sos);
+						if (stats){						
+							lengths.add(fq.length());	
+							compCount ++;
+						}
+					}				
 
 					fq = reader.getSeq2D();
-					if (fq != null)
+					if (fq != null && fq.length() >= minLength){
 						fq.print(sos);
+						if (stats){						
+							lengths.add(fq.length());	
+							twoDCount ++;
+						}
+					}
+					
 				}catch (Exception e){
 					Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
 				}
 			}//for			
 		}//if - else
-		sos.close();		
+		sos.close();
+		
+		if (stats){
+			Logging.info("Getting stats ... ");
+			int [] ls = lengths.toArray();
+			Arrays.sort(ls);
+			
+			long baseCount = 0;						
+			for (int i = 0; i < ls.length; i++)
+				baseCount += ls[i];
+			
+			double mean = baseCount / ls.length;
+			double median = ls[ls.length/2];
+			long sum = 0;
+			int quantile1st = 0, quantile2nd = 0, quantile3rd = 0;
+			for (int i = 0; i < ls.length; i++){
+				sum += ls[i];
+				if (quantile1st == 0 && sum >= baseCount / 4)
+					quantile1st = i;
+				
+				if (quantile2nd == 0 && sum >= baseCount / 2)
+					quantile2nd = i;
+				
+				if (quantile3rd == 0 && sum >= baseCount * 3/ 4)
+					quantile3rd = i;
+				
+			}
+			
+			Logging.info("Read count = " + ls.length + "(" + tempCount + " temppate, " + compCount + " complements and " + twoDCount +"  2D)");
+			Logging.info("Base count = " + baseCount);		
+			Logging.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
+			Logging.info("Average read length = " + mean);
+			Logging.info("Median read length = " + median);
+			Logging.info("Quantile first = " + ls[quantile1st] + " second = " + ls[quantile2nd] + " third = " + ls[quantile3rd]);
+		}
+		
 	}//main	
 
 
@@ -251,7 +314,7 @@ public class NanoporeReader{
 				List<Object> dat = (List<Object>)  (((H5CompoundDS) member).getData());
 
 				if (dat != null){
-					/********************************************************/
+					/********************************************************
 					if (fullName.endsWith("BaseCalled_2D/Alignment")){
 						Logging.info("Read " + fullName);
 						bcAlignment2D = new BaseCallAlignment2D();
@@ -339,13 +402,13 @@ public class NanoporeReader{
 						Logging.info("Read " + fullName);
 						String [] toks = ((String[]) data)[0].split("\n");						
 						if  (fullName.contains("BaseCalled_2D")){
-							toks[0] = toks[0].substring(1) + "_twodimentional length=" + toks[1].length() ;							 
-							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);;                		
+							toks[0] = toks[0].substring(1) + "_twodimentional " + f5File.getName() + " length=" + toks[1].length() ;							 
+							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);                		
 						}else if (fullName.contains("BaseCalled_complement")){
-							toks[0] = toks[0].substring(1) + "_complement length=" + toks[1].length() ;							
+							toks[0] = toks[0].substring(1) + "_complement " + f5File.getName() + " length=" + toks[1].length() ;							
 							this.seqComplement =  new FastqSequence(DNA.DNA16(), toks);							
 						}else if (fullName.contains("BaseCalled_template")){
-							toks[0] = toks[0].substring(1) + "_template length=" + toks[1].length() ;
+							toks[0] = toks[0].substring(1) + "_template " + f5File.getName() + " length=" + toks[1].length() ;
 							this.seqTemplate =  new FastqSequence(DNA.DNA16(), toks);
 						}
 					}
