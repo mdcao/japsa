@@ -37,7 +37,6 @@ package japsa.seq.nanopore;
 import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import ncsa.hdf.object.FileFormat;
@@ -83,7 +82,7 @@ public class NanoporeReader{
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 
-		String type   = cmdLine.getStringVal("type");
+		//String type   = cmdLine.getStringVal("type");
 		String output = cmdLine.getStringVal("output");
 		String f5list = cmdLine.getStringVal("f5list");
 		int minLength  = cmdLine.getIntVal("minLength");
@@ -308,7 +307,7 @@ public class NanoporeReader{
 			if (member instanceof Group) {
 				readGroup((Group) member);
 			}else if (member instanceof H5CompoundDS){ 
-				String fullName = member.getFullName();
+				//String fullName = member.getFullName();
 
 				//Logging.info(member.getClass() +" ");				
 				List<Object> dat = (List<Object>)  (((H5CompoundDS) member).getData());
