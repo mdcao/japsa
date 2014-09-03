@@ -54,7 +54,7 @@ import japsa.bio.tr.VCF2TRV;
 import japsa.seq.nanopore.NanoporeReader;
 import japsa.seq.tools.AddAnnotation;
 import japsa.seq.tools.AnnotateRegions;
-import japsa.seq.tools.AnnotationFormater;
+import japsa.seq.tools.AnnotateVCF;
 import japsa.seq.tools.Bed2Japsa;
 import japsa.seq.tools.BreakSequenceFile;
 import japsa.seq.tools.FileFormatConverter;
@@ -89,7 +89,7 @@ public class Deploy {
 		tools.add(FileFormatConverter.class);
 		tools.add(AddAnnotation.class);
 		tools.add(AnnotateRegions.class);
-		tools.add(AnnotationFormater.class);
+		tools.add(AnnotateVCF.class);
 		
 		//tools.add(MarkovCompress.class);
 
