@@ -58,6 +58,7 @@ import japsa.seq.tools.AnnotateVCF;
 import japsa.seq.tools.Bed2Japsa;
 import japsa.seq.tools.BreakSequenceFile;
 import japsa.seq.tools.FileFormatConverter;
+import japsa.seq.tools.SequenceExtract;
 import japsa.seq.tools.SequenceSort;
 import japsa.seq.tools.SequenceStats;
 import japsa.util.CommandLine;
@@ -83,7 +84,8 @@ public class Deploy {
 	static{
 		//jsa.seq.*
 		tools.add(SequenceStats.class);
-		tools.add(SequenceSort.class);		
+		tools.add(SequenceSort.class);
+		tools.add(SequenceExtract.class);
 		tools.add(Bed2Japsa.class);
 		tools.add(BreakSequenceFile.class);
 		tools.add(FileFormatConverter.class);
@@ -162,7 +164,7 @@ public class Deploy {
 		String mode = cmdLine.getStringVal("mode");
 		String libs = cmdLine.getStringVal("libs");
 		String japsa = cmdLine.getStringVal("japsa");
-		File jsa = new File(dir + "/bin/jsa.dev");
+		File jsa = new File(dir + "/bin/jsa");
 
 		if ("install".equals(mode)) {
 			String cp = dir.getCanonicalPath() + "/lib/japsa/" + japsa;

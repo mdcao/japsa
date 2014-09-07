@@ -60,7 +60,8 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(scriptName = "jsa.np.f5reader", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
-public class NanoporeReader{
+public class NanoporeReader// implements Closeable
+{
 	public static void main(String[] args) throws OutOfMemoryError, Exception {
 		/*********************** Setting up script ****************************/
 		Deployable annotation = NanoporeReader.class.getAnnotation(Deployable.class);
@@ -72,17 +73,17 @@ public class NanoporeReader{
 				"Name of the output file, -  for stdout");
 		cmdLine.addString("type", "fastq", 
 				"Type of data to be extracted:\n" 
-					+ "fastq: sequence read in fastq format");
+						+ "fastq: sequence read in fastq format");
 		cmdLine.addInt("minLength", 0, 
 				"Minimum sequence length");
-		
+
 		cmdLine.addBoolean("stats", false, "Compute statistics of reads");		
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");			
 
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 
-		//String type   = cmdLine.getStringVal("type");
+		String type   = cmdLine.getStringVal("type");
 		String output = cmdLine.getStringVal("output");
 		String f5list = cmdLine.getStringVal("f5list");
 		int minLength  = cmdLine.getIntVal("minLength");
@@ -103,15 +104,205 @@ public class NanoporeReader{
 		}
 
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
+		if (type.equals("fastq"))
+			readFastq(fileList, minLength, sos, stats);
+		else if (type.equals("events"))
+			readEvents(fileList, sos, stats);
+		else if (type.equals("models"))
+			readModels(fileList, sos, stats);
+
+		sos.close();
 		//int maxLength = 0, minLength = Integer.MAX_VALUE;
-		int tempCount = 0, compCount = 0, twoDCount = 0;		
-		IntArray lengths = new IntArray();		
-		//if (type.equals("fastq"))
+	}//main
+
+
+	public static void readEvents(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
+		for (String fileName:fileList){
+			Logging.info("Open " + fileName);
+			try{				
+				NanoporeReader reader = new NanoporeReader(fileName);
+				reader.readData();
+				reader.close();
+				if (reader.events != null){
+					int maxIndx = 0, minIndx = 0;
+					sos.print("Detected Events:\n");
+					for (int i = 0; i < reader.events.mean.length;i++){
+						sos.print(reader.events.mean[i]);
+						sos.print('\t');
+						sos.print(reader.events.stdv[i]);
+						sos.print('\t');
+						sos.print(reader.events.length[i]);
+						sos.print('\t');
+						sos.print(reader.events.start[i]);
+						sos.print('\n');
+						if (stats){
+							if (reader.events.mean[i] < reader.events.mean[minIndx])
+								minIndx = i;
+							
+							if (reader.events.mean[i] > reader.events.mean[maxIndx])
+								maxIndx = i;								
+						}
+					}
+					if (stats){
+						Logging.info("Min Event = " + reader.events.mean[minIndx] + " at " + minIndx);
+						Logging.info("Max Event = " + reader.events.mean[maxIndx] + " at " + maxIndx);
+					}
+				}
+				if (reader.bcTempEvents != null){
+					int maxIndx = 0, minIndx = 0;
+					sos.print("Template Events:\n");
+					for (int i = 0; i < reader.bcTempEvents.mean.length;i++){
+						sos.print(reader.bcTempEvents.mean[i]);
+						sos.print('\t');
+						sos.print(reader.bcTempEvents.stdv[i]);
+						sos.print('\t');
+						sos.print(reader.bcTempEvents.length[i]);
+						sos.print('\t');
+						sos.print(reader.bcTempEvents.start[i]);
+						sos.print('\n');
+						
+						if (stats){
+							if (reader.bcTempEvents.mean[i] < reader.bcTempEvents.mean[minIndx])
+								minIndx = i;
+							
+							if (reader.bcTempEvents.mean[i] > reader.bcTempEvents.mean[maxIndx])
+								maxIndx = i;								
+						}
+					}
+					if (stats){
+						Logging.info("Min Temp = " + reader.bcTempEvents.mean[minIndx] + " at " + minIndx);
+						Logging.info("Max Temp = " + reader.bcTempEvents.mean[maxIndx] + " at " + maxIndx);
+					}
+				}
+				if (reader.bcCompEvents != null){
+					int maxIndx = 0, minIndx = 0;
+					sos.print("Complement Events:\n");
+					for (int i = 0; i < reader.bcCompEvents.mean.length;i++){
+						sos.print(reader.bcCompEvents.mean[i]);
+						sos.print('\t');
+						sos.print(reader.bcCompEvents.stdv[i]);
+						sos.print('\t');
+						sos.print(reader.bcCompEvents.length[i]);
+						sos.print('\t');
+						sos.print(reader.bcCompEvents.start[i]);
+						sos.print('\n');
+						
+						if (stats){
+							if (reader.bcCompEvents.mean[i] < reader.bcCompEvents.mean[minIndx])
+								minIndx = i;
+							
+							if (reader.bcCompEvents.mean[i] > reader.bcCompEvents.mean[maxIndx])
+								maxIndx = i;								
+						}				
+					}
+					if (stats){
+						Logging.info("Min Comp = " + reader.bcCompEvents.mean[minIndx] + " at " + minIndx);
+						Logging.info("Max Comp = " + reader.bcCompEvents.mean[maxIndx] + " at " + maxIndx);
+					}
+				}
+				
+
+
+			}catch (Exception e){
+				Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
+			}
+		}//for		
+
+	}
+	
+	public static void readModels(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
+		for (String fileName:fileList){
+			Logging.info("Open " + fileName);
+			try{				
+				NanoporeReader reader = new NanoporeReader(fileName);
+				reader.readData();
+				reader.close();
+				
+				if (reader.bcTempModel != null){
+					int maxIndx = 0, minIndx = 0;
+					sos.print("Template model:" + fileName +"\n");
+					for (int i = 0; i < reader.bcTempModel.levelMean.length;i++){
+						sos.print(reader.bcTempModel.kmer[i]);
+						sos.print('\t');
+						sos.print(reader.bcTempModel.levelMean[i]);
+						sos.print('\t');
+						sos.print(reader.bcTempModel.levelStdv[i]);
+						sos.print('\t');
+						sos.print(reader.bcTempModel.sdMean[i]);
+						sos.print('\t');
+						sos.print(reader.bcTempModel.sdStdv[i]);
+						sos.print('\t');	
+						sos.print(reader.bcTempModel.weigth[i]);
+						sos.print('\n');					
+						if (stats){
+							if (reader.bcTempModel.levelMean[i] < reader.bcTempModel.levelMean[minIndx])
+								minIndx = i;
+							
+							if (reader.bcTempModel.levelMean[i] > reader.bcTempModel.levelMean[maxIndx])
+								maxIndx = i;								
+						}
+					}
+					if (stats){
+						Logging.info("Min Event = " + reader.bcTempModel.levelMean[minIndx] + " at " + minIndx + "(" + reader.bcTempModel.kmer[minIndx] + ")");
+						Logging.info("Max Event = " + reader.bcTempModel.levelMean[maxIndx] + " at " + maxIndx + "(" + reader.bcTempModel.kmer[maxIndx] + ")");
+					}
+				}
+				
+				if (reader.bcCompModel != null){
+					int maxIndx = 0, minIndx = 0;
+					sos.print("Complement model:\n");
+					for (int i = 0; i < reader.bcCompModel.levelMean.length;i++){
+						sos.print(reader.bcCompModel.kmer[i]);
+						sos.print('\t');
+						sos.print(reader.bcCompModel.levelMean[i]);
+						sos.print('\t');
+						sos.print(reader.bcCompModel.levelStdv[i]);
+						sos.print('\t');
+						sos.print(reader.bcCompModel.sdMean[i]);
+						sos.print('\t');
+						sos.print(reader.bcCompModel.sdStdv[i]);
+						sos.print('\t');	
+						sos.print(reader.bcCompModel.weigth[i]);
+						sos.print('\n');
+						if (stats){
+							if (reader.bcCompModel.levelMean[i] < reader.bcCompModel.levelMean[minIndx])
+								minIndx = i;
+							
+							if (reader.bcCompModel.levelMean[i] > reader.bcCompModel.levelMean[maxIndx])
+								maxIndx = i;								
+						}
+					}
+					if (stats){
+						Logging.info("Min Event = " + reader.bcCompModel.levelMean[minIndx] + " at " + minIndx + "(" + reader.bcCompModel.kmer[minIndx] + ")");
+						Logging.info("Max Event = " + reader.bcCompModel.levelMean[maxIndx] + " at " + maxIndx + "(" + reader.bcCompModel.kmer[maxIndx] + ")");
+					}
+				}
+				
+
+
+			}catch (Exception e){
+				Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
+			}
+		}//for		
+
+	}
+	
+	/**
+	 * Read read sequence from a list of fast5 files.
+	 * @param fileList
+	 * @param sos : output stream
+	 * @param stats: print out statistics
+	 */
+	public static void readFastq(ArrayList<String> fileList, int minLength, SequenceOutputStream sos, boolean stats){
+		int tempCount = 0, compCount = 0, twoDCount = 0;
+		IntArray lengths = new IntArray();
 		{
 			for (String fileName:fileList){
 				Logging.info("Open " + fileName);
 				try{				
 					NanoporeReader reader = new NanoporeReader(fileName);
+					reader.readFastq();
+					reader.close();
 
 					FastqSequence fq;
 
@@ -141,23 +332,24 @@ public class NanoporeReader{
 							twoDCount ++;
 						}
 					}
-					
+
 				}catch (Exception e){
 					Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
 				}
+
 			}//for			
 		}//if - else
-		sos.close();
-		
+
+
 		if (stats){
 			Logging.info("Getting stats ... ");
 			int [] ls = lengths.toArray();
 			Arrays.sort(ls);
-			
+
 			long baseCount = 0;						
 			for (int i = 0; i < ls.length; i++)
 				baseCount += ls[i];
-			
+
 			double mean = baseCount / ls.length;
 			double median = ls[ls.length/2];
 			long sum = 0;
@@ -166,15 +358,15 @@ public class NanoporeReader{
 				sum += ls[i];
 				if (quantile1st == 0 && sum >= baseCount / 4)
 					quantile1st = i;
-				
+
 				if (quantile2nd == 0 && sum >= baseCount / 2)
 					quantile2nd = i;
-				
+
 				if (quantile3rd == 0 && sum >= baseCount * 3/ 4)
 					quantile3rd = i;
-				
+
 			}
-			
+
 			Logging.info("Read count = " + ls.length + "(" + tempCount + " temppate, " + compCount + " complements and " + twoDCount +"  2D)");
 			Logging.info("Base count = " + baseCount);		
 			Logging.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
@@ -182,20 +374,30 @@ public class NanoporeReader{
 			Logging.info("Median read length = " + median);
 			Logging.info("Quantile first = " + ls[quantile1st] + " second = " + ls[quantile2nd] + " third = " + ls[quantile3rd]);
 		}
-		
-	}//main	
+	}
 
 
-	BaseCallEvents bcCompEvents = null, bcTempEvents = null;
+
 	BaseCallAlignment2D bcAlignment2D = null;
 	BaseCallAlignmentHairpin bcAlignmentHairpin = null;
 	BaseCallModel bcCompModel = null, bcTempModel = null;
+
 	DetectedEvents events;
+	BaseCallEvents bcCompEvents = null, bcTempEvents = null;
+
 	FastqSequence seqTemplate = null, seqComplement = null, seq2D = null;
 
-	FileFormat f5File;
+	private FileFormat f5File;
 
-
+	/**
+	 * Open a fast5 file before reading anything from it.
+	 * 
+	 * The file should be closed before gabbage collected.
+	 * 
+	 * @param fileName
+	 * @throws OutOfMemoryError
+	 * @throws Exception
+	 */
 	public NanoporeReader (String fileName) throws OutOfMemoryError, Exception{		
 		FileFormat fileFormat = FileFormat.getFileFormat(FileFormat.FILE_TYPE_HDF5);
 
@@ -204,14 +406,23 @@ public class NanoporeReader{
 		if (f5File == null) 
 			throw new RuntimeException("Unable to open file " + fileName);
 
-		f5File.open();
-
-		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
-
-		readGroup(root);		
-		// close file resource
-		f5File.close();		
+		f5File.open();				
 	}	
+
+
+	public void close() throws Exception{		
+		f5File.close();
+	}
+
+	public void readFastq() throws OutOfMemoryError, Exception{
+		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
+		readFastq(root);
+	}
+
+	public void readData() throws OutOfMemoryError, Exception{
+		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
+		readData(root);
+	}
 
 	/**
 	 * Get base call events for complement strand
@@ -291,13 +502,50 @@ public class NanoporeReader{
 		return seq2D;
 	}
 
+
 	/**
 	 * Recursively print a group and its members.
 	 * @throws OutOfMemoryError 
 	 * 
 	 * @throws Exception
 	 */
-	private void readGroup(Group g) throws OutOfMemoryError, Exception{
+	private void readFastq(Group g) throws OutOfMemoryError, Exception{
+		if (g == null) return;
+		java.util.List<HObject> members = g.getMemberList();		
+
+		for (HObject member:members) {
+			if (member instanceof Group) {
+				readFastq((Group) member);
+			}else if (member instanceof H5ScalarDS){
+				String fullName = member.getFullName(); 
+				if (fullName.endsWith("Fastq")){
+					Object  data = ((H5ScalarDS) member).getData();
+					if (data != null){
+						Logging.info("Read " + fullName);
+						String [] toks = ((String[]) data)[0].split("\n");						
+						if  (fullName.contains("BaseCalled_2D")){
+							toks[0] = toks[0].substring(1) + "_twodimentional " + f5File.getName() + " length=" + toks[1].length() ;							 
+							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);                		
+						}else if (fullName.contains("BaseCalled_complement")){
+							toks[0] = toks[0].substring(1) + "_complement " + f5File.getName() + " length=" + toks[1].length() ;							
+							this.seqComplement =  new FastqSequence(DNA.DNA16(), toks);							
+						}else if (fullName.contains("BaseCalled_template")){
+							toks[0] = toks[0].substring(1) + "_template " + f5File.getName() + " length=" + toks[1].length() ;
+							this.seqTemplate =  new FastqSequence(DNA.DNA16(), toks);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Recursively print a group and its members.
+	 * @throws OutOfMemoryError 
+	 * 
+	 * @throws Exception
+	 */
+	private void readData(Group g) throws OutOfMemoryError, Exception{
 
 		if (g == null) return;
 		java.util.List<HObject> members = g.getMemberList();		
@@ -305,15 +553,14 @@ public class NanoporeReader{
 		for (HObject member:members) {
 			//System.out.println(indent + member + " " + member.getPath() + " " + member.getClass());
 			if (member instanceof Group) {
-				readGroup((Group) member);
+				readData((Group) member);
 			}else if (member instanceof H5CompoundDS){ 
-				//String fullName = member.getFullName();
+				String fullName = member.getFullName();
 
 				//Logging.info(member.getClass() +" ");				
 				List<Object> dat = (List<Object>)  (((H5CompoundDS) member).getData());
-
 				if (dat != null){
-					/********************************************************
+					/********************************************************/
 					if (fullName.endsWith("BaseCalled_2D/Alignment")){
 						Logging.info("Read " + fullName);
 						bcAlignment2D = new BaseCallAlignment2D();
