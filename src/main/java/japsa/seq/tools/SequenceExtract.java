@@ -35,7 +35,8 @@ public class SequenceExtract {
 		cmdLine.addStdInputFile();
 		cmdLine.addStdOutputFile();		
 		
-		cmdLine.addStdAlphabet();		
+		cmdLine.addStdAlphabet();
+		cmdLine.addBoolean("reverse", false , "Reverse complement the subsequence");
 		
 		cmdLine.addString("format", "fasta",
 				"format of the output file (jsa and fasta)");
@@ -47,6 +48,7 @@ public class SequenceExtract {
 		String outputFile = cmdLine.getStringVal("output");
 		String format = cmdLine.getStringVal("format").toLowerCase();
 		Alphabet alphabet = Alphabet.getAlphabet(cmdLine.getStringVal("alphabet"));
+		boolean rev = cmdLine.getBooleanVal("reverse");
 		
 		/**********************************************************************/		
 		ArrayList<Sequence> seqs = SequenceReader.readAll(inputFile, alphabet);		
@@ -64,9 +66,11 @@ public class SequenceExtract {
 			if (seq == null){
 				Logging.error("Sequence " + chr + " not found");
 			}else{
-				Sequence newSequence = seq.subSequence(start - 1, end);
-				newSequence.setName(chr+"_"+start+"_"+end);
+				Sequence newSequence = seq.subSequence(start - 1, end);			
+				if (rev)
+					newSequence = Alphabet.DNA.complement(newSequence);
 				
+				newSequence.setName(chr+"_"+start+"_"+end);				
 				if (format.startsWith("fa"))
 					newSequence.writeFasta(ps);
 				else
