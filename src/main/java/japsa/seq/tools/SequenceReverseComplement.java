@@ -28,12 +28,11 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
- *  
+ * 11/01/2012 - Minh Duc Cao: Revised 
+ * 01/01/2013 - Minh Duc Cao, revised                                       
  ****************************************************************************/
 
 package japsa.seq.tools;
-
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
@@ -43,108 +42,50 @@ import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-
 
 
 /**
- * @author minhduc
+ * @author Minh Duc Cao
  * 
  */
-@Deployable(scriptName = "jsa.seq.format",
-            scriptDesc = "Convert sequence(s) from a format to another")
-public class FileFormatConverter {
-	/**
-	 * 
-	 * @param args
-	 */
-
-	public static void main(String[] args) throws Exception {
+@Deployable(scriptName = "jsa.seq.rev",
+           scriptDesc = "Reverse complement sequences (must be DNA)")
+public class SequenceReverseComplement {	
+	public static void main(String[] args) throws IOException {
 		/*********************** Setting up script ****************************/
-		Deployable annotation = FileFormatConverter.class.getAnnotation(Deployable.class);
+		Deployable annotation = SequenceReverseComplement.class.getAnnotation(Deployable.class);
 		CommandLine cmdLine = new CommandLine("\nUsage: "
 				+ annotation.scriptName() + " [options] ",
 				annotation.scriptDesc());
 		
 		cmdLine.addStdInputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addString("format", "fasta", "Format of output file. Options : japsa, fasta and phylip");
-		cmdLine.addStdAlphabet();
+		cmdLine.addStdOutputFile();
 		
-		args = cmdLine.stdParseLine(args);	
-		/********************************************************************/
-		String output = cmdLine.getStringVal("output");
-		String format = cmdLine.getStringVal("format");
-		String input = cmdLine.getStringVal("input");
-
+		cmdLine.addStdAlphabet();//aphabet		
+		
+		args = cmdLine.stdParseLine(args);
+		/**********************************************************************/	
+		
 		Alphabet alphabet = Alphabet.getAlphabet(cmdLine.getStringVal("alphabet"));
 		if (alphabet == null)
-			alphabet = Alphabet.DNA5();
-		/********************************************************************/
+			alphabet = Alphabet.DNA16();
 
-		SequenceReader reader = SequenceReader.getReader(input);
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream((output));			
-
+		String input  = cmdLine.getStringVal("input");
+		String output = cmdLine.getStringVal("output");
+		/**********************************************************************/
+		
+		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
+		SequenceReader reader = SequenceReader.getReader(input);		
+		
+		
 		Sequence seq;
-		//if (format.equals("nexus")){
-		//	Sequence [] seqs = new Sequence[array.size()];
-		//	for (int i = 0; i < seqs.length; i++)
-		//		seqs[i] = array.get(i);
-		//	PhylogenyTree.writeNexus(seqs,out);
-		//}else	
-		if (format.equals("phylip")){
-			ArrayList<Sequence> seqs = new ArrayList<Sequence>(); 
-			while ((seq = reader.nextSequence(alphabet)) != null){
-				seqs.add(seq);
-			}
-			writePhylip(seqs,out);
-		}else{ 
-			if (format.equals("fasta")){
-				while ((seq = reader.nextSequence(alphabet)) != null){
-					seq.writeFasta(out);
-				}
-			}else {//if (outType.equals("jsa")){
-				while ((seq = reader.nextSequence(alphabet)) != null){
-					seq.writeJSA(out);
-				}
-			}  
+		while ((seq = reader.nextSequence(alphabet))!= null){		
+			Sequence rseq = Alphabet.DNA.complement(seq);
+			rseq.setName(seq.getName()+"_rev");
+			rseq.writeFasta(sos);
 		}
-
-		out.close();
-	}
-
-
-	public static void writePhylip(ArrayList<Sequence> seqs, SequenceOutputStream out)
-			throws IOException {
-
-		Sequence seq = seqs.get(0);
-		int length = seq.length();
-		int charPerLine = length + 12;
-
-		out.print(seqs.size()+ "   " + length+"\n");
-		int count = 0;
-
-		while (true) {
-			for (int i = 0; i < seqs.size(); i++) {
-				seq = seqs.get(i);
-				if (count == 0) {
-					out.print((seq.getName() + "             ").substring(0, 10) + "  ");
-				}
-
-				for (int x = count; x < count + charPerLine && x < length; x++) {
-					if (x % 10 == 0 && x > count)
-						out.print(' ');
-					out.print(seq.charAt(x));
-				}
-				out.print('\n');
-			}
-
-			out.print('\n');
-
-			count += charPerLine;
-			if (count >= length)
-				break;
-		}
-		//out.flush();		
+		sos.close();
+		reader.close();		
+		
 	}
 }

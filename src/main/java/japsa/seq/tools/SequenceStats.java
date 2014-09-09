@@ -50,8 +50,7 @@ import java.io.IOException;
 @Deployable(scriptName = "jsa.seq.stats",
            scriptDesc = "Show statistical composition of sequences stored in a file (or from STDIN)")
 public class SequenceStats {	
-	public static void main(String[] args) throws IOException {		
-
+	public static void main(String[] args) throws IOException {
 		/*********************** Setting up script ****************************/
 		Deployable annotation = SequenceStats.class.getAnnotation(Deployable.class);
 		CommandLine cmdLine = new CommandLine("\nUsage: "
@@ -63,7 +62,6 @@ public class SequenceStats {
 		
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
-
 		//Get dna 		
 		String alphabetOption = cmdLine.getStringVal("alphabet");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
@@ -71,6 +69,7 @@ public class SequenceStats {
 			alphabet = Alphabet.DNA16();
 
 		String input = cmdLine.getStringVal("input");
+		/**********************************************************************/	
 		
 
 		SequenceReader reader = SequenceReader.getReader(input);

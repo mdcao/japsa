@@ -59,6 +59,7 @@ import japsa.seq.tools.Bed2Japsa;
 import japsa.seq.tools.BreakSequenceFile;
 import japsa.seq.tools.FileFormatConverter;
 import japsa.seq.tools.SequenceExtract;
+import japsa.seq.tools.SequenceReverseComplement;
 import japsa.seq.tools.SequenceSort;
 import japsa.seq.tools.SequenceStats;
 import japsa.util.CommandLine;
@@ -86,6 +87,7 @@ public class Deploy {
 		tools.add(SequenceStats.class);
 		tools.add(SequenceSort.class);
 		tools.add(SequenceExtract.class);
+		tools.add(SequenceReverseComplement.class);		
 		tools.add(Bed2Japsa.class);
 		tools.add(BreakSequenceFile.class);
 		tools.add(FileFormatConverter.class);

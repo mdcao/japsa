@@ -127,6 +127,8 @@ public class NanoporeReader// implements Closeable
 					int maxIndx = 0, minIndx = 0;
 					sos.print("Detected Events:\n");
 					for (int i = 0; i < reader.events.mean.length;i++){
+						sos.print(i);
+						sos.print('\t');
 						sos.print(reader.events.mean[i]);
 						sos.print('\t');
 						sos.print(reader.events.stdv[i]);
@@ -152,6 +154,8 @@ public class NanoporeReader// implements Closeable
 					int maxIndx = 0, minIndx = 0;
 					sos.print("Template Events:\n");
 					for (int i = 0; i < reader.bcTempEvents.mean.length;i++){
+						sos.print(i);
+						sos.print('\t');
 						sos.print(reader.bcTempEvents.mean[i]);
 						sos.print('\t');
 						sos.print(reader.bcTempEvents.stdv[i]);
@@ -178,6 +182,8 @@ public class NanoporeReader// implements Closeable
 					int maxIndx = 0, minIndx = 0;
 					sos.print("Complement Events:\n");
 					for (int i = 0; i < reader.bcCompEvents.mean.length;i++){
+						sos.print(i);
+						sos.print('\t');
 						sos.print(reader.bcCompEvents.mean[i]);
 						sos.print('\t');
 						sos.print(reader.bcCompEvents.stdv[i]);
@@ -693,6 +699,32 @@ public class NanoporeReader// implements Closeable
 		int dim;
 		double [] mean, stdv;
 		long [] start,length;
+		
+		public double [] getMean(){
+			return mean;
+		}
+
+		/**
+		 * @return the stdv
+		 */
+		public double[] getStdv() {
+			return stdv;
+		}
+
+		/**
+		 * @return the start
+		 */
+		public long[] getStart() {
+			return start;
+		}
+
+		/**
+		 * @return the length
+		 */
+		public long[] getLength() {
+			return length;
+		}
+		
 	}
 
 }
