@@ -67,7 +67,7 @@ public class BreakSequenceFile {
 		cmdLine.addStdAlphabet();
 		
 		cmdLine.addString("output", "out_", "Prefix of the output files");
-		cmdLine.addString("format", "jsa", "Format of output files. Options : japsa or fasta");
+		cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
 				
 		cmdLine.addStdHelp();		
 		/**********************************************************************/
@@ -98,7 +98,7 @@ public class BreakSequenceFile {
 		Sequence seq;
 		if (format.equals("fasta")){
 			while ((seq = reader.nextSequence(alphabet)) != null){
-				seq.writeFasta(output+seq.getName()+".fas");
+				seq.writeFasta(output+seq.getName()+".fasta");
 			}
 		}else {//if (outType.equals("jsa")){
 			while ((seq = reader.nextSequence(alphabet)) != null){
