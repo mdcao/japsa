@@ -51,6 +51,7 @@ import japsa.bio.tr.TRV2VCF;
 import japsa.bio.tr.Sam2FragmentSize;
 import japsa.bio.tr.SortFragmentFile;
 import japsa.bio.tr.VCF2TRV;
+import japsa.bio.tr.VNTRDepth;
 import japsa.seq.nanopore.NanoporeReader;
 import japsa.seq.tools.AddAnnotation;
 import japsa.seq.tools.AnnotateRegions;
@@ -119,7 +120,9 @@ public class Deploy {
 		tools.add(VCF2TRV.class);		
 		tools.add(Japsa2TR.class);
 		tools.add(TRV2Bed.class);	
-		//tools.add(VNTRLongReadsHmmer.class);
+		tools.add(VNTRDepth.class);
+		
+		//tools.add(VNTRDepth.class);
 
 
 		//jsa.phylo
