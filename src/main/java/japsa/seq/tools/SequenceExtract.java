@@ -81,7 +81,7 @@ public class SequenceExtract {
 	}
 	/**
 	 * Find a sequence with ID from a list
-	 * @param seqs
+	 * @param seqHash
 	 * @param id
 	 * @return
 	 */

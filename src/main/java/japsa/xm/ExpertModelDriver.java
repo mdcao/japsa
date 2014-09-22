@@ -301,7 +301,7 @@ public class ExpertModelDriver {
 				/*************************************************************************/
 				System.gc();
 				start = System.currentTimeMillis();
-				// seqs[1] = japsa.seq;
+				// seqHash[1] = japsa.seq;
 				double costs = eModel.encode1(dnaArray);// ,args[1]);
 
 				long time = (System.currentTimeMillis() - start);

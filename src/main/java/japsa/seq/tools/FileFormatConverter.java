@@ -87,10 +87,10 @@ public class FileFormatConverter {
 
 		Sequence seq;
 		//if (format.equals("nexus")){
-		//	Sequence [] seqs = new Sequence[array.size()];
-		//	for (int i = 0; i < seqs.length; i++)
-		//		seqs[i] = array.get(i);
-		//	PhylogenyTree.writeNexus(seqs,out);
+		//	Sequence [] seqHash = new Sequence[array.size()];
+		//	for (int i = 0; i < seqHash.length; i++)
+		//		seqHash[i] = array.get(i);
+		//	PhylogenyTree.writeNexus(seqHash,out);
 		//}else	
 		if (format.equals("phylip")){
 			ArrayList<Sequence> seqs = new ArrayList<Sequence>(); 

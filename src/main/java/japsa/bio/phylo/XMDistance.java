@@ -99,13 +99,13 @@ public class XMDistance {
 					cmdLine.getStringVal("output")));		
 		StringBuilder sb = new StringBuilder();
 		sb.append(' ');
-		sb.append(seqs.size());
+		sb.append(seqHash.size());
 		sb.append('\n');
 		Formatter formatter = new Formatter(sb);
 
-		for (int s = 0; s < seqs.size(); s++) {
-			formatter.format("%-12s ", seqs.get(s));
-			for (int x = 0; x < seqs.size(); x++) {
+		for (int s = 0; s < seqHash.size(); s++) {
+			formatter.format("%-12s ", seqHash.get(s));
+			for (int x = 0; x < seqHash.size(); x++) {
 				formatter.format("%8.4f", mtx[s][x]);
 			}
 			sb.append("\n");							

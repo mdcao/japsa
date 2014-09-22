@@ -649,7 +649,7 @@ public class ExpertModel {
 			(new DataOutputStream(fileOut)).writeInt(len);
 
 			ArithEncoder encoder = new ArithEncoder(fileOut);
-			// initilise(seqs);
+			// initilise(seqHash);
 			for (currentInd = 0; currentInd < seq.length(); currentInd++) {
 				preCoding();
 				int actual = seq.symbolAt(currentInd);
