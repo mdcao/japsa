@@ -65,6 +65,7 @@ import japsa.seq.tools.SequenceSort;
 import japsa.seq.tools.SequenceStats;
 import japsa.util.CommandLine;
 import japsa.util.StringSeparator;
+import japsa.xm.ExpertModelDriver;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -126,6 +127,7 @@ public class Deploy {
 
 
 		//jsa.phylo
+		tools.add(ExpertModelDriver.class);
 		tools.add(XMDistance.class);
 		tools.add(NormaliseTree.class);	
 

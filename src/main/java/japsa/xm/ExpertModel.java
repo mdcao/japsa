@@ -871,7 +871,7 @@ public class ExpertModel {
 				+ "\n  IEEE Data Compression Conf., Snowbird, Utah, 2007, [doi:10.1109/DCC.2007.7]\n";
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		ExpertModelDriver.main(args);
 	}
 

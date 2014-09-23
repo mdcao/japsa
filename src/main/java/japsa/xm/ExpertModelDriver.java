@@ -38,6 +38,7 @@ import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.deploy.Deployable;
 import japsa.xm.expert.*;
 
 import java.io.File;
@@ -47,91 +48,47 @@ import java.util.Random;
  * @author Minh Duc Cao
  * 
  */
+
+@Deployable(scriptName = "jsa.xm.compress", scriptDesc = "Compression of DNA/protein sequences")
 public class ExpertModelDriver {
-	public static CommandLine prepareCmd() {
-		CommandLine cmdLine = new CommandLine();
-		cmdLine.addInt("hashSize", 11, "Hash size");
-		cmdLine.addInt("context", 15, "Length of the context");
-		cmdLine.addInt("limit", 200, "Expert Limit");
-		cmdLine.addDouble("threshold", 0.15, "Listen threshold");
-		cmdLine.addInt("chance", 20, "Chances");
-		cmdLine.addBoolean("binaryHash", false, "Use binary hash or not");
-		cmdLine.addString("offsetType", "counts",
-						"Way of update offset/palindrome expert: possible value count, subs");
 
-		cmdLine.addString("real", null, "File name of the real compression");
-		cmdLine.addString("decode", null, "File name of the encoded");
-		cmdLine.addString("output", "decoded",
-				"The output file of decoded file");
-		cmdLine.addString("info", null, "File name of the infomation content");
-		cmdLine.addString("markov", null,
-				"File name of the markov infomation content");
-		cmdLine.addBoolean("optimise", false,
-						"Running in optimise mode, just report the entropy,recommended for long sequence");
 
-		cmdLine.addInt("checkPoint", 1000000, "Frequency of check point");
-		cmdLine.addString("hashType", "hash",
-						"Type of Hash table: hash=hashtable, sft=SuffixTree,sfa = SuffixArray");
-		cmdLine.addBoolean("selfRep", true,
-				"Propose experts from the sequence to compressed?");
+	public static void main(String[] args) throws Exception {
+		Deployable annotation = ExpertModelDriver.class.getAnnotation(Deployable.class);
+		CommandLine cmdLine = new CommandLine("\nUsage: "
+				+ annotation.scriptName() + " [options] file1 file2 ...",
+				annotation.scriptDesc());
+		
+			cmdLine.addInt("hashSize", 11, "Hash size");
+			cmdLine.addInt("context", 15, "Length of the context");
+			cmdLine.addInt("limit", 200, "Expert Limit");
+			cmdLine.addDouble("threshold", 0.15, "Listen threshold");
+			cmdLine.addInt("chance", 20, "Chances");
+			cmdLine.addBoolean("binaryHash", false, "Use binary hash or not");
+			cmdLine.addString("offsetType", "counts",
+							"Way of update offset/palindrome expert: possible value count, subs");
 
-		return cmdLine;
-	}
+			cmdLine.addString("real", null, "File name of the real compression");
+			cmdLine.addString("decode", null, "File name of the encoded");
+			cmdLine.addString("output", "decoded",
+					"The output file of decoded file");
+			cmdLine.addString("info", null, "File name of the infomation content");
+			cmdLine.addString("markov", null,
+					"File name of the markov infomation content");
+			cmdLine.addBoolean("optimise", false,
+							"Running in optimise mode, just report the entropy,recommended for long sequence");
 
-	public static ExpertModel getExpertModel(CommandLine cmdLine)
-			throws Exception {
+			cmdLine.addInt("checkPoint", 1000000, "Frequency of check point");
+			cmdLine.addString("hashType", "hash",
+							"Type of Hash table: hash=hashtable, sft=SuffixTree,sfa = SuffixArray");
+			cmdLine.addBoolean("selfRep", true,
+					"Propose experts from the sequence to compressed?");
+			
 
-		// Params for expert model		
-		int hashSize = cmdLine.getIntVal("hashSize");
-		int context = cmdLine.getIntVal("context");
-		int expertsLimit = cmdLine.getIntVal("limit");
-		double listenThreshold = cmdLine.getDoubleVal("threshold");
-		int chances = cmdLine.getIntVal("chance");
-
-		ExpertModel eModel = new ExpertModel(hashSize, Alphabet.DNA4(), context,
-				expertsLimit, listenThreshold, chances, cmdLine
-						.getBooleanVal("binaryHash"));
-		eModel.setHashType(cmdLine.getStringVal("hashType"));
-
-		eModel.setSelfRep(cmdLine.getBooleanVal("selfRep"));
-
-		if ("subs".equals(cmdLine.getStringVal("offsetType"))) {
-			eModel.offSetSeed = new RepeatSubsExpert(new Sequence(null,0), 0, null,
-					RepeatExpert.COPY_TYPE);
-			eModel.palinSeed = new RepeatSubsExpert(new Sequence(null,0), 0, null,
-					RepeatExpert.PALIN_TYPE);
-			/**************************************************************/
-			// }else if
-			// ("viaprotein".equals(cmdLine.getStringVal("offsetType"))){
-			// eModel.offSetSeed = new OffsetViaProteinExpert(new
-			// byte[0],0,null);
-			// eModel.palinSeed = new PalindromeViaProteinExpert(new
-			// byte[0],0,null);
-			// //}else if ("static".equals(cmdLine.getStringVal("offsetType"))){
-			// // eModel.offSetSeed = new OffsetStaticExpert(new
-			// byte[0],0,null);
-			// // eModel.palinSeed = new PalindromeCountExpert(new
-			// byte[0],0,null);
-		} else {
-			eModel.offSetSeed = new RepeatCountExpert(new Sequence(null,0), 0, null,
-					RepeatExpert.COPY_TYPE);
-			eModel.palinSeed = new RepeatCountExpert(new Sequence(null,0), 0, null,
-					RepeatExpert.PALIN_TYPE);
-		}
-		/**************************************************************/
-		// #CHECKPOINT_BEGIN
-		eModel.checkPoint = cmdLine.getIntVal("checkPoint");
-		// #CHECKPOINT_END
-
-		return eModel;
-	}
-
-	public static void main(String[] args) {
-		try {
-			// Get params from users
-			CommandLine cmdLine = prepareCmd();
-
-			args = cmdLine.parseLine(args);
+			//args = cmdLine.parseLine(args);
+			args = cmdLine.stdParseLine(args);
+			
+			
 			ExpertModel eModel = getExpertModel(cmdLine);
 
 			System.out.println(ExpertModel.version());
@@ -139,8 +96,7 @@ public class ExpertModelDriver {
 			if (cmdLine.getStringVal("decode") == null
 					&& (args == null || args.length <= 0)) {
 				System.err
-						.println("Usage: java CommandLine [options]  file1 file2 ...\n"
-								+ cmdLine.usage() + "\n");
+						.println(cmdLine.usage() + "\n");
 				System.exit(1);
 			}
 
@@ -174,28 +130,7 @@ public class ExpertModelDriver {
 				}
 				// System.out.println(" done");
 			}
-			/***************************************************************************
-			 * if (cmdLine.getStringVal("mf") != null){
-			 * 
-			 * System.out.println(cmdLine.getStringVal("mf")); dnaArray =
-			 * ReadFastaMultiple.read(cmdLine.getStringVal("mf"));
-			 * 
-			 * System.out.println(args[0]); dnaArray[dnaArray.length - 1] =
-			 * BioCompDNA.guessFormat(args[0]); System.out.println("There are "
-			 * + (dnaArray.length - 1) + " sequences" ); }else /
-			 ***************************************************************************/
-			/***************************************************************************
-			 * if (cmdLine.getStringVal("reverse") != null){ //#TIME_BEGIN
-			 * System.out.print(" #Reverse the sequence to compress...");
-			 * //#TIME_END
-			 * 
-			 * dnaArray[dnaArray.length - 1] = dnaArray[dnaArray.length -
-			 * 1].reverseComplement();
-			 * 
-			 * //#TIME_BEGIN System.out.println(" done"); //#TIME_END }
-			 * //reverse compliment the last one /
-			 ***************************************************************************/
-
+			
 			// #TIME_BEGIN
 			long timeEnd = System.currentTimeMillis();
 			System.out.println(" #Read file(s) in " + (timeEnd - timeStart)
@@ -312,8 +247,61 @@ public class ExpertModelDriver {
 						.println("=============================================================================");
 			}
 			/*************************************************************************/
-		} catch (Exception e) {
-			e.printStackTrace(System.err);
-		}
+		
 	}
+	
+	
+	
+	public static ExpertModel getExpertModel(CommandLine cmdLine)
+			throws Exception {
+		
+		
+		
+
+		// Params for expert model		
+		int hashSize = cmdLine.getIntVal("hashSize");
+		int context = cmdLine.getIntVal("context");
+		int expertsLimit = cmdLine.getIntVal("limit");
+		double listenThreshold = cmdLine.getDoubleVal("threshold");
+		int chances = cmdLine.getIntVal("chance");
+
+		ExpertModel eModel = new ExpertModel(hashSize, Alphabet.DNA4(), context,
+				expertsLimit, listenThreshold, chances, cmdLine
+						.getBooleanVal("binaryHash"));
+		eModel.setHashType(cmdLine.getStringVal("hashType"));
+
+		eModel.setSelfRep(cmdLine.getBooleanVal("selfRep"));
+
+		if ("subs".equals(cmdLine.getStringVal("offsetType"))) {
+			eModel.offSetSeed = new RepeatSubsExpert(new Sequence(null,0), 0, null,
+					RepeatExpert.COPY_TYPE);
+			eModel.palinSeed = new RepeatSubsExpert(new Sequence(null,0), 0, null,
+					RepeatExpert.PALIN_TYPE);
+			/**************************************************************/
+			// }else if
+			// ("viaprotein".equals(cmdLine.getStringVal("offsetType"))){
+			// eModel.offSetSeed = new OffsetViaProteinExpert(new
+			// byte[0],0,null);
+			// eModel.palinSeed = new PalindromeViaProteinExpert(new
+			// byte[0],0,null);
+			// //}else if ("static".equals(cmdLine.getStringVal("offsetType"))){
+			// // eModel.offSetSeed = new OffsetStaticExpert(new
+			// byte[0],0,null);
+			// // eModel.palinSeed = new PalindromeCountExpert(new
+			// byte[0],0,null);
+		} else {
+			eModel.offSetSeed = new RepeatCountExpert(new Sequence(null,0), 0, null,
+					RepeatExpert.COPY_TYPE);
+			eModel.palinSeed = new RepeatCountExpert(new Sequence(null,0), 0, null,
+					RepeatExpert.PALIN_TYPE);
+		}
+		/**************************************************************/
+		// #CHECKPOINT_BEGIN
+		eModel.checkPoint = cmdLine.getIntVal("checkPoint");
+		// #CHECKPOINT_END
+
+		return eModel;
+	}
+	
+
 }
