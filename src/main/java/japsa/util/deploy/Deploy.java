@@ -82,7 +82,7 @@ import java.util.Date;
 public class Deploy {
 	@SuppressWarnings("rawtypes")
 	private static ArrayList<Class> tools = new ArrayList<Class>();
-	private static String VERSION = "1.4-9a";
+	public static String VERSION = "1.4-9b";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
