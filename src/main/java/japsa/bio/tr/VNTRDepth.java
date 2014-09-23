@@ -59,7 +59,7 @@ public class VNTRDepth {
 	public static void main(String [] args) throws IOException, InterruptedException{
 		/*********************** Setting up script ****************************/
 		Deployable annotation = VNTRDepth.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
+		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options] samFile1 [samFile2 ..]", annotation.scriptDesc());		
 		/**********************************************************************/
 
 		cmdLine.addString("xafFile", "VNTR.xaf",  "XAF file containing repeat information");		
