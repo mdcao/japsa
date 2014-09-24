@@ -65,6 +65,7 @@ public class VNTRDepth {
 		cmdLine.addString("xafFile", "VNTR.xaf",  "XAF file containing repeat information");		
 		cmdLine.addInt("qual", 0, "Minimum mapping quality");
 		cmdLine.addBoolean("depth", false, "Include depth coverage (R3 and S3)");
+		cmdLine.addInt("filterBits", 0, "Filter reads based on flag. Common values:\n 0    no filter\n 256  exclude secondary alignment \n 1024 exclude PCR/optical duplicates\n 2048 exclude supplementary alignments");
 		cmdLine.addString("output", "-", "Name of output file, - for standard out");
 
 
@@ -73,6 +74,7 @@ public class VNTRDepth {
 		String xafFile     =  cmdLine.getStringVal("xafFile");	
 		String output      =  cmdLine.getStringVal("output");
 		int qual           =  cmdLine.getIntVal("qual");
+		int filter = cmdLine.getIntVal("filterBits");
 		boolean depth      =  cmdLine.getBooleanVal("depth");		
 
 		if (bamFiles.length == 0)		
@@ -159,6 +161,10 @@ public class VNTRDepth {
 
 					if (record.getMappingQuality() < qual)
 						continue;
+					
+					if ((filter & record.getFlags()) != 0){						
+						continue;
+					}	
 
 					countSeqInt ++;
 
