@@ -72,8 +72,13 @@ public class NanoporeReader// implements Closeable
 		cmdLine.addString("output", "-",
 				"Name of the output file, -  for stdout");
 		cmdLine.addString("type", "fastq", 
-				"Type of data to be extracted:\n" 
-						+ "fastq: sequence read in fastq format");
+				"Type of data to be extracted:" 
+						+ "\nfastq: sequence read in fastq format"
+						+ "\nevents: get events"
+						+ "\nmodels: get models"
+						+ "\nkeys:   list all keys"
+				);
+
 		cmdLine.addInt("minLength", 0, 
 				"Minimum sequence length");
 
@@ -110,11 +115,30 @@ public class NanoporeReader// implements Closeable
 			readEvents(fileList, sos, stats);
 		else if (type.equals("models"))
 			readModels(fileList, sos, stats);
+		else if (type.equals("keys"))
+			readKeys(fileList, sos, stats);
 
 		sos.close();
 		//int maxLength = 0, minLength = Integer.MAX_VALUE;
 	}//main
 
+	
+	public static void readKeys(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
+		for (String fileName:fileList){
+			Logging.info("Open " + fileName);
+			try{				
+				NanoporeReader reader = new NanoporeReader(fileName);
+				reader.readKeys();
+				reader.close();
+				sos.print("Keys in " + fileName +"\n");
+				sos.print(reader.keyList);
+			}catch (Exception e){
+				Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
+			}
+		}//for		
+
+	}
+	
 
 	public static void readEvents(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
 		for (String fileName:fileList){
@@ -140,7 +164,7 @@ public class NanoporeReader// implements Closeable
 						if (stats){
 							if (reader.events.mean[i] < reader.events.mean[minIndx])
 								minIndx = i;
-							
+
 							if (reader.events.mean[i] > reader.events.mean[maxIndx])
 								maxIndx = i;								
 						}
@@ -164,11 +188,11 @@ public class NanoporeReader// implements Closeable
 						sos.print('\t');
 						sos.print(reader.bcTempEvents.start[i]);
 						sos.print('\n');
-						
+
 						if (stats){
 							if (reader.bcTempEvents.mean[i] < reader.bcTempEvents.mean[minIndx])
 								minIndx = i;
-							
+
 							if (reader.bcTempEvents.mean[i] > reader.bcTempEvents.mean[maxIndx])
 								maxIndx = i;								
 						}
@@ -192,11 +216,11 @@ public class NanoporeReader// implements Closeable
 						sos.print('\t');
 						sos.print(reader.bcCompEvents.start[i]);
 						sos.print('\n');
-						
+
 						if (stats){
 							if (reader.bcCompEvents.mean[i] < reader.bcCompEvents.mean[minIndx])
 								minIndx = i;
-							
+
 							if (reader.bcCompEvents.mean[i] > reader.bcCompEvents.mean[maxIndx])
 								maxIndx = i;								
 						}				
@@ -206,7 +230,7 @@ public class NanoporeReader// implements Closeable
 						Logging.info("Max Comp = " + reader.bcCompEvents.mean[maxIndx] + " at " + maxIndx);
 					}
 				}
-				
+
 
 
 			}catch (Exception e){
@@ -215,6 +239,9 @@ public class NanoporeReader// implements Closeable
 		}//for		
 
 	}
+
+	
+	
 	
 	public static void readModels(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
 		for (String fileName:fileList){
@@ -223,7 +250,7 @@ public class NanoporeReader// implements Closeable
 				NanoporeReader reader = new NanoporeReader(fileName);
 				reader.readData();
 				reader.close();
-				
+
 				if (reader.bcTempModel != null){
 					int maxIndx = 0, minIndx = 0;
 					sos.print("Template model:" + fileName +"\n");
@@ -243,7 +270,7 @@ public class NanoporeReader// implements Closeable
 						if (stats){
 							if (reader.bcTempModel.levelMean[i] < reader.bcTempModel.levelMean[minIndx])
 								minIndx = i;
-							
+
 							if (reader.bcTempModel.levelMean[i] > reader.bcTempModel.levelMean[maxIndx])
 								maxIndx = i;								
 						}
@@ -253,7 +280,7 @@ public class NanoporeReader// implements Closeable
 						Logging.info("Max Event = " + reader.bcTempModel.levelMean[maxIndx] + " at " + maxIndx + "(" + reader.bcTempModel.kmer[maxIndx] + ")");
 					}
 				}
-				
+
 				if (reader.bcCompModel != null){
 					int maxIndx = 0, minIndx = 0;
 					sos.print("Complement model:\n");
@@ -273,7 +300,7 @@ public class NanoporeReader// implements Closeable
 						if (stats){
 							if (reader.bcCompModel.levelMean[i] < reader.bcCompModel.levelMean[minIndx])
 								minIndx = i;
-							
+
 							if (reader.bcCompModel.levelMean[i] > reader.bcCompModel.levelMean[maxIndx])
 								maxIndx = i;								
 						}
@@ -283,7 +310,7 @@ public class NanoporeReader// implements Closeable
 						Logging.info("Max Event = " + reader.bcCompModel.levelMean[maxIndx] + " at " + maxIndx + "(" + reader.bcCompModel.kmer[maxIndx] + ")");
 					}
 				}
-				
+
 
 
 			}catch (Exception e){
@@ -292,7 +319,7 @@ public class NanoporeReader// implements Closeable
 		}//for		
 
 	}
-	
+
 	/**
 	 * Read read sequence from a list of fast5 files.
 	 * @param fileList
@@ -305,15 +332,26 @@ public class NanoporeReader// implements Closeable
 		{
 			for (String fileName:fileList){
 				Logging.info("Open " + fileName);
-				try{				
+				try{
+
+
 					NanoporeReader reader = new NanoporeReader(fileName);
 					reader.readFastq();
 					reader.close();
 
+					String log = reader.getLog();					
+					if (log != null){
+						String [] toks = log.split("\n");
+						if (toks.length > 0)
+							toks = toks[toks.length - 1].split(",");
+
+						log = toks[0];
+					}
 					FastqSequence fq;
 
 					fq = reader.getSeqTemplate();
 					if (fq != null && fq.length() >= minLength){
+						fq.setName(fq.getName() + " " + log);
 						fq.print(sos);
 						if (stats){						
 							lengths.add(fq.length());	
@@ -323,6 +361,7 @@ public class NanoporeReader// implements Closeable
 
 					fq = reader.getSeqComplement();
 					if (fq != null && fq.length() >= minLength){
+						fq.setName(fq.getName() + " " + log);
 						fq.print(sos);
 						if (stats){						
 							lengths.add(fq.length());	
@@ -332,13 +371,13 @@ public class NanoporeReader// implements Closeable
 
 					fq = reader.getSeq2D();
 					if (fq != null && fq.length() >= minLength){
+						fq.setName(fq.getName() + " " + log);
 						fq.print(sos);
 						if (stats){						
 							lengths.add(fq.length());	
 							twoDCount ++;
 						}
 					}
-
 				}catch (Exception e){
 					Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
 				}
@@ -383,6 +422,8 @@ public class NanoporeReader// implements Closeable
 	}
 
 
+	String log = null;
+	String keyList = "";//List of key 
 
 	BaseCallAlignment2D bcAlignment2D = null;
 	BaseCallAlignmentHairpin bcAlignmentHairpin = null;
@@ -392,6 +433,7 @@ public class NanoporeReader// implements Closeable
 	BaseCallEvents bcCompEvents = null, bcTempEvents = null;
 
 	FastqSequence seqTemplate = null, seqComplement = null, seq2D = null;
+
 
 	private FileFormat f5File;
 
@@ -421,14 +463,19 @@ public class NanoporeReader// implements Closeable
 	}
 
 	public void readFastq() throws OutOfMemoryError, Exception{
-		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
-		readFastq(root);
+		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();	
+		readData(root, false);
 	}
 
 	public void readData() throws OutOfMemoryError, Exception{
 		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
-		readData(root);
+		readData(root, true);
 	}
+	public void readKeys() throws OutOfMemoryError, Exception{
+		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
+		readMembers(root);
+	}
+
 
 	/**
 	 * Get base call events for complement strand
@@ -494,6 +541,10 @@ public class NanoporeReader// implements Closeable
 		return seqTemplate;
 	}
 
+	public String getLog() {
+		return log;
+	}
+
 	/**
 	 * @return the seqComplement
 	 */
@@ -508,50 +559,50 @@ public class NanoporeReader// implements Closeable
 		return seq2D;
 	}
 
-
 	/**
-	 * Recursively print a group and its members.
-	 * @throws OutOfMemoryError 
+	 * Recursively print its member names and types.
 	 * 
+	 * @throws OutOfMemoryError
 	 * @throws Exception
 	 */
-	private void readFastq(Group g) throws OutOfMemoryError, Exception{
+	private void readMembers(Group g) throws OutOfMemoryError, Exception{
+
 		if (g == null) return;
 		java.util.List<HObject> members = g.getMemberList();		
 
+
 		for (HObject member:members) {
+			String fullName = member.getFullName();
 			if (member instanceof Group) {
-				readFastq((Group) member);
+				this.keyList += "Group        : " + fullName + "\n"; 
+				readMembers((Group) member);
+			}else if (member instanceof H5CompoundDS){
+
+				//Logging.info(member.getClass() +" ");				
+				Object dat =   ((H5CompoundDS) member).getData();
+				if (dat != null){
+					this.keyList += "H5CompoundDS : " + fullName + "=" + dat.getClass() +"\n";
+				}else
+					this.keyList += "H5CompoundDS : " + fullName + "=null\n";
 			}else if (member instanceof H5ScalarDS){
-				String fullName = member.getFullName(); 
-				if (fullName.endsWith("Fastq")){
-					Object  data = ((H5ScalarDS) member).getData();
-					if (data != null){
-						Logging.info("Read " + fullName);
-						String [] toks = ((String[]) data)[0].split("\n");						
-						if  (fullName.contains("BaseCalled_2D")){
-							toks[0] = toks[0].substring(1) + "_twodimentional " + f5File.getName() + " length=" + toks[1].length() ;							 
-							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);                		
-						}else if (fullName.contains("BaseCalled_complement")){
-							toks[0] = toks[0].substring(1) + "_complement " + f5File.getName() + " length=" + toks[1].length() ;							
-							this.seqComplement =  new FastqSequence(DNA.DNA16(), toks);							
-						}else if (fullName.contains("BaseCalled_template")){
-							toks[0] = toks[0].substring(1) + "_template " + f5File.getName() + " length=" + toks[1].length() ;
-							this.seqTemplate =  new FastqSequence(DNA.DNA16(), toks);
-						}
-					}
-				}
+				Object  dat = ((H5ScalarDS) member).getData();
+				if (dat != null){
+					this.keyList += "H5ScalarDS   : " + fullName + "=" + dat.getClass() +"\n";
+				}else
+					this.keyList += "H5ScalarDS   : " + fullName + "=null\n";
 			}
 		}
 	}
 
+
 	/**
-	 * Recursively print a group and its members.
+	 * Recursively print a group and its members. Fastq data are read.If all 
+	 * flag is turned on, this method will also reads all events and model data.
 	 * @throws OutOfMemoryError 
 	 * 
 	 * @throws Exception
 	 */
-	private void readData(Group g) throws OutOfMemoryError, Exception{
+	private void readData(Group g, boolean all) throws OutOfMemoryError, Exception{
 
 		if (g == null) return;
 		java.util.List<HObject> members = g.getMemberList();		
@@ -559,11 +610,12 @@ public class NanoporeReader// implements Closeable
 		for (HObject member:members) {
 			//System.out.println(indent + member + " " + member.getPath() + " " + member.getClass());
 			if (member instanceof Group) {
-				readData((Group) member);
-			}else if (member instanceof H5CompoundDS){ 
+				readData((Group) member, all);
+			}else if (all && member instanceof H5CompoundDS){ 
 				String fullName = member.getFullName();
 
 				//Logging.info(member.getClass() +" ");				
+				@SuppressWarnings("unchecked")
 				List<Object> dat = (List<Object>)  (((H5CompoundDS) member).getData());
 				if (dat != null){
 					/********************************************************/
@@ -654,16 +706,23 @@ public class NanoporeReader// implements Closeable
 						Logging.info("Read " + fullName);
 						String [] toks = ((String[]) data)[0].split("\n");						
 						if  (fullName.contains("BaseCalled_2D")){
-							toks[0] = toks[0].substring(1) + "_twodimentional " + f5File.getName() + " length=" + toks[1].length() ;							 
+							toks[0] = toks[0].substring(1) + "_twodimentional#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							 
 							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);                		
 						}else if (fullName.contains("BaseCalled_complement")){
-							toks[0] = toks[0].substring(1) + "_complement " + f5File.getName() + " length=" + toks[1].length() ;							
+							toks[0] = toks[0].substring(1) + "_complement#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							
 							this.seqComplement =  new FastqSequence(DNA.DNA16(), toks);							
 						}else if (fullName.contains("BaseCalled_template")){
-							toks[0] = toks[0].substring(1) + "_template " + f5File.getName() + " length=" + toks[1].length() ;
+							toks[0] = toks[0].substring(1) + "_template#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;
 							this.seqTemplate =  new FastqSequence(DNA.DNA16(), toks);
 						}
 					}
+				}else if (fullName.endsWith("Log")){
+					Logging.info("Read " + fullName);
+					Object  data = ((H5ScalarDS) member).getData();
+					if (data != null){
+						log =  ((String[]) data)[0];
+						//System.out.println("\n\n" + log + "\n\n");
+					}					
 				}
 
 			}
@@ -699,7 +758,7 @@ public class NanoporeReader// implements Closeable
 		int dim;
 		double [] mean, stdv;
 		long [] start,length;
-		
+
 		public double [] getMean(){
 			return mean;
 		}
@@ -724,7 +783,7 @@ public class NanoporeReader// implements Closeable
 		public long[] getLength() {
 			return length;
 		}
-		
+
 	}
 
 }

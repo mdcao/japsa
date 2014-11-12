@@ -192,6 +192,8 @@ public class XAFReader implements Closeable {
 			lineNo++;
 			currentRecord = currentRecord.trim();
 			String[] toks;
+			if (currentRecord.isEmpty())
+				continue;
 			
 			// Get list of headers
 			if (currentRecord.startsWith(INFORMATION_HEADER)) {

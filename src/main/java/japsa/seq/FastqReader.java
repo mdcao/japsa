@@ -52,7 +52,7 @@ public class FastqReader extends SequenceReader{
 	
 	private byte [] seq = new byte[1024];//estimated max read length
 	private byte [] qual = new byte[1024];
-	private byte [] name = new byte[128];		
+	private byte [] name = new byte[512];		
 	
 	/**
 	 * Construct the reader from a file

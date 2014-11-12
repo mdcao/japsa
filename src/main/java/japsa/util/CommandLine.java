@@ -57,6 +57,7 @@ public class CommandLine {
 
 	Object[] values;	
 	String errors = null;
+	String fullCmd = "";
 
 	public CommandLine(int maxO) {
 		maxOptions = maxO;
@@ -95,6 +96,10 @@ public class CommandLine {
 	
 	public String errors(){
 		return errors;
+	}
+	
+	public String fullCmd(){
+		return fullCmd;
 	}
 	
 	private void addError(String errorMsg){
@@ -345,6 +350,16 @@ public class CommandLine {
 	}
 
 	public String[] parseLine(String[] args) {
+		
+		//Keep the original command line
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < args.length;i++){
+			sb.append(' ');
+			sb.append(args[i]);			
+		}
+		fullCmd = sb.toString();		
+					
+		
 		int i = 0;
 		int j = 0;
 		String[] res = new String[args.length];

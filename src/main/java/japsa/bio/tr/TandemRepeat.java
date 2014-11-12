@@ -217,6 +217,8 @@ public class TandemRepeat
 		for (int i = 0; i < hds.length; i++ ){
 			if (TandemRepeat.chrHd.equals(hds[i]))
 				rec.setChr(toks[i]);
+			if (TandemRepeat.chromHd.equals(hds[i]))
+				rec.setChr(toks[i]);
 			else if (TandemRepeat.idHd.equals(hds[i]))
 				rec.setID(toks[i]);			
 			else if (TandemRepeat.startHd.equals(hds[i]))
@@ -247,7 +249,9 @@ public class TandemRepeat
 		StringBuffer sb = new StringBuffer();
 
 		for (int i = 0; i < hds.length; i++ ){
-			if (TandemRepeat.chrHd.equals(hds[i]))
+			//if (TandemRepeat.chrHd.equals(hds[i]))
+			//	sb.append(getChr()+"\t");
+			if (TandemRepeat.chromHd.equals(hds[i]))
 				sb.append(getChr()+"\t");
 			else if (TandemRepeat.idHd.equals(hds[i]))
 				sb.append(getID()+"\t");			

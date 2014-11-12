@@ -42,6 +42,7 @@ import japsa.bio.ngs.CountReadInRegion;
 import japsa.bio.ngs.SelectReadIntersect;
 import japsa.bio.ngs.SelectReadSpan;
 import japsa.bio.phylo.XMDistance;
+import japsa.bio.phylo.XMDistance2;
 import japsa.bio.phylo.tools.NormaliseTree;
 import japsa.bio.tr.Fragment2TRV;
 import japsa.bio.tr.Japsa2TR;
@@ -82,7 +83,7 @@ import java.util.Date;
 public class Deploy {
 	@SuppressWarnings("rawtypes")
 	private static ArrayList<Class> tools = new ArrayList<Class>();
-	public static String VERSION = "1.4-9b";
+	public static String VERSION = "1.4-11a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
@@ -129,6 +130,7 @@ public class Deploy {
 		//jsa.phylo
 		tools.add(ExpertModelDriver.class);
 		tools.add(XMDistance.class);
+		tools.add(XMDistance2.class);
 		tools.add(NormaliseTree.class);	
 
 		//tools.add(.class);
@@ -207,7 +209,9 @@ public class Deploy {
 				out.println("case $JSA_CP in\n  '')JSA_CP="
 						+ cp
 						+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
-
+				
+				out.println("JSA_CMD=\"`basename $0` $@\"\n");
+				
 				out.println(JAVA_COMMAND + " -classpath ${JSA_CP} "
 						+ tool.getCanonicalName() + " $@");
 				out.close();

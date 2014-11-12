@@ -77,7 +77,7 @@ public class ParseTRF{
 		//cmdLine.addStdInputFile();
 		cmdLine.addString("input", null, "Name of the input file (output of TRF), - for standard input", true);
 		cmdLine.addString("output", "-", "Name of output file, - for standard output");
-		cmdLine.addString("format", "jsa", "Format of the output file. Options: jsa, bed, tr");
+		cmdLine.addString("format", "jsa", "Format of the output file. Options: jsa, bed, xaf");
 		cmdLine.addString("sequence", null, "Name of the sequence file (has to be the same file to run TRF)");
 		cmdLine.addInt("max", 6,"Maximum unit size");
 		cmdLine.addInt("min", 2,"Minimum unit size");		
@@ -93,6 +93,8 @@ public class ParseTRF{
 			System.err.println(cmdLine.errors() + cmdLine.usage());
 			System.exit(-1);
 		}		
+		
+		String fullCmd = annotation.scriptName() + cmdLine.fullCmd();
 		/**********************************************************************/	
 
 		String inputFile = cmdLine.getStringVal("input");
@@ -247,7 +249,7 @@ public class ParseTRF{
 	throws IOException{		 
 		if ("bed".equals(format))
 			anno.writeBED(out);
-		else if (format.startsWith("tr")){			
+		else if (format.startsWith("xaf")){			
 			String[] headers = TandemRepeat.STANDARD_HEADER;			
 			
 			String desc = anno.getDescription();			
