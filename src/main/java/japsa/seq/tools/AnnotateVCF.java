@@ -79,7 +79,7 @@ public class AnnotateVCF {
 		
 		BufferedReader in = SequenceReader.openFile(gffIn);
 		
-		JapsaAnnotation anno = readGFF(in, upStr, downStr);		
+		JapsaAnnotation anno = JapsaAnnotation.readGFF(in, upStr, downStr,"all");		
 		in.close();
 		
 		SequenceOutputStream out =  SequenceOutputStream.makeOutputStream(output);
@@ -113,67 +113,6 @@ public class AnnotateVCF {
 		out.close();
 	}
 	
-	public static JapsaAnnotation readGFF(BufferedReader in, int upStr, int downStr) throws IOException{
-		String line;		
-		JapsaAnnotation anno =  new JapsaAnnotation();
-		while ( (line = in.readLine()) != null){
-			//lineNo ++;
-			if (line.trim().startsWith("#"))
-				continue;			
-			
-			String [] toks = line.split("\t");
-			//if (toks[2].equals("region"))
-			//	continue;
-			
-			int start = Integer.parseInt(toks[3]);
-			int end = Integer.parseInt(toks[4]);
-			
-			String parent = toks[0];
-			String ID = "";
-			char strand = toks[6].charAt(0);
-			String desc = toks[8];
-			
-			String [] featureChars = toks[8].split(";");
-			for (String fch:featureChars){
-				if (fch.startsWith("ID="))
-					ID = fch.substring(3);
-				
-				if (fch.startsWith("Parent="))
-					parent = fch.substring(7);
-			}
-			
-			JapsaFeature feature = new JapsaFeature(start, end, toks[2], ID, strand, parent);
-			feature.addDesc(desc);			
-			anno.add(feature);
-			
-			//Add upstream
-			if (upStr > 0 && feature.getType().equals("gene")){
-				if (feature.getStrand() == '-'){
-					JapsaFeature uFeature = new JapsaFeature(end + 1, end + upStr, "upstream", "u" + ID, strand, feature.getID());
-					uFeature.addDesc("Upstream region added automatically");
-					anno.add(uFeature);
-				}else{
-					JapsaFeature uFeature = new JapsaFeature(start - upStr, start - 1, "upstream", "u" + ID, strand, feature.getID());
-					uFeature.addDesc("Upstream region added automatically");
-					anno.add(uFeature);
-				}
-			}
-			
-			//add downstream
-			if (downStr > 0 && feature.getType().equals("gene")){
-				if (feature.getStrand() == '-'){
-					JapsaFeature dFeature = new JapsaFeature(start - downStr, start - 1, "downtream", "d" + ID, strand, feature.getID());
-					dFeature.addDesc("Downstream region added automatically");
-					anno.add(dFeature);					
-				}else{
-					JapsaFeature dFeature = new JapsaFeature(end + 1, end + downStr, "downtream", "d" + ID, strand, feature.getID());
-					dFeature.addDesc("Downstream region added automatically");
-					anno.add(dFeature);					
-				}
-			}						
-		}	
-		anno.sortFeatures();
-		return anno;
-	}
+	
 
 }

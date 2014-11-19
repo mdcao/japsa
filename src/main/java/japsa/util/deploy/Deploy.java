@@ -37,6 +37,7 @@ package japsa.util.deploy;
 
 import japsa.bio.ngs.AlignmentEvaluation;
 import japsa.bio.ngs.BreakBam;
+import japsa.bio.ngs.FastQRMEmptyRead;
 import japsa.bio.ngs.FastQTrim;
 import japsa.bio.ngs.CountReadInRegion;
 import japsa.bio.ngs.SelectReadIntersect;
@@ -59,6 +60,7 @@ import japsa.seq.tools.AnnotateRegions;
 import japsa.seq.tools.AnnotateVCF;
 import japsa.seq.tools.Bed2Japsa;
 import japsa.seq.tools.BreakSequenceFile;
+import japsa.seq.tools.ExtractGeneSequence;
 import japsa.seq.tools.FileFormatConverter;
 import japsa.seq.tools.SequenceExtract;
 import japsa.seq.tools.SequenceReverseComplement;
@@ -97,13 +99,15 @@ public class Deploy {
 		tools.add(AddAnnotation.class);
 		tools.add(AnnotateRegions.class);
 		tools.add(AnnotateVCF.class);
+		tools.add(ExtractGeneSequence.class);
 		
 		//tools.add(MarkovCompress.class);
 
 
 		//jsa.nsg.*
-		tools.add(BreakBam.class);
 		tools.add(FastQTrim.class);
+		tools.add(FastQRMEmptyRead.class);		
+		tools.add(BreakBam.class);
 		tools.add(SelectReadIntersect.class);
 		tools.add(SelectReadSpan.class);
 		tools.add(AlignmentEvaluation.class);		
@@ -213,7 +217,7 @@ public class Deploy {
 				out.println("JSA_CMD=\"`basename $0` $@\"\n");
 				
 				out.println(JAVA_COMMAND + " -classpath ${JSA_CP} "
-						+ tool.getCanonicalName() + " $@");
+						+ tool.getCanonicalName() + " \"$@\"");
 				out.close();
 
 				Runtime.getRuntime().exec(

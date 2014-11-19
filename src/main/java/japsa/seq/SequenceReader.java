@@ -209,9 +209,7 @@ public abstract class SequenceReader implements Closeable{
 	/**
 	 * Open a file for other read operations. If the file is zipped, this method
 	 * open an unzipped reader stream for normal reading. If the file name 
-	 * supplied as a "-", it will return the stream from standard input.
-	 * 
-	 * TODO: it seems like this method returns too many level or wrap
+	 * supplied as a "-", it will return the stream from standard input.	
 	 * @param fileName
 	 *            Name of the file to open
 	 * @return the buffered reader associate with the file

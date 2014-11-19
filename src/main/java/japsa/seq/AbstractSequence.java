@@ -232,14 +232,13 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 		out.print(name);
 		if (desc.length() > 0){
 			out.print(' ');
-			out.print(desc);
+			out.print(desc.replaceAll("\n", ";"));//make sure no extra new line is written 
 		}
-		out.print('\n');
 
 		for (int i = 0; i < length(); i++) {
-			out.print(charAt(i));
-			if (i % 60 == 59)
+			if (i % 60 == 0)
 				out.print('\n');
+			out.print(charAt(i));			
 		}
 		out.print('\n');
 	}
