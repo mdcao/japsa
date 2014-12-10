@@ -34,6 +34,7 @@
 
 package japsa.bio.phylo;
 
+import japsa.bio.tr.ParseTRF;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
@@ -53,29 +54,18 @@ import java.util.ArrayList;
 public class XMDistance {
 	public static boolean adapt = false;
 	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.phylo.distance";
-		String desc = "Generate a distance matrix from aligned sequences\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]" );
+		/*********************** Setting up script ****************************/
+		Deployable annotation = XMDistance.class.getAnnotation(Deployable.class);		 		
+		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]");
 		/**********************************************************************/
-
+		
 		cmdLine.addStdInputFile();		
 		cmdLine.addString("output", "output", "Name of the file for output (distances in phylip format)");
 		cmdLine.addBoolean("adapt", false, "Use adaptive");
 		
 		//cmdLine.addString("inType", "fasta", "Type of input files: fasta or phylip");
 
-		cmdLine.addStdHelp();
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
+		args = cmdLine.stdParseLine(args);	
 		/**********************************************************************/
 		FastaReader sin = new FastaReader(new FileInputStream(cmdLine.getStringVal("input")));
 		ArrayList<Sequence> seqs = new ArrayList<Sequence>(100);

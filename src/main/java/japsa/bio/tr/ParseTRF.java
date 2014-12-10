@@ -93,8 +93,6 @@ public class ParseTRF{
 			System.err.println(cmdLine.errors() + cmdLine.usage());
 			System.exit(-1);
 		}		
-		
-		String fullCmd = annotation.scriptName() + cmdLine.fullCmd();
 		/**********************************************************************/	
 
 		String inputFile = cmdLine.getStringVal("input");
