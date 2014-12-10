@@ -34,7 +34,6 @@
 
 package japsa.bio.phylo;
 
-import japsa.bio.tr.ParseTRF;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
