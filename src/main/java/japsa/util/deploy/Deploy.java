@@ -45,6 +45,7 @@ import japsa.bio.ngs.SelectReadSpan;
 import japsa.bio.phylo.XMDistance;
 import japsa.bio.phylo.XMDistance2;
 import japsa.bio.phylo.tools.NormaliseTree;
+import japsa.bio.sim.SimProbFSM;
 import japsa.bio.tr.Fragment2TRV;
 import japsa.bio.tr.Japsa2TR;
 import japsa.bio.tr.ParseTRF;
@@ -136,7 +137,8 @@ public class Deploy {
 		tools.add(XMDistance.class);
 		tools.add(XMDistance2.class);
 		tools.add(NormaliseTree.class);	
-
+		
+		tools.add(SimProbFSM.class);
 		//tools.add(.class);
 		//tools.add(.class);		
 	}	
