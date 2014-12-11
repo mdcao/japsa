@@ -32,7 +32,7 @@
  * 15/05/2014 - Minh Duc Cao: Started
  *  
  ****************************************************************************/
-package japsa.bio.ngs;
+package japsa.bio.hts;
 
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.JapsaFeature;

@@ -35,13 +35,13 @@
 
 package japsa.util.deploy;
 
-import japsa.bio.ngs.AlignmentEvaluation;
-import japsa.bio.ngs.BreakBam;
-import japsa.bio.ngs.FastQRMEmptyRead;
-import japsa.bio.ngs.FastQTrim;
-import japsa.bio.ngs.CountReadInRegion;
-import japsa.bio.ngs.SelectReadIntersect;
-import japsa.bio.ngs.SelectReadSpan;
+import japsa.bio.hts.AlignmentEvaluation;
+import japsa.bio.hts.BreakBam;
+import japsa.bio.hts.CountReadInRegion;
+import japsa.bio.hts.FastQRMEmptyRead;
+import japsa.bio.hts.FastQTrim;
+import japsa.bio.hts.SelectReadIntersect;
+import japsa.bio.hts.SelectReadSpan;
 import japsa.bio.phylo.XMDistance;
 import japsa.bio.phylo.XMDistance2;
 import japsa.bio.phylo.tools.NormaliseTree;

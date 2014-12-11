@@ -34,7 +34,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.ngs;
+package japsa.bio.hts;
 
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.SequenceReader;

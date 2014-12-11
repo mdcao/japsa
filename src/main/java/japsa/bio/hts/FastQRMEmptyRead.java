@@ -31,7 +31,7 @@
  * 02/10/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.bio.ngs;
+package japsa.bio.hts;
 
 import japsa.seq.Alphabet;
 import japsa.seq.FastqReader;

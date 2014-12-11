@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.ngs;
+package japsa.bio.hts;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;

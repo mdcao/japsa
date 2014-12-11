@@ -29,132 +29,115 @@
 
 /**************************     REVISION HISTORY    **************************
  * 02/10/2013 - Minh Duc Cao: Created                                        
- *  
+ * 16/11/2013 - Minh Duc Cai: Revised 
  ****************************************************************************/
-package japsa.bio.ngs;
+package japsa.bio.hts;
 
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
-import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+
+import net.sf.samtools.SAMFileHeader;
+import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMFileWriter;
+import net.sf.samtools.SAMFileWriterFactory;
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecordIterator;
+import net.sf.samtools.SAMFileHeader.SortOrder;
+import net.sf.samtools.SAMFileReader.ValidationStringency;
 
 
 /**
  * @author Minh Duc Cao (http://www.caominhduc.org/)
- * Program to trim reads in a fastq file and split the file to smaller pieces
+ * Program to break a fastq file to smaller pieces
  */
-@Deployable(scriptName = "jsa.hts.fqtrim",
-           scriptDesc = "Trim reads from a fastq file and break the file to smaller ones")
-public class FastQTrim {
-
+@Deployable(scriptName = "jsa.hts.breakbam",
+            scriptDesc = "Break a sam/bam file to smaller ones")
+public class BreakBam{
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = FastQTrim.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
+
+		/*********************** Setting up script ****************************/		 
+		String scriptName = "jsa.ngs.breakbam";
+		String desc = "Break a sam/bam file to smaller ones\n";
+		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
 		/**********************************************************************/
 
 		cmdLine.addStdInputFile();			
-		
-		cmdLine.addString("output", null, "Name of output fastq file, output files will be added with suffix P<index>_", true);
-		cmdLine.addInt("size", 0, "The number of reads per file, a negative number for not spliting");
-		cmdLine.addInt("begin", 0, "Begin position of a read (1-index, inclusive) - 0 for not trimming");
-		cmdLine.addBoolean("trim", false, "Whether to trim Ns at the 3' end. Note this will trim before begin/end trimming");
-		cmdLine.addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");	
-		
-		args = cmdLine.stdParseLine(args);			
+		cmdLine.addString("output", null, "Name of output s/bam file. If output file is .bam, bam format is outputed", true);
+		cmdLine.addInt("size", 50000000, "The number of reads per file, a negative number for not spliting");
+
+		cmdLine.addStdHelp();		
+
+		/**********************************************************************/
+		args = cmdLine.parseLine(args);
+		if (cmdLine.getBooleanVal("help")){
+			System.out.println(desc + cmdLine.usage());			
+			System.exit(0);
+		}
+		if (cmdLine.errors() != null) {
+			System.err.println(cmdLine.errors() + cmdLine.usage());
+			System.exit(-1);
+		}	
 		/**********************************************************************/		
 
 		String output = cmdLine.getStringVal("output");
 		String inFile = cmdLine.getStringVal("input");
 		
-		int begin = cmdLine.getIntVal("begin");
-		int end = cmdLine.getIntVal("end");			
 		int size = cmdLine.getIntVal("size");
-		boolean trim = cmdLine.getBooleanVal("trim");
 		
-		if (end > 0 && begin >= end) {
-			Logging.exit("Begin "+(begin) + " must be smaller than end (" + end +")", -1);			
-		}	
-
+		//example
+		//@ERR091787.1 HSQ955_155:1:1101:1266:2037/1
+		//TGCAGNGGTAAATTGACCCAAGAAACTTATTTAAGACTATCAGCT
+		//+
+		//@BCFF#2B>CFHHIJIJJJJJIJJIJJJGHJIIIJIJJIJJIJJJ
+		
+		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SAMFileReader samReader = new  SAMFileReader(new File(inFile));
+		SAMFileHeader samHeader = samReader.getFileHeader();
+		
+		samHeader.setSortOrder(SortOrder.unsorted);
+		System.out.println(samHeader.getSortOrder());
 		if (size == 0)
 			size = -1;
+		boolean preOrder = false;
 			
 		int index = 1;
-		SequenceOutputStream outStream = 
-				 SequenceOutputStream.makeOutputStream("P"+index+"_" + output);
-
-		BufferedReader reader = SequenceReader.openFile(inFile);
-		String line = "";
-
-		int count = 0;		
+		SAMFileWriterFactory factory = new SAMFileWriterFactory(); 
+		SAMFileWriter bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File("P"+index+"_" + output));
+		
+		
+		//SequenceOutputStream outStream = 
+		//		new  SequenceOutputStream("P"+index+"_" + output);
+		int count = 0;	
 		int countAll = 0;
 		
-		while ( (line = reader.readLine()) != null){
-			String name  = line.trim();
-			if (name.charAt(0) != '@')
-				throw new RuntimeException(name + " unexpected at read " + countAll);
-
-			//standardise read name: replace ' ' space by a '_'
-			//name = name.replace(' ', '_');
-			String seq = reader.readLine();
-			reader.readLine();//'+'
-			String qual = reader.readLine();
-			if (trim){
-				int lastIndex = seq.length();
-				while (lastIndex > 0 && seq.charAt(lastIndex - 1) =='N'){
-					lastIndex --;
-				}
-				if (lastIndex < seq.length()){
-					seq = seq.substring(0 , lastIndex);
-					qual = qual.substring(0 , lastIndex);
-				}
-			}
-			
-			if (begin > 0) {
-				if (begin > seq.length()){
-					seq  = "";
-					qual = "";
-				}else if (seq.length() > end){
-					seq = seq.substring(begin - 1 , end);
-					qual = qual.substring(begin - 1 ,end);
-				}else{
-					seq = seq.substring(begin - 1);
-					qual = qual.substring(begin - 1);
-				}
-			}else if (end > 0 && end < seq.length()){
-				seq = seq.substring(0 , end);
-				qual = qual.substring(0 ,end);
-			}			
+		SAMRecordIterator samIter = samReader.iterator();
+		while (samIter.hasNext()){
+			SAMRecord sam = samIter.next();			
+			//if (sam.getFlags() >= 256)
+			//	continue;
 			
 			if (count == size){
-				//write this file
-				outStream.close();
+				//write this samRecord
+				bamWriter.close();
 
 				///start a new one
 				index ++;
 				count = 0;
-				outStream = //new SequenceOutputStream("P"+index+"_" + output);	
-				SequenceOutputStream.makeOutputStream("P"+index+"_" + output);
+				bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File("P"+index+"_" + output));
 			}
 			
 			count ++;
 			countAll ++;
-			
-			outStream.print(name);
-			outStream.print('\n');
-			outStream.print(seq);
-			outStream.print("\n+\n");		
-			outStream.print(qual);
-			outStream.print('\n');
+			bamWriter.addAlignment(sam);
 		}//while
-		outStream.close();
-		Logging.info("Write " + countAll + " reads to " + index + " files" );		
+		samReader.close();
+		System.out.println("Write " + countAll + " reads to " + index + " files" );
+		bamWriter.close();
 	}
 }

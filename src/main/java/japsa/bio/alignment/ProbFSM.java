@@ -56,9 +56,9 @@ public abstract class ProbFSM {
 
 	Sequence mSeq;//sequence belong to the model
 	double insEmissionCost = 2, changeEmissionCost = JapsaMath.log2(3);
-	
+
 	Alphabet alphabet = Alphabet.DNA();
-	
+
 	/**
 	 * Reset all counts before each learning step
 	 */
@@ -79,24 +79,24 @@ public abstract class ProbFSM {
 			states[i].setTransitionProb(states[i].countMutate + states[i].countCopy + 1.0, states[i].countIns + 1.0, states[i].countDel + 1.0);
 		}
 		double probC = (countC + 1.0) / (countM + countC + 2.0);
-		
+
 		for (int i = 0; i < states.length;i++){
 			states[i].setCopyProb(probC);
 			System.out.printf("State %s: %3d %3d %3d %3d %8.4f %8.4f %8.4f %8.4f %8.4f\n", states[i].name, states[i].countCopy, states[i].countMutate, states[i].countIns, states[i].countDel, states[i].matchProb,  states[i].insProb,states[i].delProb, states[i].copyProb, states[i].changeProb);
 		}
 	}
-	
+
 	/**
 	 * Show all the parameters of the machine
 	 */
-	
+
 	public void showProb(){
 		for (int i = 0; i < states.length;i++){			
 			System.out.printf("Prob state %s : [%8.4f %8.4f %8.4f] [%8.4f %8.4f]\n", states[i].name, states[i].matchProb,  states[i].insProb,states[i].delProb, states[i].copyProb, states[i].changeProb);
 			//System.out.printf("Cost state %s : %8.4f %8.4f %8.4f %8.4f %8.4f\n", states[i].name, states[i].matchCost,  states[i].insCost,states[i].delCost, states[i].copyCost, states[i].changeCost);
 		}		
 	}
-	
+
 	public void setModelSequence(Sequence seq){
 		mSeq = seq;
 	}
@@ -169,10 +169,14 @@ public abstract class ProbFSM {
 				break;
 
 			switch (emiss.type){			
-			case INSERTION:bwdEmission.toState.countIns ++;break;				
-			case DELETION:bwdEmission.toState.countDel ++;break;			
-			case COPY:bwdEmission.toState.countCopy ++;break;			
-			case MUTATE:bwdEmission.toState.countMutate ++;break;				
+			case INSERTION:
+				bwdEmission.toState.countIns ++;break;				
+			case DELETION:
+				bwdEmission.toState.countDel ++;break;			
+			case COPY:
+				bwdEmission.toState.countCopy ++;break;			
+			case MUTATE:
+				bwdEmission.toState.countMutate ++;break;				
 			}
 			countEmis ++;
 			emiss = bwdEmission;			
@@ -420,26 +424,26 @@ public abstract class ProbFSM {
 			states[1].delState = null;
 			states[1].setCopyProb(0.9);
 			states[1].setTransitionProb(.8, 0.2, 0);
-			
+
 
 			states[2].matchState = states[0];
 			states[2].insState = null;
 			states[2].delState = states[2];
-			
+
 			states[2].setCopyProb(0.9);
 			states[2].setTransitionProb(.8, 0, 0.2);
-			
+
 			this.mSeq = seq;
 		}
-		
+
 		public MachineState getMatState(){
 			return states[0];
 		}
-		
+
 		public MachineState getInsState(){
 			return states[1];
 		}
-		
+
 		public MachineState getDelState(){
 			return states[2];
 		}
@@ -450,13 +454,13 @@ public abstract class ProbFSM {
 			states = new MachineState[1];
 			states[0] = new MachineState("S");
 			states[0].insState = states[0].delState = states[0].matchState = states[0];			
-			
+
 			states[0].setCopyProb(0.9);
 			states[0].setTransitionProb(.85, 0.07, 0.08);
-			
+
 			this.mSeq = seq;
 		}
-		
+
 		public MachineState getState(){
 			return states[0];
 		}
