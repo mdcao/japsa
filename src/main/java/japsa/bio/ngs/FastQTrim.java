@@ -47,7 +47,7 @@ import java.io.IOException;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  * Program to trim reads in a fastq file and split the file to smaller pieces
  */
-@Deployable(scriptName = "jsa.ngs.fqtrim",
+@Deployable(scriptName = "jsa.hts.fqtrim",
            scriptDesc = "Trim reads from a fastq file and break the file to smaller ones")
 public class FastQTrim {
 

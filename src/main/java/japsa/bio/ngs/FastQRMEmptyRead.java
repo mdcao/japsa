@@ -47,7 +47,7 @@ import java.io.IOException;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  * Program to trim reads in a fastq file and split the file to smaller pieces
  */
-@Deployable(scriptName = "jsa.ngs.fqrmempty",
+@Deployable(scriptName = "jsa.hts.fqrmempty",
            scriptDesc = "Remove empty reads from a fastq file, especially after trimming")
 public class FastQRMEmptyRead {
 	/**

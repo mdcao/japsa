@@ -58,7 +58,7 @@ import net.sf.samtools.SAMRecordIterator;
  *FIXME: Generalise to any kinds of regions, not just STR  
  */
 
-@Deployable(scriptName = "jsa.ngs.countReads",
+@Deployable(scriptName = "jsa.hts.countReads",
 scriptDesc = "Count the number of reads in some regions from a sorted, indexed bam file")
 public class CountReadInRegion {	
 	public static void main(String[] args) throws IOException {

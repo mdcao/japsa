@@ -60,8 +60,8 @@ import net.sf.samtools.SAMRecordIterator;
  * FIXME: 2. Test outputing to sam/bam file
  */
 
-@Deployable(scriptName = "jsa.ngs.selectSpan",
-scriptDesc = "Filter reads that span some STR regions from a sorted b/sam file")
+@Deployable(scriptName = "jsa.hts.selectSpan",
+scriptDesc = "Filter reads that span some regions from a sorted b/sam file")
 public class SelectReadSpan {	
 	static int pad = 3;
 

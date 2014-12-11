@@ -62,7 +62,7 @@ import net.sf.samtools.SAMRecordIterator;
  *FIXME: Generalise to any kinds of regions, not just STR 
  */
 
-@Deployable(scriptName = "jsa.ngs.selectIntesect",
+@Deployable(scriptName = "jsa.hts.selectIntesect",
             scriptDesc = "Filter reads that intersect with some regions from a sorted b/sam file")
 
 public class SelectReadIntersect {	

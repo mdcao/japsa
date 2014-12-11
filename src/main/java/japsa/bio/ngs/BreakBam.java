@@ -53,7 +53,7 @@ import net.sf.samtools.SAMFileReader.ValidationStringency;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  * Program to break a fastq file to smaller pieces
  */
-@Deployable(scriptName = "jsa.ngs.breakbam",
+@Deployable(scriptName = "jsa.hts.breakbam",
             scriptDesc = "Break a sam/bam file to smaller ones")
 public class BreakBam{
 	/**

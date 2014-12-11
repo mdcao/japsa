@@ -55,7 +55,7 @@ import net.sf.samtools.SAMFileReader.ValidationStringency;
 public class AlignmentEvaluation {
 	public static void main(String[] args) throws Exception {		
 		/*********************** Setting up script ****************************/
-		String scriptName = "jsa.ngs.evalAlignment";
+		String scriptName = "jsa.hts.evalAlignment";
 		String desc = "Evaluate the accuracy of read aligmment\n";		
 		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [params]");
 		/**********************************************************************/	
