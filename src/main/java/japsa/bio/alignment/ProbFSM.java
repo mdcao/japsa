@@ -84,10 +84,6 @@ public abstract class ProbFSM {
 			states[i].setCopyProb(probC);
 			System.out.printf("State %s: %3d %3d %3d %3d %8.4f %8.4f %8.4f %8.4f %8.4f\n", states[i].name, states[i].countCopy, states[i].countMutate, states[i].countIns, states[i].countDel, states[i].matchProb,  states[i].insProb,states[i].delProb, states[i].copyProb, states[i].changeProb);
 		}
-			
-
-			
-		
 	}
 	
 	/**
@@ -98,13 +94,12 @@ public abstract class ProbFSM {
 		for (int i = 0; i < states.length;i++){			
 			System.out.printf("Prob state %s : [%8.4f %8.4f %8.4f] [%8.4f %8.4f]\n", states[i].name, states[i].matchProb,  states[i].insProb,states[i].delProb, states[i].copyProb, states[i].changeProb);
 			//System.out.printf("Cost state %s : %8.4f %8.4f %8.4f %8.4f %8.4f\n", states[i].name, states[i].matchCost,  states[i].insCost,states[i].delCost, states[i].copyCost, states[i].changeCost);
-		}
-
-		
+		}		
 	}
 	
-	
-
+	public void setModelSequence(Sequence seq){
+		mSeq = seq;
+	}
 	/**
 	 * Generate a sequence by the machine
 	 * @param rnd
@@ -156,7 +151,7 @@ public abstract class ProbFSM {
 			}
 		}
 
-		System.out.println("Generating cost " + cost);
+		//System.out.println("Generating cost " + cost);
 		return new Sequence(alphabet, byteArray, "gene");
 	}
 
@@ -433,6 +428,7 @@ public abstract class ProbFSM {
 			
 			states[2].setCopyProb(0.9);
 			states[2].setTransitionProb(.8, 0, 0.2);
+			
 			this.mSeq = seq;
 		}
 		

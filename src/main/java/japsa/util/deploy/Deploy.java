@@ -45,6 +45,7 @@ import japsa.bio.ngs.SelectReadSpan;
 import japsa.bio.phylo.XMDistance;
 import japsa.bio.phylo.XMDistance2;
 import japsa.bio.phylo.tools.NormaliseTree;
+import japsa.bio.sim.SimHTSWithFSM;
 import japsa.bio.sim.SimProbFSM;
 import japsa.bio.tr.Fragment2TRV;
 import japsa.bio.tr.Japsa2TR;
@@ -86,7 +87,7 @@ import java.util.Date;
 public class Deploy {
 	@SuppressWarnings("rawtypes")
 	private static ArrayList<Class> tools = new ArrayList<Class>();
-	public static String VERSION = "1.4-11a";
+	public static String VERSION = "1.4-12a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
@@ -105,7 +106,7 @@ public class Deploy {
 		//tools.add(MarkovCompress.class);
 
 
-		//jsa.nsg.*
+		//jsa.hts.*
 		tools.add(FastQTrim.class);
 		tools.add(FastQRMEmptyRead.class);		
 		tools.add(BreakBam.class);
@@ -115,10 +116,11 @@ public class Deploy {
 		tools.add(CountReadInRegion.class);
 
 
+		//jsa.np.
 		tools.add(NanoporeReader.class);
 		//		tools.add(VNTRLongReadsHmmer.class);		
 
-		//jsa.str.*
+		//jsa.trv.*
 		tools.add(ParseTRF.class);		
 		tools.add(Sam2FragmentSize.class);
 		tools.add(SortFragmentFile.class);
@@ -132,14 +134,17 @@ public class Deploy {
 		//tools.add(VNTRDepth.class);
 
 
-		//jsa.phylo
-		tools.add(ExpertModelDriver.class);
+		//jsa.phylo		
 		tools.add(XMDistance.class);
 		tools.add(XMDistance2.class);
 		tools.add(NormaliseTree.class);	
 		
-		tools.add(SimProbFSM.class);
-		//tools.add(.class);
+		//jsa.sim
+		tools.add(SimProbFSM.class);		
+		tools.add(SimHTSWithFSM.class);
+		
+		//jsa.xm
+		tools.add(ExpertModelDriver.class);
 		//tools.add(.class);		
 	}	
 

@@ -109,10 +109,6 @@ public class SimProbFSM {
 
 		
 		System.out.println("Length = " + length + " Ins = " + miProb + " Del = " + mdProb + " Mis = " + mmProb);
-		//System.out.printf("%8.4f %8.4f %8.4f\n",genDp.getMatState().matchCost,genDp.getMatState().insCost,genDp.getMatState().delCost);
-		//System.out.printf("%8.4f %8.4f\n",genDp.getMatState().copyCost,genDp.getMatState().changeCost);
-
-
 		
 		ArrayList<Sequence> seqs = new ArrayList<Sequence>(numSeq); 
 		for (int i = 0; i < numSeq; i++ ){	
