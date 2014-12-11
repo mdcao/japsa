@@ -35,7 +35,6 @@
 
 package japsa.util.deploy;
 
-import japsa.bio.hts.AlignmentEvaluation;
 import japsa.bio.hts.BreakBam;
 import japsa.bio.hts.CountReadInRegion;
 import japsa.bio.hts.FastQRMEmptyRead;
@@ -111,8 +110,7 @@ public class Deploy {
 		tools.add(FastQRMEmptyRead.class);		
 		tools.add(BreakBam.class);
 		tools.add(SelectReadIntersect.class);
-		tools.add(SelectReadSpan.class);
-		tools.add(AlignmentEvaluation.class);		
+		tools.add(SelectReadSpan.class);				
 		tools.add(CountReadInRegion.class);
 
 
