@@ -82,6 +82,8 @@ public class SimHTSWithFSM {
 		
 		cmdLine.addDouble("ie", 0.2, "Probability of insertion extension");
 		cmdLine.addDouble("de", 0.2, "Probability of deletion extension");
+		
+		cmdLine.addDouble("rand", 0.2, "Probability of random sequences");
 		//Note that this model forbids going directly from an insertion to deletion
 		//match = 1 - mismatch - del - ins
 		
@@ -108,6 +110,8 @@ public class SimHTSWithFSM {
 		int seed = cmdLine.getIntVal("seed");
 		double cov = cmdLine.getDoubleVal("cov");		
 		
+		double rRatio = cmdLine.getDoubleVal("rand");
+		
 		Random rand = seed> 0?( new Random(seed)): (new Random());
 		
 		Alphabet alphabet = Alphabet.DNA();
@@ -127,6 +131,8 @@ public class SimHTSWithFSM {
 			sumLength += seq.length();			
 		}
 		reader.close();
+		
+		double [] composition = {0.25,0.25,0.25,0.25};
 		
 		//get the accumulative (to select chr)
 		double [] frac = dArray.toArray();
@@ -179,12 +185,35 @@ public class SimHTSWithFSM {
 		
 		long readID = 0;
 		while (numBase < cov){			
-			
 			int length = (int) (rand.nextGaussian() * ls + lm);
 			if (length < 50)
 				continue;
 			
+			
 			double toss = rand.nextDouble();
+			
+			if (toss < rRatio){
+				//Generate a random sequence
+				readID ++;
+				seq = Sequence.random(Alphabet.DNA4(), length, composition );
+				seq.setName("R" + readID +sep+"RANDOM");
+				outStream.print("@" + seq.getName());
+				for (int i = 0; i < seq.length();i++){
+					outStream.print(seq.charAt(i));
+				}
+				outStream.print("\n+\n");
+				for (int i = 0; i < seq.length();i++){
+					outStream.print(qualPhredChar);
+				}
+				outStream.print('\n');		
+				numBase += seq.length();
+				continue;
+			}
+			
+			
+			
+			toss = rand.nextDouble();
+			
 			int index = 0;
 			
 			while (frac[index] < toss )

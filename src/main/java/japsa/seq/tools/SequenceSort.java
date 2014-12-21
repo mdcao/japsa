@@ -64,6 +64,7 @@ public class SequenceSort {
 		cmdLine.addStdInputFile();
 		cmdLine.addStdOutputFile();		
 		cmdLine.addStdAlphabet();
+		cmdLine.addBoolean("number",false,"Add the order number to the beginning of contig name");
 		
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
@@ -83,12 +84,19 @@ public class SequenceSort {
 			seqList.add(new SequenceLength(seq));			
 		}
 		reader.close();		
-		Collections.sort(seqList);		
+		Collections.sort(seqList);
+		Collections.reverse(seqList);
 		
 		String output = cmdLine.getStringVal("output");
 		SequenceOutputStream sos = 	SequenceOutputStream.makeOutputStream(output);
 		
-		for (int i = seqList.size() - 1; i>=0; i--){
+		if (cmdLine.getBooleanVal("number")){
+			for (int i = 0; i < seqList.size();  i++){
+				String name = seqList.get(i).seq.getName();
+				seqList.get(i).seq.setName(i + "-" + name);
+			}	
+		}
+		for (int i = 0; i < seqList.size();  i++){
 			seqList.get(i).seq.writeFasta(sos);
 		}
 		sos.close();
@@ -109,9 +117,5 @@ public class SequenceSort {
 			// TODO Auto-generated method stub
 			return seq.length() - o.seq.length();
 		}
-		
-		
-		
 	}
-
 }

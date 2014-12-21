@@ -137,12 +137,12 @@ public class Sequence extends AbstractSequence {
 	 * @param name
 	 */
 	
-	public Sequence(Alphabet alphabet, String seqStr, String name) {
+	public Sequence(Alphabet alphabet, String seqString, String name) {
 		//this(dna, seqStr.toCharArray(),name);		
-		this(alphabet,seqStr.length(),name);	
+		this(alphabet,seqString.length(),name);	
 		
 		for (int i = 0; i < byteSeq.length; i++) {
-			byteSeq[i] = (byte) alphabet.char2int(seqStr.charAt(i));
+			byteSeq[i] = (byte) alphabet.char2int(seqString.charAt(i));
 		}
 	}
 	
