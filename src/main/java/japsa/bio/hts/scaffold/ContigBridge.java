@@ -36,8 +36,12 @@ package japsa.bio.hts.scaffold;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
 
+import japsa.bio.hts.scaffold.GapCloser.AlignmentRecord;
+import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
+
 
 
 /**
@@ -75,12 +79,23 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	
 	public boolean consistentWith(ScaffoldVector aVector){
 		return (aVector.dir == transVector.dir)
-				&& (aVector.pos * 1.0 / aVector.pos > 0.9)
-				&& (aVector.pos * 1.0 / aVector.pos < 1.1)
+				&& (aVector.pos * 1.0 / transVector.pos > 0.9)
+				&& (aVector.pos * 1.0 / transVector.pos < 1.1)
 				;
 	}
 	
-	public double addConnection(){
+	public double addConnection(AlignmentRecord a, AlignmentRecord b, 
+			ScaffoldVector trans, double sc){
+		
+		if (transVector ==null){
+			transVector = trans;
+		}else{
+			transVector.pos = (transVector.pos * connections.size() + trans.pos) / (connections.size() + 1);			
+		}
+		Sequence readSequence = new Sequence(Alphabet.DNA5(), a.sam.getReadString(), a.name);
+		connections.add(new Connection(readSequence, a,b,trans));
+		
+		score += sc;
 		return score;
 	}
 	
@@ -101,13 +116,22 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	public ScaffoldVector getTransVector() {
 		return transVector;
 	}
-
 	/**
 	 * @return the connections
 	 */
 	public ArrayList<Connection> getConnections() {
 		return connections;
 	}	
+	
+	public void display(){
+		System.out.println("##################START########################\n"
+				+ this.firstContig.length() + " " + this.secondContig.length() + " " + transVector.toString());
+		
+		Collections.sort(connections);
+		for (Connection connect:connections)
+			connect.display();
+		System.out.println("##################END########################");
+	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
@@ -118,12 +142,50 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	}
 	
 	
-	public class Connection{
-		Sequence read;	
-		//need a read, two contigs, and positions of mapping
-		ScaffoldVector vector(){			
-			return null;
+	public class Connection implements Comparable<Connection>{
+		Sequence read;
+		int aReadStart, aReadEnd, bReadStart, bReadEnd;
+		int aRefStart, aRefEnd, bRefStart, bRefEnd;
+		int score;
+		ScaffoldVector trans;
+		
+		Connection(Sequence mRead, AlignmentRecord a, AlignmentRecord b, ScaffoldVector trans){
+			this.read = mRead;
+			
+			aReadStart = a.readStart;
+			aReadEnd = a.readEnd;
+			aRefStart = a.refStart;
+			aRefEnd = a.refEnd;
+			
+			bReadStart = b.readStart;
+			bReadEnd = b.readEnd;
+			bRefStart = b.refStart;
+			bRefEnd = b.refEnd;
+			
+			int aAlign = Math.abs(aRefStart - aRefEnd);
+			int bAlign = Math.abs(bRefStart - bRefEnd);
+			
+			score = aAlign * bAlign / (aAlign  +bAlign);
+			this.trans = trans;
+						
 		}
 		
+		void display (){
+			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] %d %d %d %s\n", 
+					aRefStart, aRefEnd, bRefStart, bRefEnd,
+					aReadStart, aReadEnd, bReadStart, bReadEnd,
+					trans.pos,
+					trans.dir,					
+					score, read.getName());
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Comparable#compareTo(java.lang.Object)
+		 */
+		@Override
+		public int compareTo(Connection o) {
+			// TODO Auto-generated method stub
+			return o.score - score;
+		}
 	}
 }

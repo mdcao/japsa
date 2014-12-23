@@ -34,14 +34,21 @@
 
 package japsa.bio.hts.scaffold;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+import japsa.bio.hts.scaffold.GapCloser.AlignmentRecord;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-import work.GapCloser.AlignmentRecord;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 
@@ -100,74 +107,103 @@ public class ScaffoldGraph{
 	ArrayList<ContigBridge> bridgeList = new ArrayList<ContigBridge>();
 	HashMap<String, ContigBridge> bridgeMap= new HashMap<String, ContigBridge>();	
 	
+	
+	public void makeConnections(String bamFile, double cov, int threshold, int qual) throws IOException{
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));	
+
+		SAMRecordIterator iter = reader.iterator();
+		
+		String readName = "";
+		ArrayList<AlignmentRecord> samList = new ArrayList<AlignmentRecord>();
+
+		while (iter.hasNext()) {
+			SAMRecord rec = iter.next();
+			if (rec.getReadUnmappedFlag())
+				continue;
+			if (rec.getMappingQuality() < qual)
+				continue;
+
+			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()).length());
+			//Logging.info(myRec.pos() + "#" + myRec.name + " " + myRec.refIndex);
+			if (!myRec.useful)
+				continue;
+
+			if (rec.getReadName().equals(readName)) {
+				for (AlignmentRecord s : samList) {					
+					//this.connect(s, myRec, cov, threshold);
+					this.addBridge(s, myRec, cov, threshold);
+				}
+			} else {
+				samList.clear();				
+			}
+			samList.add(myRec);
+			readName = rec.getReadName();
+		}// while
+		iter.close();
+
+		//outOS.close();
+		reader.close();
+	}
+	
+	
 	/*********************************************************************************/
 	public void addBridge(AlignmentRecord a, AlignmentRecord b, double cov,double minScore){
 		if (a.refIndex > b.refIndex){
 			AlignmentRecord t = a;a=b;b=t;
 		}
 		
-		double rate = 1.0 /0.95;
-		String readName = a.name;		
-
-		int sA = (int) (a.readStart * rate -  a.refLeft  * (a.strand?1:-1));
-		int eA = (int) (a.readEnd * rate + a.refRight * (a.strand?1:-1)) - sA;
-
-		int sB = (int) (b.readStart * rate - b.refLeft * (b.strand?1:-1)) - sA;
-		int eB = (int) (b.readEnd * rate + b.refRight * (b.strand?1:-1)) - sA;
-
-		sA = 0;
-		if (eA < 0){
-			eA = -eA;
-			sB = -sB;
-			eB = -eB;
-		}
+		/*****************************************************************/
+		String readName = a.name;
+		double rate = (Math.abs(a.refEnd - a.refStart) + Math.abs(b.refEnd - b.refStart))
+				/
+				(Math.abs(a.readEnd - a.readStart) + Math.abs(b.readEnd - b.readStart));		
+						
+		//See if this is reliable
 		double score = Math.min(a.refAlign, b.refAlign);
+		int alignP = (int) ((b.readStart - a.readStart) * rate);
+		int alignD = (a.strand == b.strand)?1:-1;
+		
 
 		int overlap = Math.min(					
 				Math.max(a.readEnd, a.readStart) - Math.min(b.readStart,b.readEnd),
 				Math.max(b.readEnd, b.readStart) - Math.min(a.readStart,a.readEnd));
 
-		if ( overlap > minScore/2)
-			return;
+		//if ( overlap > minScore/2)
+		//	return;
 		//repeats
-		if (       contigs.get(a.refIndex).getCoverage() > cov * 1.4
+		if (    (overlap > minScore/2)       
+				||  contigs.get(a.refIndex).getCoverage() > cov * 1.4
 				|| contigs.get(b.refIndex).getCoverage() > cov * 1.4
-				|| contigs.get(a.refIndex).getCoverage() < cov / 1.4
-				|| contigs.get(b.refIndex).getCoverage() < cov / 1.4
+				|| contigs.get(a.refIndex).getCoverage() < cov / 1.6
+				|| contigs.get(b.refIndex).getCoverage() < cov / 1.6
 				|| a.refLength < 2 * minScore
 				|| b.refLength < 2* minScore
 				|| score < minScore 
-				){
+				){				
 			System.out.println("IGNORE"
 					+ " " + a.refIndex 
 					+ " " + b.refIndex
 					+ " " + readName
 					+ " " + a.pos() + " " + b.pos()
 					+ " " + score
-					+ " " + sA
-					+ " " + eA
-					+ " " + sB
-					+ " " + eB
-					+ " " + contigs.get(a.refIndex).getCoverage()
-					+ " " + contigs.get(b.refIndex).getCoverage()					
+					+ " " + (contigs.get(a.refIndex).getCoverage()/this.estimatedCov)
+					+ " " + (contigs.get(b.refIndex).getCoverage()/this.estimatedCov)
+					+ " " + alignP
+					+ " " + (alignD==1)
 					);
+
 			return;
 		}
-
-		//int currentF = b.refIndex;
-		//int currentT = a.refIndex;
-
-		int pF = sB;
-		int dF = (eB > sB) ? 1:-1;		
-		ScaffoldVector trans = new ScaffoldVector(pF, dF);
 		
-		//if (currentF < currentT){
-		//	//This is dead-code
-		//	trans = ScaffoldVector.reverse(trans);
-		//	int tmp = currentF;
-		//	currentF = currentT;
-		//	currentT = tmp;
-		//}
+		//int alignP = (int) ((b.readStart - a.readStart) * rate);
+		//int alignD = (a.strand == b.strand)?1:-1;
+		
+		int gP = (alignP + (a.strand ? a.refStart:-a.refStart) - (b.strand?b.refStart:-b.refStart));
+		if (!a.strand)
+			gP = -gP;		
+		
+		ScaffoldVector trans = new ScaffoldVector(gP, alignD);		
 		
 		int bridgeID = 0;
 		ContigBridge bridge;
@@ -176,9 +212,7 @@ public class ScaffoldGraph{
 			bridge = bridgeMap.get(hash);
 			if (bridge == null){
 				bridge = new ContigBridge(contigs.get(a.refIndex), contigs.get(b.refIndex), bridgeID);
-				bridge.addConnection();
-				
-				
+				bridge.addConnection(a, b, trans, score);
 				//add				
 				bridgeList.add(bridge);
 				bridgeMap.put(hash, bridge);
@@ -186,6 +220,7 @@ public class ScaffoldGraph{
 				break;
 			}else if (bridge.consistentWith(trans)){
 				//add
+				bridge.addConnection(a, b, trans, score);
 				break;
 			}else{
 				bridgeID ++;
@@ -196,25 +231,86 @@ public class ScaffoldGraph{
 	}
 	/*********************************************************************************/
 	
-	public void connect(AlignmentRecord a, AlignmentRecord b, double cov,double minScore){
-		double rate = 1.0 /0.95;
-		String readName = a.name;
-		//if (!readName.contains("twod")){
-		//	return;
-		//}
+	public void connectBridges(){
+		Collections.sort(bridgeList);
+		System.out.println(bridgeList.size());
+		for (ContigBridge bridge:bridgeList){
+			System.out.println("CONNECT " + bridge.hashKey + " " + bridge.getScore() + " " + bridge.getConnections().size() + " " + bridge.getTransVector().toString());
+			bridge.display();			
+			
+			int currentF = bridge.secondContig.index;
+			int currentT = bridge.firstContig.index;
 
-		int sA = (int) (a.readStart * rate - a.refLeft * (a.strand?1:-1));
-		int eA = (int) (a.readEnd * rate  + a.refRight * (a.strand?1:-1)) - sA;
+			int headF = head[currentF];
+			int headT = head[currentT];			
+			
+			
+			ScaffoldVector trans = bridge.getTransVector();
+			
+			if (headF < headT){
+				//swap
+				trans = ScaffoldVector.reverse(trans);
+				int tmp = currentF;
+				currentF = currentT;
+				currentT = tmp;
 
-		int sB = (int) (b.readStart * rate - b.refLeft * (b.strand?1:-1)) - sA;
-		int eB = (int) (b.readEnd * rate  + b.refRight * (b.strand?1:-1)) - sA;
+				headF = head[currentF];
+				headT = head[currentT];
+			}
 
-		sA = 0;
-		if (eA < 0){
-			eA = -eA;
-			sB = -sB;
-			eB = -eB;
+			if (headT == headF){				
+				ScaffoldVector v = ScaffoldVector.composition(trans,contigs.get(currentT).getVector());
+				int t_dis = Math.abs(contigs.get(currentF).getRelPos() -  v.getPos());
+				int t_len = (scaffolds[headT].getEnd() - scaffolds[headT].getStart());
+
+				System.out.println("NOT Connect " + currentF + " (" + headF +") and " + currentT + " (" + headT +") ==== " + contigs.get(currentF).getRelPos() + " - " + v.getPos() + "(" + t_dis + ") vs " + (t_len) + "  " + (t_dis * 1.0/t_len) );
+
+			}else{
+				System.out.println("Before Connect " + currentF + " (" + headF +") and " + currentT + " (" + headT +") " + (scaffolds[headT].getEnd() - scaffolds[headT].getStart()) + " " + (scaffolds[headF].getEnd() - scaffolds[headF].getStart()) + " " + (scaffolds[headT].getEnd() - scaffolds[headT].getStart() + scaffolds[headF].getEnd() - scaffolds[headF].getStart()));
+				ScaffoldVector revNew = ScaffoldVector.reverse(contigs.get(currentF).getVector());
+				//rev = headF -> currentF
+				
+				for (Contig ctg:scaffolds[headF]){					
+					ctg.composite(revNew);
+					ctg.composite(trans);
+					ctg.composite(contigs.get(currentT).getVector());
+					scaffolds[headT].addContig(ctg);
+					
+					int contigID = ctg.getIndex();
+					head[contigID] = headT;											
+
+					int newS = ctg.getRelPos();
+					int newE = ctg.getRelPos() + ctg.getRelDir() * ctg.length();
+					if (newS > newE){
+						int t=newS;newS = newE;newE = t;
+					}
+
+					if (newS < scaffolds[headT].getStart()){
+						System.out.println("Extend " + headT + " start from " + scaffolds[headT].getStart() + " to " + newS);
+						scaffolds[headT].setStart(newS); 
+					}
+
+					if (newE > scaffolds[headT].getEnd()){
+						System.out.println("Extend " + headT + " end from " + scaffolds[headT].getEnd() + " to " + newE);
+						scaffolds[headT].setEnd(newE); 
+					}
+				}
+				System.out.println("After Connect " + currentF + " (" + headF +") and " + currentT + " (" + headT +") " + (scaffolds[headT].getEnd() - scaffolds[headT].getStart()));
+				nScaffolds --;
+				scaffolds[headT].viewNew();
+			}			
 		}
+		
+	}
+	/*****************************************************************
+	public void connect1(AlignmentRecord a, AlignmentRecord b, double cov,double minScore){
+		
+		String readName = a.name;
+		double rate = (Math.abs(a.refEnd - a.refStart) + Math.abs(b.refEnd - b.refStart))
+				/
+				(Math.abs(a.readEnd - a.readStart) + Math.abs(b.readEnd - b.readStart));		
+						
+		//See if this is reliable
 		double score = Math.min(a.refAlign, b.refAlign);
 
 		int overlap = Math.min(					
@@ -238,27 +334,29 @@ public class ScaffoldGraph{
 					+ " " + readName
 					+ " " + a.pos() + " " + b.pos()
 					+ " " + score
-					+ " " + sA
-					+ " " + eA
-					+ " " + sB
-					+ " " + eB
 					+ " " + contigs.get(a.refIndex).getCoverage()
 					+ " " + contigs.get(b.refIndex).getCoverage()					
 					);
 
 			return;
-		}
-
+		}		
+		
 		int currentF = b.refIndex;
 		int currentT = a.refIndex;
 
 		int headF = head[currentF];
 		int headT = head[currentT];			
-
-		int pF = sB;
-		int dF = (eB > sB)?1:-1;
 		
-		ScaffoldVector trans = new ScaffoldVector(pF, dF);
+		int alignP = (int) ((b.readStart - a.readStart) * rate);
+		int alignD = (a.strand == b.strand)?1:-1;
+		
+		int gP = (alignP + (a.strand ? a.refStart:-a.refStart) - (b.strand?b.refStart:-b.refStart));
+		if (!a.strand)
+			gP = -gP;		
+		
+//		System.out.println("XXX " + (alignD == dF) + " " + gP + " vs " + pF);
+		
+		ScaffoldVector trans = new ScaffoldVector(gP, alignD);
 		
 		if (headF < headT){
 			//swap
@@ -313,7 +411,7 @@ public class ScaffoldGraph{
 			scaffolds[headT].viewNew();
 		}			
 	}
-
+	/*****************************************************************/
 	public void viewStatus(){
 		System.out.println(nScaffolds);
 		for (int i = 0; i < scaffolds.length;i++){

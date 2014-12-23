@@ -59,8 +59,7 @@ public class ScaffoldVector{
 		}else{
 			rev.dir = -1;
 			rev.pos = v.pos;
-		}		
-
+		}
 		return rev;		
 	}
 	/**
@@ -76,6 +75,10 @@ public class ScaffoldVector{
 		ret.dir = v1.dir * v2.dir;	
 
 		return ret;		
+	}
+	
+	public String toString(){
+		return pos + " " + dir;
 	}
 	/**
 	 * @return the pos
