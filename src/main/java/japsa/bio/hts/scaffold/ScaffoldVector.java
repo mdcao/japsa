@@ -40,25 +40,25 @@ package japsa.bio.hts.scaffold;
  *
  */
 public class ScaffoldVector{
-	int pos = 0;
-	int dir = 1;
+	int magnitude = 0;
+	int direction = 1;
 	
 	public ScaffoldVector(){
 
 	}
 	public ScaffoldVector(int p, int d){
-		pos = p;
-		dir = d;
+		magnitude = p;
+		direction = d;
 	}
 		
 	public static ScaffoldVector reverse(ScaffoldVector v){
 		ScaffoldVector rev = new ScaffoldVector();
-		if (v.dir > 0){
-			rev.dir = 1;
-			rev.pos = - v.pos;
+		if (v.direction > 0){
+			rev.direction = 1;
+			rev.magnitude = - v.magnitude;
 		}else{
-			rev.dir = -1;
-			rev.pos = v.pos;
+			rev.direction = -1;
+			rev.magnitude = v.magnitude;
 		}
 		return rev;		
 	}
@@ -71,26 +71,26 @@ public class ScaffoldVector{
 	public static ScaffoldVector composition(ScaffoldVector v1, ScaffoldVector v2){
 		ScaffoldVector ret = new ScaffoldVector();
 
-		ret.pos = v2.pos + v2.dir * v1.pos; 
-		ret.dir = v1.dir * v2.dir;	
+		ret.magnitude = v2.magnitude + v2.direction * v1.magnitude; 
+		ret.direction = v1.direction * v2.direction;	
 
 		return ret;		
 	}
 	
 	public String toString(){
-		return pos + " " + dir;
+		return magnitude + " " + direction;
 	}
 	/**
-	 * @return the pos
+	 * @return the magnitude
 	 */
-	public int getPos() {
-		return pos;
+	public int getMagnitute() {
+		return magnitude;
 	}
 	/**
-	 * @return the dir
+	 * @return the direction
 	 */
-	public int getDir() {
-		return dir;
+	public int getDirection() {
+		return direction;
 	}
 	
 

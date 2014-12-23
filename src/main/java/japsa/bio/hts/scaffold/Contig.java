@@ -74,7 +74,7 @@ public class Contig implements Comparable<Contig>{
 	 * @return
 	 */
 	public int getRelPos(){
-		return myVector.pos;
+		return myVector.magnitude;
 	}
 	
 	/**
@@ -92,7 +92,7 @@ public class Contig implements Comparable<Contig>{
 	
 	
 	public int getRelDir(){
-		return myVector.dir;
+		return myVector.direction;
 	}
 	
 	
@@ -112,7 +112,7 @@ public class Contig implements Comparable<Contig>{
 	}
 	
 	public void computePosition(){
-		if (myVector.dir > 0){
+		if (myVector.direction > 0){
 			start = getRelPos();
 			end = getRelPos() + length();
 		}else{

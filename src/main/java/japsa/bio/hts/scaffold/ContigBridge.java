@@ -78,9 +78,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	}
 	
 	public boolean consistentWith(ScaffoldVector aVector){
-		return (aVector.dir == transVector.dir)
-				&& (aVector.pos * 1.0 / transVector.pos > 0.9)
-				&& (aVector.pos * 1.0 / transVector.pos < 1.1)
+		return (aVector.direction == transVector.direction)
+				&& (aVector.magnitude * 1.0 / transVector.magnitude > 0.9)
+				&& (aVector.magnitude * 1.0 / transVector.magnitude < 1.1)
 				;
 	}
 	
@@ -90,7 +90,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		if (transVector ==null){
 			transVector = trans;
 		}else{
-			transVector.pos = (transVector.pos * connections.size() + trans.pos) / (connections.size() + 1);			
+			transVector.magnitude = (transVector.magnitude * connections.size() + trans.magnitude) / (connections.size() + 1);			
 		}
 		Sequence readSequence = new Sequence(Alphabet.DNA5(), a.sam.getReadString(), a.name);
 		connections.add(new Connection(readSequence, a,b,trans));
@@ -174,8 +174,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] %d %d %d %s\n", 
 					aRefStart, aRefEnd, bRefStart, bRefEnd,
 					aReadStart, aReadEnd, bReadStart, bReadEnd,
-					trans.pos,
-					trans.dir,					
+					trans.magnitude,
+					trans.direction,					
 					score, read.getName());
 		}
 

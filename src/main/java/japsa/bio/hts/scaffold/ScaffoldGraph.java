@@ -260,10 +260,10 @@ public class ScaffoldGraph{
 
 			if (headT == headF){				
 				ScaffoldVector v = ScaffoldVector.composition(trans,contigs.get(currentT).getVector());
-				int t_dis = Math.abs(contigs.get(currentF).getRelPos() -  v.getPos());
+				int t_dis = Math.abs(contigs.get(currentF).getRelPos() -  v.getMagnitute());
 				int t_len = (scaffolds[headT].getEnd() - scaffolds[headT].getStart());
 
-				System.out.println("NOT Connect " + currentF + " (" + headF +") and " + currentT + " (" + headT +") ==== " + contigs.get(currentF).getRelPos() + " - " + v.getPos() + "(" + t_dis + ") vs " + (t_len) + "  " + (t_dis * 1.0/t_len) );
+				System.out.println("NOT Connect " + currentF + " (" + headF +") and " + currentT + " (" + headT +") ==== " + contigs.get(currentF).getRelPos() + " - " + v.getMagnitute() + "(" + t_dis + ") vs " + (t_len) + "  " + (t_dis * 1.0/t_len) );
 
 			}else{
 				System.out.println("Before Connect " + currentF + " (" + headF +") and " + currentT + " (" + headT +") " + (scaffolds[headT].getEnd() - scaffolds[headT].getStart()) + " " + (scaffolds[headF].getEnd() - scaffolds[headF].getStart()) + " " + (scaffolds[headT].getEnd() - scaffolds[headT].getStart() + scaffolds[headF].getEnd() - scaffolds[headF].getStart()));
