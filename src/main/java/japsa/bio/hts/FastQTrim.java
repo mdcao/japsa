@@ -65,7 +65,9 @@ public class FastQTrim {
 		cmdLine.addString("output", null, "Name of output fastq file, output files will be added with suffix P<index>_", true);
 		cmdLine.addInt("size", 0, "The number of reads per file, a negative number for not spliting");
 		cmdLine.addInt("begin", 0, "Begin position of a read (1-index, inclusive) - 0 for not trimming");
+		
 		cmdLine.addBoolean("trim", false, "Whether to trim Ns at the 3' end. Note this will trim before begin/end trimming");
+		cmdLine.addInt("qual", 0, "Minimum of qual to be trimed from the 3', 0 for not trimming");
 		cmdLine.addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");	
 		
 		args = cmdLine.stdParseLine(args);			
@@ -77,6 +79,8 @@ public class FastQTrim {
 		int begin = cmdLine.getIntVal("begin");
 		int end = cmdLine.getIntVal("end");			
 		int size = cmdLine.getIntVal("size");
+		int qual = cmdLine.getIntVal("qual");
+		
 		boolean trim = cmdLine.getBooleanVal("trim");
 		
 		if (end > 0 && begin >= end) {
@@ -105,32 +109,38 @@ public class FastQTrim {
 			//name = name.replace(' ', '_');
 			String seq = reader.readLine();
 			reader.readLine();//'+'
-			String qual = reader.readLine();
-			if (trim){
-				int lastIndex = seq.length();
+			String qualStr = reader.readLine();
+			
+			int lastIndex = seq.length();
+			if (trim){			
 				while (lastIndex > 0 && seq.charAt(lastIndex - 1) =='N'){
 					lastIndex --;
 				}
-				if (lastIndex < seq.length()){
-					seq = seq.substring(0 , lastIndex);
-					qual = qual.substring(0 , lastIndex);
-				}
+			}
+			
+			while (lastIndex > 0 && qualStr.charAt(lastIndex - 1) - '!' < qual){
+				lastIndex --;
+			}			
+
+			if (lastIndex < seq.length()){
+				seq = seq.substring(0 , lastIndex);
+				qualStr = qualStr.substring(0 , lastIndex);
 			}
 			
 			if (begin > 0) {
 				if (begin > seq.length()){
 					seq  = "";
-					qual = "";
+					qualStr = "";
 				}else if (seq.length() > end){
 					seq = seq.substring(begin - 1 , end);
-					qual = qual.substring(begin - 1 ,end);
+					qualStr = qualStr.substring(begin - 1 ,end);
 				}else{
 					seq = seq.substring(begin - 1);
-					qual = qual.substring(begin - 1);
+					qualStr = qualStr.substring(begin - 1);
 				}
 			}else if (end > 0 && end < seq.length()){
 				seq = seq.substring(0 , end);
-				qual = qual.substring(0 ,end);
+				qualStr = qualStr.substring(0 ,end);
 			}			
 			
 			if (count == size){
@@ -151,7 +161,7 @@ public class FastQTrim {
 			outStream.print('\n');
 			outStream.print(seq);
 			outStream.print("\n+\n");		
-			outStream.print(qual);
+			outStream.print(qualStr);
 			outStream.print('\n');
 		}//while
 		outStream.close();
