@@ -130,8 +130,7 @@ public class ScaffoldGraph{
 				continue;
 
 			if (rec.getReadName().equals(readName)) {
-				for (AlignmentRecord s : samList) {					
-					//this.connect(s, myRec, cov, threshold);
+				for (AlignmentRecord s : samList) {
 					this.addBridge(s, myRec, cov, threshold);
 				}
 			} else {
@@ -152,10 +151,9 @@ public class ScaffoldGraph{
 		if (a.refIndex > b.refIndex){
 			AlignmentRecord t = a;a=b;b=t;
 		}
-		
-		/*****************************************************************/
+
 		String readName = a.name;
-		double rate = (Math.abs(a.refEnd - a.refStart) + Math.abs(b.refEnd - b.refStart))
+		double rate = 1.0 * (Math.abs(a.refEnd - a.refStart) + Math.abs(b.refEnd - b.refStart))
 				/
 				(Math.abs(a.readEnd - a.readStart) + Math.abs(b.readEnd - b.readStart));		
 						
@@ -169,9 +167,6 @@ public class ScaffoldGraph{
 				Math.max(a.readEnd, a.readStart) - Math.min(b.readStart,b.readEnd),
 				Math.max(b.readEnd, b.readStart) - Math.min(a.readStart,a.readEnd));
 
-		//if ( overlap > minScore/2)
-		//	return;
-		//repeats
 		if (    (overlap > minScore/2)       
 				||  contigs.get(a.refIndex).getCoverage() > cov * 1.4
 				|| contigs.get(b.refIndex).getCoverage() > cov * 1.4
@@ -181,23 +176,26 @@ public class ScaffoldGraph{
 				|| b.refLength < 2* minScore
 				|| score < minScore 
 				){				
-			System.out.println("IGNORE"
-					+ " " + a.refIndex 
-					+ " " + b.refIndex
-					+ " " + readName
-					+ " " + a.pos() + " " + b.pos()
-					+ " " + score
-					+ " " + (contigs.get(a.refIndex).getCoverage()/this.estimatedCov)
-					+ " " + (contigs.get(b.refIndex).getCoverage()/this.estimatedCov)
-					+ " " + alignP
-					+ " " + (alignD==1)
-					);
+			//System.out.println("IGNORE"
+			//		+ " " + a.refIndex 
+			//		+ " " + b.refIndex
+			//		+ " " + readName
+			//		+ " " + a.pos() + " " + b.pos()
+			//		+ " " + score
+			//		+ " " + (contigs.get(a.refIndex).getCoverage()/this.estimatedCov)
+			//		+ " " + (contigs.get(b.refIndex).getCoverage()/this.estimatedCov)
+			//		+ " " + alignP
+			//		+ " " + (alignD==1)
+			//		);
 
 			return;
 		}
 		
-		//int alignP = (int) ((b.readStart - a.readStart) * rate);
-		//int alignD = (a.strand == b.strand)?1:-1;
+		
+		//if (readName.contains("channel_423_read_26_twodimentional")){
+		//	int x = 1, y = 2;
+		//	y += x;			
+		//}
 		
 		int gP = (alignP + (a.strand ? a.refStart:-a.refStart) - (b.strand?b.refStart:-b.refStart));
 		if (!a.strand)
@@ -235,7 +233,10 @@ public class ScaffoldGraph{
 		Collections.sort(bridgeList);
 		System.out.println(bridgeList.size());
 		for (ContigBridge bridge:bridgeList){
-			System.out.println("CONNECT " + bridge.hashKey + " " + bridge.getScore() + " " + bridge.getConnections().size() + " " + bridge.getTransVector().toString());
+			System.out.println("CONNECT " + bridge.hashKey + " " + bridge.getScore() + 
+					" " + bridge.getConnections().size() + 
+					" (" + bridge.getTransVector().toString() + 
+					") " + bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));
 			bridge.display();			
 			
 			int currentF = bridge.secondContig.index;

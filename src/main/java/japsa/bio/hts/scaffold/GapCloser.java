@@ -73,13 +73,11 @@ public class GapCloser {
 		cmdLine.addDouble("cov", 0, "Expected average coverage of Illumina, <=0 to estimate");
 		cmdLine.addInt("qual", 5, "Minimum quality");
 
-		//cmdLine.addBoolean("hardclip", false,"True for last, false for bwa");
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		String output = cmdLine.getStringVal("output");
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String sequenceFile = cmdLine.getStringVal("sequenceFile");
-		//int stage = cmdLine.getIntVal("stage");
 		int threshold = cmdLine.getIntVal("threshold");
 		double cov = cmdLine.getDoubleVal("cov");
 		int qual = cmdLine.getIntVal("qual");
@@ -193,18 +191,10 @@ public class GapCloser {
 		}
 
 		public String toString() {
-			return refIndex  
-					//			+ " " + pStart 
-					//			+ " " + pAlignStart 
-					//			+ " " + pAlignEnd 
-					//			+ " " + pEnd  
+			return refIndex    
 					+ " " + refStart 
-					+ " " + refEnd 
-					//					+ " " + leftClipped 
-					//					+ " " + rightClipped 
-					//					+ " " + (leftClipped + rightClipped + pAlignEnd - pAlignStart)
+					+ " " + refEnd
 					+ " " + refLength
-					//+ " " + (pAlignEnd - pAlignStart)
 					+ " " + strand;
 		}
 		public String pos() {			

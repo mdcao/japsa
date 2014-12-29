@@ -64,6 +64,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	private ScaffoldVector transVector = null;
 	private ArrayList<Connection> connections;//a list of connections that make up this
 	
+	
 	public ContigBridge(Contig c1, Contig c2, int ind){
 		firstContig = c1;
 		secondContig = c2;
@@ -125,7 +126,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	
 	public void display(){
 		System.out.println("##################START########################\n"
-				+ this.firstContig.length() + " " + this.secondContig.length() + " " + transVector.toString());
+				+ this.firstContig.length() + " " + this.secondContig.length() + " " + transVector.toString() + " " + transVector.distance(firstContig, secondContig));
 		
 		Collections.sort(connections);
 		for (Connection connect:connections)
@@ -148,6 +149,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		int aRefStart, aRefEnd, bRefStart, bRefEnd;
 		int score;
 		ScaffoldVector trans;
+		int distanceOnRead = 0;
 		
 		Connection(Sequence mRead, AlignmentRecord a, AlignmentRecord b, ScaffoldVector trans){
 			this.read = mRead;
@@ -167,16 +169,25 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			
 			score = aAlign * bAlign / (aAlign  +bAlign);
 			this.trans = trans;
-						
+			
+			//if (bReadStart > aReadEnd)
+			//	distanceOnRead = bReadStart - aReadEnd;
+			//else if (aReadStart > bReadEnd)
+			//	distanceOnRead = aReadStart - bReadEnd;
+			//else
+			distanceOnRead = Math.max(Math.min(bReadStart, bReadEnd) - Math.max(aReadEnd,aReadStart),
+					Math.min(aReadStart, aReadEnd) - Math.max(bReadEnd,bReadStart));											
 		}
 		
 		void display (){
-			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] %d %d %d %s\n", 
+			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] %d %d %d %s  ==> %d [%d]\n", 
 					aRefStart, aRefEnd, bRefStart, bRefEnd,
 					aReadStart, aReadEnd, bReadStart, bReadEnd,
 					trans.magnitude,
 					trans.direction,					
-					score, read.getName());
+					score, read.getName(),
+					trans.distance(firstContig, secondContig),
+					distanceOnRead);
 		}
 
 		/* (non-Javadoc)

@@ -62,6 +62,33 @@ public class ScaffoldVector{
 		}
 		return rev;		
 	}
+	
+	/**
+	 * Return the distance between two closest tips of two contigs. 
+	 * 
+	 * A negative value indicate the overlap of two contigs.
+	 * @param fContig
+	 * @param tContig
+	 * @return
+	 */
+	
+	public int distance(Contig tContig, Contig fContig){
+		
+		int tS = 0, tE = tContig.length(),
+			fS, fE;
+		
+		if (direction > 0){
+			fS = magnitude;
+			fE = magnitude + fContig.length();
+		}else{
+			fE = magnitude;
+			fS = magnitude - fContig.length();
+		}		
+		//System.out.printf("tS=%d tE=%d fS=%d fE=%d fS-tE=%d tS-fE = %d ret=%d\n",tS, tE, fE, fE, fS-tE,tS-fE,Math.max(fS - tE, tS - fE));
+		
+		//FIXME: not handle the case that contig A contain contigB and via verse		
+		return Math.max(fS - tE, tS - fE);
+	}
 	/**
 	 * Compose two vectors: a to b is v1, b to c is v2. a to c is v1 * v2
 	 * @param v1
@@ -78,7 +105,7 @@ public class ScaffoldVector{
 	}
 	
 	public String toString(){
-		return magnitude + " " + direction;
+		return magnitude + "," + direction;
 	}
 	/**
 	 * @return the magnitude
