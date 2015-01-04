@@ -39,10 +39,6 @@ import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.SAMRecord;
-
 import java.io.IOException;
 
 
@@ -71,9 +67,9 @@ public class GapCloser {
 				"Name of the output file, -  for stdout");		
 		cmdLine.addInt("threshold", 500, "Threshold");
 		cmdLine.addDouble("cov", 0, "Expected average coverage of Illumina, <=0 to estimate");
-		cmdLine.addInt("qual", 5, "Minimum quality");
+		cmdLine.addInt("qual", 1, "Minimum quality");
 
-		args = cmdLine.stdParseLine(args);
+		args = cmdLine.stdParseLine(args);		
 		/**********************************************************************/
 		String output = cmdLine.getStringVal("output");
 		String bamFile = cmdLine.getStringVal("bamFile");
@@ -83,135 +79,16 @@ public class GapCloser {
 		int qual = cmdLine.getIntVal("qual");
 		/**********************************************************************/
 
-		ScaffoldGraph graph = new ScaffoldGraph(sequenceFile);
+		ScaffoldGraph graph = new ScaffoldGraphDFS(sequenceFile);
 		if (cov <=0)
 			cov = graph.estimatedCov;
 
-		graph.makeConnections(bamFile, cov, threshold, qual);
+		graph.makeConnections(bamFile, cov / 1.6,  cov * 1.46, threshold, qual);
 		graph.connectBridges();
+		
 		graph.viewStatus();
-
 		SequenceOutputStream outOS = SequenceOutputStream.makeOutputStream(output);
 		graph.printScaffoldSequence(outOS);
 		outOS.close();		
 	}
-	
-	public static class AlignmentRecord {
-		static final double matchCost = 0;
-
-		public String name;
-		public int refIndex;
-
-		public int refStart,  //position on ref of the start of the alignment
-		refEnd;    //position on ref at the start of the
-		public int refLength;
-
-		//Position on read of the start and end of the alignment 
-		public int readStart = 0, readEnd = 0;
-		
-		
-		//read length
-		public int readLength = 0;		
-		
-		public boolean strand = true;//positive
-		SAMRecord sam;
-		public boolean useful = false;
-
-		
-		public int readLeft, readRight, readAlign, refLeft, refRight, refAlign;
-
-		public AlignmentRecord(SAMRecord sam, int rLength) {
-			name = sam.getReadName();
-			refIndex = sam.getReferenceIndex();
-
-			refStart = sam.getAlignmentStart();
-			refEnd = sam.getAlignmentEnd();
-
-			Cigar cigar = sam.getCigar();			
-			boolean enterAlignment = false;						
-			//////////////////////////////////////////////////////////////////////////////////
-
-			for (final CigarElement e : cigar.getCigarElements()) {
-				final int  length = e.getLength();
-				switch (e.getOperator()) {
-				case H :
-				case S :					
-				case P : //pad is a kind of clipped
-					if (enterAlignment)
-						readEnd = readLength;
-					readLength += length;
-					break; // soft clip read bases
-				case I :	                	
-				case M :					
-				case EQ :
-				case X :
-					if (!enterAlignment){
-						readStart = readLength + 1;
-						enterAlignment = true;
-					}
-					readLength += length;
-					break;
-				case D :
-				case N :
-					if (!enterAlignment){
-						readStart = readLength + 1;
-						enterAlignment = true;
-					}
-					break;				
-				default : throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
-				}//casse
-			}//for
-			if (readEnd == 0)
-				readEnd = readLength;
-
-
-			this.sam = sam;
-			this.refLength = rLength;
-
-			readLeft = readStart;
-			readRight = readLength - readEnd;
-			readAlign = readEnd + 1 - readStart;
-
-			refLeft = refStart;
-			refRight = refLength - refEnd;
-			refAlign = refEnd + 1 - refStart;
-
-			if (sam.getReadNegativeStrandFlag()){
-				strand = false;
-				readStart = readLength - readStart;
-				readEnd = readLength - readEnd;
-			}
-
-			//only useful if
-			if ((readLeft > refLeft + 250 || readRight > 250 + refRight)
-					&& (readLeft < 250 || refLeft < 250)
-					&& (readRight  < 250 || refRight < 250)
-					)
-				useful = true;
-		}
-
-		public String toString() {
-			return refIndex    
-					+ " " + refStart 
-					+ " " + refEnd
-					+ " " + refLength
-					+ " " + strand;
-		}
-		public String pos() {			
-			return  
-					refStart 
-					+ " " + refEnd
-					+ " " + refLength
-					+ " " + readStart
-					+ " " + readEnd
-					+ " " + readLength
-					+ " " + refLeft
-					+ " " + refAlign
-					+ " " + refRight
-					+ " " + readLeft
-					+ " " + readAlign
-					+ " " + readRight
-					+ " " + strand;
-		}
-	}	
 }

@@ -28,103 +28,86 @@
  ****************************************************************************/
 
 /**************************     REVISION HISTORY    **************************
- * 20/12/2014 - Minh Duc Cao: Created                                        
+ * 31/12/2014 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
 
 package japsa.bio.hts.scaffold;
 
-import java.util.ArrayList;
-
 import japsa.seq.Sequence;
 
-public class Contig{
-	int index;
-	ScaffoldVector myVector;//relative position to the head contig of my scaffold
-	Sequence contigSequence;//the sequence of the contig	
-	double   coverage = 1.0;
-	
-	//for depth first search
-	ArrayList<ContigBridge> bridges;	
-		
-	public Contig(int index, Sequence seq){
-		this.index = index;
-		contigSequence = seq;
-		myVector = new ScaffoldVector(0,1);
-		bridges = new ArrayList<ContigBridge>();
-	}
-	
-	public String getName(){
-		return contigSequence.getName();
-	}
-	
-	public int getIndex(){
-		return index;
-	}
-	
-	public void composite(ScaffoldVector aVector){
-		myVector = ScaffoldVector.composition(myVector, aVector);		
-	}	
+import java.util.ArrayList;
+import java.util.Collections;
+
+public class ReadFilling{
 	/**
-	 * Relative position to the head of the scaffold
+	 * The read sequence
+	 */
+	Sequence readSequence;		
+	private boolean sorted = false;
+
+	ArrayList<AlignmentRecord> alignments;
+
+
+	public ReadFilling(Sequence read, ArrayList<AlignmentRecord> a){
+		readSequence = read;
+		alignments = a;
+	}
+
+	public Sequence getReadSequence(){
+		return readSequence;
+	}
+
+	public ArrayList<AlignmentRecord> getAlignmentRecords(){
+		return alignments;
+	}
+
+	/**
+	 * Return left over (not filled) bases
+	 * @param start
+	 * @param end
 	 * @return
 	 */
-	public int getRelPos(){
-		return myVector.magnitude;
-	}	
-	
-	public int getRelDir(){
-		return myVector.direction;
+	public int fill(int start, int end){
+		System.out.println("Read " + readSequence.getName() + " length " + readSequence.length());
+		if (start >= end){
+			System.out.println("========FILLED==========");
+			return 0;
+		}
+
+		if (!sorted){				
+			Collections.sort(alignments);
+			sorted = true;
+		}		
+
+		int gaps = 0;
+		int     myStart = start, 
+				myEnd = end;
+
+		for (AlignmentRecord record:alignments){
+			if (record.readAlignmentEnd() < start)
+				continue;
+
+			if (record.readAlignmentStart() > end)
+				break;			
+
+			System.out.printf("============== %5d -> %5d Contig %d: %5d %5d\n",
+					record.readAlignmentStart(),
+					record.readAlignmentEnd(),
+					record.contig.index,
+					record.strand?record.refStart:record.refEnd,
+							record.strand?record.refEnd:record.refStart
+					);
+
+			if (record.readAlignmentStart() > myStart)
+				gaps += record.readAlignmentStart() - myStart;
+
+			myStart = Math.max(myStart, record.readAlignmentEnd());
+		}		
+		if (myStart < end)
+			gaps += end - myStart;
+
+		System.out.printf("Left %d bases\n",gaps);
+		return gaps;
 	}
-		
-	/**
-	 * Get the left most position if transpose by vector trans
-	 * @return
-	 */
-	public int leftMost(ScaffoldVector trans){
-		return trans.magnitude - ((myVector.direction > 0)?0:length()); 
-	}
-	
-	/**
-	 * Get the right most position if transpose by vector trans
-	 * @return
-	 */
-	public int rightMost(ScaffoldVector trans){
-		return trans.magnitude + ((myVector.direction > 0)?length():0); 
-	}
-	
-	/**
-	 * Get the left most position
-	 * @return
-	 */
-	public int leftMost(){
-		return leftMost(myVector); 
-	}
-	
-	/**
-	 * Get the right most position
-	 * @return
-	 */
-	public int rightMost(){
-		return rightMost(myVector); 
-	}
-	
-	
-	public ScaffoldVector getVector(){
-		return myVector;
-	}
-	
-	public int length(){
-		return contigSequence.length();
-	}		
-	
-	public double getCoverage(){
-		return coverage;
-	}
-	public void setCoverage(double cov){
-		coverage =  cov;
-	}
-	
-	
-	
 }
