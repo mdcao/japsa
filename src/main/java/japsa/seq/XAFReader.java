@@ -263,5 +263,9 @@ public class XAFReader implements Closeable {
 		public String toString(){
 			return headerStr;
 		}
+		
+		public String getHeaderDesc(){
+			return headerDesc;
+		}
 	}
 }

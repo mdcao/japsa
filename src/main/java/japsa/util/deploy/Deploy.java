@@ -104,7 +104,6 @@ public class Deploy {
 		
 		//tools.add(MarkovCompress.class);
 
-
 		//jsa.hts.*
 		tools.add(FastQTrim.class);
 		tools.add(FastQRMEmptyRead.class);		
@@ -130,7 +129,6 @@ public class Deploy {
 		tools.add(VNTRDepth.class);
 		
 		//tools.add(VNTRDepth.class);
-
 
 		//jsa.phylo		
 		tools.add(XMDistance.class);

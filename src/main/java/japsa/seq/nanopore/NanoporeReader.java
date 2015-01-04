@@ -82,7 +82,8 @@ public class NanoporeReader// implements Closeable
 		cmdLine.addInt("minLength", 0, 
 				"Minimum sequence length");
 
-		cmdLine.addBoolean("stats", false, "Compute statistics of reads");		
+		cmdLine.addBoolean("stats", false, "Compute statistics of reads");
+		cmdLine.addBoolean("number", false, "Add a unique number to read name");
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");			
 
 		args = cmdLine.stdParseLine(args);
@@ -93,6 +94,7 @@ public class NanoporeReader// implements Closeable
 		String f5list = cmdLine.getStringVal("f5list");
 		int minLength  = cmdLine.getIntVal("minLength");
 		boolean stats  = cmdLine.getBooleanVal("stats");
+		boolean number  = cmdLine.getBooleanVal("number");
 
 		ArrayList<String> fileList = new ArrayList<String>();
 		if (f5list != null){
@@ -110,7 +112,7 @@ public class NanoporeReader// implements Closeable
 
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
 		if (type.equals("fastq"))
-			readFastq(fileList, minLength, sos, stats);
+			readFastq(fileList, minLength, sos, stats,number);
 		else if (type.equals("events"))
 			readEvents(fileList, sos, stats);
 		else if (type.equals("models"))
@@ -240,9 +242,7 @@ public class NanoporeReader// implements Closeable
 
 	}
 
-	
-	
-	
+		
 	public static void readModels(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
 		for (String fileName:fileList){
 			Logging.info("Open " + fileName);
@@ -326,19 +326,20 @@ public class NanoporeReader// implements Closeable
 	 * @param sos : output stream
 	 * @param stats: print out statistics
 	 */
-	public static void readFastq(ArrayList<String> fileList, int minLength, SequenceOutputStream sos, boolean stats){
+	public static void readFastq(ArrayList<String> fileList, int minLength, SequenceOutputStream sos, boolean stats,boolean number){
 		int tempCount = 0, compCount = 0, twoDCount = 0;
+		int fileNumber = 0;
 		IntArray lengths = new IntArray();
 		{
 			for (String fileName:fileList){
 				Logging.info("Open " + fileName);
-				try{
-
-
+				try{					
 					NanoporeReader reader = new NanoporeReader(fileName);
 					reader.readFastq();
 					reader.close();
-
+					
+					
+					//Get time & date
 					String log = reader.getLog();					
 					if (log != null){
 						String [] toks = log.split("\n");
@@ -346,22 +347,24 @@ public class NanoporeReader// implements Closeable
 							toks = toks[toks.length - 1].split(",");
 
 						log = toks[0];
-					}
+					}else
+						log = "";
+					
 					FastqSequence fq;
 
 					fq = reader.getSeqTemplate();
 					if (fq != null && fq.length() >= minLength){
-						fq.setName(fq.getName() + " " + log);
+						fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
 						fq.print(sos);
 						if (stats){						
 							lengths.add(fq.length());	
 							tempCount ++;
 						}
 					}
-
+					
 					fq = reader.getSeqComplement();
-					if (fq != null && fq.length() >= minLength){
-						fq.setName(fq.getName() + " " + log);
+					if (fq != null && fq.length() >= minLength){						
+						fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName() + " " + log);						
 						fq.print(sos);
 						if (stats){						
 							lengths.add(fq.length());	
@@ -371,13 +374,15 @@ public class NanoporeReader// implements Closeable
 
 					fq = reader.getSeq2D();
 					if (fq != null && fq.length() >= minLength){
-						fq.setName(fq.getName() + " " + log);
+						fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName() + " " + log);
 						fq.print(sos);
 						if (stats){						
 							lengths.add(fq.length());	
 							twoDCount ++;
 						}
 					}
+					
+					fileNumber ++;
 				}catch (Exception e){
 					Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
 				}
@@ -412,6 +417,7 @@ public class NanoporeReader// implements Closeable
 
 			}
 
+			Logging.info("Open " + fileNumber + " files from " + fileList.size());
 			Logging.info("Read count = " + ls.length + "(" + tempCount + " temppate, " + compCount + " complements and " + twoDCount +"  2D)");
 			Logging.info("Base count = " + baseCount);		
 			Logging.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
@@ -706,13 +712,16 @@ public class NanoporeReader// implements Closeable
 						Logging.info("Read " + fullName);
 						String [] toks = ((String[]) data)[0].split("\n");						
 						if  (fullName.contains("BaseCalled_2D")){
-							toks[0] = toks[0].substring(1) + "_twodimentional#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							 
+							//toks[0] = toks[0].substring(1) + "_twodimentional#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							 
+							toks[0] = toks[0].substring(1) + "_twodimentional" + " length=" + toks[1].length() ;
 							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);                		
 						}else if (fullName.contains("BaseCalled_complement")){
-							toks[0] = toks[0].substring(1) + "_complement#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							
+							//toks[0] = toks[0].substring(1) + "_complement#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							
+							toks[0] = toks[0].substring(1) + "_complement" + " length=" + toks[1].length() ;
 							this.seqComplement =  new FastqSequence(DNA.DNA16(), toks);							
 						}else if (fullName.contains("BaseCalled_template")){
-							toks[0] = toks[0].substring(1) + "_template#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;
+							//toks[0] = toks[0].substring(1) + "_template#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;
+							toks[0] = toks[0].substring(1) + "_template" + " length=" + toks[1].length() ;
 							this.seqTemplate =  new FastqSequence(DNA.DNA16(), toks);
 						}
 					}
