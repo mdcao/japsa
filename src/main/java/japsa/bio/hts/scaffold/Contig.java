@@ -40,7 +40,7 @@ import japsa.seq.Sequence;
 
 public class Contig{
 	int index;
-	ScaffoldVector myVector;//relative position to the head contig of my scaffold
+	ScaffoldVector myVector;//relative position to the head contig of my scaffold	
 	Sequence contigSequence;//the sequence of the contig	
 	double   coverage = 1.0;
 	

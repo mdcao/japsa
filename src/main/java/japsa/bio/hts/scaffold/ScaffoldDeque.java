@@ -34,8 +34,13 @@
 
 package japsa.bio.hts.scaffold;
 
+import japsa.seq.Alphabet;
+import japsa.seq.SequenceBuilder;
+
 import java.util.ArrayDeque;
 import java.util.Iterator;
+
+import org.apache.commons.math3.util.Pair;
 
 /**
  * Implement scaffold as an array deque, that is a linear array that can be 
@@ -44,10 +49,11 @@ import java.util.Iterator;
  * @author minhduc
  */
 public final class ScaffoldDeque extends ArrayDeque<Contig>{
+	ContigBridge closeBridge = null;//if not null, will bridge the last and the first contig
 
 	private static final long serialVersionUID = -4310125261868862931L;	
 	ArrayDeque<ContigBridge> bridges;//the bridges should syncronysed with contigs
-	boolean closed = false;
+	//boolean closed = false;
 	/**
 	 * invariant: the direction of the decque is the same as the main (the longest one)
 	 * @param myFContig
@@ -58,6 +64,12 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 		add(myFContig);//the first one		
 		bridges = new ArrayDeque<ContigBridge>(); 
 	}	
+
+
+	public void setCloseBridge(ContigBridge bridge){
+		closeBridge = bridge;
+		//closed = true;
+	}
 
 	/**
 	 * Return 1 or -1 if the contig is at the first or last of the deque. 
@@ -105,7 +117,7 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	public void combineScaffold(ScaffoldDeque scaffold, ContigBridge bridge, int myPos, int itsPos){
 		//my pos == 1: add to front, else to rear
 		//itsPos == 1: taken from front, else from rear
-		
+
 		Contig ctg = (itsPos==1) ? scaffold.removeFirst():scaffold.removeLast();			
 		while(true){
 			if (myPos == 1){ 
@@ -128,7 +140,7 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	/**
 	 * @param start the start to set
 	 */
-	
+
 	public void view(){
 		System.out.println("========================== START =============================");
 		Iterator<ContigBridge> bridIter = bridges.iterator();
@@ -145,6 +157,9 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	}
 
 	public void viewSequence(){
+//		SequenceBuilder closedSeq = null;
+//		SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024, "scaffold");		
+
 		System.out.println("========================== START =============================");
 		Iterator<ContigBridge> bridIter = bridges.iterator();
 		for (Contig ctg:this){				
@@ -155,13 +170,33 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 				System.out.printf("gaps =  %d\n", bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));					
 			}else
 				System.out.println();
+		}		
+
+		
+		Contig leftContig, rightContig;		
+		if (closeBridge != null){			
+			rightContig = getFirst();
+			leftContig = getLast();			
+			closeBridge.fillGap(leftContig, rightContig);			
 		}
 
+		//pair1 = end of left
+		//pair2 = start of right
+
+
+		bridIter = bridges.iterator();
+		Iterator<Contig> ctgIter = this.iterator();
+		leftContig = ctgIter.next();
+
 		for (ContigBridge bridge:bridges){
-			System.out.printf("Bridge %3d --> %3d using %d reads\n", bridge.firstContig.getIndex(),bridge.secondContig.getIndex(), bridge.getConnections().size());				
-			int fill = bridge.fill();
-			System.out.printf("Fill results %3d --> %3d with %d unfilled\n" ,bridge.firstContig.getIndex(),bridge.secondContig.getIndex(),fill);
+			System.out.println("------------------------------------ START ------------------------------------");
+			rightContig = ctgIter.next();
+			bridge.fillGap(leftContig, rightContig);
+			bridge.fillConnection(leftContig,rightContig);
+			leftContig = rightContig;			
+			System.out.println("------------------------------------ END ------------------------------------");
 		}
 		System.out.println("============================ END ===========================");
 	}
+
 }

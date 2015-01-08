@@ -44,7 +44,8 @@ public class ScaffoldVector{
 	int direction = 1;
 	
 	public ScaffoldVector(){
-
+		//magnitude = 0
+		//direction = 1;
 	}
 	public ScaffoldVector(int p, int d){
 		magnitude = p;

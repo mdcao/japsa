@@ -72,8 +72,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				continue;
 			//Now extend scaffold i
 			
-			ScaffoldDeque scaffold = scaffolds[i];
-					
+			ScaffoldDeque scaffold = scaffolds[i];					
 			
 			//1.a extend to the first
 			boolean extended = true;
@@ -99,8 +98,9 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 					int newEnd = nextContig.rightMost(trialTrans);
 					if (nextContig == scaffold.getFirst()){
 						double ratio = (newEnd - scaffold.getFirst().rightMost()) / (0.0 + ctgEnd - scaffold.getFirst().leftMost());
-						if (ratio > 0.5){
+						if (ratio > 0.6){
 							System.out.printf(" Yay! scaffold %d closed after rear connect %d %f!\n", i,nextContig.index,ratio);
+							scaffold.setCloseBridge(bridge);
 							closed = true;
 							break;
 						}
@@ -151,11 +151,12 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 					int newStart = nextContig.leftMost(trialTrans);					
 					if (nextContig == scaffold.getLast()){
 						double ratio = (scaffold.getLast().leftMost() - newStart) / (0.0 + scaffold.getLast().rightMost() - ctgStart);
-						if (ratio > 0.5){
+						if (ratio > 0.6){
 							System.out.printf(" Yay! scaffold %d closed after front connect %d %f!\n", 
 									i,
 									nextContig.index,
 									ratio);
+							scaffold.setCloseBridge(bridge);
 							closed = false;
 							break;
 						}
@@ -204,97 +205,8 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			System.out.printf("Finally, scaffold %d size %d  and is %s\n",
 					i,
 					scaffold.getLast().rightMost() - scaffold.getFirst().leftMost(),
-					closed?"circular":"linear");
-			
+					closed?"circular":"linear");			
 		}//for
-		
-/*****************************************************************		
-		for (ContigBridge bridge:bridgeList){
-			System.out.println("CONNECT " + bridge.hashKey + " " + bridge.getScore() + 
-					" " + bridge.getConnections().size() + 
-					" (" + bridge.getTransVector().toString() + 
-					") " + bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));
-			bridge.display();
-
-			Contig contigF = bridge.secondContig;
-			Contig contigT = bridge.firstContig;
-
-			int headF = head[contigF.index];
-			int headT = head[contigT.index];			
-
-			ScaffoldVector trans = bridge.getTransVector();
-
-			//not sure if this is necccesary (yes, it is)
-			if (headF < headT){
-				//swap
-				trans = ScaffoldVector.reverse(trans);
-				Contig tmp = contigF;
-				contigF = contigT;
-				contigT = tmp;
-
-				headF = head[contigF.index];
-				headT = head[contigT.index];
-			}
-
-			if (headT == headF){				
-				ScaffoldVector v = ScaffoldVector.composition(trans,contigT.getVector());
-				int t_dis = Math.abs(contigF.getRelPos() -  v.getMagnitute());
-				int t_len = (scaffolds[headT].getEnd() - scaffolds[headT].getStart());
-
-				System.out.println("NOT Connect " + contigF.index + " (" + headF +") and " + contigT.index + " (" + headT +") ==== " + contigF.getRelPos() + " - " + v.getMagnitute() + "(" + t_dis + ") vs " + (t_len) + "  " + (t_dis * 1.0/t_len) );
-				continue;
-				//TODO: This is to close the circular chromosome/plasmid				
-			}
-
-
-			int posF = scaffolds[headF].isEnd(contigF);
-			int posT = scaffolds[headT].isEnd(contigT);
-
-			if (posT == 0 ){
-				System.out.println("Opps " + contigF.index + " vs " + contigT.index);
-				continue;
-			}
-			//assert: posT != 0, but note that posF may be equal to 0
-			//checking if 
-
-
-
-			System.out.println("Before Connect " + contigF.index + " (" + headF +") and " + contigT.index + " (" + headT +") " + (scaffolds[headT].getEnd() - scaffolds[headT].getStart()) + " " + (scaffolds[headF].getEnd() - scaffolds[headF].getStart()) + " " + (scaffolds[headT].getEnd() - scaffolds[headT].getStart() + scaffolds[headF].getEnd() - scaffolds[headF].getStart()));
-			ScaffoldVector revNew = ScaffoldVector.reverse(contigF.getVector());
-			//rev = headF -> currentF				
-
-			for (Contig ctg:scaffolds[headF]){					
-				ctg.composite(revNew);
-				ctg.composite(trans);
-				ctg.composite(contigT.getVector());
-				//scaffolds[headT].addContig(ctg);
-
-				int contigID = ctg.getIndex();
-				head[contigID] = headT;											
-
-				int newS = ctg.getRelPos();
-				int newE = ctg.getRelPos() + ctg.getRelDir() * ctg.length();
-				if (newS > newE){
-					int t=newS;newS = newE;newE = t;
-				}
-
-				if (newS < scaffolds[headT].getStart()){
-					System.out.println("Extend " + headT + " start from " + scaffolds[headT].getStart() + " to " + newS);
-					scaffolds[headT].setStart(newS); 
-				}
-
-				if (newE > scaffolds[headT].getEnd()){
-					System.out.println("Extend " + headT + " end from " + scaffolds[headT].getEnd() + " to " + newE);
-					scaffolds[headT].setEnd(newE); 
-				}
-			}
-			scaffolds[headT].combineScaffold(scaffolds[headF], bridge, posT, posF);
-			System.out.println("After Connect " + contigF.index + " (" + headF +") and " + contigT.index + " (" + headT +") " + (scaffolds[headT].getEnd() - scaffolds[headT].getStart()));
-			nScaffolds --;
-			scaffolds[headT].view();
-		}
-		/*****************************************************************/
-		
 	}
 	
 }

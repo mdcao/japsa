@@ -34,20 +34,24 @@
 
 package japsa.bio.hts.scaffold;
 
+import java.util.ArrayList;
+
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 
 public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	static final double matchCost = 0;
+	int score;
 
 	public int readID;
 	Contig contig;
 
 	public int refStart, refEnd;  //position on ref of the start and end of the alignment
-
-	//Position on read of the start and end of the alignment 
-	public int readStart = 0, readEnd = 0;
+	
+	//Position on read of the start and end of the alignment (using the direction of read) 
+	public int readStart = 0, readEnd = 0;	
+	
 	//readStart map to refStart, readEnd map to refEnd. 
 	//readStart < readEnd if strand = true, else readStart > readEnd
 
@@ -56,23 +60,31 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 
 	public boolean strand = true;//positive
 	public boolean useful = false;
+	//SAMRecord mySam;
+	
+	ArrayList<CigarElement> alignmentCigars = new ArrayList<CigarElement>();
+	
 
-
-	public int readLeft, readRight, readAlign, refLeft, refRight, refAlign;
+	//public int readLeft, readRight, readAlign, refLeft, refRight, refAlign;
 	//left and right are in the direction of the reference sequence
 	
+	public AlignmentRecord(){
+		
+	}
 	public AlignmentRecord(SAMRecord sam, Contig ctg) {
 		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
 		contig = ctg;
 
+		//mySam = sam;
 		refStart = sam.getAlignmentStart();
-		refEnd = sam.getAlignmentEnd();		
+		refEnd = sam.getAlignmentEnd();
 		
 		Cigar cigar = sam.getCigar();			
 		boolean enterAlignment = false;						
 		//////////////////////////////////////////////////////////////////////////////////
 
 		for (final CigarElement e : cigar.getCigarElements()) {
+			alignmentCigars.add(e);
 			final int  length = e.getLength();
 			switch (e.getOperator()) {
 			case H :
@@ -105,19 +117,20 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		if (readEnd == 0)
 			readEnd = readLength;
 
-		readLeft = readStart;
-		readRight = readLength - readEnd;
-		readAlign = readEnd + 1 - readStart;
+		//these temporary variable to determine usefulness
+		int readLeft = readStart -1;
+		int readRight = readLength - readEnd;
 
-		refLeft = refStart;
-		refRight = contig.length() - refEnd;
-		refAlign = refEnd + 1 - refStart;
+		int refLeft = refStart - 1;
+		int refRight = contig.length() - refEnd;
 
+
+		score = refEnd + 1 - refStart;
 		if (sam.getReadNegativeStrandFlag()){			
 			strand = false;
-			//need to convert the aligment position on read the the right direction
-			readStart = readLength - readStart;
-			readEnd = readLength - readEnd;
+			//need to convert the aligment position on read the correct direction
+			readStart = 1 + readLength - readStart;
+			readEnd = 1 + readLength - readEnd;
 		}
 
 		int gaps = 500;
@@ -132,11 +145,13 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	
 	
 	public int readAlignmentStart(){
-		return strand?readStart:readEnd;
+		return Math.min(readStart,readEnd);
+				//strand?readStart:readEnd;
+		
 	}
 	
 	public int readAlignmentEnd(){
-		return strand?readEnd:readStart;
+		return Math.max(readStart,readEnd);
 	}
 
 	public String toString() {
@@ -144,8 +159,12 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 				+ " " + refStart 
 				+ " " + refEnd
 				+ " " + contig.length()
+				+ " " + readStart 
+				+ " " + readEnd
+				+ " " + readLength				
 				+ " " + strand;
 	}
+	
 	public String pos() {			
 		return  
 				refStart 
@@ -154,12 +173,6 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 				+ " " + readStart
 				+ " " + readEnd
 				+ " " + readLength
-				+ " " + refLeft
-				+ " " + refAlign
-				+ " " + refRight
-				+ " " + readLeft
-				+ " " + readAlign
-				+ " " + readRight
 				+ " " + strand;
 	}
 

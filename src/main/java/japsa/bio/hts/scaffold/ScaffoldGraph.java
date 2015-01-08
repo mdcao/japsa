@@ -134,10 +134,7 @@ public class ScaffoldGraph{
 				continue;
 
 			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
-			//Logging.info(myRec.pos() + "#" + myRec.name + " " + myRec.refIndex);
-			//if (!myRec.useful)
-			//	continue;
-
+			
 			//not the first occurance				
 			if (readID == myRec.readID) {
 				if (myRec.useful){				
@@ -177,7 +174,7 @@ public class ScaffoldGraph{
 				(Math.abs(a.readEnd - a.readStart) + Math.abs(b.readEnd - b.readStart));		
 
 		//See if this is reliable
-		double score = Math.min(a.refAlign, b.refAlign);
+		double score = Math.min(a.score, b.score);
 		int alignP = (int) ((b.readStart - a.readStart) * rate);
 		int alignD = (a.strand == b.strand)?1:-1;
 

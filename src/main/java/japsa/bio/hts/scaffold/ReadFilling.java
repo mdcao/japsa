@@ -34,10 +34,13 @@
 
 package japsa.bio.hts.scaffold;
 
+import htsjdk.samtools.CigarElement;
+import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 
 import java.util.ArrayList;
 import java.util.Collections;
+
 
 public class ReadFilling{
 	/**
@@ -46,12 +49,11 @@ public class ReadFilling{
 	Sequence readSequence;		
 	private boolean sorted = false;
 
-	ArrayList<AlignmentRecord> alignments;
+	ArrayList<AlignmentRecord> alignments;	
 
-
-	public ReadFilling(Sequence read, ArrayList<AlignmentRecord> a){
+	public ReadFilling(Sequence read, ArrayList<AlignmentRecord> alignmentList){
 		readSequence = read;
-		alignments = a;
+		alignments = alignmentList;
 	}
 
 	public Sequence getReadSequence(){
@@ -62,6 +64,44 @@ public class ReadFilling{
 		return alignments;
 	}
 
+	
+	public ReadFilling reverse(){
+		//return an (concentually the same) read filling with the a reverse read
+		Sequence revRead = Alphabet.DNA.complement(readSequence);
+		revRead.setName("REV"+readSequence.getName());
+		ArrayList<AlignmentRecord> revAlignments = new ArrayList<AlignmentRecord>(); 
+		
+		for (AlignmentRecord alignment:alignments){
+			AlignmentRecord revAlign = new AlignmentRecord();
+			revAlign.readID = alignment.readID;
+			revAlign.contig = alignment.contig;
+			revAlign.refStart = alignment.refStart;
+			revAlign.refEnd = alignment.refEnd;
+			
+			revAlign.readLength = alignment.readLength;
+			revAlign.readStart = alignment.readLength - alignment.readStart + 1;//1-index
+			revAlign.readEnd = alignment.readLength - alignment.readEnd + 1;//1-index
+			revAlign.strand = !alignment.strand;
+			revAlign.useful = alignment.useful;			
+			revAlign.alignmentCigars = alignment.alignmentCigars;
+			revAlign.contig = alignment.contig;
+			revAlign.score = alignment.score;
+			//System.out.println("      switch " + alignment.readStart + " and " + alignment.readEnd
+			//		+ " to " + revAlign.readStart + " and " + revAlign.readEnd);
+			revAlignments.add(revAlign);
+		}
+		
+		ReadFilling revFilling = new ReadFilling(revRead, revAlignments);		
+		return revFilling;
+	}
+	
+	public void sortAlignment(){
+		if (!sorted){				
+			Collections.sort(alignments);
+			sorted = true;
+		}
+	}
+	
 	/**
 	 * Return left over (not filled) bases
 	 * @param start
@@ -75,10 +115,7 @@ public class ReadFilling{
 			return 0;
 		}
 
-		if (!sorted){				
-			Collections.sort(alignments);
-			sorted = true;
-		}		
+		sortAlignment();		
 
 		int gaps = 0;
 		int     myStart = start, 
