@@ -50,7 +50,7 @@ import java.util.Random;
  * 
  * @author Minh Duc Cao (minhduc \dot cao \at gmail \dot com) * 
  */
-public class Sequence extends AbstractSequence {	
+public class Sequence extends AbstractSequence implements Cloneable {	
 	/**
 	 * The array to hold the sequence
 	 */

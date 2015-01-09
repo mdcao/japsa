@@ -171,9 +171,6 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 						continue;//for bridge						
 					}
 					
-					//see if the next contig would extend the scaffold to the left
-					
-					
 					if (newStart < ctgStart){
 						System.out.printf(" Extend %d from %d(%d) to %d(%d) with score %f\n",
 								i,

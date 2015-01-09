@@ -34,7 +34,6 @@
 
 package japsa.bio.hts.scaffold;
 
-import htsjdk.samtools.CigarElement;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 
@@ -118,8 +117,8 @@ public class ReadFilling{
 		sortAlignment();		
 
 		int gaps = 0;
-		int     myStart = start, 
-				myEnd = end;
+		int     myStart = start; 
+				//myEnd = end;
 
 		for (AlignmentRecord record:alignments){
 			if (record.readAlignmentEnd() < start)

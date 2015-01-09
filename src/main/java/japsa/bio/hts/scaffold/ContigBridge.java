@@ -37,9 +37,14 @@ package japsa.bio.hts.scaffold;
 
 
 import htsjdk.samtools.CigarElement;
+import japsa.seq.Alphabet;
+import japsa.seq.JapsaAnnotation;
+import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
+import japsa.seq.SequenceBuilder;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 
@@ -311,19 +316,49 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		}
 		return mainVectors;		
 	}
-	
+
+	public Connection fewestGapConnection(){
+		Collections.sort(connections);
+
+		//Find the best connections (has fewest gaps)
+		Connection gapsBestConnection = null;
+		int gapsBest = Integer.MAX_VALUE;
+
+		for (Connection connection:connections){
+			int gapsBt = connection.gapsBetween();
+			if (gapsBt < gapsBest){
+				gapsBest = gapsBt;
+				gapsBestConnection = connection;
+			}
+		}	
+		//System.out.println("                  Min gaps between = " + gapsBest + " "  + gapsBestConnection.read.getReadSequence().getName());
+		return gapsBestConnection;
+
+	}
+
+
 	public void fillConnection(Contig left, Contig right){
 		Collections.sort(connections);
 		int gaps = Integer.MAX_VALUE;
 		Pair<Integer, ArrayList<FillRecord>> bestPair = null;
+
+		Connection gapsBestConnection = null;
+		int gapsBest = Integer.MAX_VALUE;
+
+
 		for (Connection connection:connections){
-			
+			int gapsBt = connection.gapsBetween();
+			if (gapsBt < gapsBest){
+				gapsBest = gapsBt;
+				gapsBestConnection = connection;
+			}
+
 			Pair<Integer, ArrayList<FillRecord>>  pair = connection.fillConnection(left);
 			if (pair.getKey() == 0){
 				bestPair = pair;
 				gaps = 0;
 				break;
-				
+
 			}
 			if (pair.getKey() <= gaps){
 				gaps = pair.getKey(); 
@@ -331,10 +366,12 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			}
 		}
 		System.out.println("                  Min gaps = " + gaps);
-		
+
 		for (FillRecord record:bestPair.getValue()){
 			System.out.println("                   Record " + record.contigSequence.getName() + ":" + record.start + "-" + record.end);
 		}
+
+		System.out.println("                  Min gaps between = " + gapsBest + " "  + gapsBestConnection.read.getReadSequence().getName());
 	}
 
 	/**
@@ -383,9 +420,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		if (leftVectors.containsKey(right)){
 			System.out.printf("             CONNECTED %d %d\n",left.index, right.index);
 
-			Range range = contigRanges.get(left);
+			//Range range = contigRanges.get(left);
 			//leftContigEnd = (left.getRelDir()>0) ? range.end:range.start;
-			range = contigRanges.get(right);
+			//range = contigRanges.get(right);
 			//rightContigStart = (right.getRelDir()>0) ? range.start:range.end;
 			//TODO: This is NOT good			
 
@@ -425,11 +462,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 					leftMostOfRight  = connection.firstAlignment;
 					rightMostOfLeft= connection.secondAlignment;
 				}
-				//leftStart 
-
-				//int sL = read.readSequence.length();
-				//int sR = sL;					
-				//int eL = 0, eR = 0;				
+				//leftStart	
 
 				for (AlignmentRecord record:read.alignments){
 					Range range = contigRanges.get(record.contig);
@@ -495,9 +528,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 
 
 			//To get the position to return
-			Range range = contigRanges.get(left);
+			//Range range = contigRanges.get(left);
 			//leftContigEnd = (left.getRelDir()>0) ? range.end:range.start;
-			range = contigRanges.get(right);
+			//range = contigRanges.get(right);
 			//rightContigStart = (right.getRelDir()>0) ? range.start:range.end;
 			//return new Pair<Integer, Integer>(leftContigEnd, rightContigStart);
 		}
@@ -632,6 +665,10 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		Sequence contigSequence;
 		int start;
 		int end;
+
+		public String toString(){
+			return contigSequence.getName() +":"+start+"-"+end;
+		}
 	}
 
 	public class Connection implements Comparable<Connection>{
@@ -658,6 +695,15 @@ public class ContigBridge implements Comparable<ContigBridge>{
 
 			distanceOnRead = Math.max(Math.min(b.readStart, b.readEnd) - Math.max(a.readEnd,a.readStart),
 					Math.min(a.readStart, a.readEnd) - Math.max(b.readEnd,b.readStart));											
+		}
+
+		public AlignmentRecord getAlignment(Contig contig){
+			if (contig == firstContig)
+				return firstAlignment;
+			if (contig == secondContig)
+				return secondAlignment;
+
+			return null;
 		}
 
 		void display (){
@@ -693,7 +739,174 @@ public class ContigBridge implements Comparable<ContigBridge>{
 
 			return read.fill(start, end);
 		}
+		/**
+		 * Count the number of gaps (that is the number of bases that are not
+		 * aligned to a contig) between 2 main contigs 
+		 * @return
+		 */
+		public int gapsBetween(){
+			int start = 0, end = read.readSequence.length();
 
+			if (firstAlignment.readAlignmentStart() < secondAlignment.readAlignmentStart()){
+				start = firstAlignment.readAlignmentEnd();
+				end = secondAlignment.readAlignmentStart();
+			}else{
+				start = secondAlignment.readAlignmentEnd();
+				end = firstAlignment.readAlignmentStart();
+			}	
+
+			if (start >= end)
+				return 0;
+
+			BitSet bitSet = new BitSet(end);
+			bitSet.set(start, end);
+			for (AlignmentRecord record:read.alignments){
+				bitSet.clear(record.readAlignmentStart(), record.readAlignmentEnd());
+			}
+
+			return bitSet.cardinality();
+		}
+
+		public void fillFrom(Contig fromContig, SequenceBuilder seqBuilder, JapsaAnnotation anno){
+			Contig toContig = 
+					(fromContig == firstContig)?secondContig:firstContig;
+
+			AlignmentRecord fromAlignment = 
+					(fromContig == firstContig)?firstAlignment:secondAlignment;
+
+			AlignmentRecord toAlignment = 
+					(fromContig == firstContig)?secondAlignment:firstAlignment;
+
+			ReadFilling readFilling = read;
+			if ( fromContig.getRelDir()>0 != fromAlignment.strand){
+				//swap
+				readFilling = read.reverse();
+				readFilling.sortAlignment();
+				for (AlignmentRecord record:readFilling.alignments){
+					if (record.contig == fromContig)
+						fromAlignment = record;
+
+					if (record.contig == toContig)
+						toAlignment = record;	
+				}
+			}
+			//now readFilling is good to go
+			int posReadEnd   = fromAlignment.readAlignmentEnd();
+			int posReadFinal = toAlignment.readAlignmentStart();// I need as far as posReadFinal
+
+			for (AlignmentRecord record:readFilling.alignments){
+				Contig contig = record.contig;
+				if (contig == fromContig)
+					continue;
+				if (contig == toContig)
+					continue;//could break
+				contig.portionUsed += (1.0 + record.refEnd - record.refStart) / contig.length();
+
+				if (posReadEnd >= posReadFinal -1)
+					continue;//I can break here, but want to get porstionUsed of other contigs
+
+
+				if (record.readAlignmentEnd() < posReadEnd)
+					continue;				
+
+				//assert:  posReadEnd < readEnd				
+				if (record.readAlignmentStart() > posReadEnd){
+					//Really need to fill in using read information
+					int newPosReadEnd = Math.min(posReadFinal - 1, record.readAlignmentStart() -1);
+					if (newPosReadEnd > posReadEnd){
+						JapsaFeature feature = 
+								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + newPosReadEnd - posReadEnd,
+										"CONTIG",readFilling.readSequence.getName(),'+',"");
+
+						//TODO: P=0 get the orignial read name and position
+						feature.addDesc(readFilling.readSequence.getName() + "+("+(posReadEnd + 1) +"," + newPosReadEnd+")");
+						anno.add(feature);
+						seqBuilder.append(readFilling.readSequence.subSequence(posReadEnd, newPosReadEnd));
+						posReadEnd = newPosReadEnd;
+					}
+					if (posReadEnd + 1 >= posReadFinal)
+						continue;//Done
+
+					//Now get information on the contig from start
+					if (record.strand){
+						int refLeft = record.refStart;
+						int refRight = record.refEnd;
+
+						if (posReadFinal <= record.readAlignmentEnd()){
+							refRight = positionOnRef(posReadFinal, record) -1; 
+							posReadEnd = posReadFinal -1;
+						}else{
+							posReadEnd = record.readAlignmentEnd();
+						}
+						
+						JapsaFeature feature = 
+								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + refRight - refLeft +1,
+										"CONTIG",contig.getName(),'+',"");
+						feature.addDesc(contig.getName() + "+("+(refLeft ) +"," + refRight+")");
+						anno.add(feature);
+						
+						seqBuilder.append(contig.contigSequence.subSequence(refLeft - 1, refRight));
+					}else{//neg strain
+						int refRight = record.refStart;
+						int refLeft = record.refEnd;
+
+						if (posReadFinal <= record.readAlignmentEnd()){
+							refLeft = positionOnRef(posReadFinal, record) + 1; 
+							posReadEnd = posReadFinal -1;
+						}else{
+							posReadEnd = record.readAlignmentEnd();
+						}
+						
+						JapsaFeature feature = 
+								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() - refRight + refLeft +1,
+										"CONTIG",contig.getName(),'+',"");
+						feature.addDesc(contig.getName() + "-("+(refRight ) +"," + refLeft+")");
+						anno.add(feature);
+						
+						seqBuilder.append(Alphabet.DNA.complement(contig.contigSequence.subSequence(refRight - 1, refLeft)));
+					}
+				}//if record.readAlignmentStart() > posReadEnd
+				else{//Now get information on the contig from start
+					if (record.strand){
+						int refLeft = positionOnRef(posReadEnd, record) + 1;						
+						int refRight = record.refEnd;
+
+						if (posReadFinal <= record.readAlignmentEnd()){
+							refRight = positionOnRef(posReadFinal, record) -1; 
+							posReadEnd = posReadFinal -1;
+						}else{
+							posReadEnd = record.readAlignmentEnd();
+						}
+						
+						JapsaFeature feature = 
+								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + refRight - refLeft +1,
+										"CONTIG",contig.getName(),'+',"");
+						feature.addDesc(contig.getName() + "+("+(refLeft ) +"," + refRight+")");
+						anno.add(feature);
+						
+						seqBuilder.append(contig.contigSequence.subSequence(refLeft - 1, refRight));
+					}else{//neg strain						
+						int refLeft = positionOnRef(posReadEnd, record) + 1;		
+						int refRight = record.refStart;
+
+						if (posReadFinal <= record.readAlignmentEnd()){
+							refLeft = positionOnRef(posReadFinal, record) + 1; 
+							posReadEnd = posReadFinal -1;
+						}else{
+							posReadEnd = record.readAlignmentEnd();
+						}
+						
+						JapsaFeature feature = 
+								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() - refRight + refLeft +1,
+										"CONTIG",contig.getName(),'+',"");
+						feature.addDesc(contig.getName() + "-("+(refRight ) +"," + refLeft+")");
+						anno.add(feature);
+						
+						seqBuilder.append(Alphabet.DNA.complement(contig.contigSequence.subSequence(refRight - 1, refLeft)));
+					}
+				}
+			}			
+		}
 		/* (non-Javadoc)
 		 * @see java.lang.Comparable#compareTo(java.lang.Object)
 		 */
@@ -703,12 +916,10 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			return o.score - score;
 		}
 
-
 		public Pair<Integer, ArrayList<FillRecord>> fillConnection(Contig fromContig){			
 			ArrayList<FillRecord> fillRecords = new  ArrayList<FillRecord> ();
 			ReadFilling readFilling = this.read;
 			readFilling.sortAlignment();
-
 
 			System.out.printf("  Fill using read %s to connect %d (%b) to %d(%b)\n", 
 					readFilling.readSequence.getName(),
@@ -716,7 +927,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 					firstAlignment.strand,
 					secondAlignment.contig.index,
 					secondAlignment.strand);
-			
+
 			Contig toContig = null;
 			int fromStart = 0, toStart = 0;
 			{
@@ -735,7 +946,6 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				fromStart = fromAlignment.readAlignmentStart();
 				toStart = toAlignment.readAlignmentStart();
 			}
-
 
 			if (toStart < fromStart){
 				System.out.printf("  -----> Reverse read\n");
@@ -794,10 +1004,10 @@ public class ContigBridge implements Comparable<ContigBridge>{
 					fillRecord.start = outRefPos + 1;
 					fillRecord.end = alignment.refEnd;					
 				}else{
-					fillRecord.start = outRefPos -1;
+					fillRecord.start = outRefPos - 1;
 					fillRecord.end = alignment.refStart;
 				}					
-				posOnRead = alignment.readAlignmentEnd();
+				posOnRead = alignment.readAlignmentEnd(); 
 				fillRecords.add(fillRecord);
 				if (alignment.contig == toContig){
 					return new Pair<Integer, ArrayList<FillRecord>> (0, fillRecords);
@@ -833,6 +1043,13 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				//continue;
 			}
 
+
+			fillRecord = new FillRecord();
+			fillRecord.contigSequence = readFilling.alignments.get(startIndex).contig.contigSequence;
+
+			fillRecord.start = readFilling.alignments.get(startIndex).refEnd;
+			fillRecord.end = readFilling.alignments.get(startIndex).refStart;
+			rightFillRecords.add(fillRecord);//Record from the from contig
 
 			int posOnReadFromRight = readFilling.alignments.get(startIndex).readAlignmentEnd();
 

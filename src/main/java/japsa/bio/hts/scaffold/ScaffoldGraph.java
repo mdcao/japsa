@@ -135,6 +135,13 @@ public class ScaffoldGraph{
 
 			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
 			
+			if (myRec.contig.index == 74){
+				System.out.println("NNN74 " + myRec.readID + " " + myRec.score + " " + myRec.useful);
+			}
+			if (myRec.contig.index == 58){
+				System.out.println("NNN58 " + myRec.readID +" " + myRec.score + " " + myRec.useful);
+			}
+			
 			//not the first occurance				
 			if (readID == myRec.readID) {
 				if (myRec.useful){				
@@ -177,8 +184,16 @@ public class ScaffoldGraph{
 		double score = Math.min(a.score, b.score);
 		int alignP = (int) ((b.readStart - a.readStart) * rate);
 		int alignD = (a.strand == b.strand)?1:-1;
+		
 
+		int gP = (alignP + (a.strand ? a.refStart:-a.refStart) - (b.strand?b.refStart:-b.refStart));
+		if (!a.strand)
+			gP = -gP;	
 
+		if (a.contig.index == b.contig.index){
+			System.out.printf("CIRCULAR %d (%d) : (%d,%d)\n", b.contig.index, a.contig.length(), gP, alignD);
+		}		
+		
 		int overlap = Math.min(					
 				Math.max(a.readEnd, a.readStart) - Math.min(b.readStart,b.readEnd),
 				Math.max(b.readEnd, b.readStart) - Math.min(a.readStart,a.readEnd));
@@ -205,10 +220,7 @@ public class ScaffoldGraph{
 			//		);
 			return;
 		}
-
-		int gP = (alignP + (a.strand ? a.refStart:-a.refStart) - (b.strand?b.refStart:-b.refStart));
-		if (!a.strand)
-			gP = -gP;		
+	
 
 		ScaffoldVector trans = new ScaffoldVector(gP, alignD);		
 
@@ -322,24 +334,25 @@ public class ScaffoldGraph{
 		}
 	}
 
-	public void viewStatus(){
+	public void printSequences(SequenceOutputStream out) throws IOException{
 		System.out.println(nScaffolds);
 		for (int i = 0; i < scaffolds.length;i++){
 			if (head[i] == i){
 				System.out.println("Scaffold " + i + " length " + (scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost()));
-				scaffolds[i].viewSequence();
+				scaffolds[i].viewSequence(out);
 			}
 		}
-	}
-
-	public void printScaffoldSequence(SequenceOutputStream out) throws IOException{			
-		for (int i = 0; i < scaffolds.length;i++){
-			if (head[i] == i){
-				//TODO
-				//Sequence s = scaffolds[i].scaffoldSequence(vectors, seqs);
-				//s.setName("scaffold" + i);
-				//s.writeFasta(out);
-			}
+		
+		for (Contig contig:contigs){
+			System.out.printf("Contig %d used %6.3f of  %6.3f (%6.3f) Left over %6.3f times or %6.3f%% \n",
+					contig.index,
+					contig.portionUsed,
+					contig.coverage/this.estimatedCov,
+					contig.coverage,
+					contig.coverage/this.estimatedCov - contig.portionUsed,
+					100 - contig.portionUsed*100.0/ (contig.coverage/this.estimatedCov)
+					);
+			
 		}
-	}
+	}	
 }

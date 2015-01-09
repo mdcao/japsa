@@ -35,12 +35,14 @@
 package japsa.bio.hts.scaffold;
 
 import japsa.seq.Alphabet;
+import japsa.seq.JapsaAnnotation;
+import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceBuilder;
+import japsa.seq.SequenceOutputStream;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Iterator;
-
-import org.apache.commons.math3.util.Pair;
 
 /**
  * Implement scaffold as an array deque, that is a linear array that can be 
@@ -52,7 +54,8 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	ContigBridge closeBridge = null;//if not null, will bridge the last and the first contig
 
 	private static final long serialVersionUID = -4310125261868862931L;	
-	ArrayDeque<ContigBridge> bridges;//the bridges should syncronysed with contigs
+	ArrayDeque<ContigBridge> bridges;
+	int scaffoldIndex;
 	//boolean closed = false;
 	/**
 	 * invariant: the direction of the decque is the same as the main (the longest one)
@@ -61,6 +64,7 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 
 	public ScaffoldDeque(Contig myFContig){
 		super();
+		scaffoldIndex = myFContig.index;
 		add(myFContig);//the first one		
 		bridges = new ArrayDeque<ContigBridge>(); 
 	}	
@@ -156,9 +160,9 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 		System.out.println("============================ END ===========================");
 	}
 
-	public void viewSequence(){
-//		SequenceBuilder closedSeq = null;
-//		SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024, "scaffold");		
+	public void viewSequence(SequenceOutputStream out) throws IOException{		
+		
+
 
 		System.out.println("========================== START =============================");
 		Iterator<ContigBridge> bridIter = bridges.iterator();
@@ -170,33 +174,121 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 				System.out.printf("gaps =  %d\n", bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));					
 			}else
 				System.out.println();
-		}		
-
-		
-		Contig leftContig, rightContig;		
-		if (closeBridge != null){			
-			rightContig = getFirst();
-			leftContig = getLast();			
-			closeBridge.fillGap(leftContig, rightContig);			
 		}
+		if (size()<=1){
+			System.out.println("Size = " + size() + " not sequence");
+			return;
+			
+		}
+		System.out.println("Size = " + size() + " sequence");
+		
+		SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024,  "Scaffold" + scaffoldIndex);
+		JapsaAnnotation anno = new JapsaAnnotation();
 
-		//pair1 = end of left
-		//pair2 = start of right
+
+		ContigBridge.Connection bestCloseConnection = null;				
+		Contig leftContig, rightContig;		
+
+		rightContig = getFirst();		
+
+		//startLeft: the leftPoint of leftContig, endLeft: rightPoint of left Contig
+		int startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length();
+		int endLeft   = (rightContig.getRelDir() < 0)?1:rightContig.length();
+
+		if (closeBridge != null){			
+			bestCloseConnection = closeBridge.fewestGapConnection();
+			startLeft = (rightContig.getRelDir() > 0)?
+					(bestCloseConnection.getAlignment(rightContig).refStart)
+					:(bestCloseConnection.getAlignment(rightContig).refEnd);
+
+					anno.addDescription("Circular");
+
+		}else
+			anno.addDescription("Linear");
 
 
 		bridIter = bridges.iterator();
 		Iterator<Contig> ctgIter = this.iterator();
-		leftContig = ctgIter.next();
+		leftContig = ctgIter.next();//The first
 
 		for (ContigBridge bridge:bridges){
-			System.out.println("------------------------------------ START ------------------------------------");
+			//System.out.println("------------------------------------ START ------------------------------------");
 			rightContig = ctgIter.next();
-			bridge.fillGap(leftContig, rightContig);
-			bridge.fillConnection(leftContig,rightContig);
-			leftContig = rightContig;			
-			System.out.println("------------------------------------ END ------------------------------------");
-		}
-		System.out.println("============================ END ===========================");
-	}
 
+			//bridge.fillGap(leftContig, rightContig);
+
+
+			ContigBridge.Connection connection = bridge.fewestGapConnection();
+
+			//start from previous
+			//end estimate now
+			endLeft = (leftContig.getRelDir()>0)?(connection.getAlignment(leftContig).refEnd):
+				(connection.getAlignment(leftContig).refStart);
+
+			System.out.printf("Append contig %d (%d) %d-%d (%d)\n",leftContig.index, leftContig.length(),startLeft, endLeft, Math.abs(startLeft - endLeft));
+
+			if (startLeft<endLeft){
+				JapsaFeature feature = 
+						new JapsaFeature(seq.length() + 1, seq.length() + endLeft - startLeft + 1,
+								"CONTIG",leftContig.getName(),'+',"");
+				feature.addDesc(leftContig.getName() + "+("+startLeft +"," + endLeft+")");
+				anno.add(feature);				
+				seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
+
+				leftContig.portionUsed += (1.0 + endLeft - startLeft + 1) / leftContig.length();
+			}else{
+
+				JapsaFeature feature = 
+						new JapsaFeature(seq.length() + 1, seq.length() + startLeft - endLeft + 1,
+								"CONTIG",leftContig.getName(),'+',"");
+				feature.addDesc(leftContig.getName() + "-("+endLeft +"," + startLeft+")");
+				anno.add(feature);
+
+				seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
+				leftContig.portionUsed += (1.0 - endLeft + startLeft + 1) / leftContig.length();
+			}			
+			//Fill in the connection
+			System.out.printf("Append bridge %d -- %d\n",bridge.firstContig.index,  bridge.secondContig.index);
+			connection.fillFrom(leftContig, seq, anno);			
+
+			startLeft = (rightContig.getRelDir() > 0)?
+					(connection.getAlignment(rightContig).refStart)
+					:(connection.getAlignment(rightContig).refEnd);	
+
+					leftContig = rightContig;			
+					//System.out.println("------------------------------------ END ------------------------------------");
+		}
+
+		//leftContig = lastContig in the queue
+		if (bestCloseConnection != null){			 
+			endLeft = (leftContig.getRelDir()>0)?(bestCloseConnection.getAlignment(leftContig).refEnd):
+				(bestCloseConnection.getAlignment(leftContig).refStart);								
+		}	
+		if (startLeft<endLeft){
+			JapsaFeature feature = 
+					new JapsaFeature(seq.length() + 1, seq.length() + endLeft - startLeft,
+							"CONTIG",leftContig.getName(),'+',"");
+			feature.addDesc(leftContig.getName() + "+("+startLeft +"," + endLeft+")");
+			anno.add(feature);				
+			seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
+			leftContig.portionUsed += (1.0 + endLeft - startLeft + 1) / leftContig.length();
+		}else{
+
+			JapsaFeature feature = 
+					new JapsaFeature(seq.length() + 1, seq.length() + startLeft - endLeft,
+							"CONTIG",leftContig.getName(),'+',"");
+			feature.addDesc(leftContig.getName() + "-("+endLeft +"," + startLeft+")");
+			anno.add(feature);
+
+			seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
+			leftContig.portionUsed += (1.0 - endLeft + startLeft + 1) / leftContig.length();
+		}
+		if (bestCloseConnection != null){	
+			System.out.printf("Append bridge %d -- %d\n",closeBridge.firstContig.index,  closeBridge.secondContig.index);
+			bestCloseConnection.fillFrom(leftContig, seq, anno);	
+		}
+
+		System.out.println("============================ END ===========================");
+		JapsaAnnotation.write(seq.toSequence(), anno, out);
+	}
 }

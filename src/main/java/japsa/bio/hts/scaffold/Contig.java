@@ -43,6 +43,7 @@ public class Contig{
 	ScaffoldVector myVector;//relative position to the head contig of my scaffold	
 	Sequence contigSequence;//the sequence of the contig	
 	double   coverage = 1.0;
+	double   portionUsed = 0.0;
 	
 	//for depth first search
 	ArrayList<ContigBridge> bridges;	

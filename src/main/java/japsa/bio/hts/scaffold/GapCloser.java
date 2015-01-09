@@ -69,7 +69,8 @@ public class GapCloser {
 		cmdLine.addDouble("cov", 0, "Expected average coverage of Illumina, <=0 to estimate");
 		cmdLine.addInt("qual", 1, "Minimum quality");
 
-		args = cmdLine.stdParseLine(args);		
+		//String [] processArgs = 
+				cmdLine.stdParseLine(args);		
 		/**********************************************************************/
 		String output = cmdLine.getStringVal("output");
 		String bamFile = cmdLine.getStringVal("bamFile");
@@ -86,9 +87,9 @@ public class GapCloser {
 		graph.makeConnections(bamFile, cov / 1.6,  cov * 1.46, threshold, qual);
 		graph.connectBridges();
 		
-		graph.viewStatus();
 		SequenceOutputStream outOS = SequenceOutputStream.makeOutputStream(output);
-		graph.printScaffoldSequence(outOS);
+		graph.printSequences(outOS);
+		//graph.printScaffoldSequence(outOS);
 		outOS.close();		
 	}
 }
