@@ -116,7 +116,7 @@ public class ScaffoldGraph{
 	 * @param qual
 	 * @throws IOException
 	 */
-	public void makeConnections(String bamFile, double minCov, double maxCov,  int threshold, int qual) throws IOException{
+	public void makeConnections(String bamFile, double minCov, double maxCov,  int threshold, int qual, SequenceOutputStream outStr) throws IOException{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));	
 
@@ -134,14 +134,19 @@ public class ScaffoldGraph{
 				continue;
 
 			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
-			
-			if (myRec.contig.index == 74){
-				System.out.println("NNN74 " + myRec.readID + " " + myRec.score + " " + myRec.useful);
+
+			//////////////////////////////////////////////////////////////////
+			// Just to save this
+			if (outStr != null && readID == myRec.readID) {								
+				for (AlignmentRecord s : samList) {
+					outStr.print(myRec.contig.index + " " + s.contig.index + " " + readID + " " + myRec.useful + " " + s.useful + " " + myRec.pos() + " " + s.pos());
+					outStr.println();
+					outStr.print(s.contig.index + " " + myRec.contig.index + " " + readID + " " + s.useful + " " + myRec.useful + " " + s.pos() + " " + myRec.pos());
+					outStr.println();
+				}
 			}
-			if (myRec.contig.index == 58){
-				System.out.println("NNN58 " + myRec.readID +" " + myRec.score + " " + myRec.useful);
-			}
-			
+			//////////////////////////////////////////////////////////////////
+
 			//not the first occurance				
 			if (readID == myRec.readID) {
 				if (myRec.useful){				
@@ -184,7 +189,7 @@ public class ScaffoldGraph{
 		double score = Math.min(a.score, b.score);
 		int alignP = (int) ((b.readStart - a.readStart) * rate);
 		int alignD = (a.strand == b.strand)?1:-1;
-		
+
 
 		int gP = (alignP + (a.strand ? a.refStart:-a.refStart) - (b.strand?b.refStart:-b.refStart));
 		if (!a.strand)
@@ -193,7 +198,7 @@ public class ScaffoldGraph{
 		if (a.contig.index == b.contig.index){
 			System.out.printf("CIRCULAR %d (%d) : (%d,%d)\n", b.contig.index, a.contig.length(), gP, alignD);
 		}		
-		
+
 		int overlap = Math.min(					
 				Math.max(a.readEnd, a.readStart) - Math.min(b.readStart,b.readEnd),
 				Math.max(b.readEnd, b.readStart) - Math.min(a.readStart,a.readEnd));
@@ -220,7 +225,7 @@ public class ScaffoldGraph{
 			//		);
 			return;
 		}
-	
+
 
 		ScaffoldVector trans = new ScaffoldVector(gP, alignD);		
 
@@ -326,7 +331,7 @@ public class ScaffoldGraph{
 					int t=newS;newS = newE;newE = t;
 				}
 			}
-			
+
 			scaffolds[headT].combineScaffold(scaffolds[headF], bridge, posT, posF);
 			System.out.println("After Connect " + contigF.index + " (" + headF +") and " + contigT.index + " (" + headT +") " + (scaffolds[headT].getLast().rightMost() - scaffolds[headT].getFirst().leftMost()));
 			nScaffolds --;
@@ -342,7 +347,7 @@ public class ScaffoldGraph{
 				scaffolds[i].viewSequence(out);
 			}
 		}
-		
+
 		for (Contig contig:contigs){
 			System.out.printf("Contig %d used %6.3f of  %6.3f (%6.3f) Left over %6.3f times or %6.3f%% \n",
 					contig.index,
@@ -352,7 +357,7 @@ public class ScaffoldGraph{
 					contig.coverage/this.estimatedCov - contig.portionUsed,
 					100 - contig.portionUsed*100.0/ (contig.coverage/this.estimatedCov)
 					);
-			
+
 		}
 	}	
 }

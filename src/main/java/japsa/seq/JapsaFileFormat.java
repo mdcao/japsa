@@ -76,9 +76,9 @@ public class JapsaFileFormat extends SequenceReader{
 	public static final String ANNOTATION_COMMENT=COMMENT+"A:";
 	public static final String SEQUENCE_COMMENT=COMMENT+"S:";
 	
-	private byte[] nextLine = new byte[1024];
+	
 	private int firstByte = 0;
-	private int nextLineLength = 0;
+	
 	
 	
 	private byte [] seq = new byte[1 << 20];
@@ -98,32 +98,6 @@ public class JapsaFileFormat extends SequenceReader{
 		nextLine();
 	}
 	
-	/**
-	 * Read the next line (from current pointer to the next eol)
-	 * @return
-	 */
-	private int nextLine() throws IOException{	
-		if (eof) return 0;
-		nextLineLength = 0;
-		if (currentByte != LF && currentByte != CR)
-			nextLine[nextLineLength ++] = currentByte;
-		
-		while (nextByte()){	
-			if (nextLineLength >= nextLine.length){
-				//double the buffer
-				int newLength = nextLine.length * 2;
-				if (newLength < 0)
-					newLength = Integer.MAX_VALUE;
-				nextLine = Arrays.copyOf(nextLine, newLength );
-				
-			}
-			nextLine [nextLineLength ++] = currentByte;
-			
-			if (eol) 
-				return nextLineLength;
-		}
-		return nextLineLength;
-	}
 	
 	private void stripSpace(){
 		firstByte = 0;

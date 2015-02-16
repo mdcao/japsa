@@ -124,7 +124,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 						scaffolds[i].view();						
 						break;//for
 					}else{
-						System.out.printf(" Not Extend %d from %d(%d) to %d(%d) with score %f\n",i,ctg.index, ctgEnd, nextContig.index, newEnd,bridge.getScore());
+						System.out.printf(" Not ExtendE %d from %d(%d) to %d(%d) with score %f\n",i,ctg.index, ctgEnd, nextContig.index, newEnd,bridge.getScore());
 					}
 				}//for				
 			}//while
@@ -138,7 +138,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				System.out.printf(" First %d on %d (%d): \n",i,ctg.index,ctg.bridges.size());				
 				int ctgStart = ctg.leftMost();
 				 
-				extended = false;
+				extended = false; 
 				for (ContigBridge bridge:ctg.bridges){
 					Contig nextContig = bridge.secondContig;					
 					ScaffoldVector trans = bridge.getTransVector();
@@ -188,7 +188,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 						scaffolds[i].view();						
 						break;//for
 					}else{
-						System.out.printf(" NOT Extend %d from %d(%d) to %d(%d) with score %f\n",
+						System.out.printf(" NOT ExtendS %d from %d(%d) to %d(%d) with score %f\n",
 								i,
 								ctg.index, 
 								ctgStart, 

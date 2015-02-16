@@ -41,9 +41,6 @@ import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
 
-
-
-
 /**
  * @author minhduc
  * 
@@ -68,6 +65,8 @@ public class GapCloser {
 		cmdLine.addInt("threshold", 500, "Threshold");
 		cmdLine.addDouble("cov", 0, "Expected average coverage of Illumina, <=0 to estimate");
 		cmdLine.addInt("qual", 1, "Minimum quality");
+		cmdLine.addString("connect", null, "Name of the connection file");
+		
 
 		//String [] processArgs = 
 				cmdLine.stdParseLine(args);		
@@ -80,14 +79,22 @@ public class GapCloser {
 		int qual = cmdLine.getIntVal("qual");
 		/**********************************************************************/
 
+		SequenceOutputStream outOS = null;
+		if (cmdLine.getStringVal("connect") != null){
+			outOS = SequenceOutputStream.makeOutputStream(cmdLine.getStringVal("connect"));			
+		}
+		
 		ScaffoldGraph graph = new ScaffoldGraphDFS(sequenceFile);
 		if (cov <=0)
 			cov = graph.estimatedCov;
 
-		graph.makeConnections(bamFile, cov / 1.6,  cov * 1.46, threshold, qual);
+		graph.makeConnections(bamFile, cov / 1.6,  cov * 1.46, threshold, qual,outOS);
+		if (outOS != null)
+			outOS.close();
+		
 		graph.connectBridges();
 		
-		SequenceOutputStream outOS = SequenceOutputStream.makeOutputStream(output);
+		outOS = SequenceOutputStream.makeOutputStream(output);
 		graph.printSequences(outOS);
 		//graph.printScaffoldSequence(outOS);
 		outOS.close();		

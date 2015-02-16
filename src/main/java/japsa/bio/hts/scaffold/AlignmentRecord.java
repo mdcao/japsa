@@ -133,14 +133,20 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 			readEnd = 1 + readLength - readEnd;
 		}
 
-		int gaps = 500;
-		int extend = 250;
+		int gaps = 400;
+		int extend = 700;
+		
+		
 		//only useful if
 		if ((readLeft > refLeft + gaps || readRight > gaps + refRight)
 				&& (readLeft < extend || refLeft < extend)
 				&& (readRight  < extend || refRight < extend)
 				)
 			useful = true;
+		
+		if (readID == 9774){
+			System.out.println("XXXX " +readID + " " + contig.index + " " + readLeft + " " + readRight + " " + refLeft + " " + refRight + " " + contig.coverage + " " + useful);
+		}
 	}
 	
 	
@@ -173,7 +179,9 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 				+ " " + readStart
 				+ " " + readEnd
 				+ " " + readLength
-				+ " " + strand;
+				+ " " + score
+				+ " " + strand
+				;
 	}
 
 	/* (non-Javadoc)

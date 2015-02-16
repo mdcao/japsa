@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
 
@@ -127,10 +128,40 @@ public abstract class SequenceReader implements Closeable{
 		in.close();
 	}	
 	
+
+	protected byte[] nextLine = new byte[1024];
+	protected int nextLineLength = 0;
+	/**
+	 * Read the next line (from current pointer to the next eol)
+	 * @return
+	 */
+	
+	protected int nextLine() throws IOException{	
+		if (eof) return 0;
+		nextLineLength = 0;
+		if (currentByte != LF && currentByte != CR)
+			nextLine[nextLineLength ++] = currentByte;
+		
+		while (nextByte()){	
+			if (nextLineLength >= nextLine.length){
+				//double the buffer
+				int newLength = nextLine.length * 2;
+				if (newLength < 0)
+					newLength = Integer.MAX_VALUE;
+				nextLine = Arrays.copyOf(nextLine, newLength );
+				
+			}
+			nextLine [nextLineLength ++] = currentByte;
+			
+			if (eol) 
+				return nextLineLength;
+		}
+		return nextLineLength;
+	}
 	
 	/**
-	 * Read the next byte in the stream
-	 * @return the byte read
+	 * Read the next byte in the stream into currentByte
+	 * @return false if end of stream
 	 * @throws IOException
 	 */
 	protected final boolean nextByte() throws IOException{
@@ -192,18 +223,7 @@ public abstract class SequenceReader implements Closeable{
 	 * @return
 	 */
 	public abstract Sequence nextSequence(Alphabet alphabet)  throws IOException;
-	
-	/**
-	 * This method will force the reader to move to the next sequence to read
-	 * unless it points to the next sequence already
-	 * 
-	 * @return false if no more sequence to read, true otherwise
-	 * @throws IOException
-	 */
-	
-	//public abstract boolean hasNext()  throws IOException;
-	
-	
+		
 	
 	
 	/**

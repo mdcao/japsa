@@ -37,9 +37,12 @@ package japsa.seq;
 import japsa.util.MyBitSet;
 
 import java.io.BufferedReader;
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -224,7 +227,7 @@ public class JapsaAnnotation {
 		JapsaFileFormat reader = new JapsaFileFormat(fileName);
 		JapsaAnnotation anno = reader.readAnnotation();
 		reader.close();
-		
+
 		return anno;
 	}
 
@@ -490,7 +493,7 @@ public class JapsaAnnotation {
 
 		if (needSort && !isSort())
 			sortFeatures();
-		
+
 		Iterator<JapsaFeature> iter = featureList.iterator();
 
 		while (iter.hasNext()) {
@@ -498,7 +501,7 @@ public class JapsaAnnotation {
 			out.print('\n');
 		}		
 	}
-	
+
 	/**
 	 * Write the annotation and sequence if available to a stream in JAPSA 
 	 * @param out 
@@ -515,9 +518,9 @@ public class JapsaAnnotation {
 			write(seq, this, out);
 		}
 	}
-	
-	
-	
+
+
+
 	/**
 	 * Write the annotation to a stream in JAPSA 
 	 * @param out 
@@ -544,21 +547,21 @@ public class JapsaAnnotation {
 			iter.next().writeBED(out);			
 		}
 	}
-	
+
 	public void writeFeatureSequence(SequenceOutputStream out) throws IOException{
 		if (seq == null){
 			throw new RuntimeException("The sequence is not known");
 		}
-		
+
 		Iterator<JapsaFeature> iter = featureList.iterator();
 		while (iter.hasNext()) {
 			JapsaFeature feature = iter.next();
 			int start = feature.getStart();
 			int end = feature.getEnd();
-			
+
 			Sequence fSeq = seq.subSequence(start - 1, end);
 			fSeq.setName(feature.getID());
-						
+
 			fSeq.setDesc((feature.getParent() + " " + feature.getDesc()).replaceAll("\n", ";"));
 			fSeq.writeFasta(out);			
 		}
@@ -579,7 +582,7 @@ public class JapsaAnnotation {
 			sequence.print(out);
 		else {// Both are not null
 			//char[] charSeq = sequence.charSequence();
-			
+
 			String seqID = anno.getAnnotationID();
 			if (seqID == null || seqID.length() == 0)
 				seqID = sequence.getName();
@@ -593,7 +596,7 @@ public class JapsaAnnotation {
 			out.print(JapsaFileFormat.DELIMITER);
 			out.print(sequence.alphabet().getName());
 			out.print('\n');
-			
+
 			sequence.writeDescription(out);
 			anno.writeDescription(out);
 
@@ -693,56 +696,176 @@ public class JapsaAnnotation {
 			//out.flush();			
 		}
 	}
-	
-	
+
+	public static HashMap<String, JapsaAnnotation> readMGFF(InputStream in, int upStr, int downStr, String list) throws IOException{
+		boolean notAll = !list.equals("all");
+		
+		
+		HashMap<String, JapsaAnnotation> annoMap = new  HashMap<String, JapsaAnnotation>();
+		
+		String line;		
+		FastaReader reader = new FastaReader(in);
+		reader.nextLine();
+		
+		JapsaAnnotation currentAnno = null;
+		while ( reader.nextLine() > 0){
+			//lineNo ++;
+			line = new String(reader.nextLine);
+			//line = line.trim();
+			if (line.startsWith("##sequence-region")){
+				JapsaAnnotation anno =  new JapsaAnnotation();
+				anno.setAnnotationID(line.split(" ")[1]);
+				annoMap.put(anno.annotationID, anno);
+				if (currentAnno == null)
+					currentAnno = anno;
+				continue;
+			}
+			if (line.startsWith("##FASTA")){
+				break;//pass on to fasta reader
+			}
+			if (line.startsWith("#")){
+				continue;//unknown lines
+			}
+			
+			//assert currentAnno != null
+			String [] toks = line.split("\t");
+			//if (toks[2].equals("region"))
+			//	continue;
+
+			if (toks.length < 2)
+				continue;
+
+			String type = toks[2];
+			if (notAll && !list.contains(type))
+				continue;
+
+			int start = Integer.parseInt(toks[3]);
+			int end = Integer.parseInt(toks[4]);
+
+			String parent = toks[0];
+			if (!parent.equals(currentAnno.annotationID)){
+				currentAnno = annoMap.get(parent);
+			}
+			if (currentAnno == null){
+				in.close();
+				throw new RuntimeException("Sequence region ID " + parent + " not found");
+			}			
+			
+			String ID = "";
+			char strand = toks[6].charAt(0);
+			String desc = toks[8];
+
+			String [] featureChars = toks[8].split(";");
+			for (String fch:featureChars){
+				if (fch.startsWith("Name="))
+					ID = fch.substring(5);
+
+				if (fch.startsWith("Parent="))
+					parent = fch.substring(7);
+			}
+
+			JapsaFeature feature = new JapsaFeature(start, end, type, ID, strand, parent);
+			feature.addDesc(desc);			
+			currentAnno.add(feature);
+
+			//Add upstream
+			if (upStr > 0){// && feature.getType().equals("gene")){
+				if (feature.getStrand() == '-'){
+					JapsaFeature uFeature = new JapsaFeature(end + 1, end + upStr, "upstream", "u" + ID, strand, feature.getID());
+					uFeature.addDesc("Upstream region added automatically");
+					currentAnno.add(uFeature);
+				}else{
+					JapsaFeature uFeature = new JapsaFeature(start - upStr, start - 1, "upstream", "u" + ID, strand, feature.getID());
+					uFeature.addDesc("Upstream region added automatically");
+					currentAnno.add(uFeature);
+				}
+			}
+
+			//add downstream
+			if (downStr > 0){// && feature.getType().equals("gene")){
+				if (feature.getStrand() == '-'){
+					JapsaFeature dFeature = new JapsaFeature(start - downStr, start - 1, "downtream", "d" + ID, strand, feature.getID());
+					dFeature.addDesc("Downstream region added automatically");
+					currentAnno.add(dFeature);					
+				}else{
+					JapsaFeature dFeature = new JapsaFeature(end + 1, end + downStr, "downtream", "d" + ID, strand, feature.getID());
+					dFeature.addDesc("Downstream region added automatically");
+					currentAnno.add(dFeature);					
+				}//else
+			}//if downStr
+		}		
+		//FastaReader reader = new FastaReader(in.);
+		reader.nextByte();
+		Sequence seq;
+		while ((seq = reader.nextSequence(Alphabet.DNA()))!=null){
+			JapsaAnnotation anno = annoMap.get(seq.getName());
+			anno.setSequence(seq);	
+		}
+		
+		return annoMap;
+	}	
+
+
 	public static JapsaAnnotation readGFF(BufferedReader in, int upStr, int downStr, String list) throws IOException{
 		boolean notAll = !list.equals("all");
 		
+
 		String line;		
 		JapsaAnnotation anno =  new JapsaAnnotation();
 		while ( (line = in.readLine()) != null){
 			//lineNo ++;
 			line = line.trim();
-			
+
 			if (line.startsWith("##sequence-region")){
 				anno.setAnnotationID(line.split(" ")[1]);				
 				continue;
+			}			
+
+			if (line.startsWith("##FASTA")){
+				//anno.setAnnotationID(line.split(" ")[1]);				
+				//continue;
+
+				//TODO: read fasta
+				break;
 			}				
-			
+
 			if (line.startsWith("#"))
 				continue;			
-			
+
 			String [] toks = line.split("\t");
 			//if (toks[2].equals("region"))
 			//	continue;
-			
+
+			if (toks.length < 2)
+				continue;
+
 			String type = toks[2];
 			if (notAll && !list.contains(type))
 				continue;
-			
+
 			int start = Integer.parseInt(toks[3]);
 			int end = Integer.parseInt(toks[4]);
-			
+
 			String parent = toks[0];
 			String ID = "";
 			char strand = toks[6].charAt(0);
 			String desc = toks[8];
-			
+
 			String [] featureChars = toks[8].split(";");
 			for (String fch:featureChars){
 				if (fch.startsWith("Name="))
 					ID = fch.substring(5);
-				
+
 				if (fch.startsWith("Parent="))
 					parent = fch.substring(7);
 			}
-			
+
 			JapsaFeature feature = new JapsaFeature(start, end, type, ID, strand, parent);
 			feature.addDesc(desc);			
 			anno.add(feature);
-			
+
 			//Add upstream
-			if (upStr > 0 && feature.getType().equals("gene")){
+			if (upStr > 0){// && feature.getType().equals("gene")){
 				if (feature.getStrand() == '-'){
 					JapsaFeature uFeature = new JapsaFeature(end + 1, end + upStr, "upstream", "u" + ID, strand, feature.getID());
 					uFeature.addDesc("Upstream region added automatically");
@@ -753,9 +876,9 @@ public class JapsaAnnotation {
 					anno.add(uFeature);
 				}
 			}
-			
+
 			//add downstream
-			if (downStr > 0 && feature.getType().equals("gene")){
+			if (downStr > 0){// && feature.getType().equals("gene")){
 				if (feature.getStrand() == '-'){
 					JapsaFeature dFeature = new JapsaFeature(start - downStr, start - 1, "downtream", "d" + ID, strand, feature.getID());
 					dFeature.addDesc("Downstream region added automatically");

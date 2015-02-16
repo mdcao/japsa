@@ -83,7 +83,7 @@ public class Contig{
 	 * @return
 	 */
 	public int leftMost(ScaffoldVector trans){
-		return trans.magnitude - ((myVector.direction > 0)?0:length()); 
+		return trans.magnitude - ((trans.direction > 0)?0:length()); 
 	}
 	
 	/**
@@ -91,7 +91,7 @@ public class Contig{
 	 * @return
 	 */
 	public int rightMost(ScaffoldVector trans){
-		return trans.magnitude + ((myVector.direction > 0)?length():0); 
+		return trans.magnitude + ((trans.direction > 0)?length():0); 
 	}
 	
 	/**

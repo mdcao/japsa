@@ -257,7 +257,7 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 
 					leftContig = rightContig;			
 					//System.out.println("------------------------------------ END ------------------------------------");
-		}
+		}//for
 
 		//leftContig = lastContig in the queue
 		if (bestCloseConnection != null){			 

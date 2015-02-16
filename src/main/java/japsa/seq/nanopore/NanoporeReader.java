@@ -351,10 +351,20 @@ public class NanoporeReader// implements Closeable
 						log = "";
 					
 					FastqSequence fq;
+					
+					fq = reader.getSeq2D();
+					if (fq != null && fq.length() >= minLength){
+						fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
+						fq.print(sos);
+						if (stats){						
+							lengths.add(fq.length());	
+							twoDCount ++;
+						}
+					}
 
 					fq = reader.getSeqTemplate();
 					if (fq != null && fq.length() >= minLength){
-						fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
+						fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName() + " " + log);
 						fq.print(sos);
 						if (stats){						
 							lengths.add(fq.length());	
@@ -364,7 +374,7 @@ public class NanoporeReader// implements Closeable
 					
 					fq = reader.getSeqComplement();
 					if (fq != null && fq.length() >= minLength){						
-						fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName() + " " + log);						
+						fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName() + " " + log);						
 						fq.print(sos);
 						if (stats){						
 							lengths.add(fq.length());	
@@ -372,15 +382,7 @@ public class NanoporeReader// implements Closeable
 						}
 					}				
 
-					fq = reader.getSeq2D();
-					if (fq != null && fq.length() >= minLength){
-						fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName() + " " + log);
-						fq.print(sos);
-						if (stats){						
-							lengths.add(fq.length());	
-							twoDCount ++;
-						}
-					}
+					
 					
 					fileNumber ++;
 				}catch (Exception e){

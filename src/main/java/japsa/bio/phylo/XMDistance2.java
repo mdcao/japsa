@@ -103,7 +103,7 @@ public class XMDistance2 {
 		mtx[0][0] = 0.0;
 		double [] e_i =new double[seqs.size()];
 		
-		for (int i = 1; i < seqs.size();i++){
+		for (int i = 0; i < seqs.size();i++){
 			sS[0] = seqs.get(i);
 			e_i[i] = eModel.encode_optimise(sS);
 			

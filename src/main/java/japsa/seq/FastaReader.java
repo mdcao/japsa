@@ -129,7 +129,7 @@ public class FastaReader extends SequenceReader{
 		seqIndex = 0;//the number of nucletiodes read
 
 		if (currentByte != 62){// 62 = '>'
-			throw new RuntimeException("> is expected at the start line  " + lineNo);
+			throw new RuntimeException("> is expected at the start line " + lineNo + ", found " + ((char)currentByte));
 		}
 
 		//Read the header

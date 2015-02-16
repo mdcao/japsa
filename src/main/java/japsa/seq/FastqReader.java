@@ -35,6 +35,7 @@
 package japsa.seq;
 
 import japsa.seq.Alphabet;
+import japsa.util.Logging;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -137,7 +138,8 @@ public class FastqReader extends SequenceReader{
 		}
 		
 		if (seqIndex != qualIndex){
-			throw new RuntimeException("Lengths of sequence and quality strings do not match at line " + lineNo + " : " + seqIndex + " vs " + qualIndex);
+			//throw new RuntimeException("Lengths of sequence and quality strings do not match at line " + lineNo + " : " + seqIndex + " vs " + qualIndex);
+			Logging.warn("Lengths of sequence and quality strings do not match at line " + lineNo + " : " + seqIndex + " vs " + qualIndex);
 		}
 		
 		//Read the next byte from the stream (expecting a @ or eof
