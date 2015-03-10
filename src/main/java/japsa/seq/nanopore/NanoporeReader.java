@@ -59,7 +59,7 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.np.f5reader", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
+@Deployable(scriptName = "jsa.np.f5reader2", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
 public class NanoporeReader// implements Closeable
 {
 	public static void main(String[] args) throws OutOfMemoryError, Exception {
@@ -124,7 +124,7 @@ public class NanoporeReader// implements Closeable
 		//int maxLength = 0, minLength = Integer.MAX_VALUE;
 	}//main
 
-	
+
 	public static void readKeys(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
 		for (String fileName:fileList){
 			Logging.info("Open " + fileName);
@@ -140,7 +140,7 @@ public class NanoporeReader// implements Closeable
 		}//for		
 
 	}
-	
+
 
 	public static void readEvents(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
 		for (String fileName:fileList){
@@ -242,7 +242,7 @@ public class NanoporeReader// implements Closeable
 
 	}
 
-		
+
 	public static void readModels(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
 		for (String fileName:fileList){
 			Logging.info("Open " + fileName);
@@ -310,15 +310,14 @@ public class NanoporeReader// implements Closeable
 						Logging.info("Max Event = " + reader.bcCompModel.levelMean[maxIndx] + " at " + maxIndx + "(" + reader.bcCompModel.kmer[maxIndx] + ")");
 					}
 				}
-
-
-
 			}catch (Exception e){
 				Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
 			}
 		}//for		
 
 	}
+
+	
 
 	/**
 	 * Read read sequence from a list of fast5 files.
@@ -337,8 +336,8 @@ public class NanoporeReader// implements Closeable
 					NanoporeReader reader = new NanoporeReader(fileName);
 					reader.readFastq();
 					reader.close();
-					
-					
+
+
 					//Get time & date
 					String log = reader.getLog();					
 					if (log != null){
@@ -349,9 +348,9 @@ public class NanoporeReader// implements Closeable
 						log = toks[0];
 					}else
 						log = "";
-					
+
 					FastqSequence fq;
-					
+
 					fq = reader.getSeq2D();
 					if (fq != null && fq.length() >= minLength){
 						fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
@@ -371,7 +370,7 @@ public class NanoporeReader// implements Closeable
 							tempCount ++;
 						}
 					}
-					
+
 					fq = reader.getSeqComplement();
 					if (fq != null && fq.length() >= minLength){						
 						fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName() + " " + log);						
@@ -380,10 +379,8 @@ public class NanoporeReader// implements Closeable
 							lengths.add(fq.length());	
 							compCount ++;
 						}
-					}				
+					}
 
-					
-					
 					fileNumber ++;
 				}catch (Exception e){
 					Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
