@@ -141,7 +141,6 @@ public class NanoporeReader// implements Closeable
 
 	}
 
-
 	public static void readEvents(ArrayList<String> fileList, SequenceOutputStream sos, boolean stats){
 		for (String fileName:fileList){
 			Logging.info("Open " + fileName);
@@ -265,8 +264,8 @@ public class NanoporeReader// implements Closeable
 						sos.print('\t');
 						sos.print(reader.bcTempModel.sdStdv[i]);
 						sos.print('\t');	
-						sos.print(reader.bcTempModel.weigth[i]);
-						sos.print('\n');					
+						//sos.print(reader.bcTempModel.weigth[i]);
+						//sos.print('\n');					
 						if (stats){
 							if (reader.bcTempModel.levelMean[i] < reader.bcTempModel.levelMean[minIndx])
 								minIndx = i;
@@ -295,8 +294,8 @@ public class NanoporeReader// implements Closeable
 						sos.print('\t');
 						sos.print(reader.bcCompModel.sdStdv[i]);
 						sos.print('\t');	
-						sos.print(reader.bcCompModel.weigth[i]);
-						sos.print('\n');
+						//sos.print(reader.bcCompModel.weigth[i]);
+						//sos.print('\n');
 						if (stats){
 							if (reader.bcCompModel.levelMean[i] < reader.bcCompModel.levelMean[minIndx])
 								minIndx = i;
@@ -317,7 +316,7 @@ public class NanoporeReader// implements Closeable
 
 	}
 
-	
+
 
 	/**
 	 * Read read sequence from a list of fast5 files.
@@ -599,7 +598,7 @@ public class NanoporeReader// implements Closeable
 		}
 	}
 
-
+	String expStart = null;
 	/**
 	 * Recursively print a group and its members. Fastq data are read.If all 
 	 * flag is turned on, this method will also reads all events and model data.
@@ -614,6 +613,17 @@ public class NanoporeReader// implements Closeable
 
 		for (HObject member:members) {
 			//System.out.println(indent + member + " " + member.getPath() + " " + member.getClass());
+			//System.out.println(indent + member + " " + member.getPath() + " " + member.getClass());
+			String f = member.getFullName();
+			if (f.contains("tracking_id")){				
+				List<ncsa.hdf.object.Attribute> aL =  (List<ncsa.hdf.object.Attribute>) member.getMetadata();
+				for (ncsa.hdf.object.Attribute att:aL){
+					if (att.getName().equals("exp_start_time")){
+						expStart = ((String[])att.getValue())[0];		
+					}
+				}
+			}			
+
 			if (member instanceof Group) {
 				readData((Group) member, all);
 			}else if (all && member instanceof H5CompoundDS){ 
@@ -648,7 +658,7 @@ public class NanoporeReader// implements Closeable
 						bcCompEvents.pC = (double[]) dat.get(11);
 						bcCompEvents.pG = (double[]) dat.get(12);
 						bcCompEvents.pT = (double[]) dat.get(13);
-						bcCompEvents.rawIndex = (long[]) dat.get(14);
+						//bcCompEvents.rawIndex = (long[]) dat.get(14);
 					}else if (fullName.endsWith("BaseCalled_template/Events")){
 						Logging.info("Read " + fullName);
 						bcTempEvents = new BaseCallEvents();
@@ -667,27 +677,27 @@ public class NanoporeReader// implements Closeable
 						bcTempEvents.pC = (double[]) dat.get(11);
 						bcTempEvents.pG = (double[]) dat.get(12);
 						bcTempEvents.pT = (double[]) dat.get(13);
-						bcTempEvents.rawIndex = (long[]) dat.get(14);
+						//bcTempEvents.rawIndex = (long[]) dat.get(14);
 					}else if (fullName.endsWith("BaseCalled_complement/Model")){
 						Logging.info("Read " + fullName);
 						bcCompModel = new BaseCallModel();
 						bcCompModel.kmer = (String[]) dat.get(0);
-						bcCompModel.variant = (long[]) dat.get(1);
+						bcCompModel.variant = (double[]) dat.get(1);
 						bcCompModel.levelMean = (double[]) dat.get(2);
 						bcCompModel.levelStdv = (double[]) dat.get(3);
 						bcCompModel.sdMean = (double[]) dat.get(4);
 						bcCompModel.sdStdv = (double[]) dat.get(5);						
-						bcCompModel.weigth = (double[]) dat.get(6);
+						//bcCompModel.weigth = (double[]) dat.get(6);
 					}else if (fullName.endsWith("BaseCalled_template/Model")){
 						Logging.info("Read " + fullName);
 						bcTempModel = new BaseCallModel();
 						bcTempModel.kmer = (String[]) dat.get(0);
-						bcTempModel.variant = (long[]) dat.get(1);
+						bcTempModel.variant = (double[]) dat.get(1);
 						bcTempModel.levelMean = (double[]) dat.get(2);
 						bcTempModel.levelStdv = (double[]) dat.get(3);
 						bcTempModel.sdMean = (double[]) dat.get(4);
 						bcTempModel.sdStdv = (double[]) dat.get(5);						
-						bcTempModel.weigth = (double[]) dat.get(6);
+						//bcTempModel.weigth = (double[]) dat.get(6);
 					}else if (fullName.startsWith("/Analyses/EventDetection_000/Reads/") && fullName.endsWith("Events") ){
 						Logging.info("Read " + fullName);
 						events = new DetectedEvents();						
@@ -739,15 +749,15 @@ public class NanoporeReader// implements Closeable
 
 	public static class BaseCallModel{		
 		String [] kmer;
-		long[] variant;
-		double[] levelMean, levelStdv, sdMean, sdStdv, weigth;
+		double[] variant;
+		double[] levelMean, levelStdv, sdMean, sdStdv;//, weigth;
 
 	}
 
 	public static class BaseCallEvents{
 		int dim;
 		double [] mean, start, stdv, length, modelLevel, pModelState, pMpState, pA, pC, pG, pT;
-		long []move, rawIndex;
+		long []move;//, rawIndex;
 		String [] modelState, mpState;
 	}
 

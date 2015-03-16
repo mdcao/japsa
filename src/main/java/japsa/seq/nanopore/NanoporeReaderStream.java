@@ -39,20 +39,14 @@ import java.awt.GridLayout;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.net.Socket;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import javax.swing.BorderFactory;
-import javax.swing.JCheckBox;
-import javax.swing.JFileChooser;
-import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
 import org.jfree.chart.ChartFactory;
@@ -97,14 +91,15 @@ public class NanoporeReaderStream
 				"Minimum sequence length");
 		cmdLine.addBoolean("stats", false, "Compute statistics of reads");
 		cmdLine.addBoolean("number", false, "Add a unique number to read name");
+		cmdLine.addBoolean("time", false, "Getting the sequenceing time of the read -- experimental");
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
 		cmdLine.addString("folder",null, "The download folder");
 		cmdLine.addBoolean("fail",false, "Include fail reads");		
 		cmdLine.addString("pFolderName",null, "Folder to move processed files to");
 		cmdLine.addBoolean("GUI",false, "Whether run with GUI");
 
-		cmdLine.addString("netAddress",null, "Network Address");		
-		cmdLine.addInt("netPort", 3645,  "Network port");
+		//cmdLine.addString("netAddress",null, "Network Address");		
+		//cmdLine.addInt("netPort", 3456,  "Network port");
 
 		cmdLine.addInt("interval", 30,  "Interval between check in seconds");
 		cmdLine.addInt("age", 30,  "The file has to be this old in seconds");
@@ -119,10 +114,11 @@ public class NanoporeReaderStream
 		int minLength  = cmdLine.getIntVal("minLength");
 		boolean stats  = cmdLine.getBooleanVal("stats");
 		boolean number  = cmdLine.getBooleanVal("number");
+		boolean time  = cmdLine.getBooleanVal("time");
 		boolean GUI  = cmdLine.getBooleanVal("GUI");
 		boolean fail  = cmdLine.getBooleanVal("fail");
-		String netAddress = cmdLine.getStringVal("netAddress");
-		int netPort  = cmdLine.getIntVal("netPort");
+		//String netAddress = cmdLine.getStringVal("netAddress");
+		//int netPort  = cmdLine.getIntVal("netPort");
 
 		int interval = cmdLine.getIntVal("interval") * 1000;//in second
 		int age = cmdLine.getIntVal("age") * 1000;//in second
@@ -218,6 +214,7 @@ public class NanoporeReaderStream
 			frame.setVisible(true);  	
 		}
 
+		reader.getTime = time;
 		reader.stats = stats;
 		reader.number = number;
 		reader.minLength = minLength;
@@ -230,13 +227,13 @@ public class NanoporeReaderStream
 		reader.folder = folder;		
 		reader.doFail = fail;
 
-		if (netAddress != null){
-			try{
-				reader.networkOS = new SequenceOutputStream((new Socket(netAddress, netPort)).getOutputStream());
-			}catch(Exception e){
-				Logging.error("Sending over network fail : " + e.getMessage());
-			}
-		}
+		//if (netAddress != null){
+		//	try{
+		//		reader.networkOS = new SequenceOutputStream((new Socket(netAddress, netPort)).getOutputStream());
+		//	}catch(Exception e){
+		//		Logging.error("Sending over network fail : " + e.getMessage());
+		//	}
+		//}
 		reader.sos = SequenceOutputStream.makeOutputStream(output);
 		reader.readFastq(pFolderName);
 		reader.sos.close();
@@ -257,12 +254,24 @@ public class NanoporeReaderStream
 	boolean wait = true;
 	int interval = 1000, age = 1000;
 	boolean doFail = false;
+	boolean getTime = false;
+
+	public void print(FastqSequence fq) throws IOException{
+		fq.print(sos);
+		if (networkOS != null)
+			fq.print(networkOS);
+	}
 
 	public boolean readFastq2(String fileName) throws IOException{
 		Logging.info("Open " + fileName);
 		try{					
 			NanoporeReader npReader = new NanoporeReader(fileName);
-			npReader.readFastq();
+			if (getTime){
+				//need to read events as well
+				npReader.readData();				
+			}else			
+				npReader.readFastq();
+
 			npReader.close();
 
 			//Get time & date
@@ -276,12 +285,16 @@ public class NanoporeReaderStream
 			}else
 				log = "";
 
-			FastqSequence fq;
+			if (getTime){
+				log = log + " ExpStart=" + npReader.expStart + " timestamp=" + npReader.bcTempEvents.start[npReader.bcTempEvents.start.length - 1];				
+			}
 
+			FastqSequence fq;
+			
 			fq = npReader.getSeq2D();
 			if (fq != null && fq.length() >= minLength){
 				fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
-				fq.print(sos);
+				print(fq);
 				if (stats){						
 					lengths.add(fq.length());	
 					twoDCount ++;
@@ -291,7 +304,7 @@ public class NanoporeReaderStream
 			fq = npReader.getSeqTemplate();
 			if (fq != null && fq.length() >= minLength){
 				fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName() + " " + log);
-				fq.print(sos);
+				print(fq);
 				if (stats){						
 					lengths.add(fq.length());	
 					tempCount ++;
@@ -301,7 +314,7 @@ public class NanoporeReaderStream
 			fq = npReader.getSeqComplement();
 			if (fq != null && fq.length() >= minLength){						
 				fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName() + " " + log);						
-				fq.print(sos);
+				print(fq);
 				if (stats){						
 					lengths.add(fq.length());	
 					compCount ++;
@@ -311,6 +324,7 @@ public class NanoporeReaderStream
 			fileNumber ++;			
 		}catch (Exception e){
 			Logging.error("Problem with reading " + fileName + ":" + e.getMessage());
+			e.printStackTrace();
 			return false;
 		}		
 		return true;
@@ -389,13 +403,17 @@ public class NanoporeReaderStream
 						if (filesDone.contains(sPath))
 							continue;
 
-						readFastq2(sPath);						
-						filesDone.add(sPath);	
-						if (pFolder != null){
-							moveFile(f,  pFolder);
-						}//if		
+						if (readFastq2(sPath)){						
+							filesDone.add(sPath);	
+							if (pFolder != null){
+								moveFile(f,  pFolder);
+							}//if
+						}//if
 					}//for			
 				}//if
+				else{
+					Logging.info("Folder " + mainFolder.getAbsolutePath()  + " does not exist, are you sure this is the right folder?");					
+				}
 
 				//Pass folder
 				now = System.currentTimeMillis();
@@ -419,12 +437,13 @@ public class NanoporeReaderStream
 						if (filesDone.contains(sPath))
 							continue;
 
-						readFastq2(sPath);
-						passNumber ++;
-						filesDone.add(sPath);	
-						if (pFolder != null){
-							moveFile(f,  pFolder);
-						}//if			
+						if (readFastq2(sPath)){
+							passNumber ++;
+							filesDone.add(sPath);	
+							if (pFolder != null){
+								moveFile(f,  pFolder);
+							}//if
+						}//if
 					}//for			
 				}//if
 
@@ -452,12 +471,13 @@ public class NanoporeReaderStream
 						if (filesDone.contains(sPath))
 							continue;
 
-						readFastq2(sPath);	
-						failNumber ++;
-						filesDone.add(sPath);	
-						if (pFolder != null){
-							moveFile(f,  pFolder);
-						}//if								
+						if (readFastq2(sPath)){	
+							failNumber ++;
+							filesDone.add(sPath);	
+							if (pFolder != null){
+								moveFile(f,  pFolder);
+							}//if
+						}//if
 					}//for			
 				}//if
 			}//while			
