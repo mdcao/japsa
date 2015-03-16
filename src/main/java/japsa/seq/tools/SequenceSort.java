@@ -35,6 +35,7 @@
 package japsa.seq.tools;
 
 import japsa.seq.Alphabet;
+import japsa.seq.FastqSequence;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
@@ -51,7 +52,7 @@ import java.util.Collections;
  * 
  */
 @Deployable(scriptName = "jsa.seq.sort",
-           scriptDesc = "Sort sequences based on their lengths")
+scriptDesc = "Sort sequences based on their lengths")
 public class SequenceSort {	
 	public static void main(String[] args) throws IOException {		
 
@@ -60,14 +61,23 @@ public class SequenceSort {
 		CommandLine cmdLine = new CommandLine("\nUsage: "
 				+ annotation.scriptName() + " [options] ",
 				annotation.scriptDesc());
-		
+
 		cmdLine.addStdInputFile();
 		cmdLine.addStdOutputFile();		
 		cmdLine.addStdAlphabet();
 		cmdLine.addBoolean("number",false,"Add the order number to the beginning of contig name");
-		
+		cmdLine.addBoolean("reverse",false,"Reverse sort order");
+		cmdLine.addString("sortKey","length","Sort key");
+
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
+		String inputOption = cmdLine.getStringVal("input");
+		String sortKeyOption = cmdLine.getStringVal("sortKey");
+		String outputOption = cmdLine.getStringVal("output");
+		boolean numberOption =  cmdLine.getBooleanVal("number");
+		boolean reverseOption =  cmdLine.getBooleanVal("reverse");
+
+
 
 		//Get dna 		
 		String alphabetOption = cmdLine.getStringVal("alphabet");		
@@ -75,37 +85,60 @@ public class SequenceSort {
 		if (alphabet == null)
 			alphabet = Alphabet.DNA16();
 
-		String input = cmdLine.getStringVal("input");
-		SequenceReader reader = SequenceReader.getReader(input);
+
+
+		SequenceReader reader = SequenceReader.getReader(inputOption);
 		ArrayList<SequenceLength> seqList = new ArrayList<SequenceLength>(); 
-		
+
 		Sequence seq;
+		String sortKeyOptionPrefix = sortKeyOption + "=";
+		int sortKeyOptionIndex = sortKeyOptionPrefix.length();
 		while ((seq = reader.nextSequence(alphabet))!= null){
-			seqList.add(new SequenceLength(seq));			
+			String [] toks = seq.getName().split(" ");
+
+			SequenceLength seqL = new SequenceLength(seq);
+			if (sortKeyOption.equals("length"))
+				seqL.keyCompare = seq.length();
+			else{
+				for (int i = 0; i < toks.length;i++){
+					if (toks[i].startsWith(sortKeyOptionPrefix)){
+						double t = Double.parseDouble(toks[i].substring(sortKeyOptionIndex));
+						seqL.keyCompare = (long) t;						
+					}	
+				}
+			}
+
+			seqList.add(seqL);			
 		}
 		reader.close();		
 		Collections.sort(seqList);
-		Collections.reverse(seqList);
-		
-		String output = cmdLine.getStringVal("output");
-		SequenceOutputStream sos = 	SequenceOutputStream.makeOutputStream(output);
-		
-		if (cmdLine.getBooleanVal("number")){
-			for (int i = 0; i < seqList.size();  i++){
-				String name = seqList.get(i).seq.getName();
-				seqList.get(i).seq.setName(i + "-" + name);
-			}	
-		}
+
+		if (reverseOption)
+			Collections.reverse(seqList);
+
+
+		SequenceOutputStream sos = 	SequenceOutputStream.makeOutputStream(outputOption);
+
+
 		for (int i = 0; i < seqList.size();  i++){
-			seqList.get(i).seq.writeFasta(sos);
-		}
+			seq = seqList.get(i).seq;
+			if (numberOption){
+				seq.setName(i + "-" + seq.getName());
+			}
+			if (seq instanceof FastqSequence){
+				FastqSequence fq = ((FastqSequence) seq);
+				fq.print(sos);				
+			}else				
+				seq.writeFasta(sos);
+		}	
 		sos.close();
 	}
 
 
-	
+
 	static class SequenceLength implements Comparable<SequenceLength>{
 		Sequence seq;
+		long keyCompare;
 		SequenceLength(Sequence seq){
 			this.seq = seq;
 		}
@@ -115,7 +148,7 @@ public class SequenceSort {
 		@Override
 		public int compareTo(SequenceLength o) {
 			// TODO Auto-generated method stub
-			return seq.length() - o.seq.length();
+			return (int) (keyCompare - o.keyCompare);
 		}
 	}
 }
