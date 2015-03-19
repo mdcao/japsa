@@ -37,7 +37,6 @@ package japsa.seq;
 import japsa.util.MyBitSet;
 
 import java.io.BufferedReader;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -748,6 +747,7 @@ public class JapsaAnnotation {
 			}
 			if (currentAnno == null){
 				in.close();
+				reader.close();
 				throw new RuntimeException("Sequence region ID " + parent + " not found");
 			}			
 			
@@ -801,6 +801,7 @@ public class JapsaAnnotation {
 			JapsaAnnotation anno = annoMap.get(seq.getName());
 			anno.setSequence(seq);	
 		}
+		reader.close();
 		
 		return annoMap;
 	}	

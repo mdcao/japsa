@@ -616,6 +616,7 @@ public class NanoporeReader// implements Closeable
 			//System.out.println(indent + member + " " + member.getPath() + " " + member.getClass());
 			String f = member.getFullName();
 			if (f.contains("tracking_id")){				
+				@SuppressWarnings("unchecked")
 				List<ncsa.hdf.object.Attribute> aL =  (List<ncsa.hdf.object.Attribute>) member.getMetadata();
 				for (ncsa.hdf.object.Attribute att:aL){
 					if (att.getName().equals("exp_start_time")){
