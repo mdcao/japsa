@@ -192,15 +192,17 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 	 * 
 	 * Note that if japsa.seq A matches japsa.seq B, the reverse does not neccessarily hold.
 	 * @param another
-	 * @return
+	 * @return 0 if the two sequences identical, -2 if different alphabet, 
+	 * -1 if different length, and a positive number as the first position
+	 * the two sequences differ 
 	 */
 	public int match(Sequence another){
 		if (this.alphabet() != another.alphabet())
-			return -1;
+			return -2;
 		if (length() != another.length())
 			return -1;
 
-		for (int i = length() - 1; i>=0; i--)
+		for (int i = 0; i < length() ; i++)
 			if (!alphabet().match(symbolAt(i), another.getBase(i)))
 				return i + 1;
 
@@ -339,8 +341,7 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 	 */
 	public void write(String fileName) throws IOException {
 		writeJSA(fileName);		
-	}
-	
+	}	
 
 	/**
 	 * Return the string represent the sequence
