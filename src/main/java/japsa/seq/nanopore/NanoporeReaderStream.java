@@ -286,7 +286,7 @@ public class NanoporeReaderStream
 				log = "";
 
 			if (getTime){
-				log = log + " ExpStart=" + npReader.expStart + " timestamp=" + npReader.bcTempEvents.start[npReader.bcTempEvents.start.length - 1];				
+				log = "ExpStart=" + npReader.expStart + " timestamp=" + npReader.bcTempEvents.start[npReader.bcTempEvents.start.length - 1] + " " + log;				
 			}
 
 			FastqSequence fq;

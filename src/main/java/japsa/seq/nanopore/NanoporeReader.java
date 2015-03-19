@@ -682,7 +682,7 @@ public class NanoporeReader// implements Closeable
 						Logging.info("Read " + fullName);
 						bcCompModel = new BaseCallModel();
 						bcCompModel.kmer = (String[]) dat.get(0);
-						bcCompModel.variant = (double[]) dat.get(1);
+						//bcCompModel.variant = (double[]) dat.get(1);
 						bcCompModel.levelMean = (double[]) dat.get(2);
 						bcCompModel.levelStdv = (double[]) dat.get(3);
 						bcCompModel.sdMean = (double[]) dat.get(4);
@@ -692,7 +692,7 @@ public class NanoporeReader// implements Closeable
 						Logging.info("Read " + fullName);
 						bcTempModel = new BaseCallModel();
 						bcTempModel.kmer = (String[]) dat.get(0);
-						bcTempModel.variant = (double[]) dat.get(1);
+						//bcTempModel.variant = (double[]) dat.get(1);
 						bcTempModel.levelMean = (double[]) dat.get(2);
 						bcTempModel.levelStdv = (double[]) dat.get(3);
 						bcTempModel.sdMean = (double[]) dat.get(4);
