@@ -203,7 +203,7 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 			return -1;
 
 		for (int i = 0; i < length() ; i++)
-			if (!alphabet().match(symbolAt(i), another.getBase(i)))
+			if (!alphabet().match(symbolAt(i), another.symbolAt(i)))
 				return i + 1;
 
 		return 0;
@@ -234,7 +234,7 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 		out.print(name);
 		if (desc.length() > 0){
 			out.print(' ');
-			out.print(desc.replaceAll("\n", ";"));//make sure no extra new line is written 
+			out.print(desc.replaceAll("\n+", ";"));//make sure no extra new line is written 
 		}
 
 		for (int i = 0; i < length(); i++) {

@@ -159,6 +159,10 @@ public abstract class SequenceReader implements Closeable{
 		return nextLineLength;
 	}
 	
+	public String getCurrentLine(){
+		return new String(nextLine, 0, nextLineLength);
+	}
+	
 	/**
 	 * Read the next byte in the stream into currentByte
 	 * @return false if end of stream

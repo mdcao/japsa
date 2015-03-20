@@ -1450,8 +1450,8 @@ public abstract class Alphabet {
 		 */
 		@Override
 		public boolean match(int a, int b) {
-			// TODO Auto-generated method stub
-			return false;
+			//FIXME: need to take care of others 
+			return (a == b || a == N);
 		}
 	}
 

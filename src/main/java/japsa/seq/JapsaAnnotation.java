@@ -709,7 +709,7 @@ public class JapsaAnnotation {
 		JapsaAnnotation currentAnno = null;
 		while ( reader.nextLine() > 0){
 			//lineNo ++;
-			line = new String(reader.nextLine);
+			line = reader.getCurrentLine();
 			//line = line.trim();
 			if (line.startsWith("##sequence-region")){
 				JapsaAnnotation anno =  new JapsaAnnotation();

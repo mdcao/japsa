@@ -45,7 +45,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 
-
 public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 	ArrayList<GeneFamily> geneFamilies;
 	String dbID = "JSA";	
@@ -67,16 +66,20 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 	 * @param fileName
 	 * @throws IOException
 	 */
-	public void write2File(String fileName) throws IOException{
+	public void write2File(String fileName, boolean includeAlleles) throws IOException{
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(fileName);
 		for (GeneDatabase.GeneFamily family:geneFamilies){
 			family.represetationSequence().writeFasta(sos);
-			for (Sequence seq:family){
-				seq.writeFasta(sos);
+			if (includeAlleles){
+				for (Sequence seq:family){
+					seq.writeFasta(sos);
+				}
 			}
+			
 		}		
 		sos.close();
 	}
+	
 	
 	/**
 	 * Read an instance of a database from a file. Assuming the consistency
@@ -210,7 +213,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 			Sequence nSeq = seq.clone();
 			nSeq.setDesc(nSeq.getName() + " " + nSeq.getDesc());			
 			nSeq.setName(familyID() + "|" + (geneAlleles.size()));			
-			geneAlleles.add(seq);
+			geneAlleles.add(nSeq);
 
 			updateRep(seq);			
 			return nSeq.getName();			
