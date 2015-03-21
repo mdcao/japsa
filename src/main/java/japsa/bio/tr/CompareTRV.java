@@ -46,7 +46,7 @@ import java.util.ArrayList;
  * @author minhduc
  * 
  */
-public class CompareTRV {	
+public class CompareTRV { 
 //FIXME: standardise
 	public static void main(String[] args) throws Exception {
 		/*********************** Setting up script ****************************/		 
