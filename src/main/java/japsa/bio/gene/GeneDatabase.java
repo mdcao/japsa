@@ -94,7 +94,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 		Alphabet.DNA dna = Alphabet.DNA();
 		Sequence seq;		
 		while ((seq = reader.nextSequence(dna))!=null){
-			String [] toks = seq.getName().split("\\|");
+			String [] toks = seq.getName().split("_");
 			if (toks.length == 2){
 				//rep
 				GeneDatabase.GeneFamily newFam = new GeneDatabase.GeneFamily(db.size());
@@ -117,7 +117,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 	 * @return
 	 */
 	public GeneDatabase.GeneFamily getFamily(String sID){
-		String [] toks = sID.split("\\|");
+		String [] toks = sID.split("_");
 		if (toks.length < 2)
 			return null;
 		
@@ -180,7 +180,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 
 
 		public String familyID(){
-			return "JSA|"+fID;
+			return "JSA_"+fID;
 		}
 
 		public Sequence represetationSequence(){
@@ -212,7 +212,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 
 			Sequence nSeq = seq.clone();
 			nSeq.setDesc(nSeq.getName() + " " + nSeq.getDesc());			
-			nSeq.setName(familyID() + "|" + (geneAlleles.size()));			
+			nSeq.setName(familyID() + "_" + (geneAlleles.size()));			
 			geneAlleles.add(nSeq);
 
 			updateRep(seq);			

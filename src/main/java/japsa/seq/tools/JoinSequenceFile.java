@@ -36,6 +36,7 @@ package japsa.seq.tools;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
+import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -48,26 +49,27 @@ import java.io.IOException;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  *
  */
-@Deployable(scriptName = "jsa.seq.split",
+@Deployable(scriptName = "jsa.seq.join",
             scriptDesc = "Break a multiple sequence files to each sequence per file")
-public class BreakSequenceFile {
+public class JoinSequenceFile {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException{
 		/*********************** Setting up script ****************************/
-		Deployable annotation = BreakSequenceFile.class.getAnnotation(Deployable.class);
+		Deployable annotation = JoinSequenceFile.class.getAnnotation(Deployable.class);
 		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] ",
+				+ annotation.scriptName() + " [options] file1 file2 ...",
 				annotation.scriptDesc());
 				
-		cmdLine.addStdInputFile();
 		cmdLine.addStdAlphabet();
 		
-		cmdLine.addString("output", "out_", "Prefix of the output files");
-		cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
-					
+		cmdLine.addString("output", "-", "Name of the output file");
+		cmdLine.addString("name", "name", "Name of the combined sequence");
+		cmdLine.addBoolean("removeN", false, "Remove wildcards");
+		
+		//cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 
@@ -75,28 +77,28 @@ public class BreakSequenceFile {
 		String alphabetOption = cmdLine.getStringVal("alphabet");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
-			alphabet = Alphabet.DNA5();
+			alphabet = Alphabet.DNA();
 		
 		String output = cmdLine.getStringVal("output");
-		String format = cmdLine.getStringVal("format");
-		String input = cmdLine.getStringVal("input");
+		String name = cmdLine.getStringVal("name");
+		boolean removeN = cmdLine.getBooleanVal("removeN");
+		
+		//String format = cmdLine.getStringVal("format");		
 
-				
-		SequenceReader reader = SequenceReader.getReader(input);
-		
+		SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), 1000000, name);
 		Sequence seq;
-		if (format.equals("fasta")){
+		for (String arg:args){
+			SequenceReader reader = SequenceReader.getReader(arg);
 			while ((seq = reader.nextSequence(alphabet)) != null){
-				seq.writeFasta(output+seq.getName()+".fasta");
+				for (int i = 0; i < seq.length();i++){
+					byte base =seq.getBase(i); 
+					if ((!removeN) || base <4) 
+						sb.append(base);
+				}
+				sb.setDesc(sb.getDesc() + ";" + seq.getDesc());
 			}
-		}else {//if (outType.equals("jsa")){
-			while ((seq = reader.nextSequence(alphabet)) != null){
-				seq.writeJSA(output+seq.getName()+".jsa");
-			}
-		}   
-		
-		
-				
-		reader.close();
+			reader.close();			
+		}				
+		sb.writeFasta(output);		
 	}
 }

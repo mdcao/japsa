@@ -35,6 +35,7 @@
 
 package japsa.util.deploy;
 
+import japsa.bio.alignment.AlignmentEM;
 import japsa.bio.hts.BreakBam;
 import japsa.bio.hts.CountReadInRegion;
 import japsa.bio.hts.FastQRMEmptyRead;
@@ -64,6 +65,7 @@ import japsa.seq.tools.Bed2Japsa;
 import japsa.seq.tools.BreakSequenceFile;
 import japsa.seq.tools.ExtractGeneSequence;
 import japsa.seq.tools.FileFormatConverter;
+import japsa.seq.tools.JoinSequenceFile;
 import japsa.seq.tools.SequenceExtract;
 import japsa.seq.tools.SequenceReverseComplement;
 import japsa.seq.tools.SequenceSort;
@@ -87,7 +89,7 @@ import java.util.Date;
 public class Deploy {
 	@SuppressWarnings("rawtypes")
 	private static ArrayList<Class> tools = new ArrayList<Class>();
-	public static String VERSION = "1.5-3a";
+	public static String VERSION = "1.5-4a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
@@ -97,11 +99,13 @@ public class Deploy {
 		tools.add(SequenceReverseComplement.class);		
 		tools.add(Bed2Japsa.class);
 		tools.add(BreakSequenceFile.class);
+		tools.add(JoinSequenceFile.class);	
 		tools.add(FileFormatConverter.class);
 		tools.add(AddAnnotation.class);
 		tools.add(AnnotateRegions.class);
 		tools.add(AnnotateVCF.class);
 		tools.add(ExtractGeneSequence.class);
+		tools.add(AlignmentEM.class);
 		
 		//tools.add(MarkovCompress.class);
 
@@ -117,7 +121,7 @@ public class Deploy {
 		//jsa.np.
 		tools.add(NanoporeReader.class);
 		tools.add(NanoporeReaderStream.class);
-		//		tools.add(VNTRLongReadsHmmer.class);		
+		//		tools.add(JoinSequenceFile.class);		
 
 		//jsa.trv.*
 		tools.add(ParseTRF.class);		

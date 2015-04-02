@@ -104,7 +104,7 @@ public class BetaBinomialModel {
 	 * @since 2.1
 	 * @version $Id: SaddlePointExpansion.java 1244107 2012-02-14 16:17:55Z erans $
 	 */
-	static final class SaddlePointExpansion {
+	static public final class SaddlePointExpansion {
 
 	    /** 1/2 * log(2 &#960;). */
 	    private static final double HALF_LOG_2_PI = 0.5 * FastMath.log(MathUtils.TWO_PI);
@@ -236,7 +236,7 @@ public class BetaBinomialModel {
 	     * @param q the probability of failure (1 - p).
 	     * @return log(p(x)).
 	     */
-	    static double logBinomialProbability(int x, int n, double p, double q) {
+	    static public  double logBinomialProbability(int x, int n, double p, double q) {
 	        double ret;
 	        if (x == 0) {
 	            if (p < 0.1) {

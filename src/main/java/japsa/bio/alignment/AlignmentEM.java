@@ -28,75 +28,65 @@
  ****************************************************************************/
 
 /**************************     REVISION HISTORY    **************************
- * 21/12/2012 - Minh Duc Cao: Created                                        
+ * 10/12/2014 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.seq.tools;
 
+package japsa.bio.alignment;
 
+import japsa.bio.alignment.ProbFSM.Emission;
+import japsa.bio.alignment.ProbFSM.ProbThreeSM;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import java.io.IOException;
-
-
-
 /**
- * @author Minh Duc Cao (http://www.caominhduc.org/)
+ * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.seq.split",
-            scriptDesc = "Break a multiple sequence files to each sequence per file")
-public class BreakSequenceFile {
-
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws IOException{
+@Deployable(scriptName = "jsa.seq.emalign", 
+scriptDesc = "Get the best alignment of 2 sequences using Expectation-Maximisation on Finite State Machine")
+public class AlignmentEM {
+	//public static SequenceOutputStream datOutGen , datOutEst; 
+	public static void main(String[] args) throws Exception{
 		/*********************** Setting up script ****************************/
-		Deployable annotation = BreakSequenceFile.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] ",
-				annotation.scriptDesc());
-				
-		cmdLine.addStdInputFile();
-		cmdLine.addStdAlphabet();
+		Deployable annotation = AlignmentEM.class.getAnnotation(Deployable.class);		 		
+		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options] <seq1> <seq2>", annotation.scriptDesc());		
+		/**********************************************************************/		
 		
-		cmdLine.addString("output", "out_", "Prefix of the output files");
-		cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
-					
-		args = cmdLine.stdParseLine(args);
+		args = cmdLine.stdParseLine(args);	
 		/**********************************************************************/
 
-		//Get dna 		
-		String alphabetOption = cmdLine.getStringVal("alphabet");		
-		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
-		if (alphabet == null)
-			alphabet = Alphabet.DNA5();
+		Alphabet dna = Alphabet.DNA();
+		if (args.length <2){
+			System.err.println("Two sequence files are required" +
+			cmdLine.usage());
+			System.exit(-1);
+		}
 		
-		String output = cmdLine.getStringVal("output");
-		String format = cmdLine.getStringVal("format");
-		String input = cmdLine.getStringVal("input");
+		Sequence mSeq = SequenceReader.getReader(args[0]).nextSequence(dna);
+		Sequence sSeq = SequenceReader.getReader(args[1]).nextSequence(dna);
 
-				
-		SequenceReader reader = SequenceReader.getReader(input);
+		ProbThreeSM eDp = new ProbThreeSM(mSeq);
 		
-		Sequence seq;
-		if (format.equals("fasta")){
-			while ((seq = reader.nextSequence(alphabet)) != null){
-				seq.writeFasta(output+seq.getName()+".fasta");
-			}
-		}else {//if (outType.equals("jsa")){
-			while ((seq = reader.nextSequence(alphabet)) != null){
-				seq.writeJSA(output+seq.getName()+".jsa");
-			}
-		}   
+		int itNum = 10;//number of iteration
 		
 		
-				
-		reader.close();
+		for (int x = 0; x < itNum;x++){				
+			eDp.resetCount();
+			
+			Emission retState = eDp.align(sSeq);
+			double cost = retState.myCost;
+			System.out.println(eDp.updateCount(retState) + " states and " + cost + " bits " + sSeq.length() + "bp"  );			
+			eDp.reEstimate();
+			System.out.println("----------------------------------------------\n Total cost = " + cost);			
+			eDp.showProb();
+			System.out.println("=============================================");
+		}
+		
+		/***************************************************************/
+		
 	}
 }

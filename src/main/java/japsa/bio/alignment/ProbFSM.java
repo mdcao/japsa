@@ -335,12 +335,9 @@ public abstract class ProbFSM {
 	public static enum EmissionType {COPY, MUTATE,  INSERTION, DELETION};
 	public static class Emission{
 		//This pointer is for implementing dynamic programming using a linked-list
-		Emission next = null;		
-
+		Emission next = null;
 		EmissionType type;
-
 		public int gPos, mPos;
-
 		MachineState toState;
 
 		//These are for backward/forward

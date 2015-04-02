@@ -57,8 +57,7 @@ public class HTSUtilities {
 		
 		int readPos = 0;//start from 0					
 		int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index
-		
-		
+				
 		
 		profile.readClipped = 0;
 		profile.refClipped = sam.getAlignmentStart() + refSeq.length() - sam.getAlignmentEnd();
@@ -69,9 +68,7 @@ public class HTSUtilities {
 		profile.match = 0;
 		profile.mismatch = 0;
 		profile.refBase = 0;
-		profile.readBase = 0;//the number of bases from ref and read
-		
-		
+		profile.readBase = 0;//the number of bases from ref and read		
 
 		for (final CigarElement e : sam.getCigar().getCigarElements()) {
 			final int  length = e.getLength();
