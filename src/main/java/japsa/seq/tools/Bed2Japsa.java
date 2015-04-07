@@ -53,18 +53,18 @@ import java.util.ArrayList;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  *
  */
-@Deployable(scriptName = "jsa.seq.beq2jsa",
+@Deployable(scriptName = "jsa.seq.bed2jsa",
             scriptDesc = "Convert gene annotation from bed format to Japsa format")
 public class Bed2Japsa {
 	public static void main(String[] args) throws IOException {
 		
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.seq.beq2jsa";
-		String desc = "Convert gene annotation from bed format to Japsa format\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [params]");
+		/*********************** Setting up script ****************************/
+		Deployable annotation = Bed2Japsa.class.getAnnotation(Deployable.class);
+		CommandLine cmdLine = new CommandLine("\nUsage: "
+				+ annotation.scriptName() + " [options]",
+				annotation.scriptDesc());		
 		/**********************************************************************/		
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();		
+		cmdLine.addStdInputFile();		
 		cmdLine.addString("output", "-",
 				"Name of the output file ( - for standard output)");
 		
@@ -75,17 +75,7 @@ public class Bed2Japsa {
 		cmdLine.addString("sequence", null,
 				"Name of the sequence file");				
 
-		cmdLine.addStdHelp();	
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}	
+		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		
 		String inFile = cmdLine.getStringVal("input");		

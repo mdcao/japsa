@@ -122,7 +122,6 @@ public class Deploy {
 		//jsa.np.
 		tools.add(NanoporeReader.class);
 		tools.add(NanoporeReaderStream.class);
-		//		tools.add(JoinSequenceFile.class);		
 
 		//jsa.trv.*
 		tools.add(ParseTRF.class);		

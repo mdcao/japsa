@@ -90,12 +90,6 @@ public class BreakBam{
 		
 		int size = cmdLine.getIntVal("size");
 		
-		//example
-		//@ERR091787.1 HSQ955_155:1:1101:1266:2037/1
-		//TGCAGNGGTAAATTGACCCAAGAAACTTATTTAAGACTATCAGCT
-		//+
-		//@BCFF#2B>CFHHIJIJJJJJIJJIJJJGHJIIIJIJJIJJIJJJ
-		
 		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SAMFileReader samReader = new  SAMFileReader(new File(inFile));
 		SAMFileHeader samHeader = samReader.getFileHeader();
@@ -109,18 +103,13 @@ public class BreakBam{
 		int index = 1;
 		SAMFileWriterFactory factory = new SAMFileWriterFactory(); 
 		SAMFileWriter bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File("P"+index+"_" + output));
-		
-		
-		//SequenceOutputStream outStream = 
-		//		new  SequenceOutputStream("P"+index+"_" + output);
+				
 		int count = 0;	
 		int countAll = 0;
 		
 		SAMRecordIterator samIter = samReader.iterator();
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();			
-			//if (sam.getFlags() >= 256)
-			//	continue;
 			
 			if (count == size){
 				//write this samRecord
