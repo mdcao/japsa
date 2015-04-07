@@ -40,6 +40,7 @@ import japsa.bio.hts.BreakBam;
 import japsa.bio.hts.CountReadInRegion;
 import japsa.bio.hts.FastQRMEmptyRead;
 import japsa.bio.hts.FastQTrim;
+import japsa.bio.hts.HTSAlignmentParam;
 import japsa.bio.hts.SelectReadIntersect;
 import japsa.bio.hts.SelectReadSpan;
 import japsa.bio.phylo.XMDistance;
@@ -116,7 +117,7 @@ public class Deploy {
 		tools.add(SelectReadIntersect.class);
 		tools.add(SelectReadSpan.class);				
 		tools.add(CountReadInRegion.class);
-
+		tools.add(HTSAlignmentParam.class);
 
 		//jsa.np.
 		tools.add(NanoporeReader.class);
@@ -160,7 +161,8 @@ public class Deploy {
 		cmdLine.addString("japsa", "japsa.jar", "name of the jar file");
 		cmdLine.addString("prefix", ".", "the directory to install");
 		cmdLine.addString("jlp", "", "java.library.path");
-
+		cmdLine.addBoolean("version", false, "Get version and exit");
+		
 		cmdLine.addStdHelp();// help
 
 		/********************** Standard processing ***************************/
@@ -174,6 +176,10 @@ public class Deploy {
 			System.exit(-1);
 		}
 		/**********************************************************************/
+		if (cmdLine.getBooleanVal("version")){
+			System.out.println(VERSION);
+			System.exit(0);
+		}
 
 		String dirPath = cmdLine.getStringVal("prefix").trim();
 		String jlp = cmdLine.getStringVal("jlp");

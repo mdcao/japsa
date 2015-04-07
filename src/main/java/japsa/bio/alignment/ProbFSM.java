@@ -35,18 +35,29 @@
 package japsa.bio.alignment;
 
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
 
 import japsa.seq.Alphabet;
+import japsa.seq.Alphabet.DNA;
 import japsa.seq.Sequence;
+import japsa.seq.SequenceBuilder;
+import japsa.seq.SequenceOutputStream;
 import japsa.util.ByteArray;
 import japsa.util.JapsaMath;
+
+
 
 /**
  * Implementation of alignment using a probabilistic finite state machine
  * @author minhduc
- *
+ * 
+ * TODO: Need to implement four possible modes of alignment:
+ * - local alignment
+ * - a local, b global
+ * - a global, b local
+ * - a,b global 
  */
 public abstract class ProbFSM {	
 	/**
@@ -82,7 +93,7 @@ public abstract class ProbFSM {
 
 		for (int i = 0; i < states.length;i++){
 			states[i].setCopyProb(probC);
-			System.out.printf("State %s: %3d %3d %3d %3d %8.4f %8.4f %8.4f %8.4f %8.4f\n", states[i].name, states[i].countCopy, states[i].countMutate, states[i].countIns, states[i].countDel, states[i].matchProb,  states[i].insProb,states[i].delProb, states[i].copyProb, states[i].changeProb);
+			//System.out.printf("State %s: %3d %3d %3d %3d %8.4f %8.4f %8.4f %8.4f %8.4f\n", states[i].name, states[i].countCopy, states[i].countMutate, states[i].countIns, states[i].countDel, states[i].matchProb,  states[i].insProb,states[i].delProb, states[i].copyProb, states[i].changeProb);
 		}
 	}
 
@@ -176,7 +187,9 @@ public abstract class ProbFSM {
 			case COPY:
 				bwdEmission.toState.countCopy ++;break;			
 			case MUTATE:
-				bwdEmission.toState.countMutate ++;break;				
+				bwdEmission.toState.countMutate ++;break;
+			default:
+				break;				
 			}
 			countEmis ++;
 			emiss = bwdEmission;			
@@ -199,16 +212,113 @@ public abstract class ProbFSM {
 				break;
 
 			switch (emiss.type){			
-			case INSERTION:System.out.println(bwdEmission.toState.name + " I");break;				
-			case DELETION:System.out.println(bwdEmission.toState.name + " D");break;
-			case COPY:System.out.println(bwdEmission.toState.name + " C");break;
-			case MUTATE:System.out.println(bwdEmission.toState.name + " M");break;		
+			case INSERTION:
+				System.out.println(bwdEmission.toState.name + " I");
+				break;				
+			case DELETION:
+				System.out.println(bwdEmission.toState.name + " D");
+				break;
+			case COPY:
+				System.out.println(bwdEmission.toState.name + " C");
+				break;
+			case MUTATE:
+				System.out.println(bwdEmission.toState.name + " M");
+				break;
+			case INSERTION_FIRST:
+				System.out.println(bwdEmission.toState.name + " L");
+				break;
+			case DELETION_FIRST:
+				System.out.println(bwdEmission.toState.name + " F");
+				break;
 			}
 			countEmis ++;
 			emiss = bwdEmission;			
 		}
 		return countEmis;
 	}
+	
+	public void printAlignment(Emission emiss, Sequence gSeq, SequenceOutputStream out) throws IOException{		
+		SequenceBuilder sbm = new SequenceBuilder(Alphabet.DNA(), 1000, mSeq.getName());
+		SequenceBuilder sbg = new SequenceBuilder(Alphabet.DNA(), 1000, gSeq.getName());
+		StringBuilder sb = new StringBuilder(1000);
+		
+		while (true){			
+			Emission bwdEmission = emiss.bwdEmission;
+			if (bwdEmission == null)
+				break;
+
+			switch (emiss.type){			
+			case INSERTION:
+				sbg.append(gSeq.getBase(emiss.gPos));
+				sbm.append((byte)DNA.GAP);
+				sb.append("I");
+				break;				
+			case DELETION:
+				sbg.append((byte)DNA.GAP);
+				sbm.append(mSeq.getBase(emiss.mPos));
+				sb.append("D");
+				break;
+			case COPY:
+				sbg.append(gSeq.getBase(emiss.gPos));
+				sbm.append(mSeq.getBase(emiss.mPos));
+				sb.append("C");
+				break;
+			case MUTATE:
+				sbg.append(gSeq.getBase(emiss.gPos));
+				sbm.append(mSeq.getBase(emiss.mPos));
+				sb.append("M");
+				break;
+			case INSERTION_FIRST:
+				sbg.append(gSeq.getBase(emiss.gPos));
+				sbm.append((byte)DNA.GAP);
+				sb.append("L");
+				break;
+			case DELETION_FIRST:
+				sbg.append((byte)DNA.GAP);
+				sbm.append(mSeq.getBase(emiss.mPos));
+				sb.append("F");
+				break;
+			}		
+			emiss = bwdEmission;			
+		}
+		
+		
+				
+		int done = sbm.length();		
+		while (done > 0){			
+			int n = Math.min(60, done);
+			
+			out.print(sbm.getName());
+			for (int i = sbm.getName().length(); i < 20; i++)
+				out.print(' ');
+			
+			for (int i = 1; i <= n; i++)
+				out.print(sbm.charAt(done - i));
+			out.println();
+			
+
+			out.print(sbg.getName());
+			for (int i = sbg.getName().length(); i < 20; i++)
+				out.print(' ');
+			
+			for (int i = 1; i <= n; i++)
+				out.print(sbg.charAt(done - i));
+			out.println();
+			
+			for (int i = 0; i < 20; i++)
+				out.print(' ');
+			
+			for (int i = 1; i <= n; i++)
+				out.print(sb.charAt(done - i));
+			out.println();
+			
+			out.println();
+			done -= n;
+		}		
+	}
+
+	
+	
 
 	/************************************************************************/
 	/**
@@ -220,11 +330,11 @@ public abstract class ProbFSM {
 		//return state
 		Emission retEmission = new Emission(states[0], mSeq.length()-1, genSeq.length() -1);
 		retEmission.myCost = genSeq.length() * (insEmissionCost + 4);
-
+		
 
 		Emission currentEmission, finalEmission;//current pointer and last pointer on the linked-list		
 		currentEmission = finalEmission = new Emission(states[0],-1,-1);
-		currentEmission.myCost = 0;		
+		currentEmission.myCost = 0;	
 
 		HashMap<String, Emission> hash = new HashMap<String, Emission>();
 
@@ -330,9 +440,145 @@ public abstract class ProbFSM {
 		}
 		return retEmission;
 	}
+	/**************************************************************
+	 * Align with option to generate 2 bits before and after mSeq
+	 * @param genSeq
+	 * @return
+	 */
+	public Emission alignGenerative(Sequence genSeq){
+		//return state
+		Emission retEmission = new Emission(states[0], mSeq.length()-1, genSeq.length() -1);
+		retEmission.myCost = genSeq.length() * (insEmissionCost + 4);
+		
+		Emission currentEmission, finalEmission;//current pointer and last pointer on the linked-list		
+		currentEmission = finalEmission = new Emission(states[0],-1,-1);
+		currentEmission.myCost = 0;	
+
+		HashMap<String, Emission> hash = new HashMap<String, Emission>();
+
+		while (currentEmission != null){//linked list not exhausted
+			if (currentEmission.gPos >= genSeq.length() - 1){
+				//done generating genSeq
+				if (currentEmission.myCost < retEmission.myCost){
+					retEmission = currentEmission;					
+				}
+			}else if (currentEmission.myCost < retEmission.myCost){
+				String hashKey;
+				Emission nextEmission;
+				double cost;
+
+				//1. consider deletion if profile has something to offer			
+				if (currentEmission.mPos + 1 < mSeq.length() && currentEmission.toState.delState != null){
+					if (currentEmission.gPos < 0)
+						cost = currentEmission.myCost;
+					else
+						cost = currentEmission.myCost + currentEmission.toState.delCost;
+
+					hashKey= Emission.hashKey(currentEmission.toState.delState.name, currentEmission.mPos + 1, currentEmission.gPos);
+					nextEmission = hash.get(hashKey);
+					if (nextEmission == null){
+						nextEmission = new Emission(currentEmission.toState.delState, currentEmission.mPos + 1, currentEmission.gPos);
+						if (currentEmission.gPos < 0)
+							nextEmission.type = EmissionType.DELETION_FIRST;
+						else
+							nextEmission.type = EmissionType.DELETION;
+
+						nextEmission.myCost = cost;
+						hash.put(hashKey, nextEmission);
+
+						finalEmission.next = nextEmission;
+						finalEmission = nextEmission;
+						nextEmission.bwdEmission = currentEmission;
+					}else{
+						if (nextEmission.myCost > cost){
+							nextEmission.myCost = cost;
+							nextEmission.bwdEmission = currentEmission;
+							if (currentEmission.gPos < 0)
+								nextEmission.type = EmissionType.DELETION_FIRST;
+							else
+								nextEmission.type = EmissionType.DELETION;
+						}
+					}//else - if nextstate != null
+				}//if mPos
+
+				//2. insertion			
+				if (currentEmission.gPos + 1 < genSeq.length() && currentEmission.toState.insState != null){
+					if (currentEmission.mPos < 0 || currentEmission.mPos >= mSeq.length()-1)
+						cost = currentEmission.myCost + 2;
+					else
+						cost = currentEmission.myCost + currentEmission.toState.insCost + this.insEmissionCost;
+
+					hashKey= Emission.hashKey(currentEmission.toState.insState.name, currentEmission.mPos, currentEmission.gPos + 1);
+					nextEmission = hash.get(hashKey);
+					if (nextEmission == null){
+						nextEmission = new Emission(currentEmission.toState.insState, currentEmission.mPos, currentEmission.gPos + 1);
+						nextEmission.myCost = cost;
+						if (currentEmission.mPos < 0 || currentEmission.mPos >= mSeq.length()-1)
+							nextEmission.type = EmissionType.INSERTION_FIRST;
+						else
+							nextEmission.type = EmissionType.INSERTION;
+						hash.put(hashKey, nextEmission);
+
+						finalEmission.next = nextEmission;
+						finalEmission = nextEmission;
+						nextEmission.bwdEmission = currentEmission;
+
+					}else{
+						if (nextEmission.myCost > cost){
+							nextEmission.myCost = cost;
+							nextEmission.bwdEmission = currentEmission;
+							if (currentEmission.mPos < 0 || currentEmission.mPos >= mSeq.length()-1)
+								nextEmission.type = EmissionType.INSERTION_FIRST;
+							else
+								nextEmission.type = EmissionType.INSERTION;							
+						}
+					}
+				}
+
+				//3.Match
+				if (currentEmission.gPos + 1 < genSeq.length() && currentEmission.mPos + 1 < mSeq.length()){
+					EmissionType type = EmissionType.COPY;
+
+					if (mSeq.getBase(currentEmission.mPos + 1) == genSeq.getBase(currentEmission.gPos + 1)){
+						cost = currentEmission.myCost + currentEmission.toState.matchCost + currentEmission.toState.copyCost; 					
+					}else{
+						cost = currentEmission.myCost + currentEmission.toState.matchCost + currentEmission.toState.changeCost + this.changeEmissionCost;
+						type = EmissionType.MUTATE;
+					}
+
+					if (cost < retEmission.myCost){
+						hashKey= Emission.hashKey(currentEmission.toState.matchState.name, currentEmission.mPos + 1, currentEmission.gPos +1);
+						nextEmission = hash.get(hashKey);
+						if (nextEmission == null){
+							nextEmission = new Emission(currentEmission.toState.matchState, currentEmission.mPos + 1, currentEmission.gPos +1);
+							nextEmission.type = type;
+
+							nextEmission.myCost = cost;
+							hash.put(hashKey, nextEmission);
+							finalEmission.next = nextEmission;
+							finalEmission = nextEmission;
+							nextEmission.bwdEmission = currentEmission;
+						}else{
+							if (nextEmission.myCost > cost){
+								nextEmission.myCost = cost;
+								nextEmission.bwdEmission = currentEmission;
+								nextEmission.type = type;
+							}
+						}
+					}
+				}//match
+			}
+
+			//helping GC to gabbabe collect current state
+			Emission tmp = currentEmission.next;
+			currentEmission.next = null;
+			currentEmission = tmp;
+		}
+		return retEmission;
+	}
 	/********************************************************************/
 
-	public static enum EmissionType {COPY, MUTATE,  INSERTION, DELETION};
+	public static enum EmissionType {COPY, MUTATE,  INSERTION, DELETION, INSERTION_FIRST, DELETION_FIRST};
 	public static class Emission{
 		//This pointer is for implementing dynamic programming using a linked-list
 		Emission next = null;

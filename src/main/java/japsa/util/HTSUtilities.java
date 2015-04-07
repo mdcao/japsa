@@ -35,7 +35,7 @@ package japsa.util;
 
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
-
+import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 
 /**
@@ -45,6 +45,111 @@ import japsa.seq.Sequence;
  */
 public class HTSUtilities {
 
+	
+	/**
+	 * Get the read subsequence that spans the gene. The method look at an alignment,
+	 * estimated the position on reads that might have mapped to the start and the end
+	 * of the gene, and extracts the subsequence mapped to the whole gene plus the flank 
+	 * 
+	 * 
+	 * @param record
+	 * @param readSequence: The actual read sequence (not from bam/sam file as this may be reverse complemented)
+	 * @param refLength
+	 * @return
+	 */
+	public static Sequence spanningSequence(SAMRecord record, Sequence readSequence, int refLength){		
+		int flank = 0;
+		try{
+			int refStart = record.getAlignmentStart();
+			int refEnd   = record.getAlignmentEnd();
+
+			int left = (int) (refStart * 1.05) + flank;
+			int right = (int) ((refLength - refEnd) * 1.05 + flank);
+
+			int readLength = 0,	readStart = 0, readEnd = 0;	
+
+			boolean enterAlignment = false;		
+			for (final CigarElement e : record.getCigar().getCigarElements()) {				
+				final int  length = e.getLength();
+				switch (e.getOperator()) {
+				case H :
+				case P : //pad is a kind of clipped
+					//throw new RuntimeException("Hard clipping is not supported for this read");
+				case S :
+					if (enterAlignment)
+						readEnd = readLength;
+					readLength += length;
+					break; // soft clip read bases
+				case I :	                	
+				case M :					
+				case EQ :
+				case X :
+					if (!enterAlignment){
+						readStart = readLength + 1;
+						enterAlignment = true;
+					}
+					readLength += length;
+					break;
+				case D :
+				case N :
+					if (!enterAlignment){
+						readStart = readLength + 1;
+						enterAlignment = true;
+					}
+					break;				
+				default : throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
+				}//case
+			}//for
+
+			if (readEnd == 0)
+				readEnd = readLength;//1-index
+
+			if (readLength != readSequence.length()){
+				Logging.error("Error0 " + record.getReadName() + " " + readSequence.length() + " vs estimated " + readLength + " Flag = " + record.getFlags());
+				return null;
+			}
+
+			//start point of the extracted region			
+			int start = readStart - left;
+			if (start <= 0)
+				start = 1;//I am still live in 1-index world
+
+			if (readEnd > readSequence.length()){
+				Logging.error("Error1 " + record.getReadName() + " " + record.getReadLength() + " vs " + readEnd);
+				return null;
+			}
+			int end = readEnd + right;
+
+			if (end > readSequence.length())
+				end = readSequence.length();
+
+			if (start >= end){
+				Logging.error("Error2 " + record.getReadName() + " " + record.getReadLength() + " " + start + " " + end);
+				return null;
+			}
+
+			if (record.getReadNegativeStrandFlag()){
+				//Need to complement the read sequence before calling subsequence = calling sub l-e, l-s then complementing
+				//return Alphabet.DNA.complement(readSequence.subSequence(readSequence.length() - end,  readSequence.length() - start + 1));
+				Sequence seq = Alphabet.DNA.complement(readSequence).subSequence(start - 1, end);
+				seq.setName(readSequence.getName()+"_r_"+readStart+"_"+readEnd + "_"+start+"_"+end);
+
+				return seq;
+			}else{
+				Sequence seq = readSequence.subSequence(start - 1, end);
+				seq.setName(readSequence.getName()+"_"+readStart+"_"+readEnd +"_"+start+"_"+end);
+				return seq;
+			}
+
+		}catch(Exception e){
+			Logging.warn(e.getMessage());
+			e.printStackTrace();
+			//continue;//while
+			return null;
+		}
+
+	}
+	
 	/**
 	 * Get the identity between a read sequence from a sam and a reference sequence
 	 * @param refSeq

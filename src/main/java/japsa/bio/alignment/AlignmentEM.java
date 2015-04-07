@@ -38,6 +38,7 @@ import japsa.bio.alignment.ProbFSM.Emission;
 import japsa.bio.alignment.ProbFSM.ProbThreeSM;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -69,15 +70,15 @@ public class AlignmentEM {
 		Sequence mSeq = SequenceReader.getReader(args[0]).nextSequence(dna);
 		Sequence sSeq = SequenceReader.getReader(args[1]).nextSequence(dna);
 
-		ProbThreeSM eDp = new ProbThreeSM(mSeq);
+		ProbFSM eDp = new ProbThreeSM(mSeq);
 		
 		int itNum = 10;//number of iteration
 		
-		
+		Emission retState = null;
 		for (int x = 0; x < itNum;x++){				
 			eDp.resetCount();
 			
-			Emission retState = eDp.align(sSeq);
+			retState = eDp.alignGenerative(sSeq);
 			double cost = retState.myCost;
 			System.out.println(eDp.updateCount(retState) + " states and " + cost + " bits " + sSeq.length() + "bp"  );			
 			eDp.reEstimate();
@@ -85,6 +86,10 @@ public class AlignmentEM {
 			eDp.showProb();
 			System.out.println("=============================================");
 		}
+		
+		SequenceOutputStream out = SequenceOutputStream.makeOutputStream("-");
+		eDp.printAlignment(retState, sSeq, out);
+		out.close();
 		
 		/***************************************************************/
 		
