@@ -283,13 +283,23 @@ public abstract class ProbFSM {
 		}
 		
 		
-				
+			
+		int nameLength = 32;
 		int done = sbm.length();		
 		while (done > 0){			
 			int n = Math.min(60, done);
+			String mName = sbm.getName();
+			String gName = sbg.getName();
 			
-			out.print(sbm.getName());
-			for (int i = sbm.getName().length(); i < 20; i++)
+			if (mName.length() > nameLength -1)
+				mName = mName.substring(0, nameLength -1);
+			
+			if (gName.length() > nameLength)
+				gName = gName.substring(0, nameLength -1);
+			
+			
+			out.print(mName);
+			for (int i = mName.length(); i < nameLength; i++)
 				out.print(' ');
 			
 			for (int i = 1; i <= n; i++)
@@ -297,15 +307,15 @@ public abstract class ProbFSM {
 			out.println();
 			
 
-			out.print(sbg.getName());
-			for (int i = sbg.getName().length(); i < 20; i++)
-				out.print(' ');
+			out.print(gName);
+			for (int i = gName.length(); i < nameLength; i++)
+				out.print(' ');			
 			
 			for (int i = 1; i <= n; i++)
 				out.print(sbg.charAt(done - i));
 			out.println();
 			
-			for (int i = 0; i < 20; i++)
+			for (int i = 0; i < nameLength; i++)
 				out.print(' ');
 			
 			for (int i = 1; i <= n; i++)

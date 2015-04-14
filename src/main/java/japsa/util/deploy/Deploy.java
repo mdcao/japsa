@@ -43,6 +43,10 @@ import japsa.bio.hts.FastQTrim;
 import japsa.bio.hts.HTSAlignmentParam;
 import japsa.bio.hts.SelectReadIntersect;
 import japsa.bio.hts.SelectReadSpan;
+import japsa.bio.np.GeneStrainTyping;
+import japsa.bio.np.MLSTStrainTyping;
+import japsa.bio.np.ResistanceGene;
+import japsa.bio.np.SpeciesMixtureTyping;
 import japsa.bio.phylo.XMDistance;
 import japsa.bio.phylo.XMDistance2;
 import japsa.bio.phylo.tools.NormaliseTree;
@@ -121,7 +125,11 @@ public class Deploy {
 
 		//jsa.np.
 		tools.add(NanoporeReader.class);
-		tools.add(NanoporeReaderStream.class);
+		tools.add(NanoporeReaderStream.class);				
+		tools.add(SpeciesMixtureTyping.class);		
+		tools.add(GeneStrainTyping.class);
+		tools.add(MLSTStrainTyping.class);
+		tools.add(ResistanceGene.class);		
 
 		//jsa.trv.*
 		tools.add(ParseTRF.class);		

@@ -57,8 +57,8 @@ public class HTSUtilities {
 	 * @param refLength
 	 * @return
 	 */
-	public static Sequence spanningSequence(SAMRecord record, Sequence readSequence, int refLength){		
-		int flank = 0;
+	public static Sequence spanningSequence(SAMRecord record, Sequence readSequence, int refLength, int flank){		
+		//int flank = 0;
 		try{
 			int refStart = record.getAlignmentStart();
 			int refEnd   = record.getAlignmentEnd();
