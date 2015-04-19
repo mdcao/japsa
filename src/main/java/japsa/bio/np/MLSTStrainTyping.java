@@ -48,6 +48,7 @@ import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
@@ -440,11 +441,17 @@ public class MLSTStrainTyping {
 	 */
 	public void typing(String bamFile, int top) throws IOException, InterruptedException{		
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
-
+		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile));		
-		SAMRecordIterator samIter = samReader.iterator();		
+		SamReader samReader;
+		if ("-".equals(bamFile))
+			samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+		else
+			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
+		SAMRecordIterator samIter = samReader.iterator();	
+
+		
 		String readName = "";
 		//A dummy sequence
 		Sequence readSequence = new Sequence(Alphabet.DNA(),1,"");

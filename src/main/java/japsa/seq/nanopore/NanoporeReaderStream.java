@@ -129,90 +129,6 @@ public class NanoporeReaderStream
 		}
 
 		NanoporeReaderStream reader = new NanoporeReaderStream();
-		if (GUI){ 
-			System.setProperty("java.awt.headless", "false");
-			TimeTableXYDataset dataset = new TimeTableXYDataset();
-
-			GUIReader mGUI = new GUIReader(reader,dataset);			
-			new Thread(mGUI).start();
-
-			JFreeChart chart = ChartFactory.createStackedXYAreaChart(
-					"Nanopore Fast5 Reader",      // chart title
-					"Time",             // domain axis label
-					"read number",                   // range axis label
-					dataset   
-					);			
-
-			final StackedXYAreaRenderer render = new StackedXYAreaRenderer();
-
-			DateAxis domainAxis = new DateAxis();
-			domainAxis.setAutoRange(true);
-			domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
-			//domainAxis.setTickUnit(new DateTickUnit(DateTickUnitType.SECOND, 1));
-
-			XYPlot plot = (XYPlot) chart.getPlot();
-			plot.setRenderer(render);
-			plot.setDomainAxis(domainAxis);
-			plot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
-			plot.setForegroundAlpha(0.5f);
-
-			NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
-			rangeAxis.setNumberFormatOverride(new DecimalFormat("#,###.#"));
-			rangeAxis.setAutoRange(true);
-
-			JFrame frame = new JFrame("NP Reader");
-			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			JPanel mainPanel = new JPanel(new BorderLayout());
-			ChartPanel chartLabel = new ChartPanel(chart);
-
-			frame.getContentPane().add(mainPanel);
-			mainPanel.add(chartLabel);			
-
-			JPanel controlPanel = new JPanel(new GridLayout(0,2));
-			mainPanel.add(controlPanel, BorderLayout.PAGE_END);
-
-			controlPanel.add(new JLabel("Total File Number"));			
-			controlPanel.add(mGUI.fileNumberField);
-
-			controlPanel.add(new JLabel("Pass File Number"));
-			controlPanel.add(mGUI.pFileNumberField);
-
-			controlPanel.add(new JLabel("Fail File Number"));
-			controlPanel.add(mGUI.fFileNumberField);				
-
-			controlPanel.add(new JLabel("2D Reads"));
-			controlPanel.add(mGUI.twoDReadField);
-
-			controlPanel.add(new JLabel("Complement Reads"));			
-			controlPanel.add(mGUI.compReadField);
-
-			controlPanel.add(new JLabel("Template Reads"));			
-			controlPanel.add(mGUI.tempReadField);
-
-			/****************************************************
-			JPanel iPanel = new JPanel();
-			JPanel oPanel = new JPanel();
-
-			iPanel.setBorder(BorderFactory.createTitledBorder("Input"));
-			iPanel.setLayout(new GridLayout(0,3));
-
-			iPanel.add(new JCheckBox("Pass Folder"));
-			iPanel.add(new JFileChooser());
-			iPanel.add(new JFileChooser());
-
-			iPanel.add(new JCheckBox("Fail Folder"));		
-
-			controlPanel.add(iPanel);
-			controlPanel.add(oPanel);
-
-
-			oPanel.setBorder(BorderFactory.createTitledBorder("Output"));			
-
-			/****************************************************/
-
-			frame.pack();
-			frame.setVisible(true);  	
-		}
 
 		reader.getTime = time;
 		reader.stats = stats;
@@ -223,17 +139,24 @@ public class NanoporeReaderStream
 		reader.age = age;
 
 		reader.f5List = f5list;
-		//if (folder != null)
 		reader.folder = folder;		
 		reader.doFail = fail;
 
-		//if (netAddress != null){
-		//	try{
-		//		reader.networkOS = new SequenceOutputStream((new Socket(netAddress, netPort)).getOutputStream());
-		//	}catch(Exception e){
-		//		Logging.error("Sending over network fail : " + e.getMessage());
-		//	}
-		//}
+
+
+		if (GUI){
+			System.setProperty("java.awt.headless", "false");
+			reader.stats = true;//GUI implies stats
+			reader.ready = false;//wait for the command from GUI
+			
+			TimeTableXYDataset dataset = new TimeTableXYDataset();
+			NanoporeReaderWindow mGUI = new NanoporeReaderWindow(reader,dataset);
+			
+			new Thread(mGUI).start();
+		}
+
+		//reader need to wait until ready to go
+
 		reader.sos = SequenceOutputStream.makeOutputStream(output);
 		reader.readFastq(pFolderName);
 		reader.sos.close();
@@ -255,6 +178,8 @@ public class NanoporeReaderStream
 	int interval = 1000, age = 1000;
 	boolean doFail = false;
 	boolean getTime = false;
+
+	boolean ready = true;
 
 	public void print(FastqSequence fq) throws IOException{
 		fq.print(sos);
@@ -290,7 +215,7 @@ public class NanoporeReaderStream
 			}
 
 			FastqSequence fq;
-			
+
 			fq = npReader.getSeq2D();
 			if (fq != null && fq.length() >= minLength){
 				fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
@@ -518,53 +443,4 @@ public class NanoporeReaderStream
 		}
 	}
 
-	static class GUIReader implements Runnable {
-		NanoporeReaderStream reader;
-		TimeTableXYDataset dataSet;		
-
-		JTextField fileNumberField = new JTextField("0");
-		JTextField pFileNumberField = new JTextField("0");
-		JTextField fFileNumberField = new JTextField("0");
-		JTextField twoDReadField = new JTextField("0");
-		JTextField compReadField = new JTextField("0");
-		JTextField tempReadField = new JTextField("0");		
-
-
-		public GUIReader (NanoporeReaderStream r, TimeTableXYDataset dataset){
-			reader = r;
-			this.dataSet = dataset;
-
-			fileNumberField.setEnabled(false);
-			pFileNumberField.setEnabled(false);
-			fFileNumberField.setEnabled(false);
-			twoDReadField.setEnabled(false);
-			compReadField.setEnabled(false);
-			tempReadField.setEnabled(false);
-		}		
-
-		public void run() {
-			while(true) {				                
-				//synchronized(reader) {//avoid concurrent update					
-				TimePeriod period = new Second();
-				dataSet.add(period, reader.twoDCount,"2D");
-				dataSet.add(period, reader.compCount,"complement");
-				dataSet.add(period, reader.tempCount,"template");
-
-
-				fileNumberField.setText(reader.fileNumber+"");	                
-				pFileNumberField.setText(reader.passNumber+"");
-				fFileNumberField.setText(reader.failNumber+"");
-				twoDReadField.setText(reader.twoDCount+"");
-				compReadField.setText(reader.compCount+"");
-				tempReadField.setText(reader.tempCount+"");	
-
-				//}  
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException ex) {
-					Logging.error(ex.getMessage());
-				}
-			}
-		}
-	}
 }
