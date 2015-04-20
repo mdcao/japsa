@@ -65,11 +65,11 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.StackedXYAreaRenderer;
 import org.jfree.data.time.Second;
-import org.jfree.data.time.TimePeriod;
 import org.jfree.data.time.TimeTableXYDataset;
 
 /**
@@ -79,13 +79,12 @@ import org.jfree.data.time.TimeTableXYDataset;
 public class NanoporeReaderWindow implements Runnable{
 
 	private JFrame frmNanoporeReader;
-	private int height = 600, width = 800;
+	private int height = 600;
 	private int topR = 100, topC = 100;
-	String downloadFolder;	
-	
+	//String downloadFolder;	
+
 	TimeTableXYDataset dataSet;
 	NanoporeReaderStream reader;
-
 
 	/**
 	 * Launch the application.
@@ -94,7 +93,7 @@ public class NanoporeReaderWindow implements Runnable{
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					NanoporeReaderWindow window = new NanoporeReaderWindow(null,null);
+					NanoporeReaderWindow window = new NanoporeReaderWindow(new NanoporeReaderStream(),null);
 					window.frmNanoporeReader.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -110,11 +109,11 @@ public class NanoporeReaderWindow implements Runnable{
 	public NanoporeReaderWindow(NanoporeReaderStream r, TimeTableXYDataset dataset) throws IOException {
 		reader = r;
 		this.dataSet = dataset;
-		
+
 		initialize();		
 		//frmNanoporeReader.pack();
 		frmNanoporeReader.setVisible(true);
-		
+
 	}			
 
 
@@ -122,42 +121,41 @@ public class NanoporeReaderWindow implements Runnable{
 	 * Initialize the contents of the frame.
 	 * @throws IOException 
 	 */
-	private void initialize() throws IOException {
-		downloadFolder = (new File(".")).getCanonicalPath();
+	private void initialize() throws IOException {		
 		frmNanoporeReader = new JFrame();
 		frmNanoporeReader.setTitle("Nanopore Reader");
-		frmNanoporeReader.setBounds(topC, topR, 1218, 716);
+		frmNanoporeReader.setBounds(topC, topR, 1238, 714);
 		frmNanoporeReader.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmNanoporeReader.getContentPane().setLayout(new BorderLayout(0, 0));
 
-		JPanel controlPanel = new JPanel();
+		final JPanel controlPanel = new JPanel();
 		frmNanoporeReader.getContentPane().add(controlPanel, BorderLayout.WEST);
 		controlPanel.setPreferredSize(new Dimension(320, height));
 		controlPanel.setLayout(null);
 
-		JPanel inputPanel = new JPanel();
+		final JPanel inputPanel = new JPanel();
 		inputPanel.setBounds(0, 23, 400, 157);
 		inputPanel.setBorder(BorderFactory.createTitledBorder("Input"));
 		controlPanel.add(inputPanel);
 		inputPanel.setLayout(null);
 
-		JRadioButton rdbtnInputStream = new JRadioButton("Read files from input Stream");
+		final JRadioButton rdbtnInputStream = new JRadioButton("Read files from input Stream");
 		rdbtnInputStream.setBounds(8, 24, 384, 23);
 		inputPanel.add(rdbtnInputStream);
 
-		JRadioButton rdbtnF = new JRadioButton("Read files from download directory");
+		final JRadioButton rdbtnF = new JRadioButton("Read files from download directory");
 		rdbtnF.setBounds(8, 51, 289, 23);
 		inputPanel.add(rdbtnF);
 
-		ButtonGroup group = new ButtonGroup();
+		final ButtonGroup group = new ButtonGroup();
 		group.add(rdbtnInputStream);
 		group.add(rdbtnF);
-		
 
-		final JTextField txtDir = new JTextField(this.downloadFolder);		
-		txtDir.setBounds(30, 82, 362, 20);
+
+		final JTextField txtDir = new JTextField(reader.folder);		
+		txtDir.setBounds(18, 82, 289, 20);
 		inputPanel.add(txtDir);
-		
+
 		final JButton btnChange = new JButton("Change");
 		btnChange.setBounds(28, 109, 117, 25);
 		inputPanel.add(btnChange);
@@ -166,29 +164,37 @@ public class NanoporeReaderWindow implements Runnable{
 		chckbxInc.setBounds(173, 110, 207, 23);
 		inputPanel.add(chckbxInc);
 
+		chckbxInc.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e){
+				reader.doFail = (e.getStateChange() == ItemEvent.SELECTED);
+			}		
+		});
+
 
 		btnChange.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
 				JFileChooser fileChooser = new JFileChooser();
 				fileChooser.setDialogTitle("Select download directory");
 				fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				fileChooser.setCurrentDirectory(new java.io.File("."));
+				fileChooser.setCurrentDirectory(new File(txtDir.getText()));
+
 				int returnValue = fileChooser.showOpenDialog(null);
 				if (returnValue == JFileChooser.APPROVE_OPTION) {
-					downloadFolder = fileChooser.getSelectedFile().getPath();
-					txtDir.setText(downloadFolder);	            
+					reader.folder = fileChooser.getSelectedFile().getPath();
+					txtDir.setText(reader.folder);	            
 				}
 			}
 		});
-		
-		
+
+
+
 		rdbtnF.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e){
 				if (e.getStateChange() == ItemEvent.SELECTED){
 					txtDir.setEnabled(true);
 					btnChange.setEnabled(true);
 					chckbxInc.setEnabled(true);
-					
+
 				}else{
 					txtDir.setEnabled(false);
 					btnChange.setEnabled(true);
@@ -197,158 +203,186 @@ public class NanoporeReaderWindow implements Runnable{
 			}           
 		});
 
-		JPanel outputPanel = new JPanel();
+		final JPanel outputPanel = new JPanel();
 		outputPanel.setBounds(0, 192, 400, 169);
 		outputPanel.setBorder(BorderFactory.createTitledBorder("Output"));
 		controlPanel.add(outputPanel);
 		outputPanel.setLayout(null);
-		
+
 		final JRadioButton rdbtnOut2Str = new JRadioButton("Output to output stream");
 		rdbtnOut2Str.setBounds(8, 25, 302, 23);
 		outputPanel.add(rdbtnOut2Str);
-		
+
 		final JRadioButton rdbtnOut2File = new JRadioButton("Output to file");	
 		rdbtnOut2File.setBounds(8, 51, 302, 23);
 		outputPanel.add(rdbtnOut2File);
-		
-		ButtonGroup group2 = new ButtonGroup();
+
+		final ButtonGroup group2 = new ButtonGroup();
 		group2.add(rdbtnOut2Str);		
 		group2.add(rdbtnOut2File);
-		
-		final JTextField txtOFile = new JTextField(this.downloadFolder);		
-		txtOFile.setBounds(26, 77, 362, 20);
+
+		final JTextField txtOFile = new JTextField(reader.output);		
+		txtOFile.setBounds(18, 82, 295, 20);
 		outputPanel.add(txtOFile);
-		
-		final JButton btnFileChange = new JButton("Change");
-		btnFileChange.setBounds(26, 109, 117, 25);
+
+		final JButton btnFileChange = new JButton("Change");		
+		btnFileChange.setBounds(26, 109, 117, 25);	
 		outputPanel.add(btnFileChange);
-		
-		
-		JPanel optionPanel = new JPanel();
+
+
+		btnFileChange.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ae) {
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setDialogTitle("Select output file");
+				//fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				fileChooser.setCurrentDirectory(new File(txtOFile.getText()));
+				int returnValue = fileChooser.showOpenDialog(null);
+				if (returnValue == JFileChooser.APPROVE_OPTION) {
+					reader.output = fileChooser.getSelectedFile().getPath();
+					txtOFile.setText(reader.output);	            
+				}
+			}
+		});
+
+
+
+
+		final JPanel optionPanel = new JPanel();
 		optionPanel.setBounds(0, 373, 400, 132);
 		optionPanel.setBorder(BorderFactory.createTitledBorder("Options"));
 		controlPanel.add(optionPanel);
 		optionPanel.setLayout(null);
-		
-		JCheckBox chckReads = new JCheckBox("Include template and complement reads",true);
-		chckReads.setBounds(8, 23, 384, 23);
+
+		final JCheckBox chckReads = new JCheckBox("Include template and complement reads",true);
+		chckReads.setBounds(8, 23, 310, 23);
 		optionPanel.add(chckReads);
-		
-		JCheckBox chckbxAddAUnicqu = new JCheckBox("Add a unique number to read name",reader.number);
+
+		chckReads.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e){
+				reader.doLow = (e.getStateChange() == ItemEvent.SELECTED);
+			}		
+		});
+
+
+		final JCheckBox chckbxAddAUnicqu = new JCheckBox("Add a unique number to read name",reader.number);
 		chckbxAddAUnicqu.setBounds(8, 52, 373, 23);
 		optionPanel.add(chckbxAddAUnicqu);
-		
-		JLabel lblMinReadLength = new JLabel("Min read length");
+
+		chckbxAddAUnicqu.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e){
+				reader.number = (e.getStateChange() == ItemEvent.SELECTED);
+			}		
+		});
+
+
+
+		final JLabel lblMinReadLength = new JLabel("Min read length");
 		lblMinReadLength.setBounds(8, 83, 154, 15);
 		optionPanel.add(lblMinReadLength);
-		
-		JTextField textPane = new JTextField();
-		textPane.setText(reader.minLength+"");
-		textPane.setBounds(137, 77, 71, 21);
-		optionPanel.add(textPane);
-		
-		JPanel lPanel = new JPanel();
+
+		final JTextField txtMinLenth = new JTextField();
+		txtMinLenth.setText(reader.minLength+"");
+		txtMinLenth.setBounds(137, 77, 71, 21);
+		optionPanel.add(txtMinLenth);
+
+		final JPanel lPanel = new JPanel();
 		lPanel.setBounds(0, 508, 400, 83);
 		controlPanel.add(lPanel);
 		lPanel.setLayout(null);		
-		
-		JButton btnStart = new JButton("Start");
-		btnStart.setBounds(68, 36, 117, 25);
+
+		final JButton btnStart = new JButton("Start");
+		btnStart.setBounds(27, 36, 117, 25);
 		btnStart.setEnabled(true);
 		lPanel.add(btnStart);
-		
-		
-		JButton btnStop = new JButton("Stop");		
-		btnStop.setBounds(197, 36, 117, 25);
+
+
+		final JButton btnStop = new JButton("Stop");		
+		btnStop.setBounds(179, 36, 117, 25);
 		btnStop.setEnabled(false);
 		lPanel.add(btnStop);
-		
-				
-		JPanel mainPanel = new JPanel();
+
+
+		final JPanel mainPanel = new JPanel();
 		frmNanoporeReader.getContentPane().add(mainPanel, BorderLayout.CENTER);
-		mainPanel.setBorder(BorderFactory.createTitledBorder("Statistics"));
+		//mainPanel.setBorder(BorderFactory.createTitledBorder("Statistics"));
 		mainPanel.setLayout(null);
-		
-		JPanel panelStats = new JPanel();
-		panelStats.setBounds(12, 12, 603, 403);
-		mainPanel.add(panelStats);
-		
-		JPanel panelCounts = new JPanel();
-		panelCounts.setBounds(622, 12, 268, 367);
+
+		final JPanel panelCounts = new JPanel();
+		panelCounts.setBounds(12, 360, 268, 317);
 		mainPanel.add(panelCounts);
 		panelCounts.setLayout(null);
-		
-		
+
+
 		//////////////////////////////////////////////////
-		JLabel lblFiles = new JLabel("Total fast5 files");
+		final JLabel lblFiles = new JLabel("Total fast5 files");
 		lblFiles.setBounds(10, 10, 140, 20);
 		panelCounts.add(lblFiles);
-		
+
 		txtTFiles = new JTextField("0");
 		txtTFiles.setEditable(false);
 		txtTFiles.setBounds(150, 10, 110, 20);
 		panelCounts.add(txtTFiles);
 		txtTFiles.setColumns(10);
-		
+
 		////////////////////////////////////////////////
-		JLabel lblpFiles = new JLabel("Pass files");
+		final JLabel lblpFiles = new JLabel("Pass files");
 		lblpFiles.setBounds(10, 35, 140, 20);
 		//lblpFiles.setBounds(63, 61, 68, 15);
 		panelCounts.add(lblpFiles);
-		
+
 		txtPFiles = new JTextField("0");
 		txtPFiles.setEditable(false);
 		txtPFiles.setBounds(150, 35, 110, 20);
 		panelCounts.add(txtPFiles);
 		txtPFiles.setColumns(10);
-		
-		JLabel lblFFiles = new JLabel("Fail files");
+
+		final JLabel lblFFiles = new JLabel("Fail files");
 		lblFFiles.setBounds(10, 60, 140, 20);
 		panelCounts.add(lblFFiles);
-		
+
 		txtFFiles = new JTextField("0");
 		txtFFiles.setEditable(false);
 		txtFFiles.setBounds(150, 60, 110, 20);
 		panelCounts.add(txtFFiles);
 		txtFFiles.setColumns(10);
-		
-		
-		
-		JLabel lbl2DReads = new JLabel("2D reads");
+
+
+
+		final JLabel lbl2DReads = new JLabel("2D reads");
 		lbl2DReads.setBounds(10, 90, 110, 20);
 		panelCounts.add(lbl2DReads);		
-		
-		JLabel lblTempReads = new JLabel("Template reads");
+
+		final JLabel lblTempReads = new JLabel("Template reads");
 		lblTempReads.setBounds(10, 115, 140, 20);
 		panelCounts.add(lblTempReads);	
-		
-		
-		JLabel lblCompReads = new JLabel("Complement reads");
+
+
+		final JLabel lblCompReads = new JLabel("Complement reads");
 		lblCompReads.setBounds(10, 140, 140, 20);
 		panelCounts.add(lblCompReads);
-		
+
 		txtTempReads= new JTextField("0");
 		txtTempReads.setEditable(false);
 		txtTempReads.setBounds(150, 115, 110, 20);
 		panelCounts.add(txtTempReads);
 		txtTempReads.setColumns(10);		
-		
+
 		txt2DReads= new JTextField("0");
 		txt2DReads.setEditable(false);
 		txt2DReads.setBounds(150, 90, 110, 20);
 		panelCounts.add(txt2DReads);
 		txt2DReads.setColumns(10);		
-		
+
 		txtCompReads= new JTextField("0");
 		txtCompReads.setEditable(false);
 		txtCompReads.setBounds(150, 140, 110, 20);
 		panelCounts.add(txtCompReads);
 		txtCompReads.setColumns(10);
-		
-		
-		
-		JFreeChart chart = ChartFactory.createStackedXYAreaChart(
-				"Read counts",      // chart title
+
+
+
+		final JFreeChart chart = ChartFactory.createStackedXYAreaChart(
+				"Read count",      // chart title
 				"Time",             // domain axis label
 				"Read number",                   // range axis label
 				this.dataSet   
@@ -359,7 +393,6 @@ public class NanoporeReaderWindow implements Runnable{
 		DateAxis domainAxis = new DateAxis();
 		domainAxis.setAutoRange(true);
 		domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
-		//domainAxis.setTickUnit(new DateTickUnit(DateTickUnitType.SECOND, 1));
 
 		XYPlot plot = (XYPlot) chart.getPlot();
 		plot.setRenderer(render);
@@ -370,49 +403,122 @@ public class NanoporeReaderWindow implements Runnable{
 		NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
 		rangeAxis.setNumberFormatOverride(new DecimalFormat("#,###.#"));
 		rangeAxis.setAutoRange(true);
-		
-		ChartPanel chartLabel = new ChartPanel(chart,	            
-	            600,
-	            370,
-	            600,
-	            370,
-	            600,
-	            370,
-	            true,
-	            true,  // properties
-	            true,  // save
-	            true,  // print
-	            true,  // zoom
-	            true   // tooltips
-	        );		
-		
-		
-		panelStats.add(chartLabel);
-		
+
+		ChartPanel chartPanel = new ChartPanel(chart,	            
+				450,
+				280,
+				450,
+				280,
+				450,
+				280,
+				true,
+				true,  // properties
+				true,  // save
+				true,  // print
+				true,  // zoom
+				true   // tooltips
+				);		
+
+
+		chartPanel.setBounds(0, 12, 450, 280);
+		mainPanel.add(chartPanel);		
+
+		/////////////////////////////////////////////////////////////
+		//Histogram
+		histoDataset=new DynamicHistogram();
+		histoDataset.prepareSeries("Read Length", 50, 0, 50000);
+		//histoDataset.prepareSeries("2D", 50, 0, 50000);
+		//histoDataset.prepareSeries("template", 50, 0, 50000);
+		//histoDataset.prepareSeries("complement", 50, 0, 50000);		
+
+		JFreeChart histogram=ChartFactory.createHistogram("Histogram","L","C",histoDataset,PlotOrientation.VERTICAL,true,true,false);
+		ChartPanel hisPanel = new ChartPanel(histogram,	            
+				450,
+				280,
+				450,
+				280,
+				450,
+				280,
+				true,
+				true,  // properties
+				true,  // save
+				true,  // print
+				true,  // zoom
+				true   // tooltips
+				);
+
+
+		XYPlot hisPlot = (XYPlot) histogram.getPlot();
+		hisPlot.getDomainAxis().setAutoRange(true);		
+		hisPlot.getRangeAxis().setAutoRange(true);
+
+
+		hisPanel.setBounds(452, 12, 450, 280);
+		mainPanel.add(hisPanel);
+
+
+		btnStart.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				//Start running
+
+				rdbtnInputStream.setEnabled(false);
+				rdbtnF.setEnabled(false);
+
+				txtDir.setEnabled(false);
+				btnChange.setEnabled(false);
+				chckbxInc.setEnabled(false);
+				rdbtnF.setEnabled(false);
+				rdbtnOut2Str.setEnabled(false);
+				rdbtnOut2File.setEnabled(false);
+				txtOFile.setEnabled(false);
+				btnFileChange.setEnabled(false);
+				chckReads.setEnabled(false);
+				chckbxAddAUnicqu.setEnabled(false);
+				txtMinLenth.setEnabled(false);
+
+				btnStop.setEnabled(true);
+
+				reader.ready = true;
+			}
+		});
+
+
 	}
-	
+
 	JTextField txtCompReads, txtTempReads, txt2DReads;
 	JTextField txtPFiles, txtFFiles, txtTFiles;
-	
-	public void run() {
+	DynamicHistogram histoDataset;
+
+	public void run() {		
+		int lastIndexLengths = 0, lastIndexLengths2D = 0, lastIndexLengthsComp = 0, lastIndexLengthsTemp = 0;
+
+
 		while(true) {				                
 			//synchronized(reader) {//avoid concurrent update					
-			TimePeriod period = new Second();
+			Second period = new Second();
 			dataSet.add(period, reader.twoDCount,"2D");
 			dataSet.add(period, reader.compCount,"complement");
 			dataSet.add(period, reader.tempCount,"template");
 
-
 			txtTFiles.setText(reader.fileNumber+"");	                
 			txtPFiles.setText(reader.passNumber+"");
 			txtFFiles.setText(reader.failNumber+"");
-			
+
 			txt2DReads.setText(reader.twoDCount+"");
 			txtCompReads.setText(reader.compCount+"");
-			txtTempReads.setText(reader.tempCount+"");	
+			txtTempReads.setText(reader.tempCount+"");
 
-			//}  
-			try {
+			int currentLengths = reader.lengths.size();
+
+			if (currentLengths > lastIndexLengths){			
+				int index = histoDataset.getSeriesIndex("Read Length");
+				for (int i = lastIndexLengths; i < currentLengths;i++)
+					histoDataset.addSeries(index, reader.lengths.get(i));
+
+				lastIndexLengths = currentLengths;
+
+				histoDataset.notifyChanged();
+			}try {
 				Thread.sleep(1000);
 			} catch (InterruptedException ex) {
 				Logging.error(ex.getMessage());

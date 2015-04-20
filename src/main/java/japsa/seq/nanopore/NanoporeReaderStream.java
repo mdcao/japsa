@@ -34,31 +34,12 @@
 
 package japsa.seq.nanopore;
 
-import java.awt.BorderLayout;
-import java.awt.GridLayout;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.DateAxis;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.plot.SeriesRenderingOrder;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.StackedXYAreaRenderer;
-import org.jfree.data.time.Second;
-import org.jfree.data.time.TimePeriod;
 import org.jfree.data.time.TimeTableXYDataset;
 
 import japsa.seq.FastqSequence;
@@ -141,8 +122,7 @@ public class NanoporeReaderStream
 		reader.f5List = f5list;
 		reader.folder = folder;		
 		reader.doFail = fail;
-
-
+		reader.output = output;
 
 		if (GUI){
 			System.setProperty("java.awt.headless", "false");
@@ -152,12 +132,25 @@ public class NanoporeReaderStream
 			TimeTableXYDataset dataset = new TimeTableXYDataset();
 			NanoporeReaderWindow mGUI = new NanoporeReaderWindow(reader,dataset);
 			
+			while (!reader.ready){
+				Logging.info("NOT READY");
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {					
+					e.printStackTrace();
+				}			
+			}
+			Logging.info("GO");
+			
 			new Thread(mGUI).start();
 		}
+		
+		
 
 		//reader need to wait until ready to go
+		
 
-		reader.sos = SequenceOutputStream.makeOutputStream(output);
+		reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
 		reader.readFastq(pFolderName);
 		reader.sos.close();
 
@@ -167,6 +160,8 @@ public class NanoporeReaderStream
 	double tempLength = 0, compLength = 0, twoDLength = 0;
 	int tempCount = 0, compCount = 0, twoDCount = 0;
 	IntArray lengths = new IntArray();
+	IntArray lengths2D = new IntArray(), lengthsComp = new IntArray(), lengthsTemp = new IntArray();
+	
 	int fileNumber = 0;
 	int passNumber = 0, failNumber = 0;
 	SequenceOutputStream sos;
@@ -177,6 +172,8 @@ public class NanoporeReaderStream
 	boolean wait = true;
 	int interval = 1000, age = 1000;
 	boolean doFail = false;
+	String output = "";
+	boolean doLow = true;
 	boolean getTime = false;
 
 	boolean ready = true;
@@ -221,27 +218,30 @@ public class NanoporeReaderStream
 				fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
 				print(fq);
 				if (stats){						
-					lengths.add(fq.length());	
+					lengths.add(fq.length());
+					lengths2D.add(fq.length());
 					twoDCount ++;
 				}
 			}
 
 			fq = npReader.getSeqTemplate();
-			if (fq != null && fq.length() >= minLength){
+			if (fq != null && fq.length() >= minLength && this.doLow){
 				fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName() + " " + log);
 				print(fq);
 				if (stats){						
 					lengths.add(fq.length());	
+					lengthsTemp.add(fq.length());
 					tempCount ++;
 				}
 			}
 
 			fq = npReader.getSeqComplement();
-			if (fq != null && fq.length() >= minLength){						
+			if (fq != null && fq.length() >= minLength && this.doLow){						
 				fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName() + " " + log);						
 				print(fq);
 				if (stats){						
 					lengths.add(fq.length());	
+					lengthsComp.add(fq.length());
 					compCount ++;
 				}
 			}
