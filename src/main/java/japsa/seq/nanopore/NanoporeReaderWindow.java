@@ -71,6 +71,7 @@ import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.StackedXYAreaRenderer;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
+import org.jfree.data.statistics.HistogramType;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeTableXYDataset;
 
@@ -537,12 +538,13 @@ public class NanoporeReaderWindow implements Runnable{
 
 
 		histoQualDataSet=new DynamicHistogram();
+		histoQualDataSet.setType(HistogramType.SCALE_AREA_TO_1);
 
 		histoQualDataSet.prepareSeries("2D", 100, 0, 30);
 		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
 		histoQualDataSet.prepareSeries("template", 100, 0, 30);
 
-		JFreeChart hisQual=ChartFactory.createHistogram("Quality","quality","count",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
+		JFreeChart hisQual=ChartFactory.createXYLineChart("Quality","quality","count",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
 		ChartPanel hisQualPanel = new ChartPanel(hisQual,	            
 				450,
 				280,
@@ -564,8 +566,8 @@ public class NanoporeReaderWindow implements Runnable{
 		hisQualPlot.getRangeAxis().setAutoRange(true);
 
 		hisQualPlot.setForegroundAlpha(0.8F);
-		XYBarRenderer xybarrenderer = (XYBarRenderer)hisQualPlot.getRenderer();
-		xybarrenderer.setDrawBarOutline(false);
+		//XYBarRenderer xybarrenderer = (XYBarRenderer)hisQualPlot.getRenderer();
+		//xybarrenderer.setDrawBarOutline(false);
 
 
 		hisQualPanel.setBounds(452, 300, 450, 280);

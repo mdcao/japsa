@@ -181,6 +181,7 @@ public class DynamicHistogram extends AbstractIntervalXYDataset
          }
          HistogramBin bin = series.binList.get(binIndex);
          bin.incrementCount();
+         series.totalValues ++;
     }
     		
    
