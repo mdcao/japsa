@@ -41,6 +41,7 @@ import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -69,6 +70,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.StackedXYAreaRenderer;
+import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeTableXYDataset;
 
@@ -140,6 +142,8 @@ public class NanoporeReaderWindow implements Runnable{
 		inputPanel.setLayout(null);
 
 		final JRadioButton rdbtnInputStream = new JRadioButton("Read files from input Stream");
+
+
 		rdbtnInputStream.setBounds(8, 24, 384, 23);
 		inputPanel.add(rdbtnInputStream);
 
@@ -147,10 +151,15 @@ public class NanoporeReaderWindow implements Runnable{
 		rdbtnF.setBounds(8, 51, 289, 23);
 		inputPanel.add(rdbtnF);
 
+		if (reader.folder == null){
+			rdbtnInputStream.setSelected(true);			
+		}else{
+			rdbtnF.setSelected(true);
+		}
+
 		final ButtonGroup group = new ButtonGroup();
 		group.add(rdbtnInputStream);
 		group.add(rdbtnF);
-
 
 		final JTextField txtDir = new JTextField(reader.folder);		
 		txtDir.setBounds(18, 82, 289, 20);
@@ -194,14 +203,31 @@ public class NanoporeReaderWindow implements Runnable{
 					txtDir.setEnabled(true);
 					btnChange.setEnabled(true);
 					chckbxInc.setEnabled(true);
+					reader.folder = txtDir.getText();
 
 				}else{
 					txtDir.setEnabled(false);
 					btnChange.setEnabled(true);
 					chckbxInc.setEnabled(false);
+					reader.folder = null;
 				}
 			}           
 		});
+
+		rdbtnInputStream.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (rdbtnInputStream.isSelected()){
+					btnChange.setEnabled(false);
+					chckbxInc.setEnabled(false);
+					txtDir.setEnabled(false);					
+				}else{
+					btnChange.setEnabled(true);
+					chckbxInc.setEnabled(true);
+					txtDir.setEnabled(true);
+				}
+			}
+		});
+
 
 		final JPanel outputPanel = new JPanel();
 		outputPanel.setBounds(0, 192, 400, 169);
@@ -209,7 +235,7 @@ public class NanoporeReaderWindow implements Runnable{
 		controlPanel.add(outputPanel);
 		outputPanel.setLayout(null);
 
-		final JRadioButton rdbtnOut2Str = new JRadioButton("Output to output stream");
+		final JRadioButton rdbtnOut2Str = new JRadioButton("Output to output stream");		
 		rdbtnOut2Str.setBounds(8, 25, 302, 23);
 		outputPanel.add(rdbtnOut2Str);
 
@@ -224,6 +250,7 @@ public class NanoporeReaderWindow implements Runnable{
 		final JTextField txtOFile = new JTextField(reader.output);		
 		txtOFile.setBounds(18, 82, 295, 20);
 		outputPanel.add(txtOFile);
+
 
 		final JButton btnFileChange = new JButton("Change");		
 		btnFileChange.setBounds(26, 109, 117, 25);	
@@ -245,6 +272,43 @@ public class NanoporeReaderWindow implements Runnable{
 		});
 
 
+		if ("-".equals(reader.output)){
+			rdbtnOut2Str.setSelected(true);
+			rdbtnOut2File.setSelected(false);
+			btnFileChange.setEnabled(false);
+			txtOFile.setEnabled(false);
+			txtOFile.setText("");			
+		}else{
+			rdbtnOut2Str.setSelected(false);
+			rdbtnOut2File.setSelected(true);
+			btnFileChange.setEnabled(true);
+			txtOFile.setEnabled(true);
+		}
+
+		rdbtnOut2Str.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (rdbtnOut2Str.isSelected()){
+					btnFileChange.setEnabled(false);
+					txtOFile.setEnabled(false);
+				}else{
+					btnFileChange.setEnabled(true);
+					txtOFile.setEnabled(true);
+				}
+			}
+		});
+
+
+		rdbtnOut2File.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (rdbtnOut2Str.isSelected()){
+					btnFileChange.setEnabled(false);
+					txtOFile.setEnabled(false);
+				}else{
+					btnFileChange.setEnabled(true);
+					txtOFile.setEnabled(true);
+				}
+			}
+		});
 
 
 		final JPanel optionPanel = new JPanel();
@@ -297,6 +361,23 @@ public class NanoporeReaderWindow implements Runnable{
 
 
 		final JButton btnStop = new JButton("Stop");		
+		btnStop.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				reader.wait = false;
+
+				while (!reader.done){
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException ee) {					
+						ee.printStackTrace();
+					}
+				}
+
+				stillRun = false;
+				JOptionPane.showMessageDialog(null, "Done", "Information", JOptionPane.PLAIN_MESSAGE);
+				
+			}
+		});
 		btnStop.setBounds(179, 36, 117, 25);
 		btnStop.setEnabled(false);
 		lPanel.add(btnStop);
@@ -308,7 +389,7 @@ public class NanoporeReaderWindow implements Runnable{
 		mainPanel.setLayout(null);
 
 		final JPanel panelCounts = new JPanel();
-		panelCounts.setBounds(12, 360, 268, 317);
+		panelCounts.setBounds(12, 304, 428, 280);
 		mainPanel.add(panelCounts);
 		panelCounts.setLayout(null);
 
@@ -347,7 +428,6 @@ public class NanoporeReaderWindow implements Runnable{
 		txtFFiles.setColumns(10);
 
 
-
 		final JLabel lbl2DReads = new JLabel("2D reads");
 		lbl2DReads.setBounds(10, 90, 110, 20);
 		panelCounts.add(lbl2DReads);		
@@ -378,7 +458,6 @@ public class NanoporeReaderWindow implements Runnable{
 		txtCompReads.setBounds(150, 140, 110, 20);
 		panelCounts.add(txtCompReads);
 		txtCompReads.setColumns(10);
-
 
 
 		final JFreeChart chart = ChartFactory.createStackedXYAreaChart(
@@ -425,14 +504,14 @@ public class NanoporeReaderWindow implements Runnable{
 
 		/////////////////////////////////////////////////////////////
 		//Histogram
-		histoDataset=new DynamicHistogram();
-		histoDataset.prepareSeries("Read Length", 50, 0, 50000);
+		histoLengthDataSet=new DynamicHistogram();
+		histoLengthDataSet.prepareSeries("Read Length", 200, 0, 50000);
 		//histoDataset.prepareSeries("2D", 50, 0, 50000);
 		//histoDataset.prepareSeries("template", 50, 0, 50000);
 		//histoDataset.prepareSeries("complement", 50, 0, 50000);		
 
-		JFreeChart histogram=ChartFactory.createHistogram("Histogram","L","C",histoDataset,PlotOrientation.VERTICAL,true,true,false);
-		ChartPanel hisPanel = new ChartPanel(histogram,	            
+		JFreeChart hisLengths=ChartFactory.createHistogram("Histogram","length","count",histoLengthDataSet,PlotOrientation.VERTICAL,true,true,false);
+		ChartPanel hisPanel = new ChartPanel(hisLengths,	            
 				450,
 				280,
 				450,
@@ -448,7 +527,7 @@ public class NanoporeReaderWindow implements Runnable{
 				);
 
 
-		XYPlot hisPlot = (XYPlot) histogram.getPlot();
+		XYPlot hisPlot = (XYPlot) hisLengths.getPlot();
 		hisPlot.getDomainAxis().setAutoRange(true);		
 		hisPlot.getRangeAxis().setAutoRange(true);
 
@@ -457,8 +536,78 @@ public class NanoporeReaderWindow implements Runnable{
 		mainPanel.add(hisPanel);
 
 
+		histoQualDataSet=new DynamicHistogram();
+
+		histoQualDataSet.prepareSeries("2D", 100, 0, 30);
+		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
+		histoQualDataSet.prepareSeries("template", 100, 0, 30);
+
+		JFreeChart hisQual=ChartFactory.createHistogram("Quality","quality","count",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
+		ChartPanel hisQualPanel = new ChartPanel(hisQual,	            
+				450,
+				280,
+				450,
+				280,
+				450,
+				280,
+				true,
+				true,  // properties
+				true,  // save
+				true,  // print
+				true,  // zoom
+				true   // tooltips
+				);
+
+
+		XYPlot hisQualPlot = (XYPlot) hisQual.getPlot();
+		hisQualPlot.getDomainAxis().setAutoRange(true);		
+		hisQualPlot.getRangeAxis().setAutoRange(true);
+
+		hisQualPlot.setForegroundAlpha(0.8F);
+		XYBarRenderer xybarrenderer = (XYBarRenderer)hisQualPlot.getRenderer();
+		xybarrenderer.setDrawBarOutline(false);
+
+
+		hisQualPanel.setBounds(452, 300, 450, 280);
+		mainPanel.add(hisQualPanel);
+
+
+
 		btnStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				//1. Validate before running
+
+				if (rdbtnF.isSelected()){
+					String _path = txtDir.getText().trim();
+					if (_path.equals("")){
+						JOptionPane.showMessageDialog(null, "Please specify download directory", "Warning", JOptionPane.PLAIN_MESSAGE);
+						txtDir.grabFocus();
+						return;
+					}
+
+					File _file = new File(_path);
+					if (!_file.exists()){
+						JOptionPane.showMessageDialog(null, "Directory \"" + _path + "\" does not exist!", "Warning", JOptionPane.PLAIN_MESSAGE);
+						txtDir.grabFocus();
+						return;
+					}					
+				}
+
+
+				if (rdbtnOut2File.isSelected()){
+					if (txtOFile.getText().trim().equals("")){						
+						JOptionPane.showMessageDialog(null, "Please specify output file", "Warning", JOptionPane.PLAIN_MESSAGE);
+						txtOFile.grabFocus();
+						return;
+					}
+				}
+
+				String msg = reader.prepareIO();
+				if (msg !=null){
+					JOptionPane.showMessageDialog(null, msg, "Warning", JOptionPane.PLAIN_MESSAGE);
+					return;
+				}
+
 				//Start running
 
 				rdbtnInputStream.setEnabled(false);
@@ -476,24 +625,24 @@ public class NanoporeReaderWindow implements Runnable{
 				chckbxAddAUnicqu.setEnabled(false);
 				txtMinLenth.setEnabled(false);
 
+				btnStart.setEnabled(false);
 				btnStop.setEnabled(true);
 
 				reader.ready = true;
 			}
-		});
-
-
-	}
+		});	}
 
 	JTextField txtCompReads, txtTempReads, txt2DReads;
 	JTextField txtPFiles, txtFFiles, txtTFiles;
-	DynamicHistogram histoDataset;
+	DynamicHistogram histoLengthDataSet, histoQualDataSet;
+
+	boolean stillRun = true;
 
 	public void run() {		
 		int lastIndexLengths = 0, lastIndexLengths2D = 0, lastIndexLengthsComp = 0, lastIndexLengthsTemp = 0;
+		int lastIndexQual2D = 0, lastIndexQualComp = 0, lastIndexQualTemp = 0;
 
-
-		while(true) {				                
+		while(stillRun) {				                
 			//synchronized(reader) {//avoid concurrent update					
 			Second period = new Second();
 			dataSet.add(period, reader.twoDCount,"2D");
@@ -508,17 +657,49 @@ public class NanoporeReaderWindow implements Runnable{
 			txtCompReads.setText(reader.compCount+"");
 			txtTempReads.setText(reader.tempCount+"");
 
-			int currentLengths = reader.lengths.size();
+			int currentIndex = reader.lengths.size();
 
-			if (currentLengths > lastIndexLengths){			
-				int index = histoDataset.getSeriesIndex("Read Length");
-				for (int i = lastIndexLengths; i < currentLengths;i++)
-					histoDataset.addSeries(index, reader.lengths.get(i));
+			if (currentIndex > lastIndexLengths){			
+				int index = histoLengthDataSet.getSeriesIndex("Read Length");
+				for (int i = lastIndexLengths; i < currentIndex;i++)
+					histoLengthDataSet.addSeries(index, reader.lengths.get(i));
 
-				lastIndexLengths = currentLengths;
+				lastIndexLengths = currentIndex;
 
-				histoDataset.notifyChanged();
-			}try {
+				histoLengthDataSet.notifyChanged();
+			}
+
+			currentIndex = reader.qual2D.size();
+			if (currentIndex > lastIndexQual2D){
+				int index = histoQualDataSet.getSeriesIndex("2D");
+				for (int i = lastIndexQual2D; i < currentIndex;i++)
+					histoQualDataSet.addSeries(index, reader.qual2D.get(i));
+
+				lastIndexQual2D = currentIndex;
+				histoQualDataSet.notifyChanged();
+			}
+
+			currentIndex = reader.qualComp.size();
+			if (currentIndex > lastIndexQualComp){
+				int index = histoQualDataSet.getSeriesIndex("complement");
+				for (int i = lastIndexQualComp; i < currentIndex;i++)
+					histoQualDataSet.addSeries(index, reader.qualComp.get(i));
+
+				lastIndexQualComp = currentIndex;
+				histoQualDataSet.notifyChanged();
+			}
+
+			currentIndex = reader.qualTemp.size();
+			if (currentIndex > lastIndexQualTemp){
+				int index = histoQualDataSet.getSeriesIndex("template");
+				for (int i = lastIndexQualTemp; i < currentIndex;i++)
+					histoQualDataSet.addSeries(index, reader.qualTemp.get(i));
+
+				lastIndexQualTemp = currentIndex;
+				histoQualDataSet.notifyChanged();
+			}
+
+			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException ex) {
 				Logging.error(ex.getMessage());

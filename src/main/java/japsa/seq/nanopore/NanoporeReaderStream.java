@@ -46,6 +46,7 @@ import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
@@ -101,7 +102,7 @@ public class NanoporeReaderStream
 		//String netAddress = cmdLine.getStringVal("netAddress");
 		//int netPort  = cmdLine.getIntVal("netPort");
 
-		int interval = cmdLine.getIntVal("interval") * 1000;//in second
+		int interval = cmdLine.getIntVal("interval");//in second
 		int age = cmdLine.getIntVal("age") * 1000;//in second
 
 
@@ -128,10 +129,10 @@ public class NanoporeReaderStream
 			System.setProperty("java.awt.headless", "false");
 			reader.stats = true;//GUI implies stats
 			reader.ready = false;//wait for the command from GUI
-			
+
 			TimeTableXYDataset dataset = new TimeTableXYDataset();
 			NanoporeReaderWindow mGUI = new NanoporeReaderWindow(reader,dataset);
-			
+
 			while (!reader.ready){
 				Logging.info("NOT READY");
 				try {
@@ -141,27 +142,56 @@ public class NanoporeReaderStream
 				}			
 			}
 			Logging.info("GO");
-			
+
 			new Thread(mGUI).start();
+		}else{
+			String msg = reader.prepareIO();
+			if (msg != null){
+				Logging.exit(msg, 1);
+			}
 		}
-		
-		
+
+
 
 		//reader need to wait until ready to go
-		
 
-		reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
+
+		//reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
 		reader.readFastq(pFolderName);
-		reader.sos.close();
+		reader.close();
 
 	}//main
 
+	public String prepareIO(){
+		String msg = null;
+		try{
+			sos = SequenceOutputStream.makeOutputStream(output);
+
+		}catch (Exception e){
+			msg = e.getMessage();
+		}finally{
+			if (msg != null){
+				sos = null;
+				return msg;
+			}
+
+		}
+
+		return msg;
+	}
+
+
+	public void close() throws IOException{
+		sos.close();
+		done = true;
+	}
 
 	double tempLength = 0, compLength = 0, twoDLength = 0;
 	int tempCount = 0, compCount = 0, twoDCount = 0;
 	IntArray lengths = new IntArray();
+	DoubleArray qual2D = new DoubleArray(), qualComp = new DoubleArray(), qualTemp = new DoubleArray();
 	IntArray lengths2D = new IntArray(), lengthsComp = new IntArray(), lengthsTemp = new IntArray();
-	
+
 	int fileNumber = 0;
 	int passNumber = 0, failNumber = 0;
 	SequenceOutputStream sos;
@@ -170,13 +200,15 @@ public class NanoporeReaderStream
 	String f5List = null, folder = null;
 	int minLength = 0;
 	boolean wait = true;
-	int interval = 1000, age = 1000;
+	int interval = 1, age = 1000;
 	boolean doFail = false;
 	String output = "";
 	boolean doLow = true;
 	boolean getTime = false;
+	boolean done = false;
 
 	boolean ready = true;
+	static byte MIN_QUAL = '!';
 
 	public void print(FastqSequence fq) throws IOException{
 		fq.print(sos);
@@ -221,6 +253,14 @@ public class NanoporeReaderStream
 					lengths.add(fq.length());
 					lengths2D.add(fq.length());
 					twoDCount ++;
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qual2D.add(sumQual/fq.length());
+					}
 				}
 			}
 
@@ -232,6 +272,15 @@ public class NanoporeReaderStream
 					lengths.add(fq.length());	
 					lengthsTemp.add(fq.length());
 					tempCount ++;
+
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qualTemp.add(sumQual/fq.length());
+					}
 				}
 			}
 
@@ -243,6 +292,16 @@ public class NanoporeReaderStream
 					lengths.add(fq.length());	
 					lengthsComp.add(fq.length());
 					compCount ++;
+
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qualComp.add(sumQual/fq.length());
+					}
+
 				}
 			}
 
@@ -300,11 +359,7 @@ public class NanoporeReaderStream
 			File failFolder = new File(folder + File.separatorChar + "fail");			
 
 			while (wait){
-				try {
-					Thread.sleep(interval);
-				} catch (InterruptedException e) {					
-					e.printStackTrace();
-				}
+
 
 				//Do main
 				long now = System.currentTimeMillis();
@@ -312,6 +367,9 @@ public class NanoporeReaderStream
 				Logging.info("Reading in folder " + mainFolder.getAbsolutePath());
 				if (fileList!=null){
 					for (File f:fileList){
+						if (!wait)
+							break;
+
 						//directory
 						if (!f.isFile())
 							continue;						
@@ -346,6 +404,9 @@ public class NanoporeReaderStream
 				fileList = passFolder.listFiles();
 				if (fileList!=null){
 					for (File f:fileList){
+						if (!wait)
+							break;
+
 						//directory
 						if (!f.isFile())
 							continue;
@@ -380,6 +441,9 @@ public class NanoporeReaderStream
 				fileList = failFolder.listFiles();
 				if (fileList!=null){
 					for (File f:fileList){
+						if (!wait)
+							break;
+
 						//directory
 						if (!f.isFile())
 							continue;
@@ -405,41 +469,82 @@ public class NanoporeReaderStream
 						}//if
 					}//for			
 				}//if
+
+				for (int x = 0; x < interval && wait; x++){
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {					
+						e.printStackTrace();
+					}
+				}
 			}//while			
+			Logging.info("EXISTING");
 		}
 
 		if (stats){
 			Logging.info("Getting stats ... ");
 			int [] ls = lengths.toArray();
-			Arrays.sort(ls);
+			if (ls.length ==0){
+				Logging.info("Open " + fileNumber + " files");
+				Logging.info("Fould 0 reads");				
+			}else{
+				Arrays.sort(ls);
 
-			long baseCount = 0;						
-			for (int i = 0; i < ls.length; i++)
-				baseCount += ls[i];
+				long baseCount = 0;						
+				for (int i = 0; i < ls.length; i++)
+					baseCount += ls[i];
 
-			double mean = baseCount / ls.length;
-			double median = ls[ls.length/2];
-			long sum = 0;
-			int quantile1st = 0, quantile2nd = 0, quantile3rd = 0;
-			for (int i = 0; i < ls.length; i++){
-				sum += ls[i];
-				if (quantile1st == 0 && sum >= baseCount / 4)
-					quantile1st = i;
+				double mean = baseCount / ls.length;
+				double median = ls[ls.length/2];
+				long sum = 0;
+				int quantile1st = 0, quantile2nd = 0, quantile3rd = 0;
+				for (int i = 0; i < ls.length; i++){
+					sum += ls[i];
+					if (quantile1st == 0 && sum >= baseCount / 4)
+						quantile1st = i;
 
-				if (quantile2nd == 0 && sum >= baseCount / 2)
-					quantile2nd = i;
+					if (quantile2nd == 0 && sum >= baseCount / 2)
+						quantile2nd = i;
 
-				if (quantile3rd == 0 && sum >= baseCount * 3/ 4)
-					quantile3rd = i;
+					if (quantile3rd == 0 && sum >= baseCount * 3/ 4)
+						quantile3rd = i;
+				}
+
+				Logging.info("Open " + fileNumber + " files");
+				Logging.info("Read count = " + ls.length + "(" + tempCount + " temppate, " + compCount + " complements and " + twoDCount +"  2D)");
+				Logging.info("Base count = " + baseCount);		
+				Logging.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
+				Logging.info("Average read length = " + mean);
+				Logging.info("Median read length = " + median);
+				Logging.info("Quantile first = " + ls[quantile1st] + " second = " + ls[quantile2nd] + " third = " + ls[quantile3rd]);
+
+				if (qual2D.size() > 0){
+					double sumQual = 0;
+
+					for (int i = 0; i < qual2D.size();i++)
+						sumQual += qual2D.get(i);
+
+					Logging.info("Ave 2D qual " +sumQual / qual2D.size() + " " + qual2D.size());
+				}
+				
+				if (qualTemp.size() > 0){
+					double sumQual = 0;
+
+					for (int i = 0; i < qualTemp.size();i++)
+						sumQual += qualTemp.get(i);
+
+					Logging.info("Ave Temp qual " +sumQual / qualTemp.size() + " " + qualTemp.size());
+				}	
+				
+				if (qualComp.size() > 0){
+					double sumQual = 0;
+
+					for (int i = 0; i < qualComp.size();i++)
+						sumQual += qualComp.get(i);
+
+					Logging.info("Ave Comp qual " +sumQual / qualComp.size() + " " + qualComp.size());
+				}	
 			}
-
-			Logging.info("Open " + fileNumber + " files");
-			Logging.info("Read count = " + ls.length + "(" + tempCount + " temppate, " + compCount + " complements and " + twoDCount +"  2D)");
-			Logging.info("Base count = " + baseCount);		
-			Logging.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
-			Logging.info("Average read length = " + mean);
-			Logging.info("Median read length = " + median);
-			Logging.info("Quantile first = " + ls[quantile1st] + " second = " + ls[quantile2nd] + " third = " + ls[quantile3rd]);
 		}
 	}
 
