@@ -511,7 +511,7 @@ public class NanoporeReaderWindow implements Runnable{
 		//histoDataset.prepareSeries("template", 50, 0, 50000);
 		//histoDataset.prepareSeries("complement", 50, 0, 50000);		
 
-		JFreeChart hisLengths=ChartFactory.createHistogram("Histogram","length","count",histoLengthDataSet,PlotOrientation.VERTICAL,true,true,false);
+		JFreeChart hisLengths=ChartFactory.createHistogram("Read length histogram","length","count",histoLengthDataSet,PlotOrientation.VERTICAL,true,true,false);
 		ChartPanel hisPanel = new ChartPanel(hisLengths,	            
 				450,
 				280,
@@ -544,7 +544,7 @@ public class NanoporeReaderWindow implements Runnable{
 		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
 		histoQualDataSet.prepareSeries("template", 100, 0, 30);
 
-		JFreeChart hisQual=ChartFactory.createXYLineChart("Quality","quality","count",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
+		JFreeChart hisQual=ChartFactory.createXYLineChart("Quality","quality","frequency",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
 		ChartPanel hisQualPanel = new ChartPanel(hisQual,	            
 				450,
 				280,
