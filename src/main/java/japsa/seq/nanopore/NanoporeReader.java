@@ -59,6 +59,10 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
+/**
+ * @author hoangnguyen
+ *
+ */
 @Deployable(scriptName = "jsa.np.f5reader2", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
 public class NanoporeReader// implements Closeable
 {
@@ -235,7 +239,7 @@ public class NanoporeReader// implements Closeable
 
 
 			}catch (Exception e){
-				Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
+				Logging.error("Problem with reading " + fileName + ":" + e.getMessage());	
 			}
 		}//for		
 
@@ -382,7 +386,8 @@ public class NanoporeReader// implements Closeable
 
 					fileNumber ++;
 				}catch (Exception e){
-					Logging.error("Problem with reading " + fileName + ":" + e.getMessage());					
+					Logging.error("Problem with reading " + fileName + ":" + e.getMessage());
+					e.printStackTrace();
 				}
 
 			}//for			
@@ -458,7 +463,7 @@ public class NanoporeReader// implements Closeable
 		if (f5File == null) 
 			throw new RuntimeException("Unable to open file " + fileName);
 
-		f5File.open();				
+		f5File.open();		
 	}	
 
 
@@ -714,12 +719,12 @@ public class NanoporeReader// implements Closeable
 					}
 					/********************************************************/
 				}
-			}else if (member instanceof H5ScalarDS){
+			}else if (member instanceof H5ScalarDS){ //still have this after press Restart
 				String fullName = member.getFullName(); 
 				if (fullName.endsWith("Fastq")){
 					Object  data = ((H5ScalarDS) member).getData();
 					if (data != null){
-						Logging.info("Read " + fullName);
+						Logging.info("Read -=-" + fullName);
 						String [] toks = ((String[]) data)[0].split("\n");						
 						if  (fullName.contains("BaseCalled_2D")){
 							//toks[0] = toks[0].substring(1) + "_twodimentional#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							 

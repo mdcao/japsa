@@ -132,28 +132,15 @@ public class NanoporeReaderStream
 			TimeTableXYDataset dataset = new TimeTableXYDataset();
 			NanoporeReaderWindow mGUI = new NanoporeReaderWindow(reader,dataset);
 			
-			while (!reader.ready){
-				Logging.info("NOT READY");
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {					
-					e.printStackTrace();
-				}			
-			}
-			Logging.info("GO");
-			
 			new Thread(mGUI).start();
 		}
 		
 		
-
-		//reader need to wait until ready to go
-		
-
-		reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
-		reader.readFastq(pFolderName);
-		reader.sos.close();
-
+		else{
+			reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
+			reader.readFastq(pFolderName);
+			reader.sos.close();
+		}
 	}//main
 
 
@@ -176,8 +163,27 @@ public class NanoporeReaderStream
 	boolean doLow = true;
 	boolean getTime = false;
 
-	boolean ready = true;
+	volatile boolean ready = true;
+	HashSet<String> filesDone = new HashSet<String>();
+	public NanoporeReaderStream reset(){
+		NanoporeReaderStream tmp = new NanoporeReaderStream();
 
+		tmp.getTime = getTime;
+		tmp.stats = stats;
+		tmp.number = number;
+		tmp.minLength = minLength;
+
+		tmp.interval = interval;
+		tmp.age = age;
+
+		tmp.f5List = f5List;
+		tmp.folder = folder;		
+		tmp.doFail = doFail;
+		tmp.output = output;
+		tmp.sos=null;
+		tmp.ready = false;
+		return tmp;
+	}
 	public void print(FastqSequence fq) throws IOException{
 		fq.print(sos);
 		if (networkOS != null)
@@ -185,7 +191,7 @@ public class NanoporeReaderStream
 	}
 
 	public boolean readFastq2(String fileName) throws IOException{
-		Logging.info("Open " + fileName);
+		Logging.info("Open " + fileName); //after press Restart
 		try{					
 			NanoporeReader npReader = new NanoporeReader(fileName);
 			if (getTime){
@@ -284,8 +290,10 @@ public class NanoporeReaderStream
 			BufferedReader bf = SequenceReader.openFile(f5List);
 			String fileName;
 			while ((fileName = bf.readLine())!=null){
+				//Stop the streaming on signal
+				if(!ready)
+					return;
 				readFastq2(fileName);
-
 				//Move to done folder
 				if (pFolder != null){
 					moveFile(new File(fileName),  pFolder);
@@ -293,7 +301,7 @@ public class NanoporeReaderStream
 			}//while
 			bf.close();
 		}else{//folder
-			HashSet<String> filesDone = new HashSet<String>();
+//			HashSet<String> filesDone = new HashSet<String>();
 
 			File mainFolder = new File(folder);
 			File passFolder = new File(folder + File.separatorChar + "pass");
@@ -312,6 +320,9 @@ public class NanoporeReaderStream
 				Logging.info("Reading in folder " + mainFolder.getAbsolutePath());
 				if (fileList!=null){
 					for (File f:fileList){
+						//Stop the streaming on signal
+						if(!ready)
+							return;
 						//directory
 						if (!f.isFile())
 							continue;						
@@ -346,6 +357,9 @@ public class NanoporeReaderStream
 				fileList = passFolder.listFiles();
 				if (fileList!=null){
 					for (File f:fileList){
+						//Stop the streaming on signal
+						if(!ready)
+							return;
 						//directory
 						if (!f.isFile())
 							continue;
@@ -380,6 +394,9 @@ public class NanoporeReaderStream
 				fileList = failFolder.listFiles();
 				if (fileList!=null){
 					for (File f:fileList){
+						//Stop the streaming on signal
+						if(!ready)
+							return;
 						//directory
 						if (!f.isFile())
 							continue;
