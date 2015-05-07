@@ -597,20 +597,6 @@ public class NanoporeReaderWindow implements Runnable
 
 		btnStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//Start running
-
-				rdbtnInputStream.setEnabled(false);
-				txtDir.setEnabled(false);
-				btnChange.setEnabled(false);
-				chckbxInc.setEnabled(false);
-				rdbtnF.setEnabled(false);
-				rdbtnOut2Str.setEnabled(false);
-				rdbtnOut2File.setEnabled(false);
-				txtOFile.setEnabled(false);
-				btnFileChange.setEnabled(false);
-				chckReads.setEnabled(false);
-				chckbxAddAUnicqu.setEnabled(false);
-				txtMinLenth.setEnabled(false);
 
 				if(btnStart.getText().equals("Restart")){
 					if(reader.sos != null && !reader.output.equals("-")){
@@ -669,7 +655,20 @@ public class NanoporeReaderWindow implements Runnable
 					JOptionPane.showMessageDialog(null, msg, "Warning", JOptionPane.PLAIN_MESSAGE);
 					return;
 				}
+				//Start running
 
+				rdbtnInputStream.setEnabled(false);
+				txtDir.setEnabled(false);
+				btnChange.setEnabled(false);
+				chckbxInc.setEnabled(false);
+				rdbtnF.setEnabled(false);
+				rdbtnOut2Str.setEnabled(false);
+				rdbtnOut2File.setEnabled(false);
+				txtOFile.setEnabled(false);
+				btnFileChange.setEnabled(false);
+				chckReads.setEnabled(false);
+				chckbxAddAUnicqu.setEnabled(false);
+				txtMinLenth.setEnabled(false);
 				reader.ready=true;
 				start();
 				btnStart.setEnabled(false);
