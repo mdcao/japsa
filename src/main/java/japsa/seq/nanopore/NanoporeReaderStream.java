@@ -132,34 +132,15 @@ public class NanoporeReaderStream
 
 			TimeTableXYDataset dataset = new TimeTableXYDataset();
 			NanoporeReaderWindow mGUI = new NanoporeReaderWindow(reader,dataset);
-
-			while (!reader.ready){
-				Logging.info("NOT READY");
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {					
-					e.printStackTrace();
-				}			
-			}
-			Logging.info("GO");
-
 			new Thread(mGUI).start();
 		}else{
 			String msg = reader.prepareIO();
 			if (msg != null){
 				Logging.exit(msg, 1);
+			reader.readFastq(pFolderName);
+			reader.sos.close();
 			}
 		}
-
-
-
-		//reader need to wait until ready to go
-
-
-		//reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
-		reader.readFastq(pFolderName);
-		reader.close();
-
 	}//main
 
 	public String prepareIO(){
@@ -181,11 +162,6 @@ public class NanoporeReaderStream
 	}
 
 
-	public void close() throws IOException{
-		sos.close();
-		done = true;
-	}
-
 	double tempLength = 0, compLength = 0, twoDLength = 0;
 	int tempCount = 0, compCount = 0, twoDCount = 0;
 	IntArray lengths = new IntArray();
@@ -199,17 +175,38 @@ public class NanoporeReaderStream
 	boolean stats, number;
 	String f5List = null, folder = null;
 	int minLength = 0;
-	boolean wait = true;
+	//boolean wait = true;
 	int interval = 1, age = 1000;
 	boolean doFail = false;
 	String output = "";
 	boolean doLow = true;
 	boolean getTime = false;
-	boolean done = false;
+	//boolean done = false;
 
-	boolean ready = true;
+	volatile boolean ready = true;
+	HashSet<String> filesDone = new HashSet<String>();
+	public NanoporeReaderStream reset(){
+		NanoporeReaderStream tmp = new NanoporeReaderStream();
+
+		tmp.getTime = getTime;
+		tmp.stats = stats;
+		tmp.number = number;
+		tmp.minLength = minLength;
+
+		tmp.interval = interval;
+		tmp.age = age;
+
+		tmp.f5List = f5List;
+		tmp.folder = folder;		
+		tmp.doFail = doFail;
+		tmp.output = output;
+		tmp.sos=null;
+		tmp.ready = false;
+		return tmp;
+	}
+	
 	static byte MIN_QUAL = '!';
-
+	
 	public void print(FastqSequence fq) throws IOException{
 		fq.print(sos);
 		if (networkOS != null)
@@ -217,7 +214,7 @@ public class NanoporeReaderStream
 	}
 
 	public boolean readFastq2(String fileName) throws IOException{
-		Logging.info("Open " + fileName);
+		Logging.info("Open " + fileName); //after press Restart
 		try{					
 			NanoporeReader npReader = new NanoporeReader(fileName);
 			if (getTime){
@@ -343,8 +340,10 @@ public class NanoporeReaderStream
 			BufferedReader bf = SequenceReader.openFile(f5List);
 			String fileName;
 			while ((fileName = bf.readLine())!=null){
+				//Stop the streaming on signal
+				if(!ready)
+					return;
 				readFastq2(fileName);
-
 				//Move to done folder
 				if (pFolder != null){
 					moveFile(new File(fileName),  pFolder);
@@ -352,24 +351,22 @@ public class NanoporeReaderStream
 			}//while
 			bf.close();
 		}else{//folder
-			HashSet<String> filesDone = new HashSet<String>();
+//			HashSet<String> filesDone = new HashSet<String>();
 
 			File mainFolder = new File(folder);
 			File passFolder = new File(folder + File.separatorChar + "pass");
 			File failFolder = new File(folder + File.separatorChar + "fail");			
 
-			while (wait){
-
-
+			while (ready){
 				//Do main
 				long now = System.currentTimeMillis();
 				File [] fileList = mainFolder.listFiles();
 				Logging.info("Reading in folder " + mainFolder.getAbsolutePath());
 				if (fileList!=null){
 					for (File f:fileList){
-						if (!wait)
+						//Stop the streaming on signal
+						if (!ready)
 							break;
-
 						//directory
 						if (!f.isFile())
 							continue;						
@@ -404,7 +401,8 @@ public class NanoporeReaderStream
 				fileList = passFolder.listFiles();
 				if (fileList!=null){
 					for (File f:fileList){
-						if (!wait)
+						//Stop the streaming on signal
+						if (!ready)
 							break;
 
 						//directory
@@ -441,7 +439,8 @@ public class NanoporeReaderStream
 				fileList = failFolder.listFiles();
 				if (fileList!=null){
 					for (File f:fileList){
-						if (!wait)
+						//Stop the streaming on signal
+						if (!ready)
 							break;
 
 						//directory
@@ -470,7 +469,7 @@ public class NanoporeReaderStream
 					}//for			
 				}//if
 
-				for (int x = 0; x < interval && wait; x++){
+				for (int x = 0; x < interval && ready; x++){
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {					

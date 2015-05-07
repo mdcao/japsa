@@ -151,7 +151,15 @@ public class DynamicHistogram extends AbstractIntervalXYDataset
     public void notifyChanged(){
     	this.fireDatasetChanged();
     }
-
+    public void reset(){
+    	for (int index=0; index < mySeriesList.size(); index++){
+    		MySeries aSeries = mySeriesList.get(index);
+    		for (int bindex=0; bindex < aSeries.binList.size(); bindex++){
+    			HistogramBin curBin = aSeries.binList.get(bindex);
+    			aSeries.binList.set(bindex, new HistogramBin(curBin.getStartBoundary(),curBin.getEndBoundary()));
+    		}
+    	}
+    }
         
     public int getSeriesIndex(String serieKey){    	
     	for (int index = 0;index < mySeriesList.size();index ++){
