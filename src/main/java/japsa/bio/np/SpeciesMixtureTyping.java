@@ -48,6 +48,7 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 
+import java.awt.BorderLayout;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +58,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -64,6 +66,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYErrorRenderer;
+import org.jfree.data.Range;
 import org.jfree.data.xy.YIntervalSeries;
 import org.jfree.data.xy.YIntervalSeriesCollection;
 import org.rosuda.JRI.REXP;
@@ -99,6 +102,8 @@ public class SpeciesMixtureTyping {
 		cmdLine.addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
 
 		cmdLine.addInt("sim", 0,  "Scale for simulation");
+		cmdLine.addDouble("qual", 0,  "Minimum alignment quality");
+		
 
 		args = cmdLine.stdParseLine(args);			
 		/**********************************************************************/
@@ -109,10 +114,12 @@ public class SpeciesMixtureTyping {
 		String hours = cmdLine.getStringVal("hours");
 		boolean GUI = cmdLine.getBooleanVal("GUI");
 		int number  = cmdLine.getIntVal("number");
-
+		double qual  = cmdLine.getDoubleVal("qual");
+		
 		SpeciesMixtureTyping paTyping = new SpeciesMixtureTyping(GUI);
 
 		paTyping.simulation = cmdLine.getIntVal("sim");
+		paTyping.qual = qual;
 
 		if (hours !=null){
 			BufferedReader bf = SequenceReader.openFile(hours);
@@ -140,6 +147,7 @@ public class SpeciesMixtureTyping {
 	}
 
 	boolean withGUI = false;
+	double qual = 0;
 
 	Rengine rengine;
 
@@ -147,12 +155,16 @@ public class SpeciesMixtureTyping {
 	IntArray readCountArray = null;
 
 	int currentReadCount = 0;
+	int currentReadAligned = 0;
 	long currentBaseCount = 0;
 
 	int arrayIndex = 0;
 	String prefix;
 	SequenceOutputStream countsOS;
 	YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
+	
+	long firstReadTime = 0;
+	JLabel timeLabel;
 
 	/////////////////////////////////////////////////////////////////////////////
 
@@ -187,11 +199,14 @@ public class SpeciesMixtureTyping {
 			final XYPlot plot = chart.getXYPlot();
 			plot.setRenderer(new XYErrorRenderer());
 
-			System.out.println(chart.getXYPlot().getRenderer().getClass().getCanonicalName());
+			//System.out.println(chart.getXYPlot().getRenderer().getClass().getCanonicalName());
 
 			ValueAxis axis = plot.getDomainAxis();
 			axis.setAutoRange(true);
 			axis.setAutoRangeMinimumSize(6000);
+			
+			ValueAxis yAxis = plot.getRangeAxis();
+			yAxis.setRange(0.0, 1.0);
 			//axis.set
 			
 			//axis.setFixedAutoRange(6000.0);
@@ -199,9 +214,11 @@ public class SpeciesMixtureTyping {
 			JFrame frame = new JFrame("Species Typing");
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			ChartPanel label = new ChartPanel(chart);
-			frame.getContentPane().add(label);
+			frame.getContentPane().add(label,BorderLayout.CENTER);
 			//Suppose I add combo boxes and buttons here later
 
+			timeLabel = new JLabel("Time lapsed : waiting  Total reads: " + currentReadCount + "  Aligned reads: " + currentReadAligned);
+			frame.getContentPane().add(timeLabel, BorderLayout.SOUTH);
 			frame.pack();
 			frame.setVisible(true);  	
 		}
@@ -379,6 +396,9 @@ public class SpeciesMixtureTyping {
 		long x = System.currentTimeMillis(); 
 		for (int i = 0; i < results.length;i++){
 			String species = speciesArray.get(i);
+			if (species.equals("others"))
+				continue;
+			
 			double mid = (results[i][0] + results[i][1])/2;
 			YIntervalSeries series = speciesSeries.get(species);
 			if (series == null){
@@ -412,7 +432,9 @@ public class SpeciesMixtureTyping {
 
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
-
+			if (firstReadTime <=0)
+				firstReadTime = System.currentTimeMillis();
+			
 			if (!sam.getReadName().equals(readName)){
 				readName = sam.getReadName();
 
@@ -434,6 +456,11 @@ public class SpeciesMixtureTyping {
 			if (sam.getReadUnmappedFlag()){				
 				continue;			
 			}
+			
+			if (sam.getMappingQuality() < this.qual)
+				continue;
+			
+			currentReadAligned ++;
 
 			String refSequence = sam.getReferenceName();
 			String species = seq2Species.get(refSequence);
@@ -466,9 +493,9 @@ public class SpeciesMixtureTyping {
 			long lastRun = 0;
 			while(true) {	
 				long delay = System.currentTimeMillis() - lastRun;
-				if (delay < 60000){
+				if (delay < 5000){
 					try {
-						Thread.sleep((60000 - delay));
+						Thread.sleep((5000 - delay));
 					} catch (InterruptedException ex) {
 						System.out.println(ex);
 					}					
@@ -476,6 +503,15 @@ public class SpeciesMixtureTyping {
 				synchronized(this.typing) {//avoid concurrent update
 					lastRun = System.currentTimeMillis();
 					typing.guiAnalysisCurrent(speciesSeries);
+					if (typing.firstReadTime > 0){
+						long lapsedTime = (System.currentTimeMillis() - typing.firstReadTime) / 1000;
+						long hours = lapsedTime / 3600;
+						lapsedTime = lapsedTime % 3600;
+						long mins  = lapsedTime / 60;
+						lapsedTime = lapsedTime % 60;						
+						typing.timeLabel.setText("Time lapsed : " + hours + ":" + (mins < 10?"0":"") + mins + ":" + (lapsedTime < 10?"0":"") + lapsedTime 
+								+ "   Total reads: " + typing.currentReadCount + "  Aligned reads: " + typing.currentReadAligned);
+					}
 				}  
 
 			}

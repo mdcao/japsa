@@ -428,10 +428,10 @@ public class ResistanceGene {
 				{	
 					double score = checkHMM(consensus, gene);
 					
-					if (score == 0 && gene2PrimaryGroup.get(geneID).equals("Daptomycin-Rifampin")){
-						score = 0.8;
-						Logging.info("XXXX " + geneID);
-					}
+					//if (score == 0 && gene2PrimaryGroup.get(geneID).equals("Daptomycin-Rifampin")){
+					//	score = 0.8;
+					//	Logging.info("XXXX " + geneID);
+					//}
 					
 					Logging.info("REF: " + geneID + " " + score + " " + gene.length() + " " + consensus.length()+ " " + gene2Group.get(geneID)+ " " + gene2PrimaryGroup.get(geneID));
 
