@@ -70,7 +70,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.StackedXYAreaRenderer;
-import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.data.statistics.HistogramType;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeTableXYDataset;
@@ -641,7 +640,7 @@ public class NanoporeReaderWindow implements Runnable{
 	boolean stillRun = true;
 
 	public void run() {		
-		int lastIndexLengths = 0, lastIndexLengths2D = 0, lastIndexLengthsComp = 0, lastIndexLengthsTemp = 0;
+		int lastIndexLengths = 0;//, lastIndexLengths2D = 0, lastIndexLengthsComp = 0, lastIndexLengthsTemp = 0;
 		int lastIndexQual2D = 0, lastIndexQualComp = 0, lastIndexQualTemp = 0;
 
 		while(stillRun) {				                

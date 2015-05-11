@@ -197,7 +197,7 @@ public class DynamicHistogram extends AbstractIntervalXYDataset
      * @throws IndexOutOfBoundsException if <code>series</code> is outside the
      *     specified range.
      */
-    List getBins(int series) {
+    List<HistogramBin> getBins(int series) {
     	return this.mySeriesList.get(series).binList;
     }
 
@@ -282,8 +282,8 @@ public class DynamicHistogram extends AbstractIntervalXYDataset
      */
     @Override
     public Number getX(int series, int item) {
-        List bins = getBins(series);
-        HistogramBin bin = (HistogramBin) bins.get(item);
+        List<HistogramBin> bins = getBins(series);
+        HistogramBin bin =  bins.get(item);
         double x = (bin.getStartBoundary() + bin.getEndBoundary()) / 2.;
         return new Double(x);
     }
@@ -303,8 +303,8 @@ public class DynamicHistogram extends AbstractIntervalXYDataset
      */
     @Override
     public Number getY(int series, int item) {
-        List bins = getBins(series);
-        HistogramBin bin = (HistogramBin) bins.get(item);
+        List<HistogramBin> bins = getBins(series);
+        HistogramBin bin =  bins.get(item);
         double total = getTotal(series);
         double binWidth = getBinWidth(series);
 
@@ -336,8 +336,8 @@ public class DynamicHistogram extends AbstractIntervalXYDataset
      */
     @Override
     public Number getStartX(int series, int item) {
-        List bins = getBins(series);
-        HistogramBin bin = (HistogramBin) bins.get(item);
+        List<HistogramBin> bins = getBins(series);
+        HistogramBin bin = bins.get(item);
         return new Double(bin.getStartBoundary());
     }
 
@@ -355,8 +355,8 @@ public class DynamicHistogram extends AbstractIntervalXYDataset
      */
     @Override
     public Number getEndX(int series, int item) {
-        List bins = getBins(series);
-        HistogramBin bin = (HistogramBin) bins.get(item);
+        List<HistogramBin> bins = getBins(series);
+        HistogramBin bin = bins.get(item);
         return new Double(bin.getEndBoundary());
     }
 
