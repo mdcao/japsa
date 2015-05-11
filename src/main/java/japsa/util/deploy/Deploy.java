@@ -61,6 +61,7 @@ import japsa.bio.tr.Sam2FragmentSize;
 import japsa.bio.tr.SortFragmentFile;
 import japsa.bio.tr.VCF2TRV;
 import japsa.bio.tr.VNTRDepth;
+import japsa.seq.nanopore.NanoporeReadFilter;
 import japsa.seq.nanopore.NanoporeReader;
 import japsa.seq.nanopore.NanoporeReaderStream;
 import japsa.seq.tools.AddAnnotation;
@@ -94,7 +95,7 @@ import java.util.Date;
 public class Deploy {
 	@SuppressWarnings("rawtypes")
 	private static ArrayList<Class> tools = new ArrayList<Class>();
-	public static String VERSION = "1.5-4a";
+	public static String VERSION = "1.5-5a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
@@ -125,7 +126,8 @@ public class Deploy {
 
 		//jsa.np.
 		tools.add(NanoporeReader.class);
-		tools.add(NanoporeReaderStream.class);				
+		tools.add(NanoporeReaderStream.class);
+		tools.add(NanoporeReadFilter.class);		
 		tools.add(SpeciesMixtureTyping.class);		
 		tools.add(GeneStrainTyping.class);
 		tools.add(MLSTStrainTyping.class);

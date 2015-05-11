@@ -209,6 +209,23 @@ public class NanoporeReaderStream
 
 	boolean ready = true;
 	static byte MIN_QUAL = '!';
+	
+	/**
+	 * Compute average quality of a read
+	 * @param fq
+	 * @return
+	 */
+	public static double averageQuality(FastqSequence fq){
+		if (fq.length() > 0){
+			double sumQual  = 0;
+			for (int p = 0; p < fq.length(); p++){
+				sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+			}
+			return (sumQual/fq.length());
+		}	
+		else return 0;
+	}
 
 	public void print(FastqSequence fq) throws IOException{
 		fq.print(sos);
