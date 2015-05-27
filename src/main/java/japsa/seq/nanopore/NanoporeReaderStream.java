@@ -76,6 +76,9 @@ public class NanoporeReaderStream
 		cmdLine.addBoolean("time", false, "Getting the sequenceing time of the read -- experimental");
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
 		cmdLine.addString("folder",null, "The download folder");
+		cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");
+		
+		
 		cmdLine.addBoolean("fail",false, "Include fail reads");		
 		cmdLine.addString("pFolderName",null, "Folder to move processed files to");
 		cmdLine.addBoolean("GUI",false, "Whether run with GUI");
@@ -99,6 +102,8 @@ public class NanoporeReaderStream
 		boolean time  = cmdLine.getBooleanVal("time");
 		boolean GUI  = cmdLine.getBooleanVal("GUI");
 		boolean fail  = cmdLine.getBooleanVal("fail");
+		String format = cmdLine.getStringVal("format");
+		
 		//String netAddress = cmdLine.getStringVal("netAddress");
 		//int netPort  = cmdLine.getIntVal("netPort");
 
@@ -124,6 +129,7 @@ public class NanoporeReaderStream
 		reader.folder = folder;		
 		reader.doFail = fail;
 		reader.output = output;
+		reader.format = format.toLowerCase();
 
 		if (GUI){
 			System.setProperty("java.awt.headless", "false");
@@ -207,6 +213,7 @@ public class NanoporeReaderStream
 	boolean getTime = false;
 	boolean done = false;
 
+	String format = "fastq";
 	boolean ready = true;
 	static byte MIN_QUAL = '!';
 	

@@ -81,7 +81,7 @@ import org.jfree.data.time.TimeTableXYDataset;
 public class NanoporeReaderWindow implements Runnable{
 
 	private JFrame frmNanoporeReader;
-	private int height = 600;
+	private int height = 50;
 	private int topR = 100, topC = 100;
 	//String downloadFolder;	
 
@@ -132,11 +132,11 @@ public class NanoporeReaderWindow implements Runnable{
 
 		final JPanel controlPanel = new JPanel();
 		frmNanoporeReader.getContentPane().add(controlPanel, BorderLayout.WEST);
-		controlPanel.setPreferredSize(new Dimension(320, height));
+		controlPanel.setPreferredSize(new Dimension(330, height));
 		controlPanel.setLayout(null);
 
 		final JPanel inputPanel = new JPanel();
-		inputPanel.setBounds(0, 23, 400, 157);
+		inputPanel.setBounds(0, 12, 330, 151);
 		inputPanel.setBorder(BorderFactory.createTitledBorder("Input"));
 		controlPanel.add(inputPanel);
 		inputPanel.setLayout(null);
@@ -144,7 +144,7 @@ public class NanoporeReaderWindow implements Runnable{
 		final JRadioButton rdbtnInputStream = new JRadioButton("Read files from input Stream");
 
 
-		rdbtnInputStream.setBounds(8, 24, 384, 23);
+		rdbtnInputStream.setBounds(8, 24, 304, 23);
 		inputPanel.add(rdbtnInputStream);
 
 		final JRadioButton rdbtnF = new JRadioButton("Read files from download directory");
@@ -162,7 +162,7 @@ public class NanoporeReaderWindow implements Runnable{
 		group.add(rdbtnF);
 
 		final JTextField txtDir = new JTextField(reader.folder);		
-		txtDir.setBounds(18, 82, 289, 20);
+		txtDir.setBounds(18, 82, 300, 20);
 		inputPanel.add(txtDir);
 
 		final JButton btnChange = new JButton("Change");
@@ -170,7 +170,7 @@ public class NanoporeReaderWindow implements Runnable{
 		inputPanel.add(btnChange);
 
 		final JCheckBox chckbxInc = new JCheckBox("Include fail folder",reader.doFail);
-		chckbxInc.setBounds(173, 110, 207, 23);
+		chckbxInc.setBounds(153, 110, 159, 23);
 		inputPanel.add(chckbxInc);
 
 		chckbxInc.addItemListener(new ItemListener() {
@@ -230,7 +230,7 @@ public class NanoporeReaderWindow implements Runnable{
 
 
 		final JPanel outputPanel = new JPanel();
-		outputPanel.setBounds(0, 192, 400, 169);
+		outputPanel.setBounds(0, 175, 330, 151);
 		outputPanel.setBorder(BorderFactory.createTitledBorder("Output"));
 		controlPanel.add(outputPanel);
 		outputPanel.setLayout(null);
@@ -248,7 +248,7 @@ public class NanoporeReaderWindow implements Runnable{
 		group2.add(rdbtnOut2File);
 
 		final JTextField txtOFile = new JTextField(reader.output);		
-		txtOFile.setBounds(18, 82, 295, 20);
+		txtOFile.setBounds(18, 82, 300, 20);
 		outputPanel.add(txtOFile);
 
 
@@ -310,9 +310,56 @@ public class NanoporeReaderWindow implements Runnable{
 			}
 		});
 
+		JPanel formatPanel = new JPanel();
+		formatPanel.setBorder(BorderFactory.createTitledBorder("Output format"));
+		formatPanel.setBounds(0, 335, 330, 55);
+		controlPanel.add(formatPanel);
+		
+		final JRadioButton fqRadioButton = new JRadioButton("fastq");
+		fqRadioButton.setBounds(46, 22, 62, 23);
+		
+		final JRadioButton faRadioButton = new JRadioButton("fasta");
+		faRadioButton.setBounds(186, 22, 62, 23);
+		formatPanel.setLayout(null);
+		
+		final ButtonGroup formatBtGroup = new ButtonGroup();
+		
+		formatBtGroup.add(fqRadioButton);
+		formatBtGroup.add(faRadioButton);
+		
+		formatPanel.add(fqRadioButton);
+		formatPanel.add(faRadioButton);
+		
+		if ("fasta".equals(reader.format)){
+			fqRadioButton.setSelected(false);
+			faRadioButton.setSelected(true);
+		}else{
+			faRadioButton.setSelected(false);
+			fqRadioButton.setSelected(true);
+		}
+		
+		fqRadioButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (fqRadioButton.isSelected())
+					reader.format = "fastq";
+				else 
+					reader.format = "fasta";
+			}
+		});
+		
+		faRadioButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (fqRadioButton.isSelected())
+					reader.format = "fastq";
+				else 
+					reader.format = "fasta";
+			}
+		});		
+		
+		
 
 		final JPanel optionPanel = new JPanel();
-		optionPanel.setBounds(0, 373, 400, 132);
+		optionPanel.setBounds(0, 391, 330, 115);
 		optionPanel.setBorder(BorderFactory.createTitledBorder("Options"));
 		controlPanel.add(optionPanel);
 		optionPanel.setLayout(null);
@@ -329,7 +376,7 @@ public class NanoporeReaderWindow implements Runnable{
 
 
 		final JCheckBox chckbxAddAUnicqu = new JCheckBox("Add a unique number to read name",reader.number);
-		chckbxAddAUnicqu.setBounds(8, 52, 373, 23);
+		chckbxAddAUnicqu.setBounds(8, 52, 304, 23);
 		optionPanel.add(chckbxAddAUnicqu);
 
 		chckbxAddAUnicqu.addItemListener(new ItemListener() {
@@ -350,12 +397,12 @@ public class NanoporeReaderWindow implements Runnable{
 		optionPanel.add(txtMinLenth);
 
 		final JPanel lPanel = new JPanel();
-		lPanel.setBounds(0, 508, 400, 83);
+		lPanel.setBounds(0, 521, 320, 55);
 		controlPanel.add(lPanel);
 		lPanel.setLayout(null);		
 
 		final JButton btnStart = new JButton("Start");
-		btnStart.setBounds(27, 36, 117, 25);
+		btnStart.setBounds(28, 18, 117, 25);
 		btnStart.setEnabled(true);
 		lPanel.add(btnStart);
 
@@ -378,10 +425,11 @@ public class NanoporeReaderWindow implements Runnable{
 				
 			}
 		});
-		btnStop.setBounds(179, 36, 117, 25);
+		btnStop.setBounds(191, 18, 117, 25);
 		btnStop.setEnabled(false);
 		lPanel.add(btnStop);
-
+		
+		
 
 		final JPanel mainPanel = new JPanel();
 		frmNanoporeReader.getContentPane().add(mainPanel, BorderLayout.CENTER);
