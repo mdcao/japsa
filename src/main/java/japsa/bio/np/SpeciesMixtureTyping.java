@@ -99,7 +99,7 @@ public class SpeciesMixtureTyping {
 		cmdLine.addInt("number", 50,  "Number of reads");
 
 		cmdLine.addInt("timestamp", 0,  "Timestamp to check, if <=0 then use read number instead");
-		cmdLine.addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
+		//cmdLine.addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
 
 		cmdLine.addInt("sim", 0,  "Scale for simulation");
 		cmdLine.addDouble("qual", 0,  "Minimum alignment quality");
@@ -477,6 +477,10 @@ public class SpeciesMixtureTyping {
 			}			
 
 		}//while
+		
+		//final run
+		simpleAnalysisCurrent(currentReadCount);
+
 		samIter.close();
 		samReader.close();
 	}
