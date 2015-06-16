@@ -149,10 +149,10 @@ public class VNTRDepth {
 			sos.print(endSeq - startSeq + 1);			
 
 			for (int i = 0; i < samReaders.length;i++){	
-				int    countRepInt = 0,
-						countRepContained = 0,
-						countSeqInt = 0,
-						countSeqContained = 0;
+				int     countRepInt = 0,       //R1: reads intersect with repeat
+						countRepContained = 0, //R2: reads conained within repeats
+						countSeqInt = 0,       //S1: reads intersect with repeat + flank
+						countSeqContained = 0; //S2: reads contained within repeat + flank
 
 
 				SAMRecordIterator iter = samReaders[i].query(chrom, startSeq, endSeq, false);				
@@ -169,7 +169,7 @@ public class VNTRDepth {
 					countSeqInt ++;
 
 					int alignmentStart = record.getAlignmentStart();
-					int alignmentEnd = record.getAlignmentStart();
+					int alignmentEnd   = record.getAlignmentEnd();
 
 					if (alignmentStart >= startSeq && alignmentEnd <= endSeq)
 						countSeqContained ++;

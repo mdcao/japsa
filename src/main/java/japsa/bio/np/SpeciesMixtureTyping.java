@@ -66,7 +66,6 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYErrorRenderer;
-import org.jfree.data.Range;
 import org.jfree.data.xy.YIntervalSeries;
 import org.jfree.data.xy.YIntervalSeriesCollection;
 import org.rosuda.JRI.REXP;
@@ -253,19 +252,7 @@ public class SpeciesMixtureTyping {
 
 	}
 
-	private void analysisCurrent(int currentRead) throws IOException{		
-		int step = currentRead;
-		if (hoursArray != null) 
-			step = hoursArray.get(arrayIndex);
-
-
-		countsOS.print(step);
-		for (String species:speciesList){
-			countsOS.print("\t" + species2Count.get(species).count);
-		}	
-		countsOS.println();				
-	}
-
+	
 	HashMap<String, String> seq2Species = new HashMap<String, String>();
 	HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
 	ArrayList<String> speciesList = new ArrayList<String>(); 
@@ -315,10 +302,12 @@ public class SpeciesMixtureTyping {
 		DoubleArray countArray = new DoubleArray();
 		ArrayList<String> speciesArray = new ArrayList<String> ();
 
+		int minCount = Math.max(1,sum/100);
 		for (int i = 0; i < count.length;i++){			
-			if (count[i] >= sum/50){
+			if (count[i] >= minCount){
 				countArray.add(count[i]);
 				speciesArray.add(speciesList.get(i));
+				Logging.info(step+" : " + speciesList.get(i) + " == " + count[i]);
 			}
 		}		
 		//if (countArray.size() > 10) return;
@@ -346,7 +335,7 @@ public class SpeciesMixtureTyping {
 		}
 
 		for (int i = 0; i < results.length;i++){
-			if (results[i][0] <= 0.01)
+			if (results[i][0] <= 0.00001)
 				continue;
 
 			double mid = (results[i][0] + results[i][1])/2;

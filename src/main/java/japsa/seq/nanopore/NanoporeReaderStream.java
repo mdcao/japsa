@@ -76,10 +76,10 @@ public class NanoporeReaderStream
 		cmdLine.addBoolean("time", false, "Getting the sequenceing time of the read -- experimental");
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
 		cmdLine.addString("folder",null, "The download folder");
-		cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");
-		
+		cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");		
 		
 		cmdLine.addBoolean("fail",false, "Include fail reads");		
+		cmdLine.addBoolean("realtime",false, "Whether to run in realtime");
 		cmdLine.addString("pFolderName",null, "Folder to move processed files to");
 		cmdLine.addBoolean("GUI",false, "Whether run with GUI");
 
@@ -88,6 +88,7 @@ public class NanoporeReaderStream
 
 		cmdLine.addInt("interval", 30,  "Interval between check in seconds");
 		cmdLine.addInt("age", 30,  "The file has to be this old in seconds");
+		
 
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
@@ -101,6 +102,7 @@ public class NanoporeReaderStream
 		boolean number  = cmdLine.getBooleanVal("number");
 		boolean time  = cmdLine.getBooleanVal("time");
 		boolean GUI  = cmdLine.getBooleanVal("GUI");
+		boolean realtime  = cmdLine.getBooleanVal("realtime");
 		boolean fail  = cmdLine.getBooleanVal("fail");
 		String format = cmdLine.getStringVal("format");
 		
@@ -130,6 +132,7 @@ public class NanoporeReaderStream
 		reader.doFail = fail;
 		reader.output = output;
 		reader.format = format.toLowerCase();
+		reader.realtime = realtime;
 
 		if (GUI){
 			System.setProperty("java.awt.headless", "false");
@@ -206,6 +209,7 @@ public class NanoporeReaderStream
 	String f5List = null, folder = null;
 	int minLength = 0;
 	boolean wait = true;
+	boolean realtime = true;
 	int interval = 1, age = 1000;
 	boolean doFail = false;
 	String output = "";
@@ -501,6 +505,8 @@ public class NanoporeReaderStream
 						e.printStackTrace();
 					}
 				}
+				if (!realtime)
+					break;
 			}//while			
 			Logging.info("EXISTING");
 		}

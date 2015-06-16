@@ -41,6 +41,7 @@ import japsa.bio.hts.CountReadInRegion;
 import japsa.bio.hts.FastQRMEmptyRead;
 import japsa.bio.hts.FastQTrim;
 import japsa.bio.hts.HTSAlignmentParam;
+import japsa.bio.hts.HTSErrorAnalysis;
 import japsa.bio.hts.SelectReadIntersect;
 import japsa.bio.hts.SelectReadSpan;
 import japsa.bio.np.GeneStrainTyping;
@@ -95,7 +96,7 @@ import java.util.Date;
 public class Deploy {
 	@SuppressWarnings("rawtypes")
 	private static ArrayList<Class> tools = new ArrayList<Class>();
-	public static String VERSION = "1.5-5b";
+	public static String VERSION = "1.5-6a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
@@ -123,6 +124,8 @@ public class Deploy {
 		tools.add(SelectReadSpan.class);				
 		tools.add(CountReadInRegion.class);
 		tools.add(HTSAlignmentParam.class);
+		tools.add(HTSErrorAnalysis.class);
+		
 
 		//jsa.np.
 		tools.add(NanoporeReader.class);
