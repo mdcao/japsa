@@ -58,7 +58,7 @@ public class SimProbFSM {
 		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
 		/**********************************************************************/		
 
-		cmdLine.addInt("length", 2000, "Length");
+		cmdLine.addInt("length", 1000, "Length");
 		cmdLine.addInt("num", 20, "Number of sequences");
 		
 		cmdLine.addDouble("miProb", 0.1, "Model probability of insertion");
@@ -135,7 +135,7 @@ public class SimProbFSM {
 			eDp.resetCount();
 			double totCost = 0;
 			for (int i = 0; i < numSeq; i++ ){
-				System.out.printf("%3d  ",i);
+				System.out.printf("%3d  \n",i);
 				Emission retState = eDp.align(seqs.get(i));
 				double cost = retState.myCost;
 				System.out.println(eDp.updateCount(retState) + " states and " + cost + " bits");

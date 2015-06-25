@@ -46,6 +46,8 @@ import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.ByteArray;
 import japsa.util.JapsaMath;
+import japsa.util.JapsaTimer;
+import japsa.util.Logging;
 
 
 
@@ -338,6 +340,9 @@ public abstract class ProbFSM {
 	 */
 	public Emission align(Sequence genSeq){
 		//return state
+		//JapsaTimer timer = new JapsaTimer();
+		//timer.systemInfo();
+		
 		Emission retEmission = new Emission(states[0], mSeq.length()-1, genSeq.length() -1);
 		retEmission.myCost = genSeq.length() * (insEmissionCost + 4);
 		
@@ -445,9 +450,20 @@ public abstract class ProbFSM {
 
 			//helping GC to gabbabe collect current state
 			Emission tmp = currentEmission.next;
+			
+			hash.remove(Emission.hashKey(currentEmission.toState.name, currentEmission.mPos, currentEmission.gPos));			
 			currentEmission.next = null;
+			
 			currentEmission = tmp;
 		}
+		
+		Logging.info("Hash = " + hash.size());
+		
+		//timer.systemInfo();
+		//Runtime.getRuntime().gc();
+		//timer.systemInfo();
+		
+		//timer.mark("toc");		
 		return retEmission;
 	}
 	/**************************************************************
@@ -455,7 +471,7 @@ public abstract class ProbFSM {
 	 * @param genSeq
 	 * @return
 	 */
-	public Emission alignGenerative(Sequence genSeq){
+	public Emission alignGenerative(Sequence genSeq){		
 		//return state
 		Emission retEmission = new Emission(states[0], mSeq.length()-1, genSeq.length() -1);
 		retEmission.myCost = genSeq.length() * (insEmissionCost + 4);
@@ -602,7 +618,7 @@ public abstract class ProbFSM {
 
 		public double myCost;
 
-		String hashKey;
+		//String hashKey;
 
 		public Emission(MachineState state, int mP, int gP){
 			toState = state;

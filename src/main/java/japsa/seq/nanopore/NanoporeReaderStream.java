@@ -135,6 +135,7 @@ public class NanoporeReaderStream
 		reader.realtime = realtime;
 
 		if (GUI){
+			reader.realtime = true;
 			System.setProperty("java.awt.headless", "false");
 			reader.stats = true;//GUI implies stats
 			reader.ready = false;//wait for the command from GUI

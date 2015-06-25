@@ -97,8 +97,9 @@ public class ResistanceGene {
 		cmdLine.addString("global", "needle",
 				"Name of the global method, support needle and hmm");
 		cmdLine.addString("tmp", "tmp/t",  "Temporary folder");
-		cmdLine.addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
+		cmdLine.addString("hours", null,  "The file containging hours against yields, if set will output acording to time");
 		cmdLine.addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");		
+		cmdLine.addInt("timestamp", 0,  "Number of seconds between internval");
 		cmdLine.addDouble("il", 0.9,   "Threshold for Illumina");
 		cmdLine.addBoolean("twodonly", false,  "Use only two dimentional reads");
 
@@ -117,6 +118,7 @@ public class ResistanceGene {
 
 		double scoreThreshold = cmdLine.getDoubleVal("scoreThreshold");				
 		int read = cmdLine.getIntVal("read");
+		int timestamp = cmdLine.getIntVal("timestamp");
 
 		//double np = cmdLine.getDoubleVal("np");
 		double il = cmdLine.getDoubleVal("il");
@@ -220,6 +222,8 @@ public class ResistanceGene {
 	IntArray hoursArray = null;
 	IntArray readCountArray = null;
 	int arrayIndex = 0;
+	
+	long firstReadTime = 0;
 
 	public ResistanceGene(){
 	}
@@ -366,7 +370,8 @@ public class ResistanceGene {
 		return score / gene.length();
 	}
 
-	public double checkHMM(Sequence consensus, Sequence gene){		
+	public double checkHMM(Sequence consensus, Sequence gene){
+		
 		if (gene.length() > 2700 || consensus.length() > 4000 || gene.length() * consensus.length() > 6000000){
 			Logging.info("SKIP " + gene.getName() + " " + gene.length() + " vs " + consensus.length());			
 			return 0;
@@ -617,6 +622,11 @@ public class ResistanceGene {
 		Sequence readSequence = new Sequence(Alphabet.DNA(),1,"");
 		while (samIter.hasNext()){
 			SAMRecord record = samIter.next();
+			
+			if (firstReadTime <=0)
+				firstReadTime = System.currentTimeMillis();
+
+			
 			if (this.twoDOnly && !record.getReadName().contains("twodim")){
 				continue;
 			}

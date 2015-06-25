@@ -493,6 +493,7 @@ public class SpeciesMixtureTyping {
 						System.out.println(ex);
 					}					
 				}
+				System.out.println("TICK @ Species " + delay);
 				synchronized(this.typing) {//avoid concurrent update
 					lastRun = System.currentTimeMillis();
 					typing.guiAnalysisCurrent(speciesSeries);

@@ -51,6 +51,7 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 
+import java.awt.BorderLayout;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -60,10 +61,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
-//import org.apache.commons.math3.distribution.HypergeometricDistribution;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 
-
-
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYErrorRenderer;
+import org.jfree.data.xy.YIntervalSeries;
+import org.jfree.data.xy.YIntervalSeriesCollection;
 
 
 
@@ -102,6 +110,7 @@ public class GeneStrainTyping {
 
 		cmdLine.addBoolean("twodonly", false,  "Use only two dimentional reads");
 		cmdLine.addInt("sim", 0,  "Scale for simulation");
+		cmdLine.addBoolean("GUI", false,  "Run on GUI");
 
 		args = cmdLine.stdParseLine(args);		
 		/**********************************************************************/
@@ -114,9 +123,11 @@ public class GeneStrainTyping {
 		String hours = cmdLine.getStringVal("hours");
 		int top = cmdLine.getIntVal("top");		
 		int read = cmdLine.getIntVal("read");
+		boolean GUI = cmdLine.getBooleanVal("GUI");
+		int timestamp = cmdLine.getIntVal("timestamp");
 
 		{
-			GeneStrainTyping paTyping = new GeneStrainTyping();	
+			GeneStrainTyping paTyping = new GeneStrainTyping(GUI);	
 			paTyping.simulation = cmdLine.getIntVal("sim");
 			paTyping.prefix = tmp;
 			paTyping.readNumber = read;
@@ -144,8 +155,13 @@ public class GeneStrainTyping {
 			paTyping.datOS.print("step\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
 			paTyping.readGenes(geneFile);
 			paTyping.readKnowProfiles(profile);
+			Logging.info("Read in " + paTyping.profileList.size() + " gene profiles");
 
-			Logging.info("Read in " + paTyping.profileList.size() + " gene profiles");					
+			paTyping.timestamp = timestamp;
+
+			if (GUI)
+				paTyping.startGUI();
+
 			paTyping.typing(bamFile,  top);
 			paTyping.datOS.close();
 		}
@@ -177,14 +193,66 @@ public class GeneStrainTyping {
 
 	int currentReadCount = 0;
 	long currentBaseCount = 0;
+	int currentReadAligned = 0;
+
 	IntArray hoursArray = null;
 	IntArray readCountArray = null;
 	int arrayIndex = 0;
+
+	YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
 	long startTime;
+	long firstReadTime = 0;
+	JLabel timeLabel;
+	boolean withGUI = false;
+	int timestamp = 5000;
 
 
-	public GeneStrainTyping(){
-		startTime = System.currentTimeMillis();
+	public GeneStrainTyping(boolean withGUI){
+		this.withGUI = withGUI;
+		startTime = System.currentTimeMillis();		
+	}
+
+	public void startGUI(){
+		System.setProperty("java.awt.headless", "false");
+
+		GUIStrainTyping myGen = new GUIStrainTyping(this, timestamp);
+		new Thread(myGen).start();
+		//dataset.addSeries(s1);
+		//dataset.addSeries(s2);
+		JFreeChart chart = ChartFactory.createTimeSeriesChart(
+				"Strain Typing",
+				"Time",
+				"Value",
+				dataset,
+				true,
+				true,
+				false
+				);
+		final XYPlot plot = chart.getXYPlot();
+		plot.setRenderer(new XYErrorRenderer());
+
+		//System.out.println(chart.getXYPlot().getRenderer().getClass().getCanonicalName());
+
+		ValueAxis axis = plot.getDomainAxis();
+		axis.setAutoRange(true);
+		axis.setAutoRangeMinimumSize(6000);
+
+		ValueAxis yAxis = plot.getRangeAxis();
+		yAxis.setRange(0.0, 1.0);
+		//axis.set
+
+		//axis.setFixedAutoRange(6000.0);
+
+		JFrame frame = new JFrame("Strain Typing");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		ChartPanel label = new ChartPanel(chart);
+		frame.getContentPane().add(label,BorderLayout.CENTER);
+		//Suppose I add combo boxes and buttons here later
+
+		timeLabel = new JLabel("Time lapsed : waiting  Total reads: " + currentReadCount + "  Aligned reads: " + currentReadAligned);
+		frame.getContentPane().add(timeLabel, BorderLayout.SOUTH);
+		frame.pack();
+		frame.setVisible(true);  
 	}
 
 
@@ -282,7 +350,7 @@ public class GeneStrainTyping {
 	HashSet<String> mentionedStrain = new HashSet<String>(); 
 	double threshold = 0;
 
-	private void makePresenceTyping(int top) throws IOException, InterruptedException{
+	private ArrayList<LCTypingResult> makePresenceTyping(int top) throws IOException, InterruptedException{
 
 		int step = currentReadCount;
 		if (hoursArray != null) 
@@ -347,23 +415,6 @@ public class GeneStrainTyping {
 
 		Collections.sort(profileList);
 
-
-		//if (top > profileList.size())
-		//	top = profileList.size();
-
-		//System.out.println("============================================== " + currentReadCount + " found " + myGenes.size());
-
-		//ScatterDataRow scatterData = new ScatterDataRow();
-
-		//if (hoursArray != null){
-		//	if (arrayIndex >= hoursArray.size())
-		//		return;//no print
-		//	else 
-		//		scatterData.readCount = hoursArray.get(arrayIndex);
-		//}else{
-		//	scatterData.readCount = currentReadCount;
-		//}
-
 		//delay
 		if (simulation > 0){
 			long delay = step * 60 * 1000 / simulation - (System.currentTimeMillis() - startTime);
@@ -380,19 +431,7 @@ public class GeneStrainTyping {
 		}
 
 
-		for (int i = 0; i < top && i < lcT.size();i++){
-			//GeneProfile profile = profileList.get(i);
-			//mentionedStrain.add(profile.strainID);
-
-			//System.out.println(profile.strainID + "\t" + profile.score + "\t" + profile.f1 + "\t" + profile.precision + "\t" + profile.recall);
-			//XYSeries series = plotData.get(profile.strainID);
-			//if (series == null){
-			//	series = new XYSeries(profile.strainID);
-			//	plotData.put(profile.strainID, series);				
-			//}
-			//series.add(currentReadCount, profile.score);
-			//scatterData.strainScore.put(profile.strainID, profile.score);
-
+		for (int i = 0; i < top && i < lcT.size();i++){			
 			GeneProfile profile = profileList.get(i);			
 			Logging.info("F\t" + step + "\t" + currentReadCount + "\t" + currentBaseCount + "\t" + profile.strainID + "\t" + profile.f1 + "\t" + profile.precision +"\t" + profile.recall + "\t"+addedGenes.size());
 
@@ -404,15 +443,9 @@ public class GeneStrainTyping {
 			datOS.println();			
 		}
 		datOS.flush();
-		//scatterDataList.add(scatterData);
+
+		return lcT;
 	}
-
-
-	static class ScatterDataRow{
-		int readCount;
-		HashMap<String, Double> strainScore = new HashMap<String, Double> ();
-	}
-
 
 
 	/**
@@ -432,12 +465,16 @@ public class GeneStrainTyping {
 			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
 		SAMRecordIterator samIter = samReader.iterator();				
-		
+
 		String readName = "";
 		//A dummy sequence
 		Sequence readSequence = new Sequence(Alphabet.DNA(),1,"");
 		while (samIter.hasNext()){
 			SAMRecord record = samIter.next();
+			if (firstReadTime <=0)
+				firstReadTime = System.currentTimeMillis();
+
+
 			//if (this.twoDOnly && !record.getReadName().contains("twodim")){
 			//	continue;
 			//}
@@ -448,14 +485,16 @@ public class GeneStrainTyping {
 				currentReadCount ++;	
 				currentBaseCount += record.getReadLength();
 
-				if (hoursArray != null){
-					if (arrayIndex < hoursArray.size() && currentReadCount >= this.readCountArray.get(arrayIndex)){						
-						makePresenceTyping(top);
-						arrayIndex ++;
-					}
-				}else{				
-					if (currentReadCount % readNumber == 0){
-						makePresenceTyping(top);
+				if (!withGUI){
+					if (hoursArray != null){
+						if (arrayIndex < hoursArray.size() && currentReadCount >= this.readCountArray.get(arrayIndex)){						
+							makePresenceTyping(top);
+							arrayIndex ++;
+						}
+					}else{				
+						if (currentReadCount % readNumber == 0){
+							makePresenceTyping(top);
+						}
 					}
 				}
 				//Get the read
@@ -471,6 +510,8 @@ public class GeneStrainTyping {
 			if (record.getReadUnmappedFlag())
 				continue;			
 			//assert: the read sequence is stored in readSequence with the right direction
+
+			currentReadAligned ++;
 			String	geneID = record.getReferenceName();
 			if (!geneMap.containsKey(geneID))
 				continue;
@@ -594,5 +635,71 @@ public class GeneStrainTyping {
 			}
 		}		
 		return "Common" + count + "#"+count1+"#"+count2+"#"+ret;
+	}
+
+
+	static class GUIStrainTyping implements Runnable {
+		GeneStrainTyping typing;
+		int timestamp = 5000;
+		public GUIStrainTyping (GeneStrainTyping typ, int timeInteval){
+			this.typing = typ;
+			this.timestamp = timeInteval;
+		}	
+		HashMap<String, YIntervalSeries> speciesSeries = new HashMap<String, YIntervalSeries>();
+
+
+		public void run() {
+			long lastRun = 0;
+			while(true) {	
+				long delay = System.currentTimeMillis() - lastRun;
+				if (delay < timestamp){
+					try {
+						Thread.sleep((timestamp - delay));
+					} catch (InterruptedException ex) {
+						System.out.println(ex);
+					}					
+				}
+				System.out.println("TICK " + delay);
+				lastRun = System.currentTimeMillis();
+				synchronized(this.typing) {//avoid concurrent update					
+					try {						
+						if (typing.firstReadTime > 0){							
+							long lapsedTime = (lastRun - typing.firstReadTime) / 1000;
+							long hours = lapsedTime / 3600;
+							lapsedTime = lapsedTime % 3600;
+							long mins  = lapsedTime / 60;
+							lapsedTime = lapsedTime % 60;						
+							typing.timeLabel.setText("Time lapsed : " + hours + ":" + (mins < 10?"0":"") + mins + ":" + (lapsedTime < 10?"0":"") + lapsedTime 
+									+ "   Total reads: " + typing.currentReadCount + "  Aligned reads: " + typing.currentReadAligned);
+
+
+							ArrayList<LCTypingResult> lcT = typing.makePresenceTyping(10);
+
+							for (LCTypingResult r:lcT){
+								double mid = r.postProb;
+								if (mid < 0.1)
+									continue;
+								YIntervalSeries series = speciesSeries.get(r.strainID);
+
+
+								if (series == null){
+									series = new YIntervalSeries(r.strainID);
+									speciesSeries.put(r.strainID, series);
+									typing.dataset.addSeries(series);
+								}
+								series.add(lastRun, mid, r.l, r.h);
+							}
+
+						}
+					} catch (IOException e) {						
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+
+				}  
+
+			}
+		}
 	}
 }
