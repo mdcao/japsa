@@ -776,7 +776,8 @@ public class NanoporeReader// implements Closeable
 	public static class DetectedEvents{
 		int dim;
 		double [] mean, stdv;
-		long [] start,length;
+		long [] start;
+		long [] length;
 
 		public double [] getMean(){
 			return mean;

@@ -77,7 +77,7 @@ public class NanoporeReaderStream
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
 		cmdLine.addString("folder",null, "The download folder");
 		cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");		
-		
+
 		cmdLine.addBoolean("fail",false, "Include fail reads");		
 		cmdLine.addBoolean("realtime",false, "Whether to run in realtime");
 		cmdLine.addString("pFolderName",null, "Folder to move processed files to");
@@ -88,7 +88,7 @@ public class NanoporeReaderStream
 
 		cmdLine.addInt("interval", 30,  "Interval between check in seconds");
 		cmdLine.addInt("age", 30,  "The file has to be this old in seconds");
-		
+
 
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
@@ -105,7 +105,7 @@ public class NanoporeReaderStream
 		boolean realtime  = cmdLine.getBooleanVal("realtime");
 		boolean fail  = cmdLine.getBooleanVal("fail");
 		String format = cmdLine.getStringVal("format");
-		
+
 		//String netAddress = cmdLine.getStringVal("netAddress");
 		//int netPort  = cmdLine.getIntVal("netPort");
 
@@ -221,7 +221,7 @@ public class NanoporeReaderStream
 	String format = "fastq";
 	boolean ready = true;
 	static byte MIN_QUAL = '!';
-	
+
 	/**
 	 * Compute average quality of a read
 	 * @param fq
@@ -388,8 +388,6 @@ public class NanoporeReaderStream
 			File failFolder = new File(folder + File.separatorChar + "fail");			
 
 			while (wait){
-
-
 				//Do main
 				long now = System.currentTimeMillis();
 				File [] fileList = mainFolder.listFiles();
@@ -401,19 +399,19 @@ public class NanoporeReaderStream
 
 						//directory
 						if (!f.isFile())
-							continue;						
+							continue;//for						
 
 						if (!f.getName().endsWith("fast5"))
-							continue;						
+							continue;//for						
 
 						//File too new
 						if (now - f.lastModified() < age)
-							continue;
+							continue;//for
 
 						//if processed already
 						String sPath = f.getAbsolutePath();					
 						if (filesDone.contains(sPath))
-							continue;
+							continue;//for
 
 						if (readFastq2(sPath)){						
 							filesDone.add(sPath);	
@@ -438,19 +436,19 @@ public class NanoporeReaderStream
 
 						//directory
 						if (!f.isFile())
-							continue;
+							continue;//for
 
 						if (!f.getName().endsWith("fast5"))
-							continue;
+							continue;//for
 
 						//File too new
 						if (now - f.lastModified() < age)
-							continue;
+							continue;//for
 
 						//if processed already
 						String sPath = f.getAbsolutePath();					
 						if (filesDone.contains(sPath))
-							continue;
+							continue;//for
 
 						if (readFastq2(sPath)){
 							passNumber ++;
@@ -463,41 +461,43 @@ public class NanoporeReaderStream
 				}//if
 
 				//Fail folder
-				if (!doFail)
-					continue;					
-				now = System.currentTimeMillis();
-				Logging.info("Reading in folder " + failFolder.getAbsolutePath());
-				fileList = failFolder.listFiles();
-				if (fileList!=null){
-					for (File f:fileList){
-						if (!wait)
-							break;
+				if (doFail){
+					now = System.currentTimeMillis();
+					Logging.info("Reading in folder " + failFolder.getAbsolutePath());
+					fileList = failFolder.listFiles();
+					if (fileList!=null){
+						for (File f:fileList){
+							if (!wait)
+								break;
 
-						//directory
-						if (!f.isFile())
-							continue;
+							//directory
+							if (!f.isFile())
+								continue;
 
-						if (!f.getName().endsWith("fast5"))
-							continue;
+							if (!f.getName().endsWith("fast5"))
+								continue;
 
-						//File too new
-						if (now - f.lastModified() < age)
-							continue;
+							//File too new
+							if (now - f.lastModified() < age)
+								continue;
 
-						//if processed already
-						String sPath = f.getAbsolutePath();					
-						if (filesDone.contains(sPath))
-							continue;
+							//if processed already
+							String sPath = f.getAbsolutePath();					
+							if (filesDone.contains(sPath))
+								continue;
 
-						if (readFastq2(sPath)){	
-							failNumber ++;
-							filesDone.add(sPath);	
-							if (pFolder != null){
-								moveFile(f,  pFolder);
+							if (readFastq2(sPath)){	
+								failNumber ++;
+								filesDone.add(sPath);	
+								if (pFolder != null){
+									moveFile(f,  pFolder);
+								}//if
 							}//if
-						}//if
-					}//for			
-				}//if
+						}//for			
+					}//if
+				}
+				if (!realtime)
+					break;
 
 				for (int x = 0; x < interval && wait; x++){
 					try {
@@ -506,8 +506,7 @@ public class NanoporeReaderStream
 						e.printStackTrace();
 					}
 				}
-				if (!realtime)
-					break;
+
 			}//while			
 			Logging.info("EXISTING");
 		}
@@ -551,29 +550,48 @@ public class NanoporeReaderStream
 
 				if (qual2D.size() > 0){
 					double sumQual = 0;
+					double sumQualSq = 0;
 
-					for (int i = 0; i < qual2D.size();i++)
+					for (int i = 0; i < qual2D.size();i++){
 						sumQual += qual2D.get(i);
+						sumQualSq += qual2D.get(i) * qual2D.get(i);
+					}
 
-					Logging.info("Ave 2D qual " +sumQual / qual2D.size() + " " + qual2D.size());
+					double meanQual = sumQual / qual2D.size();
+					double stdQual = Math.sqrt(sumQualSq / qual2D.size() - meanQual * meanQual);
+
+					Logging.info("Ave 2D qual " +meanQual + " " + qual2D.size() + " std = " + stdQual);
 				}
-				
+
 				if (qualTemp.size() > 0){
 					double sumQual = 0;
+					double sumQualSq = 0;
 
-					for (int i = 0; i < qualTemp.size();i++)
+					for (int i = 0; i < qualTemp.size();i++){
 						sumQual += qualTemp.get(i);
+						sumQualSq += qualTemp.get(i) * qualTemp.get(i);
+					}
 
-					Logging.info("Ave Temp qual " +sumQual / qualTemp.size() + " " + qualTemp.size());
+					double meanQual = sumQual / qualTemp.size();
+					double stdQual = Math.sqrt(sumQualSq / qualTemp.size() - meanQual * meanQual);
+
+					Logging.info("Ave Temp qual " +meanQual + " " + qualTemp.size() + " std = " + stdQual);
 				}	
-				
+
 				if (qualComp.size() > 0){
 					double sumQual = 0;
+					double sumQualSq = 0;
 
-					for (int i = 0; i < qualComp.size();i++)
+
+					for (int i = 0; i < qualComp.size();i++){
 						sumQual += qualComp.get(i);
+						sumQualSq += qualComp.get(i) * qualComp.get(i);
+					}
 
-					Logging.info("Ave Comp qual " +sumQual / qualComp.size() + " " + qualComp.size());
+					double meanQual = sumQual / qualComp.size();
+					double stdQual = Math.sqrt(sumQualSq / qualComp.size() - meanQual * meanQual);
+
+					Logging.info("Ave Comp qual " + meanQual + " " + qualComp.size() + " std = " + stdQual);
 				}	
 			}
 		}
