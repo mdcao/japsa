@@ -37,11 +37,11 @@ package japsa.bio.phylo;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
+import japsa.tools.xm.ExpertModelDriver;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 import japsa.xm.ExpertModel;
-import japsa.xm.ExpertModelDriver;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;

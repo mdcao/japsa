@@ -68,8 +68,7 @@ public class ErrorCorrection {
 			String faoFile = prefix + "_ao.fasta";//name of fasta files of reads mapped to the gene
 
 			//1.0 write alignment to faiFile
-			if (readList.size() == 1)
-			{
+			if (readList.size() == 1){
 				readList.get(0).setName("consensus");
 				consensus = readList.get(0);
 			}else{
@@ -86,7 +85,7 @@ public class ErrorCorrection {
 				{
 					String cmd  = "";
 					if (msa.startsWith("poa")){						
-						cmd = "/sw/poa/current/bin/poa -read_fasta " + faiFile + " -clustal " + faoFile + " -hb blosum80.mat";
+						cmd = "poa -read_fasta " + faiFile + " -clustal " + faoFile + " -hb blosum80.mat";
 					}else if (msa.startsWith("muscle")){
 						cmd = "muscle -in " + faiFile + " -out " + faoFile + " -maxiters 5 -quiet";				
 					}else if (msa.startsWith("clustal")) {
@@ -96,7 +95,7 @@ public class ErrorCorrection {
 					}else if (msa.startsWith("msaprobs")){
 						cmd = "msaprobs -o " + faoFile + " " + faiFile;
 					}else if (msa.startsWith("mafft")){
-						cmd = "/sw/mafft/current/bin/mafft_wrapper.sh  " + faiFile + " " + faoFile;
+						cmd = "mafft_wrapper.sh  " + faiFile + " " + faoFile;
 					}else{
 						Logging.exit("Unknown msa function " + msa, 1);
 					}

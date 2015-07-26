@@ -1,7 +1,7 @@
 /**
  * 
  */
-package japsa.seq.tools;
+package japsa.tools.seq;
 
 import java.io.IOException;
 import java.util.ArrayList;

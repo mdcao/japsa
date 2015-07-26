@@ -32,13 +32,14 @@
  *  
  ****************************************************************************/
 
-package japsa.xm;
+package japsa.tools.xm;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+import japsa.xm.ExpertModel;
 import japsa.xm.expert.*;
 
 import java.io.File;
@@ -296,10 +297,7 @@ public class ExpertModelDriver {
 					RepeatExpert.PALIN_TYPE);
 		}
 		/**************************************************************/
-		// #CHECKPOINT_BEGIN
-		eModel.checkPoint = cmdLine.getIntVal("checkPoint");
-		// #CHECKPOINT_END
-
+		eModel.setCheckPoint(cmdLine.getIntVal("checkPoint"));
 		return eModel;
 	}
 	

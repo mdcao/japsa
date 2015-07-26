@@ -48,6 +48,7 @@ import java.util.LinkedList;
 import japsa.seq.AbstractSequence;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
+import japsa.tools.xm.ExpertModelDriver;
 import japsa.util.IntIterator;
 import japsa.util.MyBitSet;
 import japsa.util.JapsaMath;
@@ -61,14 +62,27 @@ import japsa.xm.hash.MyBinaryHashtable;
 import japsa.xm.hash.MyHashtable;
 import japsa.xm.hash.PatternStore;
 
-
 import com.colloquial.arithcode.ArithDecoder;
 import com.colloquial.arithcode.ArithEncoder;
 import com.colloquial.arithcode.BitInput;
 
 public class ExpertModel {
 	public static String VERSION = "V 3.0";
-	protected int checkPoint = 1000000;
+	private int checkPoint = 1000000;
+
+	/**
+	 * @return the checkPoint
+	 */
+	public int getCheckPoint() {
+		return checkPoint;
+	}
+
+	/**
+	 * @param checkPoint the checkPoint to set
+	 */
+	public void setCheckPoint(int checkPoint) {
+		this.checkPoint = checkPoint;
+	}
 
 	// 'global' Variables
 	protected int expertCount;// The number of experts currently empliyed

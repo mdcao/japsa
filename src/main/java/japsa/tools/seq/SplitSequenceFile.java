@@ -27,16 +27,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 11/01/2012 - Minh Duc Cao: Revised 
- * 01/01/2013 - Minh Duc Cao, revised                                       
+/**************************     REVISION HISTORY    **************************
+ * 21/12/2012 - Minh Duc Cao: Created                                        
+ *  
  ****************************************************************************/
+package japsa.tools.seq;
 
-package japsa.seq.tools;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
-import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -44,48 +43,60 @@ import japsa.util.deploy.Deployable;
 import java.io.IOException;
 
 
+
 /**
- * @author Minh Duc Cao
- * 
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
+ *
  */
-@Deployable(scriptName = "jsa.seq.rev",
-           scriptDesc = "Reverse complement sequences (must be DNA)")
-public class SequenceReverseComplement {	
-	public static void main(String[] args) throws IOException {
+@Deployable(scriptName = "jsa.seq.split",
+            scriptDesc = "Break a multiple sequence files to each sequence per file")
+public class SplitSequenceFile {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws IOException{
 		/*********************** Setting up script ****************************/
-		Deployable annotation = SequenceReverseComplement.class.getAnnotation(Deployable.class);
+		Deployable annotation = SplitSequenceFile.class.getAnnotation(Deployable.class);
 		CommandLine cmdLine = new CommandLine("\nUsage: "
 				+ annotation.scriptName() + " [options] ",
 				annotation.scriptDesc());
-		
+				
 		cmdLine.addStdInputFile();
-		cmdLine.addStdOutputFile();
+		cmdLine.addStdAlphabet();
 		
-		cmdLine.addStdAlphabet();//aphabet		
-		
+		cmdLine.addString("output", "out_", "Prefix of the output files");
+		cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
+					
 		args = cmdLine.stdParseLine(args);
-		/**********************************************************************/	
-		
-		Alphabet alphabet = Alphabet.getAlphabet(cmdLine.getStringVal("alphabet"));
-		if (alphabet == null)
-			alphabet = Alphabet.DNA16();
-
-		String input  = cmdLine.getStringVal("input");
-		String output = cmdLine.getStringVal("output");
 		/**********************************************************************/
+
+		//Get dna 		
+		String alphabetOption = cmdLine.getStringVal("alphabet");		
+		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
+		if (alphabet == null)
+			alphabet = Alphabet.DNA5();
 		
-		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
-		SequenceReader reader = SequenceReader.getReader(input);		
-		
+		String output = cmdLine.getStringVal("output");
+		String format = cmdLine.getStringVal("format");
+		String input = cmdLine.getStringVal("input");
+
+				
+		SequenceReader reader = SequenceReader.getReader(input);
 		
 		Sequence seq;
-		while ((seq = reader.nextSequence(alphabet))!= null){		
-			Sequence rseq = Alphabet.DNA.complement(seq);
-			rseq.setName(seq.getName()+"_rev");
-			rseq.writeFasta(sos);
-		}
-		sos.close();
-		reader.close();		
+		if (format.equals("fasta")){
+			while ((seq = reader.nextSequence(alphabet)) != null){
+				seq.writeFasta(output+seq.getName()+".fasta");
+			}
+		}else {//if (outType.equals("jsa")){
+			while ((seq = reader.nextSequence(alphabet)) != null){
+				seq.writeJSA(output+seq.getName()+".jsa");
+			}
+		}   
 		
+		
+				
+		reader.close();
 	}
 }

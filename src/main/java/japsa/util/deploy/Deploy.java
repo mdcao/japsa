@@ -63,23 +63,25 @@ import japsa.bio.tr.SortFragmentFile;
 import japsa.bio.tr.VCF2TRV;
 import japsa.bio.tr.VNTRDepth;
 import japsa.seq.nanopore.NanoporeReadFilter;
-import japsa.seq.nanopore.NanoporeReader;
+//import japsa.seq.nanopore.NanoporeReader;
 import japsa.seq.nanopore.NanoporeReaderStream;
 import japsa.seq.tools.AddAnnotation;
 import japsa.seq.tools.AnnotateRegions;
 import japsa.seq.tools.AnnotateVCF;
 import japsa.seq.tools.Bed2Japsa;
-import japsa.seq.tools.BreakSequenceFile;
 import japsa.seq.tools.ExtractGeneSequence;
 import japsa.seq.tools.FileFormatConverter;
-import japsa.seq.tools.JoinSequenceFile;
-import japsa.seq.tools.SequenceExtract;
-import japsa.seq.tools.SequenceReverseComplement;
-import japsa.seq.tools.SequenceSort;
-import japsa.seq.tools.SequenceStats;
+
+import japsa.tools.seq.JoinSequenceFile;
+import japsa.tools.seq.SequenceExtract;
+import japsa.tools.seq.SequenceReverseComplement;
+import japsa.tools.seq.SequenceSort;
+import japsa.tools.seq.SequenceStats;
+import japsa.tools.seq.SplitSequenceFile;
+import japsa.tools.util.StreamServer;
+import japsa.tools.xm.ExpertModelDriver;
 import japsa.util.CommandLine;
 import japsa.util.StringSeparator;
-import japsa.xm.ExpertModelDriver;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -93,19 +95,19 @@ import java.util.Date;
  * 
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  */
-public class Deploy {
-	@SuppressWarnings("rawtypes")
-	private static ArrayList<Class> tools = new ArrayList<Class>();
-	public static String VERSION = "1.5-7a";
+public class Deploy {	
+	private static ArrayList<Object> tools = new ArrayList<Object>();
+	public static String VERSION = "1.5-8a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
+		tools.add("Sequence manipulation tools:");
 		tools.add(SequenceStats.class);
 		tools.add(SequenceSort.class);
 		tools.add(SequenceExtract.class);
 		tools.add(SequenceReverseComplement.class);		
 		tools.add(Bed2Japsa.class);
-		tools.add(BreakSequenceFile.class);
+		tools.add(SplitSequenceFile.class);
 		tools.add(JoinSequenceFile.class);	
 		tools.add(FileFormatConverter.class);
 		tools.add(AddAnnotation.class);
@@ -117,6 +119,7 @@ public class Deploy {
 		//tools.add(MarkovCompress.class);
 
 		//jsa.hts.*
+		tools.add("HTS analysis tools:");
 		tools.add(FastQTrim.class);
 		tools.add(FastQRMEmptyRead.class);		
 		tools.add(BreakBam.class);
@@ -128,7 +131,8 @@ public class Deploy {
 		
 
 		//jsa.np.
-		tools.add(NanoporeReader.class);
+		//tools.add(NanoporeReader.class);
+		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(NanoporeReaderStream.class);
 		tools.add(NanoporeReadFilter.class);		
 		tools.add(SpeciesMixtureTyping.class);		
@@ -137,6 +141,7 @@ public class Deploy {
 		tools.add(ResistanceGene.class);		
 
 		//jsa.trv.*
+		tools.add("Tandem repeat variation analysis tools:");
 		tools.add(ParseTRF.class);		
 		tools.add(Sam2FragmentSize.class);
 		tools.add(SortFragmentFile.class);
@@ -147,18 +152,23 @@ public class Deploy {
 		tools.add(TRV2Bed.class);	
 		tools.add(VNTRDepth.class);
 		
+		tools.add("Utilities:");
+		tools.add(StreamServer.class);
 		//tools.add(VNTRDepth.class);
 
 		//jsa.phylo		
+		tools.add("Phylogenetics analysis tools:");
 		tools.add(XMDistance.class);
 		tools.add(XMDistance2.class);
 		tools.add(NormaliseTree.class);	
 		
 		//jsa.sim
+		tools.add("Alignment with Finite State Machines");
 		tools.add(SimProbFSM.class);		
 		tools.add(SimHTSWithFSM.class);
 		
 		//jsa.xm
+		tools.add("Export Model compression");
 		tools.add(ExpertModelDriver.class);
 		//tools.add(.class);		
 	}	
@@ -220,7 +230,7 @@ public class Deploy {
 
 			outJsa.println("Japsa: A Java Package for Statistical Sequence Analysis\n"
 					+ " Version " + VERSION + ", Built on " + (new Date()));
-			outJsa.println("\nUsage:\n");
+			outJsa.println("\nList of tools:");
 
 			String JAVA_COMMAND ="java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 
 			if (jlp.length() > 0){
@@ -228,7 +238,15 @@ public class Deploy {
 			}
 
 			System.out.println("\nInstalling Japsa");
-			for (Class<?> tool : tools) {
+			
+			for (Object obj : tools) {		
+				
+				if (!(obj instanceof Class<?>)){
+					outJsa.printf("\n%s\n",obj);
+					continue;
+				}				
+				Class<?> tool = (Class<?>) obj;
+				
 				Deployable annotation = tool.getAnnotation(Deployable.class);
 				File file = new File(dir + "/bin/" + annotation.scriptName());
 
@@ -261,8 +279,12 @@ public class Deploy {
 
 		} else if ("uninstall".equals(mode)) {
 			// Delete all the scripts
-
-			for (Class<?> tool : tools) {
+			
+			for (Object obj : tools) {				
+				if (!(obj instanceof Class<?>)){			
+					continue;
+				}				
+				Class<?> tool = (Class<?>) obj;
 				Deployable annotation = tool.getAnnotation(Deployable.class);
 				File file = new File(dir + "/bin/" + annotation.scriptName());
 				System.out.println("rm " + file.getCanonicalPath());				

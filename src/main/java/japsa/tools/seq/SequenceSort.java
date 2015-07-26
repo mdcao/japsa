@@ -32,92 +32,123 @@
  * 01/01/2013 - Minh Duc Cao, revised                                       
  ****************************************************************************/
 
-package japsa.seq.tools;
+package japsa.tools.seq;
 
 import japsa.seq.Alphabet;
+import japsa.seq.FastqSequence;
 import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 
 
 /**
  * @author Minh Duc Cao
  * 
  */
-@Deployable(scriptName = "jsa.seq.stats",
-           scriptDesc = "Show statistical composition of sequences stored in a file (or from STDIN)")
-public class SequenceStats {	
-	public static void main(String[] args) throws IOException {
+@Deployable(scriptName = "jsa.seq.sort",
+scriptDesc = "Sort sequences based on their lengths")
+public class SequenceSort {	
+	public static void main(String[] args) throws IOException {		
+
 		/*********************** Setting up script ****************************/
-		Deployable annotation = SequenceStats.class.getAnnotation(Deployable.class);
+		Deployable annotation = SequenceSort.class.getAnnotation(Deployable.class);
 		CommandLine cmdLine = new CommandLine("\nUsage: "
 				+ annotation.scriptName() + " [options] ",
 				annotation.scriptDesc());
-		
+
 		cmdLine.addStdInputFile();
-		cmdLine.addStdAlphabet();//aphabet		
-		
+		cmdLine.addStdOutputFile();		
+		cmdLine.addStdAlphabet();
+		cmdLine.addBoolean("number",false,"Add the order number to the beginning of contig name");
+		cmdLine.addBoolean("reverse",false,"Reverse sort order");
+		cmdLine.addString("sortKey","length","Sort key");
+
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
+		String inputOption = cmdLine.getStringVal("input");
+		String sortKeyOption = cmdLine.getStringVal("sortKey");
+		String outputOption = cmdLine.getStringVal("output");
+		boolean numberOption =  cmdLine.getBooleanVal("number");
+		boolean reverseOption =  cmdLine.getBooleanVal("reverse");
+
+
+
 		//Get dna 		
 		String alphabetOption = cmdLine.getStringVal("alphabet");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
 			alphabet = Alphabet.DNA16();
 
-		String input = cmdLine.getStringVal("input");
-		/**********************************************************************/	
-		
 
-		SequenceReader reader = SequenceReader.getReader(input);
-		long total = 0;
-		int numSeq = 0;
+
+		SequenceReader reader = SequenceReader.getReader(inputOption);
+		ArrayList<SequenceLength> seqList = new ArrayList<SequenceLength>(); 
+
 		Sequence seq;
+		String sortKeyOptionPrefix = sortKeyOption + "=";
+		int sortKeyOptionIndex = sortKeyOptionPrefix.length();
 		while ((seq = reader.nextSequence(alphabet))!= null){
-			total += seq.length();
-			numSeq ++;
-			System.out.println(seq.getName() + " :  " + seq.length() + " bases");
-			System.out.println(seq.getDesc());
-			getComposition(seq);
+			String [] toks = seq.getName().split(" ");
+
+			SequenceLength seqL = new SequenceLength(seq);
+			if (sortKeyOption.equals("length"))
+				seqL.keyCompare = seq.length();
+			else{
+				for (int i = 0; i < toks.length;i++){
+					if (toks[i].startsWith(sortKeyOptionPrefix)){
+						double t = Double.parseDouble(toks[i].substring(sortKeyOptionIndex));
+						seqL.keyCompare = (long) t;						
+					}	
+				}
+			}
+
+			seqList.add(seqL);			
 		}
-		reader.close();
-		System.out.println("Total = " + total + " bases in " + numSeq + " sequences.");
+		reader.close();		
+		Collections.sort(seqList);
+
+		if (reverseOption)
+			Collections.reverse(seqList);
+
+
+		SequenceOutputStream sos = 	SequenceOutputStream.makeOutputStream(outputOption);
+
+
+		for (int i = 0; i < seqList.size();  i++){
+			seq = seqList.get(i).seq;
+			if (numberOption){
+				seq.setName(i + "-" + seq.getName());
+			}
+			if (seq instanceof FastqSequence){
+				FastqSequence fq = ((FastqSequence) seq);
+				fq.print(sos);				
+			}else				
+				seq.writeFasta(sos);
+		}	
+		sos.close();
 	}
 
 
-	/**
-	 * Get properties of the sequences in the file
-	 * 
-	 * @param args	 
-	 */
-	static private void getComposition(Sequence seq) {
-		if (seq.length() == 0) {
-			System.out.println("Sequence " + seq + " contains 0 base/residue");
-			return;
-		}
-		Alphabet alphabet = seq.alphabet();
-		int[] counts = new int[alphabet.size()];
-		int others = 0;
 
-		for (int i = 0; i < seq.length(); i++) {
-			int index = seq.symbolAt(i);
-			if (index < 0 || index >= counts.length)
-				others++;
-			else
-				counts[index]++;
+	static class SequenceLength implements Comparable<SequenceLength>{
+		Sequence seq;
+		long keyCompare;
+		SequenceLength(Sequence seq){
+			this.seq = seq;
 		}
-		for (int index = 0; index < counts.length; index++) {
-			if (counts[index] > 0)
-				System.out.printf("%10d  %c : %5.2f%%\n", counts[index], alphabet
-						.int2char(index), (counts[index] * 100.0 / seq.length()));
+		/* (non-Javadoc)
+		 * @see java.lang.Comparable#compareTo(java.lang.Object)
+		 */
+		@Override
+		public int compareTo(SequenceLength o) {
+			// TODO Auto-generated method stub
+			return (int) (keyCompare - o.keyCompare);
 		}
-		if (others > 0)
-			System.out.printf("%10d  %c : %5.2f%%\n", others, 'X',
-					(others * 100.0 / seq.length()));
-
 	}
-
 }

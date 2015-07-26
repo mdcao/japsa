@@ -27,16 +27,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/**************************     REVISION HISTORY    **************************
- * 21/12/2012 - Minh Duc Cao: Created                                        
- *  
+/*                           Revision History                                
+ * 11/01/2012 - Minh Duc Cao: Revised 
+ * 01/01/2013 - Minh Duc Cao, revised                                       
  ****************************************************************************/
-package japsa.seq.tools;
 
+package japsa.tools.seq;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
-import japsa.seq.SequenceBuilder;
+import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -44,61 +44,48 @@ import japsa.util.deploy.Deployable;
 import java.io.IOException;
 
 
-
 /**
- * @author Minh Duc Cao (http://www.caominhduc.org/)
- *
+ * @author Minh Duc Cao
+ * 
  */
-@Deployable(scriptName = "jsa.seq.join",
-            scriptDesc = "Break a multiple sequence files to each sequence per file")
-public class JoinSequenceFile {
-
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws IOException{
+@Deployable(scriptName = "jsa.seq.rev",
+           scriptDesc = "Reverse complement sequences (must be DNA)")
+public class SequenceReverseComplement {	
+	public static void main(String[] args) throws IOException {
 		/*********************** Setting up script ****************************/
-		Deployable annotation = JoinSequenceFile.class.getAnnotation(Deployable.class);
+		Deployable annotation = SequenceReverseComplement.class.getAnnotation(Deployable.class);
 		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] file1 file2 ...",
+				+ annotation.scriptName() + " [options] ",
 				annotation.scriptDesc());
-				
-		cmdLine.addStdAlphabet();
 		
-		cmdLine.addString("output", "-", "Name of the output file");
-		cmdLine.addString("name", "name", "Name of the combined sequence");
-		cmdLine.addBoolean("removeN", false, "Remove wildcards");
+		cmdLine.addStdInputFile();
+		cmdLine.addStdOutputFile();
 		
-		//cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
+		cmdLine.addStdAlphabet();//aphabet		
+		
 		args = cmdLine.stdParseLine(args);
-		/**********************************************************************/
-
-		//Get dna 		
-		String alphabetOption = cmdLine.getStringVal("alphabet");		
-		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
+		/**********************************************************************/	
+		
+		Alphabet alphabet = Alphabet.getAlphabet(cmdLine.getStringVal("alphabet"));
 		if (alphabet == null)
-			alphabet = Alphabet.DNA();
-		
-		String output = cmdLine.getStringVal("output");
-		String name = cmdLine.getStringVal("name");
-		boolean removeN = cmdLine.getBooleanVal("removeN");
-		
-		//String format = cmdLine.getStringVal("format");		
+			alphabet = Alphabet.DNA16();
 
-		SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), 1000000, name);
+		String input  = cmdLine.getStringVal("input");
+		String output = cmdLine.getStringVal("output");
+		/**********************************************************************/
+		
+		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
+		SequenceReader reader = SequenceReader.getReader(input);		
+		
+		
 		Sequence seq;
-		for (String arg:args){
-			SequenceReader reader = SequenceReader.getReader(arg);
-			while ((seq = reader.nextSequence(alphabet)) != null){
-				for (int i = 0; i < seq.length();i++){
-					byte base =seq.getBase(i); 
-					if ((!removeN) || base <4) 
-						sb.append(base);
-				}
-				sb.setDesc(sb.getDesc() + ";" + seq.getDesc());
-			}
-			reader.close();			
-		}				
-		sb.writeFasta(output);		
+		while ((seq = reader.nextSequence(alphabet))!= null){		
+			Sequence rseq = Alphabet.DNA.complement(seq);
+			rseq.setName(seq.getName()+"_rev");
+			rseq.writeFasta(sos);
+		}
+		sos.close();
+		reader.close();		
+		
 	}
 }

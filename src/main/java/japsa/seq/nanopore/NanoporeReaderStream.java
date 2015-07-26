@@ -37,6 +37,7 @@ package japsa.seq.nanopore;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -76,12 +77,15 @@ public class NanoporeReaderStream
 		cmdLine.addBoolean("time", false, "Getting the sequenceing time of the read -- experimental");
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
 		cmdLine.addString("folder",null, "The download folder");
-		cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");		
+		cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");
+		
 
 		cmdLine.addBoolean("fail",false, "Include fail reads");		
 		cmdLine.addBoolean("realtime",false, "Whether to run in realtime");
 		cmdLine.addString("pFolderName",null, "Folder to move processed files to");
 		cmdLine.addBoolean("GUI",false, "Whether run with GUI");
+		
+		cmdLine.addString("streamServer",null, "Stream output to a server, format IP:port");
 
 		//cmdLine.addString("netAddress",null, "Network Address");		
 		//cmdLine.addInt("netPort", 3456,  "Network port");
@@ -104,11 +108,8 @@ public class NanoporeReaderStream
 		boolean GUI  = cmdLine.getBooleanVal("GUI");
 		boolean realtime  = cmdLine.getBooleanVal("realtime");
 		boolean fail  = cmdLine.getBooleanVal("fail");
-		String format = cmdLine.getStringVal("format");
-
-		//String netAddress = cmdLine.getStringVal("netAddress");
-		//int netPort  = cmdLine.getIntVal("netPort");
-
+		String format = cmdLine.getStringVal("format");		
+		String streamServer = cmdLine.getStringVal("streamServer");
 		int interval = cmdLine.getIntVal("interval");//in second
 		int age = cmdLine.getIntVal("age") * 1000;//in second
 
@@ -133,6 +134,15 @@ public class NanoporeReaderStream
 		reader.output = output;
 		reader.format = format.toLowerCase();
 		reader.realtime = realtime;
+		
+		if (streamServer != null){			
+			String [] toks = streamServer.split(":");
+			int portNumber = 3456;
+			if (toks.length > 1)
+				portNumber = Integer.parseInt(toks[1]);			
+			Socket echoSocket = new Socket(toks[0], portNumber);
+			reader.networkOS = new SequenceOutputStream(echoSocket.getOutputStream());
+		}
 
 		if (GUI){
 			reader.realtime = true;
@@ -176,7 +186,6 @@ public class NanoporeReaderStream
 		String msg = null;
 		try{
 			sos = SequenceOutputStream.makeOutputStream(output);
-
 		}catch (Exception e){
 			msg = e.getMessage();
 		}finally{
