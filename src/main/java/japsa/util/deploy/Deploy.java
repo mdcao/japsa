@@ -268,7 +268,7 @@ public class Deploy {
 				Runtime.getRuntime().exec(
 						"chmod a+x " + file.getCanonicalPath());
 				System.out.println(" " + file.getCanonicalPath() + " created");
-				outJsa.printf("  %-25s  %s\n", annotation.scriptName(),
+				outJsa.printf("  %-23s  %s\n", annotation.scriptName(),
 						annotation.scriptDesc());
 			}
 			outJsa.println("\nEOF");

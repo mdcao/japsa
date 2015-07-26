@@ -179,7 +179,6 @@ public class NanoporeReaderWindow implements Runnable{
 			}		
 		});
 
-
 		btnChange.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
 				JFileChooser fileChooser = new JFileChooser();
