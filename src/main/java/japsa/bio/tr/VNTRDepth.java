@@ -126,7 +126,8 @@ public class VNTRDepth {
 				rflank = Integer.parseInt(field);
 
 			field = xafReader.getField("lflank");
-			lflank = Integer.parseInt(field);
+			if (field != null)
+				lflank = Integer.parseInt(field);
 
 
 			int startSeq = startRep - lflank;

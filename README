@@ -1,5 +1,21 @@
-
+I. Instalation
 
 To install:
 
 $make install -f Makefile.main INSTALL_DIR=~/.usr/
+
+
+II. License
+
+The package is copyrighted with BSD (like) license.
+
+III. Contributors:
+
+Minh Duc Cao
+Son Nguyen
+
+This package also contains code written by David Powell and Lachlan Coin.
+
+
+
+

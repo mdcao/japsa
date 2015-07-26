@@ -96,7 +96,7 @@ import java.util.Date;
 public class Deploy {
 	@SuppressWarnings("rawtypes")
 	private static ArrayList<Class> tools = new ArrayList<Class>();
-	public static String VERSION = "1.5-6a";
+	public static String VERSION = "1.5-7a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
