@@ -115,7 +115,6 @@ public class NanoporeReaderWindow implements Runnable{
 		initialize();		
 		//frmNanoporeReader.pack();
 		frmNanoporeReader.setVisible(true);
-
 	}			
 
 
@@ -193,7 +192,6 @@ public class NanoporeReaderWindow implements Runnable{
 				}
 			}
 		});
-
 
 
 		rdbtnF.addItemListener(new ItemListener() {
