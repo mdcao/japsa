@@ -118,7 +118,7 @@ endif
 install: jar
 	@@mkdir -p $(INSTALL_DIR)/lib/japsa/ $(INSTALL_DIR)/bin && \
 	cp $(addprefix $(LIB_DIR)/, $(EXT_LIBS)) $(JAR_FILE) $(INSTALL_DIR)/lib/japsa && \
-	java -cp $(JAR_FILE) japsa.util.deploy.Deploy --japsa  $(JAR_FILE) ${LP} --prefix "`echo $(INSTALL_DIR)`" --libs "$(subst $(SPACE),:, $(EXT_LIBS))" && \
+	java -cp $(JAR_FILE) japsa.util.deploy.Deploy --japsa  $(JAR_FILE) ${LP} --prefix "`echo $(INSTALL_DIR)`" --libs "$(subst $(SPACE),:, $(EXT_LIBS))" --compiler "`$(JCC) -version 2>&1`" && \
 	echo  "Japsa installed, make sure $(INSTALL_DIR)/bin is in your path!"
 
 uninstall:

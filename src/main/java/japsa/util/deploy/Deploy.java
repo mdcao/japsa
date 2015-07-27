@@ -48,9 +48,6 @@ import japsa.bio.np.GeneStrainTyping;
 import japsa.bio.np.MLSTStrainTyping;
 import japsa.bio.np.ResistanceGene;
 import japsa.bio.np.SpeciesMixtureTyping;
-import japsa.bio.phylo.XMDistance;
-import japsa.bio.phylo.XMDistance2;
-import japsa.bio.phylo.tools.NormaliseTree;
 import japsa.bio.sim.SimHTSWithFSM;
 import japsa.bio.sim.SimProbFSM;
 import japsa.bio.tr.Fragment2TRV;
@@ -71,7 +68,9 @@ import japsa.seq.tools.AnnotateVCF;
 import japsa.seq.tools.Bed2Japsa;
 import japsa.seq.tools.ExtractGeneSequence;
 import japsa.seq.tools.FileFormatConverter;
-
+import japsa.tools.bio.phylo.NormaliseTree;
+import japsa.tools.bio.phylo.XMDistance;
+import japsa.tools.bio.phylo.XMDistance2;
 import japsa.tools.seq.JoinSequenceFile;
 import japsa.tools.seq.SequenceExtract;
 import japsa.tools.seq.SequenceReverseComplement;
@@ -183,6 +182,7 @@ public class Deploy {
 		cmdLine.addString("japsa", "japsa.jar", "name of the jar file");
 		cmdLine.addString("prefix", ".", "the directory to install");
 		cmdLine.addString("jlp", "", "java.library.path");
+		cmdLine.addString("compiler", null, "Compiler version");
 		cmdLine.addBoolean("version", false, "Get version and exit");
 		
 		cmdLine.addStdHelp();// help
@@ -202,7 +202,8 @@ public class Deploy {
 			System.out.println(VERSION);
 			System.exit(0);
 		}
-
+		
+		String compiler = cmdLine.getStringVal("compiler");
 		String dirPath = cmdLine.getStringVal("prefix").trim();
 		String jlp = cmdLine.getStringVal("jlp");
 		// Java doesnt understand ~ as home directory
@@ -228,8 +229,12 @@ public class Deploy {
 			PrintStream outJsa = new PrintStream(new FileOutputStream(jsa));
 			outJsa.println("#!/bin/sh\n\ncat << EOF");
 
-			outJsa.println("Japsa: A Java Package for Statistical Sequence Analysis\n"
+			outJsa.print("Japsa: A Java Package for Statistical Sequence Analysis\n"
 					+ " Version " + VERSION + ", Built on " + (new Date()));
+			if (compiler != null){
+				outJsa.print(" with " + compiler);
+			}
+			
 			outJsa.println("\nList of tools:");
 
 			String JAVA_COMMAND ="java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 

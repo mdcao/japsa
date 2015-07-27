@@ -50,7 +50,7 @@ import java.io.IOException;
  *
  */
 @Deployable(scriptName = "jsa.seq.join",
-            scriptDesc = "Break a multiple sequence files to each sequence per file")
+            scriptDesc = "Join multiple sequences into one file")
 public class JoinSequenceFile {
 
 	/**

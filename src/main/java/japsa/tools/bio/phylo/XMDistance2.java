@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.phylo;
+package japsa.tools.bio.phylo;
 
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;

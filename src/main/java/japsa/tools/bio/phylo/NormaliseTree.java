@@ -27,7 +27,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-package japsa.bio.phylo.tools;
+package japsa.tools.bio.phylo;
 
 import japsa.bio.phylo.PhylogenyTree;
 import japsa.seq.SequenceReader;

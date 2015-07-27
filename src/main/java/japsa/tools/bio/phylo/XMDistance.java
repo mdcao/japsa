@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.phylo;
+package japsa.tools.bio.phylo;
 
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
@@ -48,7 +48,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 
 
-@Deployable(scriptName = "jsa.phylo.distance",
+@Deployable(scriptName = "jsa.phylo.xmas",
             scriptDesc = "Generate a distance matrix from aligned sequences")
 public class XMDistance {
 	public static boolean adapt = false;
