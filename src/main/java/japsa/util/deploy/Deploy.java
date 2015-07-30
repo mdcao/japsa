@@ -59,15 +59,15 @@ import japsa.bio.tr.Sam2FragmentSize;
 import japsa.bio.tr.SortFragmentFile;
 import japsa.bio.tr.VCF2TRV;
 import japsa.bio.tr.VNTRDepth;
-import japsa.seq.nanopore.NanoporeReadFilter;
 //import japsa.seq.nanopore.NanoporeReader;
-import japsa.seq.nanopore.NanoporeReaderStream;
 import japsa.seq.tools.AddAnnotation;
 import japsa.seq.tools.AnnotateRegions;
 import japsa.seq.tools.AnnotateVCF;
 import japsa.seq.tools.Bed2Japsa;
 import japsa.seq.tools.ExtractGeneSequence;
 import japsa.seq.tools.FileFormatConverter;
+import japsa.tools.bio.np.NanoporeReadFilter;
+import japsa.tools.bio.np.NanoporeReaderStream;
 import japsa.tools.bio.phylo.NormaliseTree;
 import japsa.tools.bio.phylo.XMDistance;
 import japsa.tools.bio.phylo.XMDistance2;
@@ -77,6 +77,7 @@ import japsa.tools.seq.SequenceReverseComplement;
 import japsa.tools.seq.SequenceSort;
 import japsa.tools.seq.SequenceStats;
 import japsa.tools.seq.SplitSequenceFile;
+import japsa.tools.util.StreamClient;
 import japsa.tools.util.StreamServer;
 import japsa.tools.xm.ExpertModelDriver;
 import japsa.util.CommandLine;
@@ -95,7 +96,7 @@ import java.util.Date;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  */
 public class Deploy {	
-	private static ArrayList<Object> tools = new ArrayList<Object>();
+	public static ArrayList<Object> tools = new ArrayList<Object>();
 	public static String VERSION = "1.5-8a";
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
@@ -153,7 +154,8 @@ public class Deploy {
 		
 		tools.add("Utilities:");
 		tools.add(StreamServer.class);
-		//tools.add(VNTRDepth.class);
+		tools.add(StreamClient.class);
+		//tools.add(StreamClient.class);
 
 		//jsa.phylo		
 		tools.add("Phylogenetics analysis tools:");
@@ -171,8 +173,160 @@ public class Deploy {
 		tools.add(ExpertModelDriver.class);
 		//tools.add(.class);		
 	}	
+	
+	public static String compiler, jlp, libs, japsa;
+	public static File dir,jsa;
+	
+	public static void installWindows() throws IOException{
+		String installDirPath = dir.getCanonicalPath();
+		//String japsaPath = installDirPath;
+		String japsaPath = "%JSA_HOME%";		
+		
+		String cp = japsaPath + "\\lib\\japsa\\"  + japsa;
+		StringSeparator ss = new StringSeparator(libs, ':');
+		while (ss.hasNext()) {
+			String l = ss.next();
+			if (l.length() > 0)
+				cp = cp + ";" + japsaPath + "\\lib\\japsa\\" + l;
+		}
+		PrintStream outJsa = new PrintStream(new FileOutputStream(jsa+".bat"));		
 
+		outJsa.println("@echo off");
+		outJsa.print("echo Japsa: A Java Package for Statistical Sequence Analysis\n"
+				+ "echo Version " + VERSION + ", Built on " + (new Date()));
+		if (compiler != null){
+			outJsa.print(" with " + compiler);
+		}
+		
+		
+		
+		outJsa.println("\necho List of tools:");
 
+		String JAVA_COMMAND ="java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 
+		
+		//if (jlp.length() > 0)
+		JAVA_COMMAND += " -Djava.library.path=\""+jlp+"\"";
+		
+		System.out.println("\nInstalling Japsa");
+		
+		for (Object obj : tools) {			
+			if (!(obj instanceof Class<?>)){
+				outJsa.printf("\necho %s\n",obj);
+				continue;
+			}				
+			Class<?> tool = (Class<?>) obj;
+			
+			Deployable annotation = tool.getAnnotation(Deployable.class);
+			File file = new File(installDirPath + File.separator +  "bin" + File.separator + annotation.scriptName() + ".bat");
+
+			PrintStream out = new PrintStream(new FileOutputStream(file));
+			out.println("@echo off");
+			out.println("if not \"%JSA_HOME%\" == \"\" goto gotjsaHome");
+			out.println("echo JSA requires an environment variable JSA_HOME.");
+			out.println("goto :eof");
+			out.println("\n:gotjsaHome");			
+			out.println("set JSA_MEM=7000m");			
+			out.println("set JSA_CP=" + cp);
+						out.println();
+			out.println(JAVA_COMMAND +" -classpath %JSA_CP% " + tool.getCanonicalName() + " %*"); 
+			out.println("\n:eof");
+			out.close();
+			//japsa.seq.nanopore.NanoporeReaderStream --folder . -output output.fastq -fail --minLength 50 -GUI
+			
+//////////////////////////////////////////////
+
+			System.out.println(" " + file.getCanonicalPath() + " created");
+			outJsa.printf("  %-23s  %s\n", annotation.scriptName(),
+					annotation.scriptDesc());
+		}
+		outJsa.println("\nEOF");
+		outJsa.close();
+		System.out.println(" " + jsa.getCanonicalPath() + " created\nDone");
+
+		Runtime.getRuntime().exec("chmod a+x " + jsa.getCanonicalPath());
+		
+	}	
+	public static void install() throws IOException{
+		String cp = dir.getCanonicalPath() + "/lib/japsa/" + japsa;
+		StringSeparator ss = new StringSeparator(libs, ':');
+		while (ss.hasNext()) {
+			String l = ss.next();
+			if (l.length() > 0)
+				cp = cp + ":" + dir.getCanonicalPath() + "/lib/japsa/" + l;
+		}
+
+		PrintStream outJsa = new PrintStream(new FileOutputStream(jsa));
+		outJsa.println("#!/bin/sh\n\ncat << EOF");
+
+		outJsa.print("Japsa: A Java Package for Statistical Sequence Analysis\n"
+				+ " Version " + VERSION + ", Built on " + (new Date()));
+		if (compiler != null){
+			outJsa.print(" with " + compiler);
+		}
+		
+		outJsa.println("\nList of tools:");
+
+		String JAVA_COMMAND ="java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 
+		if (jlp.length() > 0){
+			JAVA_COMMAND += " -Djava.library.path="+jlp;
+		}
+
+		System.out.println("\nInstalling Japsa");
+		
+		for (Object obj : tools) {		
+			
+			if (!(obj instanceof Class<?>)){
+				outJsa.printf("\n%s\n",obj);
+				continue;
+			}				
+			Class<?> tool = (Class<?>) obj;
+			
+			Deployable annotation = tool.getAnnotation(Deployable.class);
+			File file = new File(dir + "/bin/" + annotation.scriptName());
+
+			PrintStream out = new PrintStream(new FileOutputStream(file));
+			out.println("#!/bin/sh");
+
+			out.println("case $JSA_MEM in '')JSA_MEM=7000m;;*);;esac\n\n");
+
+			out.println("case $JSA_CP in\n  '')JSA_CP="
+					+ cp
+					+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
+			
+			out.println("JSA_CMD=\"`basename $0` $@\"\n");
+			
+			out.println(JAVA_COMMAND + " -classpath ${JSA_CP} "
+					+ tool.getCanonicalName() + " \"$@\"");
+			out.close();
+
+			Runtime.getRuntime().exec(
+					"chmod a+x " + file.getCanonicalPath());
+			System.out.println(" " + file.getCanonicalPath() + " created");
+			outJsa.printf("  %-23s  %s\n", annotation.scriptName(),
+					annotation.scriptDesc());
+		}
+		outJsa.println("\nEOF");
+		outJsa.close();
+		System.out.println(" " + jsa.getCanonicalPath() + " created\nDone");
+
+		Runtime.getRuntime().exec("chmod a+x " + jsa.getCanonicalPath());
+	}
+	
+	public static void uninstall() throws IOException{
+		// Delete all the scripts			
+		for (Object obj : tools) {				
+			if (!(obj instanceof Class<?>)){			
+				continue;
+			}				
+			Class<?> tool = (Class<?>) obj;
+			Deployable annotation = tool.getAnnotation(Deployable.class);
+			File file = new File(dir + File.separator +  "bin" + File.separator + annotation.scriptName());
+			System.out.println("rm " + file.getCanonicalPath());				
+			file.delete();
+		}
+		System.out.println("rm " + jsa.getCanonicalPath());
+		jsa.delete();
+	}
 
 	public static void main(String[] args) throws NoSuchFieldException,
 	SecurityException, IOException {
@@ -184,6 +338,7 @@ public class Deploy {
 		cmdLine.addString("jlp", "", "java.library.path");
 		cmdLine.addString("compiler", null, "Compiler version");
 		cmdLine.addBoolean("version", false, "Get version and exit");
+		cmdLine.addBoolean("windows", false, "Install for windows");
 		
 		cmdLine.addStdHelp();// help
 
@@ -202,101 +357,29 @@ public class Deploy {
 			System.out.println(VERSION);
 			System.exit(0);
 		}
-		
-		String compiler = cmdLine.getStringVal("compiler");
+		///Get command lines option
 		String dirPath = cmdLine.getStringVal("prefix").trim();
-		String jlp = cmdLine.getStringVal("jlp");
+		String mode = cmdLine.getStringVal("mode");
 		// Java doesnt understand ~ as home directory
 		if (dirPath.startsWith("~/")) {
 			dirPath = System.getProperty("user.home") + dirPath.substring(1);
-		}
-
-		File dir = new File(dirPath);
-		String mode = cmdLine.getStringVal("mode");
-		String libs = cmdLine.getStringVal("libs");
-		String japsa = cmdLine.getStringVal("japsa");
-		File jsa = new File(dir + "/bin/jsa");
-
+		}			
+		
+		compiler = cmdLine.getStringVal("compiler");		
+		jlp = cmdLine.getStringVal("jlp");		
+		libs = cmdLine.getStringVal("libs");
+		japsa = cmdLine.getStringVal("japsa");
+		dir = new File(dirPath);		
+		jsa = new File(dir + File.separator + "bin"+ File.separator + "jsa");		
+		/**********************************************************************/
+		
 		if ("install".equals(mode)) {
-			String cp = dir.getCanonicalPath() + "/lib/japsa/" + japsa;
-			StringSeparator ss = new StringSeparator(libs, ':');
-			while (ss.hasNext()) {
-				String l = ss.next();
-				if (l.length() > 0)
-					cp = cp + ":" + dir.getCanonicalPath() + "/lib/japsa/" + l;
-			}
-
-			PrintStream outJsa = new PrintStream(new FileOutputStream(jsa));
-			outJsa.println("#!/bin/sh\n\ncat << EOF");
-
-			outJsa.print("Japsa: A Java Package for Statistical Sequence Analysis\n"
-					+ " Version " + VERSION + ", Built on " + (new Date()));
-			if (compiler != null){
-				outJsa.print(" with " + compiler);
-			}
-			
-			outJsa.println("\nList of tools:");
-
-			String JAVA_COMMAND ="java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 
-			if (jlp.length() > 0){
-				JAVA_COMMAND += " -Djava.library.path="+jlp;
-			}
-
-			System.out.println("\nInstalling Japsa");
-			
-			for (Object obj : tools) {		
-				
-				if (!(obj instanceof Class<?>)){
-					outJsa.printf("\n%s\n",obj);
-					continue;
-				}				
-				Class<?> tool = (Class<?>) obj;
-				
-				Deployable annotation = tool.getAnnotation(Deployable.class);
-				File file = new File(dir + "/bin/" + annotation.scriptName());
-
-				PrintStream out = new PrintStream(new FileOutputStream(file));
-				out.println("#!/bin/sh");
-
-				out.println("case $JSA_MEM in '')JSA_MEM=7000m;;*);;esac\n\n");
-
-				out.println("case $JSA_CP in\n  '')JSA_CP="
-						+ cp
-						+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
-				
-				out.println("JSA_CMD=\"`basename $0` $@\"\n");
-				
-				out.println(JAVA_COMMAND + " -classpath ${JSA_CP} "
-						+ tool.getCanonicalName() + " \"$@\"");
-				out.close();
-
-				Runtime.getRuntime().exec(
-						"chmod a+x " + file.getCanonicalPath());
-				System.out.println(" " + file.getCanonicalPath() + " created");
-				outJsa.printf("  %-23s  %s\n", annotation.scriptName(),
-						annotation.scriptDesc());
-			}
-			outJsa.println("\nEOF");
-			outJsa.close();
-			System.out.println(" " + jsa.getCanonicalPath() + " created\nDone");
-
-			Runtime.getRuntime().exec("chmod a+x " + jsa.getCanonicalPath());
-
+			if (cmdLine.getBooleanVal("windows"))
+				installWindows();
+			else
+				install();
 		} else if ("uninstall".equals(mode)) {
-			// Delete all the scripts
-			
-			for (Object obj : tools) {				
-				if (!(obj instanceof Class<?>)){			
-					continue;
-				}				
-				Class<?> tool = (Class<?>) obj;
-				Deployable annotation = tool.getAnnotation(Deployable.class);
-				File file = new File(dir + "/bin/" + annotation.scriptName());
-				System.out.println("rm " + file.getCanonicalPath());				
-				file.delete();
-			}
-			System.out.println("rm " + jsa.getCanonicalPath());
-			jsa.delete();
+			uninstall();
 		} else {
 			System.err.println("Mode " + mode + " not recognised");
 			System.err.println(cmdLine.usage());

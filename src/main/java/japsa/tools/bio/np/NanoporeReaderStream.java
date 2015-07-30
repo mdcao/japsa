@@ -32,12 +32,13 @@
  *  
  ****************************************************************************/
 
-package japsa.seq.nanopore;
+package japsa.tools.bio.np;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -46,6 +47,7 @@ import org.jfree.data.time.TimeTableXYDataset;
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
+import japsa.tools.util.StreamClient;
 import japsa.util.CommandLine;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
@@ -85,10 +87,7 @@ public class NanoporeReaderStream
 		cmdLine.addString("pFolderName",null, "Folder to move processed files to");
 		cmdLine.addBoolean("GUI",false, "Whether run with GUI");
 		
-		cmdLine.addString("streamServer",null, "Stream output to a server, format IP:port");
-
-		//cmdLine.addString("netAddress",null, "Network Address");		
-		//cmdLine.addInt("netPort", 3456,  "Network port");
+		cmdLine.addString("streamServers",null, "Stream output to some servers, format \"IP:port,IP:port\" (no spaces)");
 
 		cmdLine.addInt("interval", 30,  "Interval between check in seconds");
 		cmdLine.addInt("age", 30,  "The file has to be this old in seconds");
@@ -109,7 +108,7 @@ public class NanoporeReaderStream
 		boolean realtime  = cmdLine.getBooleanVal("realtime");
 		boolean fail  = cmdLine.getBooleanVal("fail");
 		String format = cmdLine.getStringVal("format");		
-		String streamServer = cmdLine.getStringVal("streamServer");
+		String streamServers = cmdLine.getStringVal("streamServers");
 		int interval = cmdLine.getIntVal("interval");//in second
 		int age = cmdLine.getIntVal("age") * 1000;//in second
 
@@ -134,15 +133,7 @@ public class NanoporeReaderStream
 		reader.output = output;
 		reader.format = format.toLowerCase();
 		reader.realtime = realtime;
-		
-		if (streamServer != null){			
-			String [] toks = streamServer.split(":");
-			int portNumber = 3456;
-			if (toks.length > 1)
-				portNumber = Integer.parseInt(toks[1]);			
-			Socket echoSocket = new Socket(toks[0], portNumber);
-			reader.networkOS = new SequenceOutputStream(echoSocket.getOutputStream());
-		}
+		reader.streamServers = streamServers;		
 
 		if (GUI){
 			reader.realtime = true;
@@ -186,6 +177,13 @@ public class NanoporeReaderStream
 		String msg = null;
 		try{
 			sos = SequenceOutputStream.makeOutputStream(output);
+			if (streamServers != null && streamServers.trim().length() > 0){
+				StreamClient streamClient = new StreamClient(streamServers);
+				ArrayList<Socket>  sockets = streamClient.getSockets();
+				networkOS = new ArrayList<SequenceOutputStream>(sockets.size());				
+				for (Socket socket:sockets)					
+					networkOS.add(new SequenceOutputStream(socket.getOutputStream()));			
+			}			
 		}catch (Exception e){
 			msg = e.getMessage();
 		}finally{
@@ -193,15 +191,17 @@ public class NanoporeReaderStream
 				sos = null;
 				return msg;
 			}
-
 		}
-
 		return msg;
 	}
 
 
 	public void close() throws IOException{
 		sos.close();
+		if (networkOS != null){
+			for (SequenceOutputStream out:networkOS)
+				out.close();
+		}
 		done = true;
 	}
 
@@ -214,7 +214,7 @@ public class NanoporeReaderStream
 	int fileNumber = 0;
 	int passNumber = 0, failNumber = 0;
 	SequenceOutputStream sos;
-	SequenceOutputStream networkOS = null;
+	ArrayList<SequenceOutputStream> networkOS = null;
 	boolean stats, number;
 	String f5List = null, folder = null;
 	int minLength = 0;
@@ -223,6 +223,7 @@ public class NanoporeReaderStream
 	int interval = 1, age = 1000;
 	boolean doFail = false;
 	String output = "";
+	String streamServers = null;
 	boolean doLow = true;
 	boolean getTime = false;
 	boolean done = false;
@@ -250,8 +251,10 @@ public class NanoporeReaderStream
 
 	public void print(FastqSequence fq) throws IOException{
 		fq.print(sos);
-		if (networkOS != null)
-			fq.print(networkOS);
+		if (networkOS != null){
+			for (SequenceOutputStream out:networkOS)
+			fq.print(out);
+		}
 	}
 
 	public boolean readFastq2(String fileName) throws IOException{

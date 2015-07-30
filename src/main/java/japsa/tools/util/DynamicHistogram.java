@@ -31,7 +31,7 @@
  * 20 Apr 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.seq.nanopore;
+package japsa.tools.util;
 
 /**
  * @author minhduc

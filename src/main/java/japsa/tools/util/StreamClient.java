@@ -33,53 +33,94 @@
  ****************************************************************************/
 package japsa.tools.util;
 
+
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
+import java.io.Closeable;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
+import java.io.InputStream;
 import java.net.Socket;
-
-import com.google.common.io.ByteStreams;
-
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 /**
  * @author minhduc
  *
  */
 @Deployable(
-		scriptName = "jsa.util.streamServer",
-		scriptDesc = "Listen for input from a stream and output to the standard output",
-		scriptDocs = "jsa.util.streamServer implements a server that listen at "
-				+ "a specified port. Upon receiving data from a client, it forwards the stream "
-				+ "data to standard output")
-public class StreamServer {
-	public static int DEFAULT_PORT = 3456;
-	
-/**
- * @param args
- * @throws InterruptedException 
- * @throws Exception 
- * @throws OutOfMemoryError 
- */
+		scriptName = "jsa.util.streamClient",
+		scriptDesc = "Listen for input from the standard input and output to a stream"
+		//scriptDocs = "jsa.util.streamServer implements a server that listen at "
+		//		+ "a specified port. Upon receiving data from a client, it forwards the stream "
+		//		+ "data to standard output"
+		)
+public class StreamClient implements Closeable{
+	ArrayList<Socket> sockets;
+
+	public StreamClient(String serverList) throws UnknownHostException, IOException{
+		sockets = new ArrayList<Socket> ();
+		String [] servers = serverList.split(",");
+		for (String server:servers){
+			String [] toks = server.trim().split(":");
+			int portNumber = StreamServer.DEFAULT_PORT;
+			if (toks.length > 1)
+				portNumber = Integer.parseInt(toks[1]);			
+			Logging.info("Trying to connect " + toks[0] + ":" + portNumber);
+			Socket socket = new Socket(toks[0], portNumber);
+			Logging.info("Connection to " + toks[0] + ":" + portNumber + " established");
+			sockets.add(socket);
+		}		
+	}
+	public ArrayList<Socket>  getSockets(){
+		return sockets;
+	}
+	/* (non-Javadoc)
+	 * @see java.io.Closeable#close()
+	 */
+	@Override
+	public void close() throws IOException {
+		for (Socket socket:sockets){
+			socket.close();
+			Logging.info("Connection to " + socket.getRemoteSocketAddress() + " closed");
+		}
+	}	
+
+	/**
+	 * @param args
+	 * @throws InterruptedException 
+	 * @throws Exception 
+	 * @throws OutOfMemoryError 
+	 */
 	public static void main(String[] args) throws IOException, InterruptedException{
 		/*********************** Setting up script ****************************/
-		Deployable annotation = StreamServer.class.getAnnotation(Deployable.class);		 		
+		Deployable annotation = StreamClient.class.getAnnotation(Deployable.class);		 		
 		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
 		/**********************************************************************/
-		cmdLine.addInt("port", DEFAULT_PORT,  "Port to listen to");
+		//cmdLine.addString("output", "-",
+		//		"Name of the output file, -  for stdout");
+		cmdLine.addStdInputFile();
+		cmdLine.addString("streamServer",null, "Stream output to a server, format IP:port",true);		
 		args = cmdLine.stdParseLine(args);			
-		/**********************************************************************/		
-		//String output = cmdLine.getStringVal("output");
-		int port = cmdLine.getIntVal("port");
+		/**********************************************************************/
+		String input = cmdLine.getStringVal("input");
+		StreamClient client = new StreamClient(cmdLine.getStringVal("streamServer"));
+		Logging.info("Connection established");
 		
-		ServerSocket serverSocket = new ServerSocket(port);
-		Logging.info("Listen on port " + port);		
-	    Socket clientSocket = serverSocket.accept();
-	    Logging.info("Connection establised");
-	    ByteStreams.copy(clientSocket.getInputStream(), System.out);
-	    serverSocket.close();
-	    Logging.info("Connection closed");	    
+		InputStream ins = "input".equals("-")?  new FileInputStream(input) : System.in;
+		byte[] buffer = new byte[8192];
+		
+		while (true){
+			int ret = ins.read(buffer);
+			if (ret < 0)
+				break;
+			for (Socket socket:client.sockets){
+				socket.getOutputStream().write(buffer,0, ret);
+			}
+		}
+		client.close();		
+		
 	}
 }

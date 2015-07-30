@@ -31,8 +31,9 @@
  * 17 Apr 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.seq.nanopore;
+package japsa.tools.bio.np;
 
+import japsa.tools.util.DynamicHistogram;
 import japsa.util.Logging;
 
 import java.awt.EventQueue;
@@ -117,7 +118,6 @@ public class NanoporeReaderWindow implements Runnable{
 		frmNanoporeReader.setVisible(true);
 	}			
 
-
 	/**
 	 * Initialize the contents of the frame.
 	 * @throws IOException 
@@ -135,7 +135,7 @@ public class NanoporeReaderWindow implements Runnable{
 		controlPanel.setLayout(null);
 
 		final JPanel inputPanel = new JPanel();
-		inputPanel.setBounds(0, 12, 330, 151);
+		inputPanel.setBounds(0, 8, 330, 145);
 		inputPanel.setBorder(BorderFactory.createTitledBorder("Input"));
 		controlPanel.add(inputPanel);
 		inputPanel.setLayout(null);
@@ -143,11 +143,11 @@ public class NanoporeReaderWindow implements Runnable{
 		final JRadioButton rdbtnInputStream = new JRadioButton("Read files from input Stream");
 
 
-		rdbtnInputStream.setBounds(8, 24, 304, 23);
+		rdbtnInputStream.setBounds(8, 22, 304, 23);
 		inputPanel.add(rdbtnInputStream);
 
 		final JRadioButton rdbtnF = new JRadioButton("Read files from download directory");
-		rdbtnF.setBounds(8, 51, 289, 23);
+		rdbtnF.setBounds(8, 48, 289, 23);
 		inputPanel.add(rdbtnF);
 
 		if (reader.folder == null){
@@ -161,15 +161,15 @@ public class NanoporeReaderWindow implements Runnable{
 		group.add(rdbtnF);
 
 		final JTextField txtDir = new JTextField(reader.folder);		
-		txtDir.setBounds(18, 82, 300, 20);
+		txtDir.setBounds(18, 75, 300, 20);
 		inputPanel.add(txtDir);
 
 		final JButton btnChange = new JButton("Change");
-		btnChange.setBounds(28, 109, 117, 25);
+		btnChange.setBounds(28, 105, 117, 25);
 		inputPanel.add(btnChange);
 
 		final JCheckBox chckbxInc = new JCheckBox("Include fail folder",reader.doFail);
-		chckbxInc.setBounds(153, 110, 159, 23);
+		chckbxInc.setBounds(153, 105, 159, 23);
 		inputPanel.add(chckbxInc);
 
 		chckbxInc.addItemListener(new ItemListener() {
@@ -227,17 +227,17 @@ public class NanoporeReaderWindow implements Runnable{
 
 
 		final JPanel outputPanel = new JPanel();
-		outputPanel.setBounds(0, 175, 330, 151);
+		outputPanel.setBounds(0, 160, 330, 188);
 		outputPanel.setBorder(BorderFactory.createTitledBorder("Output"));
 		controlPanel.add(outputPanel);
 		outputPanel.setLayout(null);
 
 		final JRadioButton rdbtnOut2Str = new JRadioButton("Output to output stream");		
-		rdbtnOut2Str.setBounds(8, 25, 302, 23);
+		rdbtnOut2Str.setBounds(8, 22, 302, 23);
 		outputPanel.add(rdbtnOut2Str);
 
 		final JRadioButton rdbtnOut2File = new JRadioButton("Output to file");	
-		rdbtnOut2File.setBounds(8, 51, 302, 23);
+		rdbtnOut2File.setBounds(8, 48, 302, 23);
 		outputPanel.add(rdbtnOut2File);
 
 		final ButtonGroup group2 = new ButtonGroup();
@@ -245,13 +245,34 @@ public class NanoporeReaderWindow implements Runnable{
 		group2.add(rdbtnOut2File);
 
 		final JTextField txtOFile = new JTextField(reader.output);		
-		txtOFile.setBounds(18, 82, 300, 20);
+		txtOFile.setBounds(18, 78, 300, 20);
 		outputPanel.add(txtOFile);
 
 
 		final JButton btnFileChange = new JButton("Change");		
-		btnFileChange.setBounds(26, 109, 117, 25);	
+		btnFileChange.setBounds(26, 105, 117, 25);	
 		outputPanel.add(btnFileChange);
+		
+				
+		final JCheckBox chckbxStreamServer = new JCheckBox("Stream output to some servers");
+		final JTextField txtStreamServers = new JTextField();
+		
+		chckbxStreamServer.setSelected(reader.streamServers!=null);
+		chckbxStreamServer.setBounds(8, 132, 283, 23);
+		outputPanel.add(chckbxStreamServer);
+		
+		
+		txtStreamServers.setText(reader.streamServers != null?reader.streamServers:"");
+		txtStreamServers.setEnabled(chckbxStreamServer.isSelected());
+		txtStreamServers.setBounds(18, 163, 300, 19);
+		outputPanel.add(txtStreamServers);
+		txtStreamServers.setColumns(10);
+		
+		chckbxStreamServer.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				txtStreamServers.setEnabled(chckbxStreamServer.isSelected());		
+			}
+		});
 
 
 		btnFileChange.addActionListener(new ActionListener() {
@@ -309,7 +330,7 @@ public class NanoporeReaderWindow implements Runnable{
 
 		JPanel formatPanel = new JPanel();
 		formatPanel.setBorder(BorderFactory.createTitledBorder("Output format"));
-		formatPanel.setBounds(0, 335, 330, 55);
+		formatPanel.setBounds(0, 350, 330, 55);
 		controlPanel.add(formatPanel);
 		
 		final JRadioButton fqRadioButton = new JRadioButton("fastq");
@@ -356,7 +377,7 @@ public class NanoporeReaderWindow implements Runnable{
 		
 
 		final JPanel optionPanel = new JPanel();
-		optionPanel.setBounds(0, 391, 330, 115);
+		optionPanel.setBounds(0, 405, 330, 115);
 		optionPanel.setBorder(BorderFactory.createTitledBorder("Options"));
 		controlPanel.add(optionPanel);
 		optionPanel.setLayout(null);
@@ -623,6 +644,7 @@ public class NanoporeReaderWindow implements Runnable{
 			public void actionPerformed(ActionEvent e) {
 				//1. Validate before running
 
+				//validate input
 				if (rdbtnF.isSelected()){
 					String _path = txtDir.getText().trim();
 					if (_path.equals("")){
@@ -640,6 +662,7 @@ public class NanoporeReaderWindow implements Runnable{
 				}
 
 
+				//validate output
 				if (rdbtnOut2File.isSelected()){
 					if (txtOFile.getText().trim().equals("")){						
 						JOptionPane.showMessageDialog(null, "Please specify output file", "Warning", JOptionPane.PLAIN_MESSAGE);
@@ -647,6 +670,16 @@ public class NanoporeReaderWindow implements Runnable{
 						return;
 					}
 				}
+				//validate stream
+				if (chckbxStreamServer.isSelected()){
+					if (txtStreamServers.getText().trim().equals("")){
+						JOptionPane.showMessageDialog(null, "Please specify output address of a server", "Warning", JOptionPane.PLAIN_MESSAGE);
+						txtStreamServers.grabFocus();
+						return;
+					}			
+					reader.streamServers = txtStreamServers.getText().trim();
+				}
+				
 
 				String msg = reader.prepareIO();
 				if (msg !=null){

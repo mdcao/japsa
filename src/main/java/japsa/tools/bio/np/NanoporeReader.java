@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.seq.nanopore;
+package japsa.tools.bio.np;
 
 import java.io.BufferedReader;
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.np.f5reader2", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
+//@Deployable(scriptName = "jsa.np.f5reader2", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
 public class NanoporeReader// implements Closeable
 {
 	public static void main(String[] args) throws OutOfMemoryError, Exception {

@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.seq.nanopore;
+package japsa.tools.bio.np;
 
 import java.io.IOException;
 
