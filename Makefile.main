@@ -125,5 +125,15 @@ uninstall:
 	java -cp $(JAR_FILE) japsa.util.deploy.Deploy --prefix "`echo $(INSTALL_DIR)`" --mode uninstall --libs "$(subst $(SPACE),:, $(EXT_LIBS))" 
 	rm -f  $(INSTALL_DIR)/lib/japsa/$(JAR_FILE)  $(addprefix $(INSTALL_DIR)/lib/japsa/, $(EXT_LIBS));rmdir $(INSTALL_DIR)/bin;rmdir $(INSTALL_DIR)/lib/japsa;rmdir $(INSTALL_DIR)/lib;echo "Japsa uninstalled!"
 
+
+windows-release:jar
+	@@mkdir -p JapsaWindowRelease/lib/japsa/ JapsaWindowRelease/bin && \
+	cp -f $(addprefix $(LIB_DIR)/, $(EXT_LIBS)) $(JAR_FILE) JapsaWindowRelease/lib/japsa && \
+	java -cp $(JAR_FILE) japsa.util.deploy.Deploy --japsa $(JAR_FILE) --prefix JapsaWindowRelease --libs "$(subst $(SPACE),:, $(EXT_LIBS))" --compiler "`$(JCC) -version 2>&1`" -jlp="%JHDF5_LIB%" -windows -xmx 2000m && \
+	zip -r  JapsaWindowRelease.zip JapsaWindowRelease/
+
+
+
+
 #############################################################################
 

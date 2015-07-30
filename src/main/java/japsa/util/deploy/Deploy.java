@@ -176,6 +176,7 @@ public class Deploy {
 	
 	public static String compiler, jlp, libs, japsa;
 	public static File dir,jsa;
+	public static String mem = "7000m";
 	
 	public static void installWindows() throws IOException{
 		String installDirPath = dir.getCanonicalPath();
@@ -202,7 +203,7 @@ public class Deploy {
 		
 		outJsa.println("\necho List of tools:");
 
-		String JAVA_COMMAND ="java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 
+		String JAVA_COMMAND ="java -Xmx%JSA_MEM% -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 
 		
 		//if (jlp.length() > 0)
 		JAVA_COMMAND += " -Djava.library.path=\""+jlp+"\"";
@@ -225,7 +226,7 @@ public class Deploy {
 			out.println("echo JSA requires an environment variable JSA_HOME.");
 			out.println("goto :eof");
 			out.println("\n:gotjsaHome");			
-			out.println("set JSA_MEM=7000m");			
+			out.println("set JSA_MEM=" + mem);			
 			out.println("set JSA_CP=" + cp);
 						out.println();
 			out.println(JAVA_COMMAND +" -classpath %JSA_CP% " + tool.getCanonicalName() + " %*"); 
@@ -287,7 +288,7 @@ public class Deploy {
 			PrintStream out = new PrintStream(new FileOutputStream(file));
 			out.println("#!/bin/sh");
 
-			out.println("case $JSA_MEM in '')JSA_MEM=7000m;;*);;esac\n\n");
+			out.println("case $JSA_MEM in '')JSA_MEM="+mem +";;*);;esac\n\n");
 
 			out.println("case $JSA_CP in\n  '')JSA_CP="
 					+ cp
@@ -336,6 +337,7 @@ public class Deploy {
 		cmdLine.addString("japsa", "japsa.jar", "name of the jar file");
 		cmdLine.addString("prefix", ".", "the directory to install");
 		cmdLine.addString("jlp", "", "java.library.path");
+		cmdLine.addString("xmx", "7000m", "Set default maximum memory");
 		cmdLine.addString("compiler", null, "Compiler version");
 		cmdLine.addBoolean("version", false, "Get version and exit");
 		cmdLine.addBoolean("windows", false, "Install for windows");
@@ -371,6 +373,8 @@ public class Deploy {
 		japsa = cmdLine.getStringVal("japsa");
 		dir = new File(dirPath);		
 		jsa = new File(dir + File.separator + "bin"+ File.separator + "jsa");		
+		mem = cmdLine.getStringVal("xmx");
+		
 		/**********************************************************************/
 		
 		if ("install".equals(mode)) {
