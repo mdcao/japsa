@@ -37,13 +37,13 @@ package japsa.seq.tools;
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
 import japsa.seq.XAFReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * @author minhduc
@@ -69,7 +69,7 @@ public class AnnotateVCF {
 		
 		args = cmdLine.stdParseLine(args);	
 		/**********************************************************************/
-		String gffIn   =  cmdLine.getStringVal("gffin");
+		String gffFile   =  cmdLine.getStringVal("gffin");
 		String output  =  cmdLine.getStringVal("output");
 		String vcf  =  cmdLine.getStringVal("vcf");
 		
@@ -77,10 +77,17 @@ public class AnnotateVCF {
 		int downStr   = cmdLine.getIntVal("downstream");
 		
 		
-		BufferedReader in = SequenceReader.openFile(gffIn);
+		//BufferedReader in = SequenceReader.openFile(gffIn);
 		
-		JapsaAnnotation anno = JapsaAnnotation.readGFF(in, upStr, downStr,"all");		
-		in.close();
+		//JapsaAnnotation anno = JapsaAnnotation.readGFF(in, upStr, downStr,"all");		
+		//in.close();
+		
+		
+		FileInputStream gffIn = new FileInputStream(gffFile);
+		HashMap<String, JapsaAnnotation>
+		annoMap = JapsaAnnotation.readMGFF(gffIn,upStr,downStr,"CDS");
+		gffIn.close();		
+		
 		
 		SequenceOutputStream out =  SequenceOutputStream.makeOutputStream(output);
 		//for (JapsaFeature feature : anno.getFeatureList()){
@@ -89,22 +96,38 @@ public class AnnotateVCF {
 		//}		
 		//out.close();
 		
+		JapsaAnnotation anno = null;
 		XAFReader xaf = new XAFReader(vcf);		
 		while (xaf.next() != null){
 			//System.out.println(xaf.recordNo());			
 			String [] toks = xaf.getCurrentRecord().split("\t");	
-			int pos = Integer.parseInt(xaf.getField(1));				
+			int pos = Integer.parseInt(xaf.getField(1));			
+			String chrom = xaf.getField(0);			
 			out.print(toks[0] + "\t" + toks[1] + "\t" + toks[3] + "\t" + toks[4]);
 			for (int i = 9; i < toks.length; i++){
 				out.print("\t" + toks[i].charAt(0));
 			}
 			
-			for (int i =0; i < anno.numFeatures(); i++){
-				JapsaFeature feature = anno.getFeature(i);
-				if (feature.getStart() <= pos && feature.getEnd() >= pos){
-					out.print("\t" + feature.getID());
-				}else if (feature.getStart() > pos)
-					break;
+			
+			if (anno == null || !anno.getAnnotationID().equals(chrom))
+				anno = annoMap.get(chrom);		
+			if (anno != null){
+				//System.out.println(anno.getAnnotationID() + " : " + anno.numFeatures() + " " + pos);
+				for (int i =0; i < anno.numFeatures(); i++){
+					JapsaFeature feature = anno.getFeature(i);
+					//System.out.println("====" + feature.getStart() + " -- " + feature.getEnd());
+					if (feature.getStart() <= pos && feature.getEnd() >= pos){
+						out.print("\t" + feature.getID() + "(" + feature.getStart()+"," + feature.getEnd()+")");
+						String [] tt = feature.getDesc().split(";|\n");
+						for (String t:tt){
+							if (t.startsWith("product="))
+								out.print(";" + t);
+						}
+						
+						
+					}else if (feature.getStart() > pos)
+						break;//for					
+				}
 			}
 			out.println();
 		}

@@ -696,6 +696,15 @@ public class JapsaAnnotation {
 		}
 	}
 
+	/**
+	 * Read annotation from a gff file and store in a hash table index by sequence ID
+	 * @param in
+	 * @param upStr
+	 * @param downStr
+	 * @param list: list of feature to read, ie "CDS,mRNA". "all" means every thing 
+	 * @return
+	 * @throws IOException
+	 */
 	public static HashMap<String, JapsaAnnotation> readMGFF(InputStream in, int upStr, int downStr, String list) throws IOException{
 		boolean notAll = !list.equals("all");
 		
@@ -757,11 +766,11 @@ public class JapsaAnnotation {
 
 			String [] featureChars = toks[8].split(";");
 			for (String fch:featureChars){
-				if (fch.startsWith("Name="))
+				if (fch.startsWith("gene="))
 					ID = fch.substring(5);
 
 				if (fch.startsWith("Parent="))
-					parent = fch.substring(7);
+					parent = fch.substring(7);				
 			}
 
 			JapsaFeature feature = new JapsaFeature(start, end, type, ID, strand, parent);
