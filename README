@@ -2,7 +2,7 @@ I. Instalation
 
 To install:
 
-$make install -f Makefile.main INSTALL_DIR=~/.usr/
+$make install INSTALL_DIR=~/.usr/
 
 
 II. Contributors:
