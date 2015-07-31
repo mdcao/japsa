@@ -1,0 +1,6 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Dependencies}{3}{chapter.1}
+\contentsline {chapter}{\numberline {2}Installation}{5}{chapter.2}
+\contentsline {section}{\numberline {2.1}1. Install from the pre-compiled package}{5}{section.2.1}
+\contentsline {section}{\numberline {2.2}2. Obtain source code and compile}{5}{section.2.2}
+\contentsline {chapter}{\numberline {3}Indices and tables}{7}{chapter.3}
