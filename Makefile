@@ -132,23 +132,25 @@ else
 O_MXMEM=
 endif
 
+RELEASE=JapsaRelease
 
 pre-install: jar
-	echo "java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) --compiler \"`$(JCC) -version 2>&1`\"" > install.sh
-	chmod u+x install.sh
-	echo "java -cp $(JAR_FILE);$(LIB_DIR)\guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) --compiler \"`$(JCC) -version 2>&1`\"" > install.bat
+	@@echo "java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) --compiler \"`$(JCC) -version 2>&1`\"" > install.sh && \
+	chmod u+x install.sh && \
+	echo "java -cp $(JAR_FILE);$(LIB_DIR)\guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) --compiler \"`$(JCC) -version 2>&1`\"" > install.bat && \
+	echo "Installation scripts created"
 
 install: pre-install
 	./install.sh
 
 uninstall:
-	java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode uninstall --libs $(subst $(SPACE),:, $(EXT_LIBS)) ${O_INS_DIR} && echo "Japsa uninstalled!"
+	@@java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode uninstall --libs $(subst $(SPACE),:, $(EXT_LIBS)) ${O_INS_DIR} && echo "Japsa uninstalled!"
 
 release: pre-install
-	@@mkdir -p JapsaRelease/libs/ && \
-	cp -f $(addprefix $(LIB_DIR)/, $(EXT_LIBS)) $(JAR_FILE) JapsaWindowRelease/libs && \
-	cp -f $(JAR_FILE) install.sh install.bat  JapsaRelease/ && \
-	zip -r  JapsaRelease.zip JapsaRelease/ &&
-	tar zcvf JapsaRelease.tar.gz JapsaRelease/
+	@@mkdir -p $(RELEASE)/libs/ && \
+	cp -f $(addprefix $(LIB_DIR)/, $(EXT_LIBS)) $(JAR_FILE)  $(RELEASE)/libs && \
+	cp -f $(JAR_FILE) install.sh install.bat   $(RELEASE)/ && \
+	zip -r  $(RELEASE).zip  $(RELEASE)/ && \
+	tar zcvf  $(RELEASE).tar.gz  $(RELEASE)/
 #############################################################################
 

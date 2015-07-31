@@ -340,7 +340,10 @@ public class Deploy {
 				if (!pass)
 					continue;
 
-				String libPath = (new File(line)).getCanonicalPath(); 
+				String libPath = (new File(line)).getCanonicalPath();
+				if (libPath.contains(" "))
+					libPath = "\""+libPath + "\"";
+
 				if (jlp.length() == 0)
 					jlp = libPath;
 				else
@@ -478,16 +481,21 @@ public class Deploy {
 	}
 
 
-	public static void uninstallLibraries() throws IOException{
+	public static boolean uninstallLibraries() throws IOException{
 		if (japsaPath.startsWith("~/")) {
 			japsaPath = System.getProperty("user.home") + japsaPath.substring(1);
 		}
-		
+
 		File japsaLib = new File(japsaPath + File.separator + "lib" + File.separator + "japsa");
-		
+		File japsaMaster = new File(japsaPath + File.separator + "bin" + File.separator + "jsa");
+		if (!japsaLib.exists() || !japsaMaster.exists() ){
+			System.err.println("No instalation of japsa found at " + japsaPath);
+			return false;
+		}
+
 		File to = new File (japsaLib.getCanonicalPath()  + File.separator + japsaJar);
 		to.delete();
-		
+
 		StringSeparator ss = new StringSeparator(libs, ':');
 		while (ss.hasNext()) {
 			String l = ss.next();
@@ -496,7 +504,8 @@ public class Deploy {
 				to.delete();								
 			}
 		}		
-		
+		return true;
+
 	}
 
 
@@ -533,7 +542,7 @@ public class Deploy {
 		cmdLine.addString("compiler", null, "Compiler version");
 		cmdLine.addBoolean("version", false, "Get version and exit");
 		cmdLine.addString("server", "na", "Run on server: yes/true for yes; no/false for no");
-				
+
 		cmdLine.addStdHelp();// help
 		/********************** Standard processing ***************************/
 		args = cmdLine.parseLine(args);
@@ -553,7 +562,7 @@ public class Deploy {
 
 		///Get command lines option
 		String mode = cmdLine.getStringVal("mode");
-		
+
 		japsaPath = cmdLine.getStringVal("installDir");
 		compiler  = cmdLine.getStringVal("compiler");		
 		jlp       = cmdLine.getStringVal("jlp");		
@@ -564,13 +573,11 @@ public class Deploy {
 			server = 1;		
 		if(serverOpt.equals("no") || serverOpt.equals("false"))
 			server = 0;		
-		
-		
+
+
 		japsaJar = "japsa.jar";
 		/**********************************************************************/
-		
-		
-		
+
 
 		if ("install".equals(mode)) {		
 			setUpDirectory();
@@ -578,8 +585,8 @@ public class Deploy {
 			System.out.println("Japsa installtion complete, please set your path to " + japsaPath + File.separator+"bin");
 		} else if ("uninstall".equals(mode)) {
 			//japsaPath must have been set
-			uninstallLibraries();
-			uninstallScripts(tools, "jsa");			
+			if (uninstallLibraries())
+				uninstallScripts(tools, "jsa");			
 		} else {
 			System.err.println("Mode " + mode + " not recognised");
 			System.err.println(cmdLine.usage());
