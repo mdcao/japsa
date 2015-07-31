@@ -89,6 +89,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Scanner;
+
+import com.google.common.io.Files;
 
 /**
  * This class is used to deploy tools: create a makefile to generate scripts
@@ -115,7 +118,7 @@ public class Deploy {
 		tools.add(AnnotateVCF.class);
 		tools.add(ExtractGeneSequence.class);
 		tools.add(AlignmentEM.class);
-		
+
 		//tools.add(MarkovCompress.class);
 
 		//jsa.hts.*
@@ -128,7 +131,7 @@ public class Deploy {
 		tools.add(CountReadInRegion.class);
 		tools.add(HTSAlignmentParam.class);
 		tools.add(HTSErrorAnalysis.class);
-		
+
 
 		//jsa.np.
 		//tools.add(NanoporeReader.class);
@@ -151,7 +154,7 @@ public class Deploy {
 		tools.add(Japsa2TR.class);
 		tools.add(TRV2Bed.class);	
 		tools.add(VNTRDepth.class);
-		
+
 		tools.add("Utilities:");
 		tools.add(StreamServer.class);
 		tools.add(StreamClient.class);
@@ -162,188 +165,376 @@ public class Deploy {
 		tools.add(XMDistance.class);
 		tools.add(XMDistance2.class);
 		tools.add(NormaliseTree.class);	
-		
+
 		//jsa.sim
 		tools.add("Alignment with Finite State Machines");
 		tools.add(SimProbFSM.class);		
 		tools.add(SimHTSWithFSM.class);
-		
+
 		//jsa.xm
 		tools.add("Export Model compression");
 		tools.add(ExpertModelDriver.class);
 		//tools.add(.class);		
 	}	
-	
-	public static String compiler, jlp, libs, japsa;
-	public static File dir,jsa;
-	public static String mem = "7000m";
-	
-	public static void installWindows() throws IOException{
-		String installDirPath = dir.getCanonicalPath();
-		//String japsaPath = installDirPath;
-		String japsaPath = "%JSA_HOME%";		
-		
-		String cp = japsaPath + "\\lib\\japsa\\"  + japsa;
+
+	//public static String compiler = null, jlp = null, libs = null, japsa = null;
+	//public static File dir = null,jsa = null;
+	//public static String mem = "7000m";
+
+	static private String setupJapsaDir(String japsaJar) throws IOException{
+		if (japsaPath.startsWith("~/")) {
+			japsaPath = System.getProperty("user.home") + japsaPath.substring(1);
+		}		
+
+		File japsaLib = new File(japsaPath + File.separator + "lib" + File.separator + "japsa");
+		File japsaBin = new File(japsaPath + File.separator + "bin");
+
+		japsaBin.mkdirs();
+		if (!japsaBin.exists()){
+			System.err.println("Folder `" +japsaBin.getCanonicalPath() + "' cannot be created");
+			return null;
+		}	
+
+		japsaLib.mkdirs();
+		if (!japsaLib.exists()){
+			System.err.println("Folder `" +japsaLib.getCanonicalPath() + "' cannot be created");
+			return null;
+		}
+
+		//Get the classpath now that the directory of installation is known
+		File from = new File(japsaJar);
+		File to = new File (japsaLib.getCanonicalPath()  + File.separator + japsaJar);
+		try{
+			Files.copy(from,to);
+		}catch (IOException e){
+			System.err.println(e.getMessage());
+			return null;
+		}
+
+		String cp = to.getCanonicalPath();			
 		StringSeparator ss = new StringSeparator(libs, ':');
 		while (ss.hasNext()) {
 			String l = ss.next();
-			if (l.length() > 0)
-				cp = cp + ";" + japsaPath + "\\lib\\japsa\\" + l;
-		}
-		PrintStream outJsa = new PrintStream(new FileOutputStream(jsa+".bat"));		
-
-		outJsa.println("@echo off");
-		outJsa.print("echo Japsa: A Java Package for Statistical Sequence Analysis\n"
-				+ "echo Version " + VERSION + ", Built on " + (new Date()));
-		if (compiler != null){
-			outJsa.print(" with " + compiler);
-		}
-		
-		
-		
-		outJsa.println("\necho List of tools:");
-
-		String JAVA_COMMAND ="java -Xmx%JSA_MEM% -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 
-		
-		//if (jlp.length() > 0)
-		JAVA_COMMAND += " -Djava.library.path=\""+jlp+"\"";
-		
-		System.out.println("\nInstalling Japsa");
-		
-		for (Object obj : tools) {			
-			if (!(obj instanceof Class<?>)){
-				outJsa.printf("\necho %s\n",obj);
-				continue;
-			}				
-			Class<?> tool = (Class<?>) obj;
-			
-			Deployable annotation = tool.getAnnotation(Deployable.class);
-			File file = new File(installDirPath + File.separator +  "bin" + File.separator + annotation.scriptName() + ".bat");
-
-			PrintStream out = new PrintStream(new FileOutputStream(file));
-			out.println("@echo off");
-			out.println("if not \"%JSA_HOME%\" == \"\" goto gotjsaHome");
-			out.println("echo JSA requires an environment variable JSA_HOME.");
-			out.println("goto :eof");
-			out.println("\n:gotjsaHome");			
-			out.println("set JSA_MEM=" + mem);			
-			out.println("set JSA_CP=" + cp);
-						out.println();
-			out.println(JAVA_COMMAND +" -classpath %JSA_CP% " + tool.getCanonicalName() + " %*"); 
-			out.println("\n:eof");
-			out.close();
-			//japsa.seq.nanopore.NanoporeReaderStream --folder . -output output.fastq -fail --minLength 50 -GUI
-			
-//////////////////////////////////////////////
-
-			System.out.println(" " + file.getCanonicalPath() + " created");
-			outJsa.printf("  %-23s  %s\n", annotation.scriptName(),
-					annotation.scriptDesc());
-		}
-		outJsa.println("\nEOF");
-		outJsa.close();
-		System.out.println(" " + jsa.getCanonicalPath() + " created\nDone");
-
-		Runtime.getRuntime().exec("chmod a+x " + jsa.getCanonicalPath());
-		
-	}	
-	public static void install() throws IOException{
-		String cp = dir.getCanonicalPath() + "/lib/japsa/" + japsa;
-		StringSeparator ss = new StringSeparator(libs, ':');
-		while (ss.hasNext()) {
-			String l = ss.next();
-			if (l.length() > 0)
-				cp = cp + ":" + dir.getCanonicalPath() + "/lib/japsa/" + l;
-		}
-
-		PrintStream outJsa = new PrintStream(new FileOutputStream(jsa));
-		outJsa.println("#!/bin/sh\n\ncat << EOF");
-
-		outJsa.print("Japsa: A Java Package for Statistical Sequence Analysis\n"
-				+ " Version " + VERSION + ", Built on " + (new Date()));
-		if (compiler != null){
-			outJsa.print(" with " + compiler);
-		}
-		
-		outJsa.println("\nList of tools:");
-
-		String JAVA_COMMAND ="java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server"; 
-		if (jlp.length() > 0){
-			JAVA_COMMAND += " -Djava.library.path="+jlp;
-		}
-
-		System.out.println("\nInstalling Japsa");
-		
-		for (Object obj : tools) {		
-			
-			if (!(obj instanceof Class<?>)){
-				outJsa.printf("\n%s\n",obj);
-				continue;
-			}				
-			Class<?> tool = (Class<?>) obj;
-			
-			Deployable annotation = tool.getAnnotation(Deployable.class);
-			File file = new File(dir + "/bin/" + annotation.scriptName());
-
-			PrintStream out = new PrintStream(new FileOutputStream(file));
-			out.println("#!/bin/sh");
-
-			out.println("case $JSA_MEM in '')JSA_MEM="+mem +";;*);;esac\n\n");
-
-			out.println("case $JSA_CP in\n  '')JSA_CP="
-					+ cp
-					+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
-			
-			out.println("JSA_CMD=\"`basename $0` $@\"\n");
-			
-			out.println(JAVA_COMMAND + " -classpath ${JSA_CP} "
-					+ tool.getCanonicalName() + " \"$@\"");
-			out.close();
-
-			Runtime.getRuntime().exec(
-					"chmod a+x " + file.getCanonicalPath());
-			System.out.println(" " + file.getCanonicalPath() + " created");
-			outJsa.printf("  %-23s  %s\n", annotation.scriptName(),
-					annotation.scriptDesc());
-		}
-		outJsa.println("\nEOF");
-		outJsa.close();
-		System.out.println(" " + jsa.getCanonicalPath() + " created\nDone");
-
-		Runtime.getRuntime().exec("chmod a+x " + jsa.getCanonicalPath());
+			if (l.length() > 0){
+				from = new File("libs" + File.separator + l);
+				to = new File (japsaLib.getCanonicalPath()  + File.separator + l);
+				try{
+					Files.copy(from,to);
+				}catch (IOException e){
+					System.err.println(e.getMessage());
+					return null;
+				}
+				cp = cp + File.pathSeparator + to.getCanonicalPath();
+			}
+		}		
+		return cp;
 	}
-	
-	public static void uninstall() throws IOException{
+
+	public static int server = -1;
+
+	public static String maxMem = null;
+	public static String japsaPath = null;
+	public static String jlp = null;
+	public static String libs = null;
+	public static String japsaJar = null;
+	public static String compiler = null;
+
+	private static String classPath = null;
+	private static String javaCommand = null;	
+
+	/**
+	 * Prepare the directory to copy libraries and scripts for instalation.
+	 * This method also set up classpath, java command, library path, and
+	 * (default) memory allocation in the process
+	 *   
+	 * Set up classPath and javaCommand
+	 * @throws IOException
+	 */
+	public static void setUpDirectory() throws IOException{
+		boolean isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;		
+		classPath = japsaJar;
+		Scanner scanner = new Scanner(System.in);
+		String line = null;
+
+		////////////////////////////////////////////////////////////////////////////
+		if (japsaPath == null){
+			//Get directory to install and create
+			japsaPath = isWindows? 
+					"c:\\Japsa" 
+					: System.getProperty("user.home") + "/.usr/local";
+			while (true){
+				System.out.print("Directory to install japsa: [" + japsaPath + "]");
+				line = scanner.nextLine();
+				line = line.trim();
+
+				if (line.length() > 0){
+					japsaPath = line;
+				}
+
+				classPath =  setupJapsaDir(japsaJar);
+				if (classPath != null)
+					break;//while
+			}//while
+		}else{			
+			classPath =  setupJapsaDir(japsaJar);
+			if (classPath == null)
+				System.exit(-1);			
+		}		
+		////////////////////////////////////////////////////////////////////////////
+		//Get default memory if not previously set
+		if (maxMem == null){
+			maxMem = isWindows? "1000m":"7000m";
+			System.out.print("Default memory allocated to jvm: [" + maxMem + "]");		
+			line = scanner.nextLine();
+			line = line.trim();
+			if (line.length() > 0){
+				maxMem = line;
+			}
+		}
+
+		javaCommand = isWindows? 
+				"java -Xmx%JSA_MEM% -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8"
+				:"java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8";
+
+
+		//Get server mode or client mode
+		////////////////////////////////////////////////////////////////////////////
+		if (server < 0){
+			System.out.print("Enforce your jvm to run on server mode: [n]?(y/n)");
+			line = scanner.nextLine();
+			line = line.trim().toLowerCase();
+			server = (line.equals("y") || line.equals("yes"))?1:0;
+		}
+
+		if (server > 0)
+			javaCommand += " -server";
+
+		////////////////////////////////////////////////////////////////////////////
+		if (jlp == null){
+			jlp = "";
+			//Get path to HDFLib
+			System.out.println("Japsa requires HDF library installed in order to run npReader");
+			while (true){
+				System.out.print("Path to HDF library: [none]?");
+				line = scanner.nextLine();
+				line = line.trim();
+				if (line.length() <= 0)
+					break;
+
+
+				String [] fNix = {"libjhdf.so","libjhdf5.so"};
+				String [] fWindows = {"jhdf.dll","jhdf5.dll","libhdf.lib","libhdf5.lib"};
+
+				String [] requires = isWindows ? fWindows:fNix;
+
+				boolean pass = true;
+				for (String rLib:requires){
+					File f = new File (line + File.separatorChar + rLib);
+					if (!f.exists()){
+						System.out.println("File " + f.getCanonicalPath() + " does not exist");
+						pass = false;
+						break;
+					}
+				}
+
+				if (!pass)
+					continue;
+
+				String libPath = (new File(line)).getCanonicalPath(); 
+				if (jlp.length() == 0)
+					jlp = libPath;
+				else
+					jlp = jlp + File.pathSeparatorChar + libPath;			
+				break;
+			}
+			//Get path to HDFLib
+			System.out.println("Japsa requires JRI library installed in order to run np.speciesTyping");
+			while (true){
+				System.out.print("Path to JRI library: [none]?");
+				line = scanner.nextLine();
+				line = line.trim();
+				if (line.length() <= 0)
+					break;
+
+
+				String [] fNix = {"libjri.so"};
+				String [] fWindows = {"jri.dll","libjri.lib"};
+
+				String [] requires = isWindows?fWindows:fNix;
+
+				boolean pass = true;
+				for (String rLib:requires){
+					File f = new File (line + File.separatorChar + rLib);
+					if (!f.exists()){
+						System.out.println("File " + f.getCanonicalPath() + " does not exist");
+						pass = false;
+						break;
+					}
+				}
+				if (!pass)
+					continue;
+
+				String libPath = (new File(line)).getCanonicalPath(); 
+				if (jlp.length() == 0)
+					jlp = libPath;
+				else
+					jlp = jlp + File.pathSeparatorChar + libPath;			
+				break;
+			}
+			//while
+		}
+		scanner.close();
+
+		if (jlp.length() > 0){
+			javaCommand += " -Djava.library.path="+jlp;	
+		}
+
+		System.out.println("Finished copying libraries\n");
+	}
+	/**
+	 * 
+	 * @param masterScript
+	 * @throws IOException
+	 */
+	public static void setUpScripts(ArrayList<Object> toolList, String masterScript) 
+			throws IOException{		
+		System.out.println("Set upting scripts in " + masterScript + ":");
+		boolean isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
+		//Set up differences between windows and the rest
+		String suffixStr = isWindows?".bat":"";
+		String echoStr = isWindows?"echo ":"";
+
+		File outJsa = new File(japsaPath + File.separator +  "bin" + File.separator + masterScript + suffixStr);
+		PrintStream outJsaMain = new PrintStream(new FileOutputStream(outJsa));
+		if (!isWindows){
+			outJsaMain.println("#!/bin/sh\n\ncat << EOF");			
+		}else{
+			outJsaMain.println("@echo off");
+		}
+
+		outJsaMain.print(echoStr + "Japsa: A Java Package for Statistical Sequence Analysis\n"
+				+ echoStr + "Version " + VERSION + ", Built on " + (new Date()));
+
+		if (compiler != null){
+			outJsaMain.println(" with " + compiler);
+		}	
+		else
+			outJsaMain.println();		
+
+		outJsaMain.println(echoStr + "List of tools:");		
+
+		for (Object obj : toolList) {	
+			if (!(obj instanceof Class<?>)){
+				outJsaMain.println(echoStr);
+				outJsaMain.printf(echoStr + "%s\n",obj);
+				continue;
+			}				
+			Class<?> tool = (Class<?>) obj;			
+
+			Deployable annotation = tool.getAnnotation(Deployable.class);
+			File file = new File(japsaPath + File.separator +  "bin" + File.separator + annotation.scriptName() + suffixStr);
+
+			if(isWindows){
+				PrintStream out = new PrintStream(new FileOutputStream(file));
+				out.println("@echo off");			
+
+				out.println("if \"%JSA_MEM%\"==\"\" (set JSA_MEM=" + maxMem+")");			
+
+				out.println("set JSA_CP=" + classPath);
+				out.println();
+				out.println(javaCommand +" -classpath %JSA_CP% " + tool.getCanonicalName() + " %*");
+				out.close();				
+			}else{
+				PrintStream out = new PrintStream(new FileOutputStream(file));
+				out.println("#!/bin/sh");
+				out.println("case $JSA_MEM in\n  '')JSA_MEM="+maxMem +";;\n  *);;\nesac\n\n");
+				out.println("case $JSA_CP in\n  '')JSA_CP="
+						+ classPath
+						+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
+
+				//out.println("JSA_CMD=\"`basename $0` $@\"\n");
+
+				out.println(javaCommand + " -classpath ${JSA_CP} "
+						+ tool.getCanonicalName() + " \"$@\"");
+				out.close();
+
+				Runtime.getRuntime().exec(
+						"chmod a+x " + file.getCanonicalPath());	
+			}
+			System.out.println(" " + file.getCanonicalPath() + " created");
+			outJsaMain.printf(echoStr + "  %-23s  %s\n", annotation.scriptName(),	annotation.scriptDesc());
+		}
+		//Done				
+		if (!isWindows){
+			outJsaMain.println("\nEOF");				
+
+		}
+		outJsaMain.close();
+		if (!isWindows){
+			Runtime.getRuntime().exec(
+					"chmod a+x " + outJsa.getCanonicalPath());
+		}
+		System.out.println("Done " + masterScript + "\n");
+	}
+
+
+	public static void uninstallLibraries() throws IOException{
+		if (japsaPath.startsWith("~/")) {
+			japsaPath = System.getProperty("user.home") + japsaPath.substring(1);
+		}
+		
+		File japsaLib = new File(japsaPath + File.separator + "lib" + File.separator + "japsa");
+		
+		File to = new File (japsaLib.getCanonicalPath()  + File.separator + japsaJar);
+		to.delete();
+		
+		StringSeparator ss = new StringSeparator(libs, ':');
+		while (ss.hasNext()) {
+			String l = ss.next();
+			if (l.length() > 0){				
+				to = new File (japsaLib.getCanonicalPath()  + File.separator + l);				
+				to.delete();								
+			}
+		}		
+		
+	}
+
+
+	public static void uninstallScripts(ArrayList<Object> toolList, String masterScript) throws IOException{
+		boolean isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
+		//Set up differences between windows and the rest
+		String suffixStr = isWindows?".bat":"";
+
 		// Delete all the scripts			
-		for (Object obj : tools) {				
+		for (Object obj : toolList) {				
 			if (!(obj instanceof Class<?>)){			
 				continue;
 			}				
 			Class<?> tool = (Class<?>) obj;
 			Deployable annotation = tool.getAnnotation(Deployable.class);
-			File file = new File(dir + File.separator +  "bin" + File.separator + annotation.scriptName());
+			File file = new File(japsaPath + File.separator +  "bin" + File.separator + annotation.scriptName());
 			System.out.println("rm " + file.getCanonicalPath());				
 			file.delete();
 		}
+		File jsa = new File(japsaPath + File.separator +  "bin" + File.separator + masterScript + suffixStr);
 		System.out.println("rm " + jsa.getCanonicalPath());
 		jsa.delete();
 	}
+
 
 	public static void main(String[] args) throws NoSuchFieldException,
 	SecurityException, IOException {
 		CommandLine cmdLine = new CommandLine();
 		cmdLine.addString("mode", "install", "install or uinstall");
 		cmdLine.addString("libs", "", "list of extenal libraries");
-		cmdLine.addString("japsa", "japsa.jar", "name of the jar file");
-		cmdLine.addString("prefix", ".", "the directory to install");
-		cmdLine.addString("jlp", "", "java.library.path");
-		cmdLine.addString("xmx", "7000m", "Set default maximum memory");
+		cmdLine.addString("installDir", null, "the directory to install");
+		cmdLine.addString("jlp", null, "Directories to libhdf5 and to jri");
+		cmdLine.addString("xmx", null, "Set default maximum memory");
 		cmdLine.addString("compiler", null, "Compiler version");
 		cmdLine.addBoolean("version", false, "Get version and exit");
-		cmdLine.addBoolean("windows", false, "Install for windows");
-		
+		cmdLine.addString("server", "na", "Run on server: yes/true for yes; no/false for no");
+				
 		cmdLine.addStdHelp();// help
-
 		/********************** Standard processing ***************************/
 		args = cmdLine.parseLine(args);
 		if (cmdLine.getBooleanVal("help")) {
@@ -358,32 +549,37 @@ public class Deploy {
 		if (cmdLine.getBooleanVal("version")){
 			System.out.println(VERSION);
 			System.exit(0);
-		}
+		}		
+
 		///Get command lines option
-		String dirPath = cmdLine.getStringVal("prefix").trim();
 		String mode = cmdLine.getStringVal("mode");
-		// Java doesnt understand ~ as home directory
-		if (dirPath.startsWith("~/")) {
-			dirPath = System.getProperty("user.home") + dirPath.substring(1);
-		}			
 		
-		compiler = cmdLine.getStringVal("compiler");		
-		jlp = cmdLine.getStringVal("jlp");		
-		libs = cmdLine.getStringVal("libs");
-		japsa = cmdLine.getStringVal("japsa");
-		dir = new File(dirPath);		
-		jsa = new File(dir + File.separator + "bin"+ File.separator + "jsa");		
-		mem = cmdLine.getStringVal("xmx");
+		japsaPath = cmdLine.getStringVal("installDir");
+		compiler  = cmdLine.getStringVal("compiler");		
+		jlp       = cmdLine.getStringVal("jlp");		
+		libs      = cmdLine.getStringVal("libs");		
+		maxMem    = cmdLine.getStringVal("xmx");			
+		String serverOpt = cmdLine.getStringVal("server").toLowerCase();
+		if(serverOpt.equals("yes") || serverOpt.equals("true"))
+			server = 1;		
+		if(serverOpt.equals("no") || serverOpt.equals("false"))
+			server = 0;		
 		
+		
+		japsaJar = "japsa.jar";
 		/**********************************************************************/
 		
-		if ("install".equals(mode)) {
-			if (cmdLine.getBooleanVal("windows"))
-				installWindows();
-			else
-				install();
+		
+		
+
+		if ("install".equals(mode)) {		
+			setUpDirectory();
+			setUpScripts(tools, "jsa");			
+			System.out.println("Japsa installtion complete, please set your path to " + japsaPath + File.separator+"bin");
 		} else if ("uninstall".equals(mode)) {
-			uninstall();
+			//japsaPath must have been set
+			uninstallLibraries();
+			uninstallScripts(tools, "jsa");			
 		} else {
 			System.err.println("Mode " + mode + " not recognised");
 			System.err.println(cmdLine.usage());

@@ -808,8 +808,7 @@ public class JapsaAnnotation {
 
 
 	public static JapsaAnnotation readGFF(BufferedReader in, int upStr, int downStr, String list) throws IOException{
-		boolean notAll = !list.equals("all");
-		
+		boolean notAll = !list.equals("all");		
 
 		String line;		
 		JapsaAnnotation anno =  new JapsaAnnotation();

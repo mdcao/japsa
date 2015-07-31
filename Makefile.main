@@ -82,12 +82,13 @@ CLASS_FILES := $(subst $(SRC_DIR)/,$(CLASS_DIR)/,$(JAVA_FILES:.java=.class))
 
 
 #####################Make targets 
-all:classes 
 
 VPATH=$(subst ' ',':',$(PACKAGE_DIRS)) 
 $(CLASS_DIR)/%.class: $(SRC_DIR)/%.java $(CLASS_DIR)
 	$(JCC) -sourcepath $(SRC_DIR) -cp $(CLASS_DIR):$(LIBS) -nowarn -d $(CLASS_DIR) $(JDEBUGFLAGS) $<
 
+
+all: jar
 
 classes:  $(CLASS_FILES)
 
@@ -96,44 +97,58 @@ classes:  $(CLASS_FILES)
 $(CLASS_DIR):
 	mkdir -p $(CLASS_DIR)
 
-jar: classes
+$(JAR_FILE):classes
 	jar cf $(JAR_FILE) -C $(CLASS_DIR) . 
+
+jar: $(JAR_FILE)
+
 clean:
 	@@for i in $(PACKAGE_DIRS); do \
 		echo "rm -f $(SRC_DIR)/$$i/*.bak $(SRC_DIR)/$$i/*.class $(SRC_DIR)/$$i/*~ $(CLASS_DIR)/$$i/*.class"; \
 		rm -f $(SRC_DIR)/$$i/*.bak $(SRC_DIR)/$$i/*.class $(SRC_DIR)/$$i/*~ $(CLASS_DIR)/$$i/*.class; \
 	done
+	rm -f install.sh install.bat
 
 ##############################################################################
 #                            INSTALLATION                   
 ##############################################################################
-ifndef INSTALL_DIR
-INSTALL_DIR=~/.usr/local
+
+ifdef INSTALL_DIR
+O_INS_DIR=-installDir=\"${INSTALL_DIR}\"
+else
+O_INS_DIR=
 endif
+
 
 ifdef JLP
-LP="-jlp=${JLP}"
+O_JLP=-jlp=\"${JLP}\"
+else
+O_JLP=
 endif
 
-install: jar
-	@@mkdir -p $(INSTALL_DIR)/lib/japsa/ $(INSTALL_DIR)/bin && \
-	cp $(addprefix $(LIB_DIR)/, $(EXT_LIBS)) $(JAR_FILE) $(INSTALL_DIR)/lib/japsa && \
-	java -cp $(JAR_FILE) japsa.util.deploy.Deploy --japsa  $(JAR_FILE) ${LP} --prefix "`echo $(INSTALL_DIR)`" --libs "$(subst $(SPACE),:, $(EXT_LIBS))" --compiler "`$(JCC) -version 2>&1`" && \
-	echo  "Japsa installed, make sure $(INSTALL_DIR)/bin is in your path!"
+ifdef MXMEM
+O_MXMEM=-xmx=${O_MXMEM}
+else
+O_MXMEM=
+endif
+
+
+pre-install: jar
+	echo "java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) --compiler \"`$(JCC) -version 2>&1`\"" > install.sh
+	chmod u+x install.sh
+	echo "java -cp $(JAR_FILE);$(LIB_DIR)\guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) --compiler \"`$(JCC) -version 2>&1`\"" > install.bat
+
+install: pre-install
+	./install.sh
 
 uninstall:
-	java -cp $(JAR_FILE) japsa.util.deploy.Deploy --prefix "`echo $(INSTALL_DIR)`" --mode uninstall --libs "$(subst $(SPACE),:, $(EXT_LIBS))" 
-	rm -f  $(INSTALL_DIR)/lib/japsa/$(JAR_FILE)  $(addprefix $(INSTALL_DIR)/lib/japsa/, $(EXT_LIBS));rmdir $(INSTALL_DIR)/bin;rmdir $(INSTALL_DIR)/lib/japsa;rmdir $(INSTALL_DIR)/lib;echo "Japsa uninstalled!"
+	java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode uninstall --libs $(subst $(SPACE),:, $(EXT_LIBS)) ${O_INS_DIR} && echo "Japsa uninstalled!"
 
-
-windows-release:jar
-	@@mkdir -p JapsaWindowRelease/lib/japsa/ JapsaWindowRelease/bin && \
-	cp -f $(addprefix $(LIB_DIR)/, $(EXT_LIBS)) $(JAR_FILE) JapsaWindowRelease/lib/japsa && \
-	java -cp $(JAR_FILE) japsa.util.deploy.Deploy --japsa $(JAR_FILE) --prefix JapsaWindowRelease --libs "$(subst $(SPACE),:, $(EXT_LIBS))" --compiler "`$(JCC) -version 2>&1`" -jlp="%JHDF5_LIB%" -windows -xmx 2000m && \
-	zip -r  JapsaWindowRelease.zip JapsaWindowRelease/
-
-
-
-
+release: pre-install
+	@@mkdir -p JapsaRelease/libs/ && \
+	cp -f $(addprefix $(LIB_DIR)/, $(EXT_LIBS)) $(JAR_FILE) JapsaWindowRelease/libs && \
+	cp -f $(JAR_FILE) install.sh install.bat  JapsaRelease/ && \
+	zip -r  JapsaRelease.zip JapsaRelease/ &&
+	tar zcvf JapsaRelease.tar.gz JapsaRelease/
 #############################################################################
 
