@@ -4,8 +4,6 @@ Installation
 There are two methods to install Japsa in your computer:
 
 
-
-
 1. Install from the pre-compiled package
 ########################################
 
@@ -44,10 +42,21 @@ agree with its suggestion, just type Enter. The questions are:
 2. Obtain source code and compile
 #################################
 
+This method is recommended as japsa will be compiled and with the same Java
+version used to run. However, Java Development Kit and Make, and preferably
+git are required. This method has not been tested with Windows.
+
 First download the latest source code::
 
    git clone https://github.com/mdcao/japsa
-   cd japsa   
+   cd japsa
+
+or download a release::
+   wget    https://github.com/mdcao/japsa/releases/download/v15.8a/JapsaRelease.tar.gz
+   tar zxvf JapsaRelease
+   cd JapsaRelease
+   
+and compile and install::      
    make install [INSTALL_DIR=~/.usr/local] [MXMEM=7000m] [SERVER=true] [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
 
 This will install japsa according the directives:
@@ -58,9 +67,12 @@ This will install japsa according the directives:
 * *JLP*: specifies paths to *libjhdf5*  (needed for npReader) and *libjri.so*
   (needed for real-time species typing).
 
-If any of the above directives are not speficied, the installation will ask
+If any of the above directives are not specified, the installation will ask
 during the installation.
 
 To uninstall Japsa, run the following in the japsa directory::
 
    make uninstall INSTALL_DIR=~/.usr/local
+   
+ where INSTALL_DIR points the directory Japsa was installed.
+
