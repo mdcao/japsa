@@ -51,13 +51,13 @@ First download the latest source code::
    git clone https://github.com/mdcao/japsa
    cd japsa
 
-or download a release::
+or download from a release::
 
-   wget    https://github.com/mdcao/japsa/releases/download/v15.8a/JapsaRelease.tar.gz
-   tar zxvf JapsaRelease
-   cd JapsaRelease
+   wget https://github.com/mdcao/japsa/archive/v15.8a.tar.gz   
+   tar zxvf v15.8a.tar.gz
+   cd japsa-v15.8a
    
-and compile and install::      
+and run `make' to compile and install japsa::      
 
    make install [INSTALL_DIR=~/.usr/local] [MXMEM=7000m] [SERVER=true] [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
 
