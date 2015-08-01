@@ -29,5 +29,5 @@ algorithms, implementation, documentation and feedback:
 * David Powell
 
 ### License
-Japsa is released under the accompanying BSD-like licence.
+Japsa is released under the accompanying BSD-like license.
 
