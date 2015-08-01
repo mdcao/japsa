@@ -12,8 +12,7 @@ Quick installation guide:
     make install [INSTALL_DIR=~/.usr/local] [MXMEM=7000m] [SERVER=true] [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
 
 Details of installation (including for Windows) and usage of Japsa can be found 
-in its documentation hosted on  
-[ReadTheDocs](http://japsa.readthedocs.org/en/latest/index.html) 
+in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/latest/index.html) 
 
 ### Authors and Contributors
 Japsa was mainly developed and curated by Minh Duc Cao (@mdcao). The following 
