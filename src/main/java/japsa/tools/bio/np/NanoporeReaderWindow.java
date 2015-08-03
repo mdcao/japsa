@@ -34,6 +34,7 @@
 package japsa.tools.bio.np;
 
 import japsa.tools.util.DynamicHistogram;
+import japsa.util.JapsaException;
 import japsa.util.Logging;
 
 import java.awt.EventQueue;
@@ -716,6 +717,12 @@ public class NanoporeReaderWindow implements Runnable{
 	DynamicHistogram histoLengthDataSet, histoQualDataSet;
 
 	boolean stillRun = true;
+	
+	public void interupt(JapsaException e){
+		this.stillRun = false;
+		reader.wait = false;
+		JOptionPane.showMessageDialog(null, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+	}
 
 	public void run() {		
 		int lastIndexLengths = 0;//, lastIndexLengths2D = 0, lastIndexLengthsComp = 0, lastIndexLengthsTemp = 0;

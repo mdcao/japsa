@@ -51,6 +51,7 @@ import japsa.tools.util.StreamClient;
 import japsa.util.CommandLine;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
+import japsa.util.JapsaException;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
@@ -80,13 +81,13 @@ public class NanoporeReaderStream
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
 		cmdLine.addString("folder",null, "The download folder");
 		cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");
-		
+
 
 		cmdLine.addBoolean("fail",false, "Include fail reads");		
 		cmdLine.addBoolean("realtime",false, "Whether to run in realtime");
 		cmdLine.addString("pFolderName",null, "Folder to move processed files to");
-		cmdLine.addBoolean("GUI",false, "Whether run with GUI");
-		
+		cmdLine.addBoolean("GUI",false, "Run the application with a Graphical User Interface");
+
 		cmdLine.addString("streamServers",null, "Stream output to some servers, format \"IP:port,IP:port\" (no spaces)");
 
 		cmdLine.addInt("interval", 30,  "Interval between check in seconds");
@@ -133,7 +134,8 @@ public class NanoporeReaderStream
 		reader.output = output;
 		reader.format = format.toLowerCase();
 		reader.realtime = realtime;
-		reader.streamServers = streamServers;		
+		reader.streamServers = streamServers;
+		NanoporeReaderWindow mGUI = null;
 
 		if (GUI){
 			reader.realtime = true;
@@ -142,7 +144,7 @@ public class NanoporeReaderStream
 			reader.ready = false;//wait for the command from GUI
 
 			TimeTableXYDataset dataset = new TimeTableXYDataset();
-			NanoporeReaderWindow mGUI = new NanoporeReaderWindow(reader,dataset);
+			mGUI = new NanoporeReaderWindow(reader,dataset);
 
 			while (!reader.ready){
 				Logging.info("NOT READY");
@@ -168,8 +170,19 @@ public class NanoporeReaderStream
 
 
 		//reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
-		reader.readFastq(pFolderName);
-		reader.close();
+		try{
+			reader.readFastq(pFolderName);
+		}catch (JapsaException e){
+			System.err.println(e.getMessage());
+			e.getStackTrace();
+			if (mGUI != null)
+				mGUI.interupt(e);
+		}catch (Exception e){
+			throw e;
+		}finally{		
+			reader.close();
+		}
+
 
 	}//main
 
@@ -253,11 +266,11 @@ public class NanoporeReaderStream
 		fq.print(sos);
 		if (networkOS != null){
 			for (SequenceOutputStream out:networkOS)
-			fq.print(out);
+				fq.print(out);
 		}
 	}
 
-	public boolean readFastq2(String fileName) throws IOException{
+	public boolean readFastq2(String fileName) throws JapsaException, IOException{
 		Logging.info("Open " + fileName);
 		try{					
 			NanoporeReader npReader = new NanoporeReader(fileName);
@@ -347,6 +360,8 @@ public class NanoporeReaderStream
 			}
 
 			fileNumber ++;			
+		}catch (JapsaException e){
+			throw e;
 		}catch (Exception e){
 			Logging.error("Problem with reading " + fileName + ":" + e.getMessage());
 			e.printStackTrace();
@@ -373,7 +388,7 @@ public class NanoporeReaderStream
 	 * @param stats: print out statistics
 	 * @throws IOException 
 	 */
-	public void readFastq(String pFolder) throws IOException{
+	public void readFastq(String pFolder) throws JapsaException, IOException{
 		if (pFolder != null ){
 			pFolder = pFolder + File.separatorChar;
 			Logging.info("Copy to " + pFolder);

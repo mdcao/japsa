@@ -50,6 +50,7 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.IntArray;
+import japsa.util.JapsaException;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
@@ -450,8 +451,12 @@ public class NanoporeReader// implements Closeable
 	 * @throws OutOfMemoryError
 	 * @throws Exception
 	 */
-	public NanoporeReader (String fileName) throws OutOfMemoryError, Exception{		
+	public NanoporeReader (String fileName) throws JapsaException, OutOfMemoryError, Exception{		
 		FileFormat fileFormat = FileFormat.getFileFormat(FileFormat.FILE_TYPE_HDF5);
+		
+		if (fileFormat == null){
+			throw new JapsaException("Cannot read HDF5 file, possily because JHI5 is not installed or configured. Please refer to npReader installation guide or contact the deverlopers.");
+		}
 
 		//Logging.info("Open " + fileName);
 		f5File = fileFormat.createInstance(fileName, FileFormat.READ);

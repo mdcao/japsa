@@ -226,7 +226,8 @@ public class Deploy {
 				}
 				cp = cp + File.pathSeparator + to.getCanonicalPath();
 			}
-		}		
+		}	
+		System.out.println("  Directory " + japsaLib.getCanonicalPath() + " set up");
 		return cp;
 	}
 
@@ -256,6 +257,7 @@ public class Deploy {
 		Scanner scanner = new Scanner(System.in);
 		String line = null;
 
+		System.out.println("Setting up Japsa Directory and copying libraries");
 		////////////////////////////////////////////////////////////////////////////
 		if (japsaPath == null){
 			//Get directory to install and create
@@ -582,7 +584,8 @@ public class Deploy {
 		if ("install".equals(mode)) {		
 			setUpDirectory();
 			setUpScripts(tools, "jsa");			
-			System.out.println("Japsa installtion complete, please set your path to " + japsaPath + File.separator+"bin");
+			//System.out.println("Japsa installtion complete, please set your path to " + japsaPath + File.separator+"bin");
+			System.out.println("Japsa installtion complete\nFor your convenience, please add the following directory your PATH: " + Deploy.japsaPath + File.separator+"bin\n");
 		} else if ("uninstall".equals(mode)) {
 			//japsaPath must have been set
 			if (uninstallLibraries())
