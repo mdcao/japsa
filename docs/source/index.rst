@@ -29,7 +29,8 @@ Contents:
    
    depend
    install
-   usage      
+   usage
+   tools/index   
    credit
    license
 
