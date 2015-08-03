@@ -18,7 +18,7 @@ ideas, algorithms, implementation, documentation and feedback:
 
 
 Japsa is developed mainly in `Eclipse <http://www.eclipse.org/>`_.
-Its repository is pushed regularly to `GitHub <https://github.com/mdcao/japsa/>`_
+Its repository is regularly pushed to `GitHub <https://github.com/mdcao/japsa/>`_
 and a bit lesser to `GitBucket <https://bitbucket.org/mdcao/japsa/>`_.
 Documentation is written in
 `reStructuredText <http://docutils.sourceforge.net/rst.html>`_
