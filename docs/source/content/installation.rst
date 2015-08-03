@@ -42,11 +42,11 @@ agree with its suggestion, just type Enter. The questions are:
 2. Obtain source code and compile
 #################################
 
-This method is recommended as japsa will be compiled and with the same Java
-version used to run. However, Java Development Kit and Make, and preferably
-git are required. This method has not been tested with Windows.
+This installation method is recommended as japsa will be compiled with the same
+Java version used to run it. This method however requires Java Development Kit
+and Make to be installed. This method has not been tested with Windows.
 
-First download the latest source code::
+First, download the latest source code::
 
    git clone https://github.com/mdcao/japsa
    cd japsa
@@ -76,5 +76,5 @@ To uninstall Japsa, run the following in the japsa directory::
 
    make uninstall INSTALL_DIR=~/.usr/local
    
- where INSTALL_DIR points the directory Japsa was installed.
+where INSTALL_DIR points the directory Japsa was installed.
 

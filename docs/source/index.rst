@@ -6,20 +6,32 @@
 Welcome to Japsa's documentation!
 =================================
 
-Japsa (*JAva Package for Statistical Sequence Analysis*) is a package for
-analysis of biological sequences data, written in Java.
-The package contains ready-to-run analysis tools, together with the Java
-library for further development.
+Japsa (*JAva Package for Sequence Analysis*) is a free, open source package for
+analysis of biological sequences data, written in Java. It contains a wide
+range of analysis tools that biologists and bioinformaticians would routinely
+use but may not be available elsewhere. It also provides a Java library to be
+incorporated in other Java projects.
+
+The package aims to be lightweight (fast and memory efficient) and to use the
+least possible dependencies. Its tools have a consistent command line interface
+and support reading from/writing to streams whenever possible.
+
+Japsa's source code is licensed under the BSD license and is available on
+`GitHub <https://github.com/mdcao/japsa/>`_.
+
 
 Contents:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 0
    
    content/dependencies
-   content/installation  
-   
-
+   content/installation
+   content/usage   
+   content/tools
+   content/API
+   content/credit
+   content/license
 
 Indices and tables
 ==================
