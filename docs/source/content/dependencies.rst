@@ -30,3 +30,6 @@ version of Java runtime, you will need to build from source, which requires:
 * make
 * git/wget (optional)
 
+
+Note that a specific tool may require extra dependencies (such as *bwa* etc).
+Check the documentation for indivisial tools for more detailed information.

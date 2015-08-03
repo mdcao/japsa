@@ -1,7 +1,12 @@
 Installation
 ------------
 
-There are two methods to install Japsa in your computer:
+There are two methods to install Japsa in your computer. The first method
+(using pre-compiled package in JDK 1.6) is straight-forward and can be used for
+any operating systems, including Windows. The second method (compile from source
+code) requires some extra tools (make and JDK) but may yield better runtime
+performance as the package will be compiled with the same version of the Java
+Virtual Machine used to run.
 
 
 1. Install from the pre-compiled package
