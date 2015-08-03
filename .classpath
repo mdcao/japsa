@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="src" path="src/ext/java"/>
+	<classpathentry kind="src" path="src/dev/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="lib" path="libs/colloquial.jar"/>
+	<classpathentry kind="lib" path="libs/commons-math3-3.0.jar"/>
+	<classpathentry kind="lib" path="libs/sam-1.84.jar"/>
+	<classpathentry kind="lib" path="libs/htsjdk-1.126.jar" sourcepath="libs/src/htsjdk-1.126_src.zip"/>
+	<classpathentry kind="lib" path="libs/jfreechart-1.0.19.jar"/>
+	<classpathentry kind="lib" path="libs/JRI.jar"/>
+	<classpathentry kind="lib" path="libs/jcommon-1.0.23.jar"/>
+	<classpathentry kind="lib" path="libs/jhdf5.jar"/>
+	<classpathentry kind="lib" path="libs/jhdfobj.jar"/>
+	<classpathentry kind="lib" path="libs/javaml-0.1.7.jar"/>
+	<classpathentry kind="lib" path="libs/mpi.jar"/>
+	<classpathentry kind="lib" path="libs/junit-4.11.jar"/>
+	<classpathentry kind="lib" path="/usr/lib/jvm/java-8-oracle/jre/lib/javaws.jar"/>
+	<classpathentry kind="lib" path="libs/guava-18.0.jar" sourcepath="libs/src/guava-18.0-sources.jar"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>
