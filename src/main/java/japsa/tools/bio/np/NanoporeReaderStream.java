@@ -34,7 +34,6 @@
 
 package japsa.tools.bio.np;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -46,13 +45,13 @@ import org.jfree.data.time.TimeTableXYDataset;
 
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
 import japsa.tools.util.StreamClient;
 import japsa.util.CommandLine;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
+import japsa.util.deploy.Deploy;
 import japsa.util.deploy.Deployable;
 
 /**
@@ -61,46 +60,106 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.np.f5reader", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
+@Deployable(
+	scriptName = "jsa.np.f5reader", 
+	scriptDesc = "Extract Oxford Nanopore sequencing data from FAST5 files, perform an initial analysis of the date and stream them to realtime analysis pipelines",
+	options = {
+		//////////////////////////////////////////////////////////
+		"B" 
+		+ Deploy.FIELD_SEP + "GUI"				
+		+ Deploy.FIELD_SEP + false 
+		+ Deploy.FIELD_SEP + "Run with a Graphical User Interface" 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////
+		"B" 
+		+ Deploy.FIELD_SEP + "realtime"	
+		+ Deploy.FIELD_SEP + false 
+		+ Deploy.FIELD_SEP + "Run the program in real-time mode, i.e., keep waiting for new data from Metrichon agent " 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////
+		"S" 
+		+ Deploy.FIELD_SEP + "folder"				
+		+ Deploy.FIELD_SEP + "null"
+		+ Deploy.FIELD_SEP + "The folder containing base-called reads" 
+		+ Deploy.FIELD_SEP + false
+		,//////////////////////////////////////////////////////////
+		"B" 
+		+ Deploy.FIELD_SEP + "fail"				
+		+ Deploy.FIELD_SEP + false 
+		+ Deploy.FIELD_SEP + "Get sequence reads from fail folder" 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////		
+		"S" 
+		+ Deploy.FIELD_SEP + "output"				
+		+ Deploy.FIELD_SEP + "-" 
+		+ Deploy.FIELD_SEP + "Name of the output file, - for stdout" 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////		
+		"S" 
+		+ Deploy.FIELD_SEP + "streams"				
+		+ Deploy.FIELD_SEP + "null" 
+		+ Deploy.FIELD_SEP + "Stream output to some servers, format \"IP:port,IP:port\" (no spaces)" 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////		
+		"S" 
+		+ Deploy.FIELD_SEP + "format"				
+		+ Deploy.FIELD_SEP + "fastq" 
+		+ Deploy.FIELD_SEP + "Format of sequence reads (fastq or fasta)" 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////
+		"I"
+		+ Deploy.FIELD_SEP + "minLength"				
+		+ Deploy.FIELD_SEP + 0 
+		+ Deploy.FIELD_SEP + "Minimum read length" 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////
+		"B"
+		+ Deploy.FIELD_SEP + "number"				
+		+ Deploy.FIELD_SEP + false 
+		+ Deploy.FIELD_SEP + "Add a unique number to read name" 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////
+		"B"
+		+ Deploy.FIELD_SEP + "stats"				
+		+ Deploy.FIELD_SEP + false 
+		+ Deploy.FIELD_SEP + "Generate a report of read statistics" 
+		+ Deploy.FIELD_SEP + false
+		,////////////////////////////////////////////////////////
+		"B"
+		+ Deploy.FIELD_SEP + "time"				
+		+ Deploy.FIELD_SEP + false 
+		+ Deploy.FIELD_SEP + "Extract the sequencing time of each read -- only work with Metrichon > 1.12" 
+		+ Deploy.FIELD_SEP + false
+	}
+	)
 public class NanoporeReaderStream
 {
 	public static void main(String[] args) throws OutOfMemoryError, Exception {
 		/*********************** Setting up script ****************************/
 		Deployable annotation = NanoporeReaderStream.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options]",
-				annotation.scriptDesc());
+		CommandLine cmdLine = Deploy.setupCmdLine(annotation);			
+		//cmdLine.addString("output", "-", "Name of the output file, -  for stdout");//
+		//cmdLine.addInt("minLength", 0, "Minimum sequence length");
+		//cmdLine.addBoolean("stats", false, "Compute statistics of reads");
+		//cmdLine.addBoolean("number", false, "Add a unique number to read name");
+		//cmdLine.addBoolean("time", false, "Getting the sequenceing time of the read -- experimental");
 
-		cmdLine.addString("output", "-",
-				"Name of the output file, -  for stdout");
-		cmdLine.addInt("minLength", 0, 
-				"Minimum sequence length");
-		cmdLine.addBoolean("stats", false, "Compute statistics of reads");
-		cmdLine.addBoolean("number", false, "Add a unique number to read name");
-		cmdLine.addBoolean("time", false, "Getting the sequenceing time of the read -- experimental");
-		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
-		cmdLine.addString("folder",null, "The download folder");
-		cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");
+		//cmdLine.addString("folder",null, "The download folder");
+		//cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");
+		//cmdLine.addBoolean("fail",false, "Include fail reads");		
+		//cmdLine.addBoolean("realtime",false, "Whether to run in realtime");
+		//cmdLine.addString("pFolderName",null, "Folder to move processed files to");
+		//cmdLine.addBoolean("GUI",false, "Run the application with a Graphical User Interface");
+		//cmdLine.addString("streamServers",null, "Stream output to some servers, format \"IP:port,IP:port\" (no spaces)");
+		//cmdLine.addInt("interval", 30,  "Interval between check in seconds");		
+		//cmdLine.addInt("age", 30,  "The file has to be this old in seconds");
 
-
-		cmdLine.addBoolean("fail",false, "Include fail reads");		
-		cmdLine.addBoolean("realtime",false, "Whether to run in realtime");
-		cmdLine.addString("pFolderName",null, "Folder to move processed files to");
-		cmdLine.addBoolean("GUI",false, "Run the application with a Graphical User Interface");
-
-		cmdLine.addString("streamServers",null, "Stream output to some servers, format \"IP:port,IP:port\" (no spaces)");
-
-		cmdLine.addInt("interval", 30,  "Interval between check in seconds");
-		cmdLine.addInt("age", 30,  "The file has to be this old in seconds");
-
-
+		//cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 
-		String output = cmdLine.getStringVal("output");
-		String f5list = cmdLine.getStringVal("f5list");
-		String folder = cmdLine.getStringVal("folder");
-		String pFolderName = cmdLine.getStringVal("pFolderName");
+		String output = cmdLine.getStringVal("output");		
+		String folder = cmdLine.getStringVal("folder");		
 		int minLength  = cmdLine.getIntVal("minLength");
 		boolean stats  = cmdLine.getBooleanVal("stats");
 		boolean number  = cmdLine.getBooleanVal("number");
@@ -109,13 +168,18 @@ public class NanoporeReaderStream
 		boolean realtime  = cmdLine.getBooleanVal("realtime");
 		boolean fail  = cmdLine.getBooleanVal("fail");
 		String format = cmdLine.getStringVal("format");		
-		String streamServers = cmdLine.getStringVal("streamServers");
-		int interval = cmdLine.getIntVal("interval");//in second
-		int age = cmdLine.getIntVal("age") * 1000;//in second
+		String streamServers = cmdLine.getStringVal("streams");
 
+		//String pFolderName = cmdLine.getStringVal("pFolderName");
+		//String f5list = cmdLine.getStringVal("f5list");
+		//int interval = cmdLine.getIntVal("interval");//in second		
+		//int age = cmdLine.getIntVal("age") * 1000;//in second
+		int age = 20 * 1000;//cmdLine.getIntVal("age") * 1000;//in second
+		int interval = 30;
+		String pFolderName = null;
 
-		if (folder == null && f5list == null){
-			Logging.exit("One of folder and f5list has to be set", 1);
+		if (!GUI && folder == null){// && f5list == null){
+			Logging.exit("Download folder need to be specified", 1);
 		}
 
 		NanoporeReaderStream reader = new NanoporeReaderStream();
@@ -128,7 +192,7 @@ public class NanoporeReaderStream
 		reader.interval = interval;
 		reader.age = age;
 
-		reader.f5List = f5list;
+		//reader.f5List = f5list;
 		reader.folder = folder;		
 		reader.doFail = fail;
 		reader.output = output;
@@ -163,11 +227,7 @@ public class NanoporeReaderStream
 				Logging.exit(msg, 1);
 			}
 		}
-
-
-
 		//reader need to wait until ready to go
-
 
 		//reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
 		try{
@@ -183,7 +243,6 @@ public class NanoporeReaderStream
 			reader.close();
 		}
 
-
 	}//main
 
 	public String prepareIO(){
@@ -191,6 +250,7 @@ public class NanoporeReaderStream
 		try{
 			sos = SequenceOutputStream.makeOutputStream(output);
 			if (streamServers != null && streamServers.trim().length() > 0){
+				@SuppressWarnings("resource")
 				StreamClient streamClient = new StreamClient(streamServers);
 				ArrayList<Socket>  sockets = streamClient.getSockets();
 				networkOS = new ArrayList<SequenceOutputStream>(sockets.size());				
@@ -229,7 +289,8 @@ public class NanoporeReaderStream
 	SequenceOutputStream sos;
 	ArrayList<SequenceOutputStream> networkOS = null;
 	boolean stats, number;
-	String f5List = null, folder = null;
+	String //f5List = null, 
+	folder = null;
 	int minLength = 0;
 	boolean wait = true;
 	boolean realtime = true;
@@ -267,6 +328,14 @@ public class NanoporeReaderStream
 		if (networkOS != null){
 			for (SequenceOutputStream out:networkOS)
 				fq.print(out);
+		}
+	}
+
+	public void flush() throws IOException{
+		sos.flush();
+		if (networkOS != null){
+			for (SequenceOutputStream out:networkOS)
+				out.flush();
 		}
 	}
 
@@ -393,7 +462,7 @@ public class NanoporeReaderStream
 			pFolder = pFolder + File.separatorChar;
 			Logging.info("Copy to " + pFolder);
 		}
-
+		/***********************************************
 		if (f5List != null){
 			Logging.info("Reading in file " + f5List);
 			BufferedReader bf = SequenceReader.openFile(f5List);
@@ -407,7 +476,9 @@ public class NanoporeReaderStream
 				}					
 			}//while
 			bf.close();
-		}else{//folder
+		}else
+		/***********************************************/
+		{//folder
 			HashSet<String> filesDone = new HashSet<String>();
 
 			File mainFolder = new File(folder);

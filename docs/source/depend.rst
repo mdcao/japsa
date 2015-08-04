@@ -1,6 +1,6 @@
-------------
+============
 Dependencies
-------------
+============
 
 Japsa has the following dependencies, which are included in the package.
 

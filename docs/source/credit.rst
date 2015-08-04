@@ -1,6 +1,6 @@
--------
+=======
 Credits
--------
+=======
 
 Japsa is currently maintained by `Minh Duc Cao <http://www.caominhduc.org>`_.
 The following people have contributed to the development of Japsa, including

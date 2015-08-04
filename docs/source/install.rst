@@ -1,6 +1,6 @@
-------------
+============
 Installation
-------------
+============
 
 There are two methods to install Japsa in your computer. The first method
 (using pre-compiled package in JDK 1.6) is straight-forward and can be used for
@@ -16,7 +16,10 @@ Install from the pre-compiled package
 Pre-compiled package of Japsa is made available under each release. Installation
 from this will not require extra build tools such as javac, git, and make.
 
-Just run the install.sh script (install.bat for Windows) in the release directory::
+Just download a JapsaRelease
+(e.g., from  *https://github.com/mdcao/japsa/releases*), unpack the tarball
+and run the install.sh script (install.bat for Windows) in the release
+directory::
  
    tar zxvf JapsaRelease.tar.gz
    cd JapsaRelease
@@ -40,7 +43,6 @@ agree with its suggestion, just type Enter. The questions are:
   installed, and enter the path to file *libjhdf5.so* (on Linux/Unix/Mac) or
   to *jhdf5.dll* (Windows). This is only required if you intend to use npReader(
   jsa.np.f5reader).
-
 
 * *Path to JRI library:* Enter path to JRI library. This is required only for
   running real-time species typing (jsa.np.speciesTyping).

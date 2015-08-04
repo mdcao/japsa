@@ -136,42 +136,28 @@ public class NanoporeReaderWindow implements Runnable{
 		controlPanel.setLayout(null);
 
 		final JPanel inputPanel = new JPanel();
-		inputPanel.setBounds(0, 8, 330, 145);
+		inputPanel.setBounds(0, 8, 330, 120);
 		inputPanel.setBorder(BorderFactory.createTitledBorder("Input"));
 		controlPanel.add(inputPanel);
 		inputPanel.setLayout(null);
 
-		final JRadioButton rdbtnInputStream = new JRadioButton("Read files from input Stream");
+		final JTextField txtDir = new JTextField(reader.folder == null?"":reader.folder);		
+		txtDir.setBounds(28, 51, 300, 20);
+		inputPanel.add(txtDir);		
 
-
-		rdbtnInputStream.setBounds(8, 22, 304, 23);
-		inputPanel.add(rdbtnInputStream);
-
-		final JRadioButton rdbtnF = new JRadioButton("Read files from download directory");
-		rdbtnF.setBounds(8, 48, 289, 23);
-		inputPanel.add(rdbtnF);
-
-		if (reader.folder == null){
-			rdbtnInputStream.setSelected(true);			
-		}else{
-			rdbtnF.setSelected(true);
-		}
-
-		final ButtonGroup group = new ButtonGroup();
-		group.add(rdbtnInputStream);
-		group.add(rdbtnF);
-
-		final JTextField txtDir = new JTextField(reader.folder);		
-		txtDir.setBounds(18, 75, 300, 20);
-		inputPanel.add(txtDir);
+		//final ButtonGroup group = new ButtonGroup();
 
 		final JButton btnChange = new JButton("Change");
-		btnChange.setBounds(28, 105, 117, 25);
+		btnChange.setBounds(28, 83, 117, 25);
 		inputPanel.add(btnChange);
 
 		final JCheckBox chckbxInc = new JCheckBox("Include fail folder",reader.doFail);
-		chckbxInc.setBounds(153, 105, 159, 23);
+		chckbxInc.setBounds(153, 84, 159, 23);
 		inputPanel.add(chckbxInc);
+
+		JLabel lblNewLabel = new JLabel("Folder containing base-called reads");
+		lblNewLabel.setBounds(28, 24, 300, 15);
+		inputPanel.add(lblNewLabel);
 
 		chckbxInc.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e){
@@ -195,40 +181,8 @@ public class NanoporeReaderWindow implements Runnable{
 		});
 
 
-		rdbtnF.addItemListener(new ItemListener() {
-			public void itemStateChanged(ItemEvent e){
-				if (e.getStateChange() == ItemEvent.SELECTED){
-					txtDir.setEnabled(true);
-					btnChange.setEnabled(true);
-					chckbxInc.setEnabled(true);
-					reader.folder = txtDir.getText();
-
-				}else{
-					txtDir.setEnabled(false);
-					btnChange.setEnabled(true);
-					chckbxInc.setEnabled(false);
-					reader.folder = null;
-				}
-			}           
-		});
-
-		rdbtnInputStream.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (rdbtnInputStream.isSelected()){
-					btnChange.setEnabled(false);
-					chckbxInc.setEnabled(false);
-					txtDir.setEnabled(false);					
-				}else{
-					btnChange.setEnabled(true);
-					chckbxInc.setEnabled(true);
-					txtDir.setEnabled(true);
-				}
-			}
-		});
-
-
 		final JPanel outputPanel = new JPanel();
-		outputPanel.setBounds(0, 160, 330, 188);
+		outputPanel.setBounds(0, 140, 330, 188);
 		outputPanel.setBorder(BorderFactory.createTitledBorder("Output"));
 		controlPanel.add(outputPanel);
 		outputPanel.setLayout(null);
@@ -253,22 +207,22 @@ public class NanoporeReaderWindow implements Runnable{
 		final JButton btnFileChange = new JButton("Change");		
 		btnFileChange.setBounds(26, 105, 117, 25);	
 		outputPanel.add(btnFileChange);
-		
-				
+
+
 		final JCheckBox chckbxStreamServer = new JCheckBox("Stream output to some servers");
 		final JTextField txtStreamServers = new JTextField();
-		
+
 		chckbxStreamServer.setSelected(reader.streamServers!=null);
 		chckbxStreamServer.setBounds(8, 132, 283, 23);
 		outputPanel.add(chckbxStreamServer);
-		
-		
+
+
 		txtStreamServers.setText(reader.streamServers != null?reader.streamServers:"");
 		txtStreamServers.setEnabled(chckbxStreamServer.isSelected());
 		txtStreamServers.setBounds(18, 163, 300, 19);
 		outputPanel.add(txtStreamServers);
 		txtStreamServers.setColumns(10);
-		
+
 		chckbxStreamServer.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				txtStreamServers.setEnabled(chckbxStreamServer.isSelected());		
@@ -331,24 +285,24 @@ public class NanoporeReaderWindow implements Runnable{
 
 		JPanel formatPanel = new JPanel();
 		formatPanel.setBorder(BorderFactory.createTitledBorder("Output format"));
-		formatPanel.setBounds(0, 350, 330, 55);
+		formatPanel.setBounds(0, 338, 330, 55);
 		controlPanel.add(formatPanel);
-		
+
 		final JRadioButton fqRadioButton = new JRadioButton("fastq");
 		fqRadioButton.setBounds(46, 22, 62, 23);
-		
+
 		final JRadioButton faRadioButton = new JRadioButton("fasta");
 		faRadioButton.setBounds(186, 22, 62, 23);
 		formatPanel.setLayout(null);
-		
+
 		final ButtonGroup formatBtGroup = new ButtonGroup();
-		
+
 		formatBtGroup.add(fqRadioButton);
 		formatBtGroup.add(faRadioButton);
-		
+
 		formatPanel.add(fqRadioButton);
 		formatPanel.add(faRadioButton);
-		
+
 		if ("fasta".equals(reader.format)){
 			fqRadioButton.setSelected(false);
 			faRadioButton.setSelected(true);
@@ -356,7 +310,7 @@ public class NanoporeReaderWindow implements Runnable{
 			faRadioButton.setSelected(false);
 			fqRadioButton.setSelected(true);
 		}
-		
+
 		fqRadioButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (fqRadioButton.isSelected())
@@ -365,7 +319,7 @@ public class NanoporeReaderWindow implements Runnable{
 					reader.format = "fasta";
 			}
 		});
-		
+
 		faRadioButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (fqRadioButton.isSelected())
@@ -374,8 +328,8 @@ public class NanoporeReaderWindow implements Runnable{
 					reader.format = "fasta";
 			}
 		});		
-		
-		
+
+
 
 		final JPanel optionPanel = new JPanel();
 		optionPanel.setBounds(0, 405, 330, 115);
@@ -441,14 +395,14 @@ public class NanoporeReaderWindow implements Runnable{
 
 				stillRun = false;
 				JOptionPane.showMessageDialog(null, "Done", "Information", JOptionPane.PLAIN_MESSAGE);
-				
+
 			}
 		});
 		btnStop.setBounds(191, 18, 117, 25);
 		btnStop.setEnabled(false);
 		lPanel.add(btnStop);
-		
-		
+
+
 
 		final JPanel mainPanel = new JPanel();
 		frmNanoporeReader.getContentPane().add(mainPanel, BorderLayout.CENTER);
@@ -528,11 +482,11 @@ public class NanoporeReaderWindow implements Runnable{
 
 
 		final JFreeChart chart = ChartFactory.createStackedXYAreaChart(
-				"Read count",      // chart title
-				"Time",             // domain axis label
-				"Read number",                   // range axis label
-				this.dataSet   
-				);			
+			"Read count",      // chart title
+			"Time",             // domain axis label
+			"Read number",                   // range axis label
+			this.dataSet   
+			);			
 
 		final StackedXYAreaRenderer render = new StackedXYAreaRenderer();
 
@@ -551,19 +505,19 @@ public class NanoporeReaderWindow implements Runnable{
 		rangeAxis.setAutoRange(true);
 
 		ChartPanel chartPanel = new ChartPanel(chart,	            
-				450,
-				280,
-				450,
-				280,
-				450,
-				280,
-				true,
-				true,  // properties
-				true,  // save
-				true,  // print
-				true,  // zoom
-				true   // tooltips
-				);		
+			450,
+			280,
+			450,
+			280,
+			450,
+			280,
+			true,
+			true,  // properties
+			true,  // save
+			true,  // print
+			true,  // zoom
+			true   // tooltips
+			);		
 
 
 		chartPanel.setBounds(0, 12, 450, 280);
@@ -579,19 +533,19 @@ public class NanoporeReaderWindow implements Runnable{
 
 		JFreeChart hisLengths=ChartFactory.createHistogram("Read length histogram","length","count",histoLengthDataSet,PlotOrientation.VERTICAL,true,true,false);
 		ChartPanel hisPanel = new ChartPanel(hisLengths,	            
-				450,
-				280,
-				450,
-				280,
-				450,
-				280,
-				true,
-				true,  // properties
-				true,  // save
-				true,  // print
-				true,  // zoom
-				true   // tooltips
-				);
+			450,
+			280,
+			450,
+			280,
+			450,
+			280,
+			true,
+			true,  // properties
+			true,  // save
+			true,  // print
+			true,  // zoom
+			true   // tooltips
+			);
 
 
 		XYPlot hisPlot = (XYPlot) hisLengths.getPlot();
@@ -612,19 +566,19 @@ public class NanoporeReaderWindow implements Runnable{
 
 		JFreeChart hisQual=ChartFactory.createXYLineChart("Quality","quality","frequency",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
 		ChartPanel hisQualPanel = new ChartPanel(hisQual,	            
-				450,
-				280,
-				450,
-				280,
-				450,
-				280,
-				true,
-				true,  // properties
-				true,  // save
-				true,  // print
-				true,  // zoom
-				true   // tooltips
-				);
+			450,
+			280,
+			450,
+			280,
+			450,
+			280,
+			true,
+			true,  // properties
+			true,  // save
+			true,  // print
+			true,  // zoom
+			true   // tooltips
+			);
 
 
 		XYPlot hisQualPlot = (XYPlot) hisQual.getPlot();
@@ -644,33 +598,37 @@ public class NanoporeReaderWindow implements Runnable{
 		btnStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				//1. Validate before running
-
+				
 				//validate input
-				if (rdbtnF.isSelected()){
-					String _path = txtDir.getText().trim();
-					if (_path.equals("")){
-						JOptionPane.showMessageDialog(null, "Please specify download directory", "Warning", JOptionPane.PLAIN_MESSAGE);
-						txtDir.grabFocus();
-						return;
-					}
 
-					File _file = new File(_path);
-					if (!_file.exists()){
-						JOptionPane.showMessageDialog(null, "Directory \"" + _path + "\" does not exist!", "Warning", JOptionPane.PLAIN_MESSAGE);
-						txtDir.grabFocus();
-						return;
-					}					
+				String _path = txtDir.getText().trim();
+				System.out.println("==========" + _path);
+				if (_path.equals("")){
+					JOptionPane.showMessageDialog(null, "Please specify download directory", "Warning", JOptionPane.PLAIN_MESSAGE);
+					txtDir.grabFocus();
+					return;
 				}
 
-
+				File _file = new File(_path);
+				if (!_file.exists()){
+					JOptionPane.showMessageDialog(null, "Directory \"" + _path + "\" does not exist!", "Warning", JOptionPane.PLAIN_MESSAGE);
+					txtDir.grabFocus();
+					return;
+				}
+				reader.folder = _path;
 				//validate output
 				if (rdbtnOut2File.isSelected()){
-					if (txtOFile.getText().trim().equals("")){						
+					String _foutput = txtOFile.getText().trim();
+					if (_foutput.equals("")){						
 						JOptionPane.showMessageDialog(null, "Please specify output file", "Warning", JOptionPane.PLAIN_MESSAGE);
 						txtOFile.grabFocus();
 						return;
 					}
-				}
+					reader.output = _foutput;					
+				}else
+					reader.output = "-";//stream
+					
+				
 				//validate stream
 				if (chckbxStreamServer.isSelected()){
 					if (txtStreamServers.getText().trim().equals("")){
@@ -680,7 +638,7 @@ public class NanoporeReaderWindow implements Runnable{
 					}			
 					reader.streamServers = txtStreamServers.getText().trim();
 				}
-				
+
 
 				String msg = reader.prepareIO();
 				if (msg !=null){
@@ -689,14 +647,9 @@ public class NanoporeReaderWindow implements Runnable{
 				}
 
 				//Start running
-
-				rdbtnInputStream.setEnabled(false);
-				rdbtnF.setEnabled(false);
-
 				txtDir.setEnabled(false);
 				btnChange.setEnabled(false);
 				chckbxInc.setEnabled(false);
-				rdbtnF.setEnabled(false);
 				rdbtnOut2Str.setEnabled(false);
 				rdbtnOut2File.setEnabled(false);
 				txtOFile.setEnabled(false);
@@ -717,7 +670,7 @@ public class NanoporeReaderWindow implements Runnable{
 	DynamicHistogram histoLengthDataSet, histoQualDataSet;
 
 	boolean stillRun = true;
-	
+
 	public void interupt(JapsaException e){
 		this.stillRun = false;
 		reader.wait = false;

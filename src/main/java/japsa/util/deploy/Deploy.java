@@ -101,6 +101,8 @@ import com.google.common.io.Files;
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
 	public static String VERSION = "1.5-8a";
+	public static final String FIELD_SEP = "\t";
+
 	//private static String AUTHORS = "Minh Duc Cao";
 	static{
 		//jsa.seq.*
@@ -176,11 +178,62 @@ public class Deploy {
 		tools.add(ExpertModelDriver.class);
 		//tools.add(.class);		
 	}	
+	
+	public static void generateDocs(){
+		
+	}
+	
 
-	//public static String compiler = null, jlp = null, libs = null, japsa = null;
-	//public static File dir = null,jsa = null;
-	//public static String mem = "7000m";
+	/**
+	 * Extract the annotation to command line
+	 * @param annotation
+	 * @return
+	 */
+	public static CommandLine setupCmdLine(Deployable annotation){ 
+		CommandLine cmdLine = new CommandLine("\nUsage: "
+			+ annotation.scriptName() + " [options]"
+			+ annotation.optionFree(),
+			annotation.scriptDesc());
 
+		for (String opt: annotation.options()){
+			String [] optToks = opt.split(Deploy.FIELD_SEP);
+			if (optToks.length < 4)
+				throw new RuntimeException("Problem with annotation setting " + opt);
+
+			char type = optToks[0].charAt(0);//get the first char
+
+			switch (type){
+			case 'S':
+			case 's':				
+				cmdLine.addString(optToks[1], "null".equalsIgnoreCase(optToks[2])? null:optToks[2], optToks[3], optToks.length > 4 && Boolean.parseBoolean(optToks[4]));				
+				break;
+			case 'F':
+			case 'f':				
+				cmdLine.addDouble(optToks[1], Double.parseDouble(optToks[2]) , optToks[3], optToks.length > 4 && Boolean.parseBoolean(optToks[4]));
+				break;
+			case 'I':
+			case 'i':
+				cmdLine.addInt(optToks[1], Integer.parseInt(optToks[2]) , optToks[3], optToks.length > 4 && Boolean.parseBoolean(optToks[4]));
+				break;
+			case 'B':
+			case 'b':
+				cmdLine.addBoolean(optToks[1], Boolean.parseBoolean(optToks[2]) , optToks[3], optToks.length > 4 && Boolean.parseBoolean(optToks[4]));
+				break;
+
+			default: throw new RuntimeException("Unknown option type " + type);
+			}
+		}
+
+
+		return cmdLine;
+	}
+
+	/**
+	 * Method to set up Japsa directory
+	 * @param japsaJar
+	 * @return
+	 * @throws IOException
+	 */
 	static private String setupJapsaDir(String japsaJar) throws IOException{
 		if (japsaPath.startsWith("~/")) {
 			japsaPath = System.getProperty("user.home") + japsaPath.substring(1);
@@ -262,8 +315,8 @@ public class Deploy {
 		if (japsaPath == null){
 			//Get directory to install and create
 			japsaPath = isWindows? 
-					"c:\\Japsa" 
-					: System.getProperty("user.home") + "/.usr/local";
+				"c:\\Japsa" 
+				: System.getProperty("user.home") + "/.usr/local";
 			while (true){
 				System.out.print("Directory to install japsa: [" + japsaPath + "]");
 				line = scanner.nextLine();
@@ -295,8 +348,8 @@ public class Deploy {
 		}
 
 		javaCommand = isWindows? 
-				"java -Xmx%JSA_MEM% -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8"
-				:"java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8";
+			"java -Xmx%JSA_MEM% -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8"
+			:"java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8";
 
 
 		//Get server mode or client mode
@@ -402,7 +455,7 @@ public class Deploy {
 	 * @throws IOException
 	 */
 	public static void setUpScripts(ArrayList<Object> toolList, String masterScript) 
-			throws IOException{		
+		throws IOException{		
 		System.out.println("Set upting scripts in " + masterScript + ":");
 		boolean isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
 		//Set up differences between windows and the rest
@@ -418,7 +471,7 @@ public class Deploy {
 		}
 
 		outJsaMain.print(echoStr + "Japsa: A Java Package for Statistical Sequence Analysis\n"
-				+ echoStr + "Version " + VERSION + ", Built on " + (new Date()));
+			+ echoStr + "Version " + VERSION + ", Built on " + (new Date()));
 
 		if (compiler != null){
 			outJsaMain.println(" with " + compiler);
@@ -434,7 +487,7 @@ public class Deploy {
 				outJsaMain.printf(echoStr + "%s\n",obj);
 				continue;
 			}				
-			Class<?> tool = (Class<?>) obj;			
+			Class<?> tool = (Class<?>) obj;
 
 			Deployable annotation = tool.getAnnotation(Deployable.class);
 			File file = new File(japsaPath + File.separator +  "bin" + File.separator + annotation.scriptName() + suffixStr);
@@ -451,20 +504,20 @@ public class Deploy {
 				out.close();				
 			}else{
 				PrintStream out = new PrintStream(new FileOutputStream(file));
-				out.println("#!/bin/sh");
+				out.println("#!/bin/sh\n");
 				out.println("case $JSA_MEM in\n  '')JSA_MEM="+maxMem +";;\n  *);;\nesac\n\n");
 				out.println("case $JSA_CP in\n  '')JSA_CP="
-						+ classPath
-						+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
+					+ classPath
+					+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
 
 				//out.println("JSA_CMD=\"`basename $0` $@\"\n");
 
 				out.println(javaCommand + " -classpath ${JSA_CP} "
-						+ tool.getCanonicalName() + " \"$@\"");
+					+ tool.getCanonicalName() + " \"$@\"");
 				out.close();
 
 				Runtime.getRuntime().exec(
-						"chmod a+x " + file.getCanonicalPath());	
+					"chmod a+x " + file.getCanonicalPath());	
 			}
 			System.out.println(" " + file.getCanonicalPath() + " created");
 			outJsaMain.printf(echoStr + "  %-23s  %s\n", annotation.scriptName(),	annotation.scriptDesc());
@@ -477,7 +530,7 @@ public class Deploy {
 		outJsaMain.close();
 		if (!isWindows){
 			Runtime.getRuntime().exec(
-					"chmod a+x " + outJsa.getCanonicalPath());
+				"chmod a+x " + outJsa.getCanonicalPath());
 		}
 		System.out.println("Done " + masterScript + "\n");
 	}

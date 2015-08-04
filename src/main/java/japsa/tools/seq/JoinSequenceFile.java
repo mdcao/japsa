@@ -39,6 +39,7 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.deploy.Deploy;
 import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
@@ -49,8 +50,34 @@ import java.io.IOException;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  *
  */
-@Deployable(scriptName = "jsa.seq.join",
-            scriptDesc = "Join multiple sequences into one file")
+@Deployable
+(scriptName = "jsa.seq.join",
+scriptDesc = "Join multiple sequences into one",
+options = {		
+	"S" 
+	+ Deploy.FIELD_SEP + "alphabet"				
+	+ Deploy.FIELD_SEP + "DNA" 
+	+ Deploy.FIELD_SEP + "Alphabet of the input file. Options: DNA (DNA=DNA16), DNA4\n(ACGT), DNA5(ACGTN), DNA16 and Protein" 
+	+ Deploy.FIELD_SEP + "false",
+	"S" 
+	+ Deploy.FIELD_SEP + "output"				
+	+ Deploy.FIELD_SEP + "-" 
+	+ Deploy.FIELD_SEP + "Name of the output file, - for standard output" 
+	+ Deploy.FIELD_SEP + "false",			
+	"S" 
+	+ Deploy.FIELD_SEP + "name"				
+	+ Deploy.FIELD_SEP + "seq" 
+	+ Deploy.FIELD_SEP + "Name of the combined sequence" 
+	+ Deploy.FIELD_SEP + "false",
+	"B" 
+	+ Deploy.FIELD_SEP + "removeN"				
+	+ Deploy.FIELD_SEP + "false" 
+	+ Deploy.FIELD_SEP + "Remove wildcards or not" 
+	+ Deploy.FIELD_SEP + "false"},
+optionFree = " file1 file2 ..."
+)
+
+
 public class JoinSequenceFile {
 
 	/**
@@ -59,30 +86,19 @@ public class JoinSequenceFile {
 	public static void main(String[] args) throws IOException{
 		/*********************** Setting up script ****************************/
 		Deployable annotation = JoinSequenceFile.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] file1 file2 ...",
-				annotation.scriptDesc());
-				
-		cmdLine.addStdAlphabet();
-		
-		cmdLine.addString("output", "-", "Name of the output file");
-		cmdLine.addString("name", "name", "Name of the combined sequence");
-		cmdLine.addBoolean("removeN", false, "Remove wildcards");
-		
-		//cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
-		args = cmdLine.stdParseLine(args);
+		CommandLine cmdLine = Deploy.setupCmdLine(annotation);	
+		args = cmdLine.stdParseLine(args);		
 		/**********************************************************************/
-
 		//Get dna 		
 		String alphabetOption = cmdLine.getStringVal("alphabet");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
 			alphabet = Alphabet.DNA();
-		
+
 		String output = cmdLine.getStringVal("output");
 		String name = cmdLine.getStringVal("name");
 		boolean removeN = cmdLine.getBooleanVal("removeN");
-		
+
 		//String format = cmdLine.getStringVal("format");		
 
 		SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), 1000000, name);

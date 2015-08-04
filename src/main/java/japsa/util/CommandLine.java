@@ -492,4 +492,25 @@ public class CommandLine {
 	public void addStdHelp(){
 		addBoolean("help", false, "Display this usage and exit");
 	}
+	
+	public static class Option{
+		
+		enum TYPE {B,I,F,S};
+		
+		String optName;
+		char optType;
+		Object defaultValue;
+		String optHelp;
+		boolean required;
+		boolean optionSet = false;
+		
+		public Option(String opt, char type, Object def, String help, boolean req) {
+			optName = opt;			
+			optType = type;
+			defaultValue = def;
+			optHelp = help;			
+			required = req;
+			
+		}	
+	}
 }

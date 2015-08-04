@@ -1,6 +1,6 @@
--------
+=======
 License
--------
+=======
 
 Japsa's source code is available under a BSD-like license:
 
