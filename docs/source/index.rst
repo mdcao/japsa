@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-=================================
+#################################
 Welcome to Japsa's documentation!
-=================================
+#################################
 
 Japsa (*JAva Package for Sequence Analysis*) is a free, open source package for
 analysis of biological sequences data, written in Java. It contains a wide
@@ -34,8 +34,9 @@ Contents:
    credit
    license
 
+##################
 Indices and tables
-==================
+##################
 
 * :ref:`genindex`
 * :ref:`modindex`

@@ -2,6 +2,7 @@
 Installation
 ============
 
+
 There are two methods to install Japsa in your computer. The first method
 (using pre-compiled package in JDK 1.6) is straight-forward and can be used for
 any operating systems, including Windows. The second method (compile from source
@@ -9,9 +10,9 @@ code) requires some extra tools (make and JDK) but may yield better runtime
 performance as the package will be compiled with the same version of the Java
 Virtual Machine used to run.
 
-
+-------------------------------------
 Install from the pre-compiled package
-#####################################
+-------------------------------------
 
 Pre-compiled package of Japsa is made available under each release. Installation
 from this will not require extra build tools such as javac, git, and make.
@@ -47,8 +48,9 @@ agree with its suggestion, just type Enter. The questions are:
 * *Path to JRI library:* Enter path to JRI library. This is required only for
   running real-time species typing (jsa.np.speciesTyping).
 
+------------------------------
 Obtain source code and compile
-##############################
+------------------------------
 
 This installation method is recommended as japsa will be compiled with the same
 Java version used to run it. This method however requires Java Development Kit
@@ -67,7 +69,11 @@ or download from a release::
    
 and run `make' to compile and install japsa::      
 
-   make install [INSTALL_DIR=~/.usr/local] [MXMEM=7000m] [SERVER=true] [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
+   make install \
+     [INSTALL_DIR=~/.usr/local \] 
+     [MXMEM=7000m \] 
+     [SERVER=true \]
+     [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
 
 This will install japsa according the directives:
 
