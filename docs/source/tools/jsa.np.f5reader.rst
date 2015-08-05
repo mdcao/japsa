@@ -7,7 +7,8 @@ data from FAST5 files, perform an initial analysis of the date and stream them
 to real-time analysis pipelines. These pipelines can run on the same computer
 or on computing clouds/high performance clusters.
 
-npReader is included in the Japsa package. It requires
+npReader is included in the `Japsa package <http://mdcao.github.io/japsa/>`_.
+It requires
 `JAVA HDF5 INTERFACE (JHI5) library <https://www.hdfgroup.org/products/java/JNI/jhi5/index.html>`_
 to be installed prior to setting up Japsa. Details of installation as follows:
 
