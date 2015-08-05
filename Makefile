@@ -150,6 +150,7 @@ release: pre-install
 	@@mkdir -p $(RELEASE)/libs/ && \
 	cp -f $(addprefix $(LIB_DIR)/, $(EXT_LIBS)) $(JAR_FILE)  $(RELEASE)/libs && \
 	cp -f $(JAR_FILE) install.sh install.bat   $(RELEASE)/ && \
+	sleep 5 && \
 	zip -r  $(RELEASE).zip  $(RELEASE)/ && \
 	tar zcvf  $(RELEASE).tar.gz  $(RELEASE)/
 #############################################################################
