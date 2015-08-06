@@ -85,7 +85,7 @@ See also
 jsa.np.filter_, jsa.util.streamServer, jsa.util.streamClient,
 jsa.np.speciesTyping, jsa.np.geneStrainTyping, jsa.np.resistGenes
 
-.. _jsa.np.filter: jsa.np.f5reader.html
+.. _jsa.np.filter: jsa.np.filter.html
 
 ~~~~~~~~~~~~~~
 Usage examples
