@@ -190,9 +190,9 @@ public class Deploy {
 	 * @return
 	 */
 	public static CommandLine setupCmdLine(Deployable annotation){ 
-		CommandLine cmdLine = new CommandLine("\nUsage: "
+		CommandLine cmdLine = new CommandLine("\nUsage:\n   "
 			+ annotation.scriptName() + " [options]"
-			+ annotation.optionFree(),
+			+ annotation.optionFree() + "\n",
 			annotation.scriptDesc());
 
 		for (String opt: annotation.options()){

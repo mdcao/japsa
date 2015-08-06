@@ -7,5 +7,5 @@ List of Tools
    :maxdepth: 1
 
    jsa.np.f5reader.rst
-   jsa.seq.sort.rst
+   jsa.np.filter.rst
 

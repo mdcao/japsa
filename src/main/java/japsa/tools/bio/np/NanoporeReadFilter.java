@@ -72,9 +72,9 @@ public class NanoporeReadFilter// implements Closeable
 		cmdLine.addDouble("qualMax", 1000, 
 				"Maximum average quality");
 		
-		cmdLine.addBoolean("exclude2D", false, "Exclude 2D reads");
-		cmdLine.addBoolean("excludeTemplate", false, "Exclude template reads");
-		cmdLine.addBoolean("excludeComplement", false, "Exclude complement reads");
+		cmdLine.addBoolean("excl2D", false, "Exclude 2D reads");
+		cmdLine.addBoolean("exclTemp", false, "Exclude template reads");
+		cmdLine.addBoolean("exclComp", false, "Exclude complement reads");
 		
 				
 		cmdLine.addString("format", "fastq", "Format of the output file");

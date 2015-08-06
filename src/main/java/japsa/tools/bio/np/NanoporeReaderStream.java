@@ -74,7 +74,7 @@ import japsa.util.deploy.Deployable;
 		"B" 
 		+ Deploy.FIELD_SEP + "realtime"	
 		+ Deploy.FIELD_SEP + false 
-		+ Deploy.FIELD_SEP + "Run the program in real-time mode, i.e., keep waiting for new data from Metrichon agent " 
+		+ Deploy.FIELD_SEP + "Run the program in real-time mode, i.e., keep waiting for new data from Metrichor agent " 
 		+ Deploy.FIELD_SEP + false
 		,////////////////////////////////////////////////////////
 		"S" 
@@ -128,7 +128,7 @@ import japsa.util.deploy.Deployable;
 		"B"
 		+ Deploy.FIELD_SEP + "time"				
 		+ Deploy.FIELD_SEP + false 
-		+ Deploy.FIELD_SEP + "Extract the sequencing time of each read -- only work with Metrichon > 1.12" 
+		+ Deploy.FIELD_SEP + "Extract the sequencing time of each read -- only work with Metrichor > 1.12" 
 		+ Deploy.FIELD_SEP + false
 	}
 	)
@@ -137,24 +137,7 @@ public class NanoporeReaderStream
 	public static void main(String[] args) throws OutOfMemoryError, Exception {
 		/*********************** Setting up script ****************************/
 		Deployable annotation = NanoporeReaderStream.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = Deploy.setupCmdLine(annotation);			
-		//cmdLine.addString("output", "-", "Name of the output file, -  for stdout");//
-		//cmdLine.addInt("minLength", 0, "Minimum sequence length");
-		//cmdLine.addBoolean("stats", false, "Compute statistics of reads");
-		//cmdLine.addBoolean("number", false, "Add a unique number to read name");
-		//cmdLine.addBoolean("time", false, "Getting the sequenceing time of the read -- experimental");
-
-		//cmdLine.addString("folder",null, "The download folder");
-		//cmdLine.addString("format","fastq", "Format of output (fastq or fasta)");
-		//cmdLine.addBoolean("fail",false, "Include fail reads");		
-		//cmdLine.addBoolean("realtime",false, "Whether to run in realtime");
-		//cmdLine.addString("pFolderName",null, "Folder to move processed files to");
-		//cmdLine.addBoolean("GUI",false, "Run the application with a Graphical User Interface");
-		//cmdLine.addString("streamServers",null, "Stream output to some servers, format \"IP:port,IP:port\" (no spaces)");
-		//cmdLine.addInt("interval", 30,  "Interval between check in seconds");		
-		//cmdLine.addInt("age", 30,  "The file has to be this old in seconds");
-
-		//cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");
+		CommandLine cmdLine = Deploy.setupCmdLine(annotation);
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 

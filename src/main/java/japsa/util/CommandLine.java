@@ -131,7 +131,7 @@ public class CommandLine {
 
 	public String usage() {
 		int indent = 18;
-		StringBuffer res = new StringBuffer(usg + "\nOptions:  \n");
+		StringBuffer res = new StringBuffer(usg + "\nOptions:\n");
 		for (int i = 0; i < numOptions; i++) {
 			res.append("  --" + opts[i]);
 
