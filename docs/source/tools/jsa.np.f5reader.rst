@@ -160,7 +160,8 @@ One can also use *tee* to group data into different bins *in real-time* with
    
 These bins can also be piped/streamed to different analysis pipelines as above.
 
-Citation:
-~~~~~~~~~
+~~~~~~~~
+Citation
+~~~~~~~~
 A paper describing npReader is under review.
 
