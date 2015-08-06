@@ -2,6 +2,9 @@
 *npReader*: real-time conversion and analysis of Nanopore sequencing data
 -------------------------------------------------------------------------
 
+
+
+
 *npReader* (jsa.np.f5reader) is a program that extract Oxford Nanopore sequencing
 data from FAST5 files, perform an initial analysis of the date and stream them
 to real-time analysis pipelines. These pipelines can run on the same computer
@@ -31,6 +34,7 @@ Linux distribution software repository, such as::
    
 The library is typically installed to */usr/lib/jni*. Enter this path when
 prompted for "Path to HDF library" during installation of Japsa.
+
 
 ~~~~~~~~
 Synopsis
@@ -78,8 +82,10 @@ Options
 ~~~~~~~~
 See also
 ~~~~~~~~
-jsa.np.filter, jsa.util.streamServer, jsa.util.streamClient,
+jsa.np.filter_, jsa.util.streamServer, jsa.util.streamClient,
 jsa.np.speciesTyping, jsa.np.geneStrainTyping, jsa.np.resistGenes
+
+.. _jsa.np.filter: jsa.np.f5reader.html
 
 ~~~~~~~~~~~~~~
 Usage examples

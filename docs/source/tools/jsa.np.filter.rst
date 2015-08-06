@@ -13,6 +13,7 @@ or a stream and can be integrated into a streaming pipeline.
 Usage
 ~~~~~
 ::
+
    jsa.np.filter [options]
    
 ~~~~~~~~
@@ -46,6 +47,8 @@ Options:
 ~~~~~~~~
 See also
 ~~~~~~~~
-jsa.util.streamServer, jsa.util.streamClient, jsa.np.f5reader
+jsa.util.streamServer, jsa.util.streamClient, jsa.np.f5reader_.
+
+.. _jsa.np.f5reader: jsa.np.f5reader.html
 
 
