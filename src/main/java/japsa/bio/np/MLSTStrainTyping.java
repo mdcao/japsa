@@ -68,7 +68,6 @@ import java.util.HashSet;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.np.mlstStrainTyping", scriptDesc = "Strain typing using MLST system")
 public class MLSTStrainTyping {
 
 	/**
@@ -77,73 +76,7 @@ public class MLSTStrainTyping {
 	 * @throws Exception 
 	 * @throws OutOfMemoryError 
 	 */
-	public static void main(String[] args) throws IOException, InterruptedException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = MLSTStrainTyping.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/		
-
-				
-		cmdLine.addString("mlst", "MLST_profiles.txt",  "MLST file");
-		cmdLine.addString("bamFile", null,  "The bam file");
-		cmdLine.addString("geneFile", null,  "The gene file");		
-
-		cmdLine.addInt("top", 10,  "The number of top strains");		
-		cmdLine.addString("msa", "kalign",
-				"Name of the msa method, support poa, kalign, muscle and clustalo");
-		cmdLine.addString("tmp", "tmp/t",  "Temporary folder");
-		cmdLine.addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-
-		cmdLine.addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
-		cmdLine.addBoolean("twodonly", false,  "Use only two dimentional reads");		
-
-		args = cmdLine.stdParseLine_old(args);			
-		/**********************************************************************/
-
-		String mlst = cmdLine.getStringVal("mlst");
-		String bamFile = cmdLine.getStringVal("bamFile");
-		String geneFile = cmdLine.getStringVal("geneFile");
-		String msa = cmdLine.getStringVal("msa");
-		String tmp = cmdLine.getStringVal("tmp");		
-		String hours = cmdLine.getStringVal("hours");
-
-		int top = cmdLine.getIntVal("top");		
-		int read = cmdLine.getIntVal("read");		
-
-		boolean twodonly = cmdLine.getBooleanVal("twodonly");
-
-
-		MLSTStrainTyping paTyping = new MLSTStrainTyping();		
-		paTyping.msa = msa;
-		paTyping.prefix = tmp;			
-
-		paTyping.twoDOnly = twodonly;
-		paTyping.readNumber = read;
-		if (hours !=null){
-			BufferedReader bf = SequenceReader.openFile(hours);
-			String line = bf.readLine();//first line
-			paTyping.hoursArray = new IntArray();
-			paTyping.readCountArray = new IntArray();
-
-			while ((line = bf.readLine())!= null){
-				String [] tokens = line.split("\\s");
-				int hrs = Integer.parseInt(tokens[0]);
-				int readCount = Integer.parseInt(tokens[2]);
-
-				paTyping.hoursArray.add(hrs);
-				paTyping.readCountArray.add(readCount);	
-			}
-		}
-
-
-		if (paTyping.readNumber < 1)
-			paTyping.readNumber = 1;
-
-		paTyping.readGenes(geneFile);
-		paTyping.readMLSTProfiles(mlst);
-		paTyping.typing(bamFile,  top);	
-
-	}
+	
 	/////////////////////////////////////////////////////////////////////////////
 
 	ArrayList<GeneProfile> profileList;
@@ -155,23 +88,28 @@ public class MLSTStrainTyping {
 	int currentReadCount = 0;
 	long currentBaseCount = 0;
 
-	String prefix = "tmp";	
-	String msa = "kalign";		
-	boolean twoDOnly = false;
-	int readNumber = 100;
+	public String prefix = "tmp";	
+	public String msa = "kalign";		
+	public boolean twoDOnly = false;
+	public int readNumber = 100;
 	SequenceOutputStream datOS = null;
 
 
-	IntArray hoursArray = null;
-	IntArray readCountArray = null;
+	public IntArray hoursArray = null;
+	public IntArray readCountArray = null;
 	int arrayIndex = 0;
 	
 	public MLSTStrainTyping(){
 	
 	}
 
+	/**
+	 * TODO: make this private
+	 * @param mlstFile
+	 * @throws IOException
+	 */
 
-	private void readMLSTProfiles(String mlstFile) throws IOException{
+	public  void readMLSTProfiles(String mlstFile) throws IOException{
 		BufferedReader bf = SequenceReader.openFile(mlstFile);
 		String line = bf.readLine();
 		String [] toks = line.trim().split("\t");
@@ -198,11 +136,12 @@ public class MLSTStrainTyping {
 		bf.close();
 	}
 	/**
+	 * TODO: make it private
 	 * Read genes from gene file to a list + map: for random access
 	 * @param geneFile
 	 * @throws IOException
 	 */
-	private void readGenes(String geneFile) throws IOException{
+	public void readGenes(String geneFile) throws IOException{
 		geneList = SequenceReader.readAll(geneFile, Alphabet.DNA());		 
 		geneMap = new HashMap<String, Sequence>();
 

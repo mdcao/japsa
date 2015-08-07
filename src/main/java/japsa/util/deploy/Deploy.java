@@ -61,6 +61,7 @@ import japsa.bio.tr.VNTRDepth;
 //import japsa.seq.nanopore.NanoporeReader;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
+import japsa.tools.bio.np.SpeciesMixtureTypingCmd;
 import japsa.tools.bio.phylo.NormaliseTree;
 import japsa.tools.bio.phylo.XMDistance;
 import japsa.tools.bio.phylo.XMDistance2;
@@ -140,7 +141,8 @@ public class Deploy {
 		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(new NanoporeReaderCmd());
 		tools.add(new NanoporeReadFilterCmd());		
-		tools.add(SpeciesMixtureTyping.class);		
+		tools.add(new SpeciesMixtureTypingCmd());
+		
 		tools.add(GeneStrainTyping.class);
 		tools.add(new MLSTStrainTyping());
 		tools.add(new ResistanceGene());		

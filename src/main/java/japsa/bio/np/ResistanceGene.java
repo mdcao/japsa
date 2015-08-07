@@ -42,11 +42,9 @@ import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-import japsa.util.CommandLine;
 import japsa.util.HTSUtilities;
 import japsa.util.IntArray;
 import japsa.util.Logging;
-import japsa.util.deploy.Deployable;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
@@ -70,123 +68,10 @@ import java.util.HashSet;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.np.resistGenes", scriptDesc = "Antibiotic resistance genes identification")
+
 public class ResistanceGene {
-
-	/**
-	 * @param args
-	 * @throws InterruptedException 
-	 * @throws Exception 
-	 * @throws OutOfMemoryError 
-	 */
-	public static void main(String[] args) throws IOException, InterruptedException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = ResistanceGene.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/		
-
-		cmdLine.addString("output", "output.dat",  "Output file");
-		cmdLine.addString("bamFile", null,  "The bam file");
-		//cmdLine.addString("geneFile", null,  "The gene file");
-		//cmdLine.addString("figure", null,  "Figure file");
-		cmdLine.addString("mcoordFile", null,  "Alignment with dnadiff between the genome (illumina) and genes database");
-
-		cmdLine.addDouble("scoreThreshold", 1.5,  "The alignment score threshold");
-		cmdLine.addString("msa", "kalign",
-				"Name of the msa method, support poa, kalign, muscle and clustalo");
-		cmdLine.addString("global", "needle",
-				"Name of the global method, support needle and hmm");
-		cmdLine.addString("tmp", "tmp/t",  "Temporary folder");
-		cmdLine.addString("hours", null,  "The file containging hours against yields, if set will output acording to time");
-		cmdLine.addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");		
-		cmdLine.addInt("timestamp", 0,  "Number of seconds between internval");
-		cmdLine.addDouble("il", 0.9,   "Threshold for Illumina");
-		cmdLine.addBoolean("twodonly", false,  "Use only two dimentional reads");
-
-		args = cmdLine.stdParseLine_old(args);			
-		/**********************************************************************/
-
-		String output = cmdLine.getStringVal("output");
-		String bamFile = cmdLine.getStringVal("bam");
-		String mcoordFile = cmdLine.getStringVal("mcoordFile");
-		String msa = cmdLine.getStringVal("msa");
-		String global = cmdLine.getStringVal("global");
-
-		//String figure = cmdLine.getStringVal("figure");
-		String tmp = cmdLine.getStringVal("tmp");
-		String hours = cmdLine.getStringVal("hours");
-
-		double scoreThreshold = cmdLine.getDoubleVal("scoreThreshold");				
-		int read = cmdLine.getIntVal("read");
-		int timestamp = cmdLine.getIntVal("timestamp");
-
-		//double np = cmdLine.getDoubleVal("np");
-		double il = cmdLine.getDoubleVal("il");
-
-		boolean twodonly = cmdLine.getBooleanVal("twodonly");
-
-		ResistanceGene paTyping = new ResistanceGene();		
-		paTyping.msa = msa;
-		paTyping.global = global;
-
-		paTyping.prefix = tmp;
-		paTyping.scoreThreshold = scoreThreshold;
-		paTyping.twoDOnly = twodonly;
-		paTyping.readNumber = read;
-		DateFormat df = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
-		Logging.info("START : " + df.format(Calendar.getInstance().getTime()));
-
-		if (paTyping.readNumber < 1)
-			paTyping.readNumber = 1;
-
-		paTyping.datOS = SequenceOutputStream.makeOutputStream(output);
-
-		paTyping.getGeneClassInformation(mcoordFile);
-		if (hours !=null){
-			BufferedReader bf = SequenceReader.openFile(hours);
-			String line = bf.readLine();//first line
-			paTyping.hoursArray = new IntArray();
-			paTyping.readCountArray = new IntArray();
-
-			while ((line = bf.readLine())!= null){
-				String [] tokens = line.split("\\s");
-				int hrs = Integer.parseInt(tokens[0]);
-				int readCount = Integer.parseInt(tokens[2]);
-
-				paTyping.hoursArray.add(hrs);
-				paTyping.readCountArray.add(readCount);	
-			}
-		}
-
-
-
-		//paTyping.readGenes(geneFile);
-		//paTyping.getAROMap(mcoordFile);		
-
-		//paTyping.npThreshold = np;
-		paTyping.ilThreshold = il;		
-
-
-
-		//paTyping.datOS.print("step\treads\tbases");
-		//for (int i = 0; i < paTyping.functionNames.size();i++){
-		//	paTyping.datOS.print('\t');
-		//	paTyping.datOS.print(paTyping.functionNames.get(i));
-		//}
-		//paTyping.datOS.println();
-		paTyping.typing(bamFile);
-
-		paTyping.datOS.close();
-
-
-	}
-
-	//double npThreshold = 0.9;
-	double ilThreshold = 0.9;
-
-	/////////////////////////////////////////////////////////////////////////////
-
-
+//TODO: make the below private
+	public double ilThreshold = 0.9;
 	HashMap<String, HashSet<String>> aroMap;//map a gene to function/annotations
 	HashMap<String, ArrayList<Sequence>> alignmentMap;
 	HashMap<String, ArrayList<SAMRecord>> samMap;
@@ -201,26 +86,26 @@ public class ResistanceGene {
 	int currentReadCount = 0;
 	long currentBaseCount = 0;
 
-	String prefix = "tmp";	
-	String msa = "kalign";
-	String global = "needle";
+	public String prefix = "tmp";	
+	public String msa = "kalign";
+	public String global = "needle";
 
-	double scoreThreshold = 2;
+	public double scoreThreshold = 2;
 
 	//HashMap<String,XYSeries> plotData = new HashMap<String,XYSeries>();
 	//String figureFile = "out.png";
-	boolean twoDOnly = false;
+	public boolean twoDOnly = false;
 
 	String functionFile = "Function.txt";
 	String gene2FunctionFile = "Gene2Function.txt";
 
 	ArrayList<String> functions = new ArrayList<String>();	
 	ArrayList<String> functionNames = new ArrayList<String>();
-	int readNumber = 100;
-	SequenceOutputStream datOS = null;
+	public int readNumber = 100;
+	public SequenceOutputStream datOS = null;
 
-	IntArray hoursArray = null;
-	IntArray readCountArray = null;
+	public IntArray hoursArray = null;
+	public IntArray readCountArray = null;
 	int arrayIndex = 0;
 	
 	long firstReadTime = 0;
@@ -238,7 +123,8 @@ public class ResistanceGene {
 	HashMap<String, Sequence> geneMap;
 	
 
-	private void getGeneClassInformation(String mcoordFile) throws IOException{
+	//TODO: make below protected/private
+	public void getGeneClassInformation(String mcoordFile) throws IOException{
 		ArrayList<Sequence> genes = FastaReader.readAll("geneAlleles90.fasta", Alphabet.DNA());
 		HashMap<String, Sequence> myMap = new HashMap<String, Sequence>();
 

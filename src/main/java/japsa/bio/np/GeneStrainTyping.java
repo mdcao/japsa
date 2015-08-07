@@ -38,12 +38,9 @@ import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-//import japsa.util.BetaBinomialModel;
-import japsa.util.CommandLine;
 import japsa.util.HTSUtilities;
 import japsa.util.IntArray;
 import japsa.util.Logging;
-import japsa.util.deploy.Deployable;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
@@ -79,102 +76,12 @@ import org.jfree.data.xy.YIntervalSeriesCollection;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.np.geneStrainTyping", scriptDesc = "Strain typing using present/absence of gene")
 public class GeneStrainTyping {
-
-	/**
-	 * @param args
-	 * @throws InterruptedException 
-	 * @throws Exception 
-	 * @throws OutOfMemoryError 
-	 */
-	public static void main(String[] args) throws IOException, InterruptedException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = GeneStrainTyping.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/		
-
-
-		cmdLine.addString("output", "output.dat",  "Output file");
-		cmdLine.addString("profile", null,  "Output file containing gene profile of all strains");
-		cmdLine.addString("bamFile", null,  "The bam file");
-		cmdLine.addString("geneFile", null,  "The gene file");
-
-		cmdLine.addInt("top", 10,  "The number of top strains");
-		cmdLine.addInt("scoreThreshold", 0,  "The alignment score threshold");
-		cmdLine.addString("tmp", "tmp/t",  "Temporary folder");
-		cmdLine.addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-
-		cmdLine.addInt("timestamp", 0,  "Timestamp to check, if <=0 then use read number instead");
-		cmdLine.addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
-
-		cmdLine.addBoolean("twodonly", false,  "Use only two dimentional reads");
-		cmdLine.addInt("sim", 0,  "Scale for simulation");
-		cmdLine.addBoolean("GUI", false,  "Run on GUI");
-
-		args = cmdLine.stdParseLine_old(args);		
-		/**********************************************************************/
-
-		String output = cmdLine.getStringVal("output");
-		String profile = cmdLine.getStringVal("profile");
-		String bamFile = cmdLine.getStringVal("bam");
-		String geneFile = cmdLine.getStringVal("geneFile");		
-		String tmp = cmdLine.getStringVal("tmp");
-		String hours = cmdLine.getStringVal("hours");
-		int top = cmdLine.getIntVal("top");		
-		int read = cmdLine.getIntVal("read");
-		boolean GUI = cmdLine.getBooleanVal("GUI");
-		int timestamp = cmdLine.getIntVal("timestamp");
-
-		{
-			GeneStrainTyping paTyping = new GeneStrainTyping(GUI);	
-			paTyping.simulation = cmdLine.getIntVal("sim");
-			paTyping.prefix = tmp;
-			paTyping.readNumber = read;
-			if (hours !=null){
-				BufferedReader bf = SequenceReader.openFile(hours);
-				String line = bf.readLine();//first line
-				paTyping.hoursArray = new IntArray();
-				paTyping.readCountArray = new IntArray();
-
-				while ((line = bf.readLine())!= null){
-					String [] tokens = line.split("\\s");
-					int hrs = Integer.parseInt(tokens[0]);
-					int readCount = Integer.parseInt(tokens[2]);
-
-					paTyping.hoursArray.add(hrs);
-					paTyping.readCountArray.add(readCount);	
-				}
-			}
-
-
-			if (paTyping.readNumber < 1)
-				paTyping.readNumber = 1;
-
-			paTyping.datOS = SequenceOutputStream.makeOutputStream(output);
-			paTyping.datOS.print("step\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
-			paTyping.readGenes(geneFile);
-			paTyping.readKnowProfiles(profile);
-			Logging.info("Read in " + paTyping.profileList.size() + " gene profiles");
-
-			paTyping.timestamp = timestamp;
-
-			if (GUI)
-				paTyping.startGUI();
-
-			paTyping.typing(bamFile,  top);
-			paTyping.datOS.close();
-		}
-	}
-
-
-	/////////////////////////////////////////////////////////////////////////////
-
-
+	//TODO: make the below private
 	HashSet<String> addedGenes = new HashSet<String>(); 
 	PresenceAbsence lcTyping;
 
-	ArrayList<GeneProfile> profileList;	
+	public ArrayList<GeneProfile> profileList;	
 
 	ArrayList<Sequence> geneList;
 	HashMap<String, Sequence> geneMap;
@@ -184,19 +91,19 @@ public class GeneStrainTyping {
 	HashSet<String> targetGenes;
 
 
-	String prefix = "tmp";	
-	int simulation = 0;
+	public String prefix = "tmp";	
+	public int simulation = 0;
 
-	int readNumber = 100;
-	SequenceOutputStream datOS = null;
+	public int readNumber = 100;
+	public SequenceOutputStream datOS = null;
 
 
 	int currentReadCount = 0;
 	long currentBaseCount = 0;
 	int currentReadAligned = 0;
 
-	IntArray hoursArray = null;
-	IntArray readCountArray = null;
+	public IntArray hoursArray = null;
+	public IntArray readCountArray = null;
 	int arrayIndex = 0;
 
 	YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
@@ -204,7 +111,7 @@ public class GeneStrainTyping {
 	long firstReadTime = 0;
 	JLabel timeLabel;
 	boolean withGUI = false;
-	int timestamp = 5000;
+	public int timestamp = 5000;
 
 
 	public GeneStrainTyping(boolean withGUI){
@@ -265,10 +172,11 @@ public class GeneStrainTyping {
 
 	/**
 	 * Read genes from gene file to a list + map: for random access
+	 * TODO: make private
 	 * @param geneFile
 	 * @throws IOException
 	 */
-	private void readGenes(String geneFile) throws IOException{
+	public void readGenes(String geneFile) throws IOException{
 		geneList = SequenceReader.readAll(geneFile, Alphabet.DNA());		 
 		geneMap = new HashMap<String, Sequence>();
 
@@ -279,11 +187,12 @@ public class GeneStrainTyping {
 
 
 	/**
-	 * Read the gene profile of all known strains (for strain typing) 
+	 * Read the gene profile of all known strains (for strain typing)
+	 * TODO:make private 
 	 * @param profileFile
 	 * @throws IOException
 	 */
-	private void readKnowProfiles(String profileFile) throws IOException{
+	public void readKnowProfiles(String profileFile) throws IOException{
 		BufferedReader reader = new BufferedReader (new FileReader(profileFile));		
 		profileList = new ArrayList<GeneProfile>(); 
 		String line;
