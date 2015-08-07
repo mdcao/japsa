@@ -53,8 +53,8 @@ import java.io.IOException;
 	scriptDesc = "Join multiple sequences into one"
 	)
 
-public class JoinSequenceTool extends CommandLine{	
-	public JoinSequenceTool(){
+public class JoinSequenceCmd extends CommandLine{	
+	public JoinSequenceCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options] file1 file2 ...");
@@ -73,10 +73,10 @@ public class JoinSequenceTool extends CommandLine{
 	 */
 	public static void main(String[] args) throws IOException{
 		/*********************** Setting up script ****************************/
-		JoinSequenceTool cmdLine = new JoinSequenceTool();		
+		JoinSequenceCmd cmdLine = new JoinSequenceCmd();		
 		args = cmdLine.stdParseLine(args);		
 		/*********************************************************************/
-		//Get dna		
+		
 		String alphabetOption = cmdLine.getStringVal("alphabet");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
@@ -85,8 +85,6 @@ public class JoinSequenceTool extends CommandLine{
 		String output = cmdLine.getStringVal("output");
 		String name = cmdLine.getStringVal("name");
 		boolean removeN = cmdLine.getBooleanVal("removeN");
-
-		//String format = cmdLine.getStringVal("format");		
 
 		SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), 1000000, name);
 		Sequence seq;

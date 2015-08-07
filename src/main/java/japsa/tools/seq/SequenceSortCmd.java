@@ -53,8 +53,8 @@ import java.util.Collections;
  */
 @Deployable(scriptName = "jsa.seq.sort",
 scriptDesc = "Sort sequences based on their lengths")
-public class SequenceSort extends CommandLine{	
-	public SequenceSort(){
+public class SequenceSortCmd extends CommandLine{	
+	public SequenceSortCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -73,7 +73,7 @@ public class SequenceSort extends CommandLine{
 	public static void main(String[] args) throws IOException {		
 
 		/*********************** Setting up script ****************************/		
-		CommandLine cmdLine = new SequenceSort();		
+		CommandLine cmdLine = new SequenceSortCmd();		
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		String inputOption = cmdLine.getStringVal("input");
@@ -81,7 +81,6 @@ public class SequenceSort extends CommandLine{
 		String outputOption = cmdLine.getStringVal("output");
 		boolean numberOption =  cmdLine.getBooleanVal("number");
 		boolean reverseOption =  cmdLine.getBooleanVal("reverse");
-
 
 
 		//Get dna 		

@@ -45,13 +45,13 @@ import org.jfree.data.time.TimeTableXYDataset;
 
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.tools.util.StreamClient;
 import japsa.util.CommandLine;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import japsa.util.net.StreamClient;
 
 /**
  * Read nanopore data (read sequence, events, alignment, models etc) from a raw

@@ -31,17 +31,14 @@
  * 5 Mar 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.tools.util;
+package japsa.util.net;
 
 
-import japsa.util.CommandLine;
+import japsa.tools.util.StreamServerCmd;
 import japsa.util.Logging;
-import japsa.util.deploy.Deployable;
 
 import java.io.Closeable;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -50,22 +47,15 @@ import java.util.ArrayList;
  * @author minhduc
  *
  */
-@Deployable(
-		scriptName = "jsa.util.streamClient",
-		scriptDesc = "Listen for input from the standard input and output to a stream"
-		//scriptDocs = "jsa.util.streamServer implements a server that listen at "
-		//		+ "a specified port. Upon receiving data from a client, it forwards the stream "
-		//		+ "data to standard output"
-		)
 public class StreamClient implements Closeable{
-	ArrayList<Socket> sockets;
-
+	private ArrayList<Socket> sockets;
+	
 	public StreamClient(String serverList) throws UnknownHostException, IOException{
 		sockets = new ArrayList<Socket> ();
 		String [] servers = serverList.split(",");
 		for (String server:servers){
 			String [] toks = server.trim().split(":");
-			int portNumber = StreamServer.DEFAULT_PORT;
+			int portNumber = StreamServerCmd.DEFAULT_PORT;
 			if (toks.length > 1)
 				portNumber = Integer.parseInt(toks[1]);			
 			Logging.info("Trying to connect " + toks[0] + ":" + portNumber);
@@ -88,39 +78,4 @@ public class StreamClient implements Closeable{
 		}
 	}	
 
-	/**
-	 * @param args
-	 * @throws InterruptedException 
-	 * @throws Exception 
-	 * @throws OutOfMemoryError 
-	 */
-	public static void main(String[] args) throws IOException, InterruptedException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = StreamClient.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/
-		//cmdLine.addString("output", "-",
-		//		"Name of the output file, -  for stdout");
-		cmdLine.addStdInputFile();
-		cmdLine.addString("streamServer",null, "Stream output to a server, format IP:port",true);		
-		args = cmdLine.stdParseLine_old(args);			
-		/**********************************************************************/
-		String input = cmdLine.getStringVal("input");
-		StreamClient client = new StreamClient(cmdLine.getStringVal("streamServer"));
-		Logging.info("Connection established");
-		
-		InputStream ins = "input".equals("-")?  new FileInputStream(input) : System.in;
-		byte[] buffer = new byte[8192];
-		
-		while (true){
-			int ret = ins.read(buffer);
-			if (ret < 0)
-				break;
-			for (Socket socket:client.sockets){
-				socket.getOutputStream().write(buffer,0, ret);
-			}
-		}
-		client.close();		
-		
-	}
 }

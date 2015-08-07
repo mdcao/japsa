@@ -29,14 +29,14 @@
 
 /*                           Revision History                                
  * 11/01/2012 - Minh Duc Cao: Revised 
- * 01/01/2013 - Minh Duc Cao, revised                                       
+ * 01/01/2013 - Minh Duc Cao, revised     
+ * 26/07/2015 - minhduc reorganised to tools                                  
  ****************************************************************************/
 
 package japsa.tools.seq;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
-import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -48,48 +48,82 @@ import java.io.IOException;
  * @author Minh Duc Cao
  * 
  */
-@Deployable(scriptName = "jsa.seq.rev",
-           scriptDesc = "Reverse complement sequences (must be DNA)")
-public class SequenceReverseComplement extends CommandLine {	
-	public SequenceReverseComplement(){
+@Deployable(
+	scriptName = "jsa.seq.stats",
+	scriptDesc = "Show statistical composition of sequences stored in a file (or from STDIN)"
+	)
+public class SequenceStatsCmd extends CommandLine{	
+	public SequenceStatsCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
-		setDesc(annotation.scriptDesc()); 
-		
+		setDesc(annotation.scriptDesc());
+
 		addStdInputFile();
-		addStdOutputFile();		
 		addStdAlphabet();//aphabet
-		
-		addStdHelp();
+
+		addStdHelp();		
 	}
-	
-	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/		
-		CommandLine cmdLine = new SequenceReverseComplement();		
+	public static void main(String[] args) throws IOException {				
+		CommandLine cmdLine = new SequenceStatsCmd();
 		args = cmdLine.stdParseLine(args);
-		/**********************************************************************/	
-		
-		Alphabet alphabet = Alphabet.getAlphabet(cmdLine.getStringVal("alphabet"));
+		/**********************************************************************/
+		//Get dna 		
+		String alphabetOption = cmdLine.getStringVal("alphabet");		
+		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
 			alphabet = Alphabet.DNA16();
 
-		String input  = cmdLine.getStringVal("input");
-		String output = cmdLine.getStringVal("output");
-		/**********************************************************************/
-		
-		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
-		SequenceReader reader = SequenceReader.getReader(input);		
-		
-		
+		String input = cmdLine.getStringVal("input");
+		/**********************************************************************/	
+
+
+		SequenceReader reader = SequenceReader.getReader(input);
+		long total = 0;
+		int numSeq = 0;
 		Sequence seq;
-		while ((seq = reader.nextSequence(alphabet))!= null){		
-			Sequence rseq = Alphabet.DNA.complement(seq);
-			rseq.setName(seq.getName()+"_rev");
-			rseq.writeFasta(sos);
+		while ((seq = reader.nextSequence(alphabet))!= null){
+			total += seq.length();
+			numSeq ++;
+			System.out.println(seq.getName() + " :  " + seq.length() + " bases");
+			System.out.println(seq.getDesc());
+			getComposition(seq);
 		}
-		sos.close();
-		reader.close();		
-		
+		reader.close();
+		System.out.println("Total = " + total + " bases in " + numSeq + " sequences.");
 	}
+
+
+	/**
+	 * Get properties of the sequences in the file
+	 * 
+	 * @param args	 
+	 */
+	static private void getComposition(Sequence seq) {
+		if (seq.length() == 0) {
+			System.out.println("Sequence " + seq + " contains 0 base/residue");
+			return;
+		}
+		Alphabet alphabet = seq.alphabet();
+		int[] counts = new int[alphabet.size()];
+		int others = 0;
+
+		for (int i = 0; i < seq.length(); i++) {
+			int index = seq.symbolAt(i);
+			if (index < 0 || index >= counts.length)
+				others++;
+			else
+				counts[index]++;
+		}
+		for (int index = 0; index < counts.length; index++) {
+			if (counts[index] > 0)
+				System.out.printf("%10d  %c : %5.2f%%\n", counts[index], alphabet
+					.int2char(index), (counts[index] * 100.0 / seq.length()));
+		}
+		if (others > 0)
+			System.out.printf("%10d  %c : %5.2f%%\n", others, 'X',
+				(others * 100.0 / seq.length()));
+
+	}
+
 }

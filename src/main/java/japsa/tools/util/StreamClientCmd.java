@@ -28,75 +28,72 @@
  ****************************************************************************/
 
 /**************************     REVISION HISTORY    **************************
- * 21/12/2012 - Minh Duc Cao: Created                                        
+ * 5 Mar 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.tools.seq;
+package japsa.tools.util;
 
-
-import japsa.seq.Alphabet;
-import japsa.seq.Sequence;
-import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import japsa.util.net.StreamClient;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
-
+import java.net.Socket;
 
 /**
- * @author Minh Duc Cao (http://www.caominhduc.org/)
+ * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.seq.split",
-            scriptDesc = "Break a multiple sequence files to each sequence per file")
-public class SplitSequenceFile {
+@Deployable(
+	scriptName = "jsa.util.streamClient",
+	scriptDesc = "Listen for input from the standard input and output to a stream"
+	)
+
+public class StreamClientCmd extends CommandLine{	
+	public StreamClientCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+		addStdInputFile();
+		addString("streamServer",null, "Stream output to a server, format IP:port",true);			
+
+		addStdHelp();
+	} 
+
 
 	/**
 	 * @param args
+	 * @throws InterruptedException 
+	 * @throws Exception 
+	 * @throws OutOfMemoryError 
 	 */
-	public static void main(String[] args) throws IOException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = SplitSequenceFile.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] ",
-				annotation.scriptDesc());
-				
-		cmdLine.addStdInputFile();
-		cmdLine.addStdAlphabet();
-		
-		cmdLine.addString("output", "out_", "Prefix of the output files");
-		cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
-					
-		args = cmdLine.stdParseLine_old(args);
+	public static void main(String[] args) throws IOException, InterruptedException{		 		
+		CommandLine cmdLine = new StreamClientCmd();				
+		args = cmdLine.stdParseLine(args);						
 		/**********************************************************************/
-
-		//Get dna 		
-		String alphabetOption = cmdLine.getStringVal("alphabet");		
-		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
-		if (alphabet == null)
-			alphabet = Alphabet.DNA5();
-		
-		String output = cmdLine.getStringVal("output");
-		String format = cmdLine.getStringVal("format");
 		String input = cmdLine.getStringVal("input");
+		StreamClient client = new StreamClient(cmdLine.getStringVal("streamServer"));
+		Logging.info("Connection established");
 
-				
-		SequenceReader reader = SequenceReader.getReader(input);
-		
-		Sequence seq;
-		if (format.equals("fasta")){
-			while ((seq = reader.nextSequence(alphabet)) != null){
-				seq.writeFasta(output+seq.getName()+".fasta");
+		InputStream ins = input.equals("-")? System.in : new FileInputStream(input);
+		byte[] buffer = new byte[8192];
+
+		while (true){
+			int ret = ins.read(buffer);
+			if (ret < 0)
+				break;
+			for (Socket socket:client.getSockets()){
+				socket.getOutputStream().write(buffer,0, ret);
 			}
-		}else {//if (outType.equals("jsa")){
-			while ((seq = reader.nextSequence(alphabet)) != null){
-				seq.writeJSA(output+seq.getName()+".jsa");
-			}
-		}   
-		
-		
-				
-		reader.close();
+		}
+		client.close();		
+
+
 	}
 }

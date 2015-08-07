@@ -33,7 +33,7 @@
  ****************************************************************************/
 package japsa.tools.bio.np;
 
-import japsa.tools.util.DynamicHistogram;
+import japsa.util.DynamicHistogram;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
 

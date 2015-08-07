@@ -22,8 +22,8 @@ import japsa.util.deploy.Deployable;
 	scriptName = "jsa.seq.extract", 
 	scriptDesc = "Extract subsequences"
 )
-public class SequenceExtract extends CommandLine {
-	public SequenceExtract(){
+public class SequenceExtractCmd extends CommandLine {
+	public SequenceExtractCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options] <chr:start-end> <chr:start-end> ...");
@@ -48,7 +48,7 @@ public class SequenceExtract extends CommandLine {
 	 */
 	public static void main(String[] args) throws IOException {
 		/*********************** Setting up script ****************************/		
-		CommandLine cmdLine = new SequenceExtract();		
+		CommandLine cmdLine = new SequenceExtractCmd();		
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 

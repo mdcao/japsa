@@ -27,105 +27,66 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 11/01/2012 - Minh Duc Cao: Revised 
- * 01/01/2013 - Minh Duc Cao, revised     
- * 26/07/2015 - minhduc reorganised to tools                                  
+/**************************     REVISION HISTORY    **************************
+ * 5 Mar 2015 - Minh Duc Cao: Created                                        
+ *  
  ****************************************************************************/
+package japsa.tools.util;
 
-package japsa.tools.seq;
-
-import japsa.seq.Alphabet;
-import japsa.seq.Sequence;
-import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import com.google.common.io.ByteStreams;
 
 
 /**
- * @author Minh Duc Cao
- * 
+ * @author minhduc
+ *
  */
 @Deployable(
-	scriptName = "jsa.seq.stats",
-	scriptDesc = "Show statistical composition of sequences stored in a file (or from STDIN)",
-	scriptDocs = ""
-		+ ""
-	)
-public class SequenceStats extends CommandLine{	
-	public SequenceStats(){
+		scriptName = "jsa.util.streamServer",
+		scriptDesc = "Listen for input from a stream and output to the standard output",
+		scriptDocs = "jsa.util.streamServer implements a server that listen at "
+				+ "a specified port. Upon receiving data from a client, it forwards the stream "
+				+ "data to standard output")
+public class StreamServerCmd extends CommandLine{
+	public static int DEFAULT_PORT = 3456;
+	public StreamServerCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		
-		addStdInputFile();
-		addStdAlphabet();//aphabet
+		addInt("port", DEFAULT_PORT,  "Port to listen to");	
 		
 		addStdHelp();		
-	}
-	public static void main(String[] args) throws IOException {				
-		CommandLine cmdLine = new SequenceStats();
-		args = cmdLine.stdParseLine(args);
+	} 
+	
+	
+/**
+ * @param args
+ * @throws InterruptedException 
+ * @throws Exception 
+ * @throws OutOfMemoryError 
+ */
+	public static void main(String[] args) throws IOException, InterruptedException{		 		
+		CommandLine cmdLine = new StreamServerCmd();				
+		args = cmdLine.stdParseLine(args);			
 		/**********************************************************************/
-		//Get dna 		
-		String alphabetOption = cmdLine.getStringVal("alphabet");		
-		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
-		if (alphabet == null)
-			alphabet = Alphabet.DNA16();
-
-		String input = cmdLine.getStringVal("input");
-		/**********************************************************************/	
-
-
-		SequenceReader reader = SequenceReader.getReader(input);
-		long total = 0;
-		int numSeq = 0;
-		Sequence seq;
-		while ((seq = reader.nextSequence(alphabet))!= null){
-			total += seq.length();
-			numSeq ++;
-			System.out.println(seq.getName() + " :  " + seq.length() + " bases");
-			System.out.println(seq.getDesc());
-			getComposition(seq);
-		}
-		reader.close();
-		System.out.println("Total = " + total + " bases in " + numSeq + " sequences.");
+				
+		int port = cmdLine.getIntVal("port");
+		
+		ServerSocket serverSocket = new ServerSocket(port);
+		Logging.info("Listen on port " + port);		
+	    Socket clientSocket = serverSocket.accept();
+	    Logging.info("Connection establised");
+	    ByteStreams.copy(clientSocket.getInputStream(), System.out);
+	    serverSocket.close();
+	    Logging.info("Connection closed");	    
 	}
-
-
-	/**
-	 * Get properties of the sequences in the file
-	 * 
-	 * @param args	 
-	 */
-	static private void getComposition(Sequence seq) {
-		if (seq.length() == 0) {
-			System.out.println("Sequence " + seq + " contains 0 base/residue");
-			return;
-		}
-		Alphabet alphabet = seq.alphabet();
-		int[] counts = new int[alphabet.size()];
-		int others = 0;
-
-		for (int i = 0; i < seq.length(); i++) {
-			int index = seq.symbolAt(i);
-			if (index < 0 || index >= counts.length)
-				others++;
-			else
-				counts[index]++;
-		}
-		for (int index = 0; index < counts.length; index++) {
-			if (counts[index] > 0)
-				System.out.printf("%10d  %c : %5.2f%%\n", counts[index], alphabet
-					.int2char(index), (counts[index] * 100.0 / seq.length()));
-		}
-		if (others > 0)
-			System.out.printf("%10d  %c : %5.2f%%\n", others, 'X',
-				(others * 100.0 / seq.length()));
-
-	}
-
 }

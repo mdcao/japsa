@@ -31,7 +31,7 @@
  * 20 Apr 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.tools.util;
+package japsa.util;
 
 /**
  * @author minhduc

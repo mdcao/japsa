@@ -71,14 +71,14 @@ import japsa.tools.bio.np.NanoporeReaderStream;
 import japsa.tools.bio.phylo.NormaliseTree;
 import japsa.tools.bio.phylo.XMDistance;
 import japsa.tools.bio.phylo.XMDistance2;
-import japsa.tools.seq.JoinSequenceTool;
-import japsa.tools.seq.SequenceExtract;
-import japsa.tools.seq.SequenceReverseComplement;
-import japsa.tools.seq.SequenceSort;
-import japsa.tools.seq.SequenceStats;
-import japsa.tools.seq.SplitSequenceFile;
-import japsa.tools.util.StreamClient;
-import japsa.tools.util.StreamServer;
+import japsa.tools.seq.JoinSequenceCmd;
+import japsa.tools.seq.SequenceExtractCmd;
+import japsa.tools.seq.SequenceReverseComplementCmd;
+import japsa.tools.seq.SequenceSortCmd;
+import japsa.tools.seq.SequenceStatsCmd;
+import japsa.tools.seq.SplitSequenceFileCmd;
+import japsa.tools.util.StreamClientCmd;
+import japsa.tools.util.StreamServerCmd;
 import japsa.tools.xm.ExpertModelDriver;
 import japsa.util.CommandLine;
 import japsa.util.StringSeparator;
@@ -107,13 +107,13 @@ public class Deploy {
 	static{
 		//jsa.seq.*
 		tools.add("Sequence manipulation tools:");
-		tools.add(new SequenceStats());
-		tools.add(new SequenceSort());
-		tools.add(new SequenceExtract());
-		tools.add(new SequenceReverseComplement());		
+		tools.add(new SequenceStatsCmd());
+		tools.add(new SequenceSortCmd());
+		tools.add(new SequenceExtractCmd());
+		tools.add(new SequenceReverseComplementCmd());		
 		tools.add(new Bed2Japsa());
-		tools.add(new SplitSequenceFile());
-		tools.add(new JoinSequenceTool());	
+		tools.add(new SplitSequenceFileCmd());
+		tools.add(new JoinSequenceCmd());	
 		tools.add(new FileFormatConverter());
 		tools.add(new AddAnnotation());
 		tools.add(new AnnotateRegions());
@@ -158,8 +158,8 @@ public class Deploy {
 		tools.add(new VNTRDepth());
 
 		tools.add("Utilities:");
-		tools.add(new StreamServer());
-		tools.add(StreamClient.class);
+		tools.add(new StreamServerCmd());
+		tools.add(new StreamClientCmd());
 		//tools.add(StreamClient());
 
 		//jsa.phylo		

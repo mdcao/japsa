@@ -28,58 +28,79 @@
  ****************************************************************************/
 
 /**************************     REVISION HISTORY    **************************
- * 5 Mar 2015 - Minh Duc Cao: Created                                        
+ * 21/12/2012 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.tools.util;
+package japsa.tools.seq;
 
+
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 
-import com.google.common.io.ByteStreams;
 
 
 /**
- * @author minhduc
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
  *
  */
-@Deployable(
-		scriptName = "jsa.util.streamServer",
-		scriptDesc = "Listen for input from a stream and output to the standard output",
-		scriptDocs = "jsa.util.streamServer implements a server that listen at "
-				+ "a specified port. Upon receiving data from a client, it forwards the stream "
-				+ "data to standard output")
-public class StreamServer {
-	public static int DEFAULT_PORT = 3456;
-	
-/**
- * @param args
- * @throws InterruptedException 
- * @throws Exception 
- * @throws OutOfMemoryError 
- */
-	public static void main(String[] args) throws IOException, InterruptedException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = StreamServer.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/
-		cmdLine.addInt("port", DEFAULT_PORT,  "Port to listen to");
-		args = cmdLine.stdParseLine_old(args);			
-		/**********************************************************************/		
-		//String output = cmdLine.getStringVal("output");
-		int port = cmdLine.getIntVal("port");
+@Deployable(scriptName = "jsa.seq.split",
+            scriptDesc = "Break a multiple sequence files to each sequence per file")
+public class SplitSequenceFileCmd extends CommandLine{	
+	public SplitSequenceFileCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 		
-		ServerSocket serverSocket = new ServerSocket(port);
-		Logging.info("Listen on port " + port);		
-	    Socket clientSocket = serverSocket.accept();
-	    Logging.info("Connection establised");
-	    ByteStreams.copy(clientSocket.getInputStream(), System.out);
-	    serverSocket.close();
-	    Logging.info("Connection closed");	    
+						
+		addStdInputFile();
+		addStdAlphabet();
+		
+		addString("output", "out_", "Prefix of the output files");
+		addString("format", "fasta", "Format of output files. Options : japsa or fasta");
+
+		addStdHelp();		
+	}
+	
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws IOException{				
+		CommandLine cmdLine = new SplitSequenceFileCmd();					
+		args = cmdLine.stdParseLine(args);
+		/**********************************************************************/
+
+		//Get dna 		
+		String alphabetOption = cmdLine.getStringVal("alphabet");		
+		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
+		if (alphabet == null)
+			alphabet = Alphabet.DNA5();
+		
+		String output = cmdLine.getStringVal("output");
+		String format = cmdLine.getStringVal("format");
+		String input = cmdLine.getStringVal("input");
+
+				
+		SequenceReader reader = SequenceReader.getReader(input);
+		
+		Sequence seq;
+		if (format.equals("fasta")){
+			while ((seq = reader.nextSequence(alphabet)) != null){
+				seq.writeFasta(output+seq.getName()+".fasta");
+			}
+		}else {//if (outType.equals("jsa")){
+			while ((seq = reader.nextSequence(alphabet)) != null){
+				seq.writeJSA(output+seq.getName()+".jsa");
+			}
+		}   
+		
+		
+				
+		reader.close();
 	}
 }
