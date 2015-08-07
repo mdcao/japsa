@@ -35,7 +35,6 @@
 
 package japsa.util.deploy;
 
-import japsa.bio.alignment.AlignmentEM;
 import japsa.bio.hts.BreakBam;
 import japsa.bio.hts.CountReadInRegion;
 import japsa.bio.hts.FastQRMEmptyRead;
@@ -60,17 +59,18 @@ import japsa.bio.tr.SortFragmentFile;
 import japsa.bio.tr.VCF2TRV;
 import japsa.bio.tr.VNTRDepth;
 //import japsa.seq.nanopore.NanoporeReader;
-import japsa.seq.tools.AddAnnotation;
-import japsa.seq.tools.AnnotateRegions;
-import japsa.seq.tools.AnnotateVCF;
-import japsa.seq.tools.Bed2Japsa;
-import japsa.seq.tools.ExtractGeneSequence;
-import japsa.seq.tools.FileFormatConverter;
-import japsa.tools.bio.np.NanoporeReadFilter;
-import japsa.tools.bio.np.NanoporeReaderStream;
+import japsa.tools.bio.np.NanoporeReadFilterCmd;
+import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.phylo.NormaliseTree;
 import japsa.tools.bio.phylo.XMDistance;
 import japsa.tools.bio.phylo.XMDistance2;
+import japsa.tools.seq.AddAnnotationCmd;
+import japsa.tools.seq.AlignmentEMCmd;
+import japsa.tools.seq.AnnotateRegionsCmd;
+import japsa.tools.seq.AnnotateVCFCmd;
+import japsa.tools.seq.Bed2JapsaCmd;
+import japsa.tools.seq.ExtractGeneSequenceCmd;
+import japsa.tools.seq.FileFormatConvertCmd;
 import japsa.tools.seq.JoinSequenceCmd;
 import japsa.tools.seq.SequenceExtractCmd;
 import japsa.tools.seq.SequenceReverseComplementCmd;
@@ -111,15 +111,15 @@ public class Deploy {
 		tools.add(new SequenceSortCmd());
 		tools.add(new SequenceExtractCmd());
 		tools.add(new SequenceReverseComplementCmd());		
-		tools.add(new Bed2Japsa());
+		tools.add(new Bed2JapsaCmd());
 		tools.add(new SplitSequenceFileCmd());
 		tools.add(new JoinSequenceCmd());	
-		tools.add(new FileFormatConverter());
-		tools.add(new AddAnnotation());
-		tools.add(new AnnotateRegions());
-		tools.add(new AnnotateVCF());
-		tools.add(new ExtractGeneSequence());
-		tools.add(new AlignmentEM());
+		tools.add(new FileFormatConvertCmd());
+		tools.add(new AddAnnotationCmd());
+		tools.add(new AnnotateRegionsCmd());
+		tools.add(new AnnotateVCFCmd());
+		tools.add(new ExtractGeneSequenceCmd());
+		tools.add(new AlignmentEMCmd());
 
 		//tools.add(MarkovCompress.class);
 
@@ -138,8 +138,8 @@ public class Deploy {
 		//jsa.np.
 		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
-		tools.add(new NanoporeReaderStream());
-		tools.add(new NanoporeReadFilter());		
+		tools.add(new NanoporeReaderCmd());
+		tools.add(new NanoporeReadFilterCmd());		
 		tools.add(SpeciesMixtureTyping.class);		
 		tools.add(GeneStrainTyping.class);
 		tools.add(new MLSTStrainTyping());

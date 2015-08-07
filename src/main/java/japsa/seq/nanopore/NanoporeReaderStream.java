@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.tools.bio.np;
+package japsa.seq.nanopore;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,16 +41,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import org.jfree.data.time.TimeTableXYDataset;
-
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.util.CommandLine;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
-import japsa.util.deploy.Deployable;
 import japsa.util.net.StreamClient;
 
 /**
@@ -59,122 +55,7 @@ import japsa.util.net.StreamClient;
  * @author minhduc
  *
  */
-@Deployable(	
-	scriptName = "jsa.np.f5reader", 
-	scriptDesc = 
-	"Extract Oxford Nanopore sequencing data from FAST5 files, perform an "
-	+ "initial analysis of the date and stream them to realtime analysis pipelines"
-	)
-
 public class NanoporeReaderStream{
-	public static void main(String[] args) throws OutOfMemoryError, Exception {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = NanoporeReaderStream.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine(annotation.scriptName() + " [options]",
-			annotation.scriptDesc());		
-
-		cmdLine.addBoolean("GUI", false,"Run with a Graphical User Interface");
-		cmdLine.addBoolean("realtime", false,"Run the program in real-time mode, i.e., keep waiting for new data from Metrichor agent");
-		cmdLine.addString("folder", null,"The folder containing base-called reads");
-		cmdLine.addBoolean("fail", false,"Get sequence reads from fail folder");
-		cmdLine.addString("output", "-","Name of the output file, - for stdout");
-		cmdLine.addString("streams", null,"Stream output to some servers, format \"IP:port,IP:port\" (no spaces)");
-		cmdLine.addString("format", "fastq","Format of sequence reads (fastq or fasta)");
-		cmdLine.addInt("minLength", 0,"Minimum read length");
-		cmdLine.addBoolean("number", false,"Add a unique number to read name");
-		cmdLine.addBoolean("stats", false,"Generate a report of read statistics");
-		cmdLine.addBoolean("time", false,"Extract the sequencing time of each read -- only work with Metrichor > 1.12");		
-
-		args = cmdLine.stdParseLine_old(args);
-		/**********************************************************************/
-
-		String output = cmdLine.getStringVal("output");		
-		String folder = cmdLine.getStringVal("folder");		
-		int minLength  = cmdLine.getIntVal("minLength");
-		boolean stats  = cmdLine.getBooleanVal("stats");
-		boolean number  = cmdLine.getBooleanVal("number");
-		boolean time  = cmdLine.getBooleanVal("time");
-		boolean GUI  = cmdLine.getBooleanVal("GUI");
-		boolean realtime  = cmdLine.getBooleanVal("realtime");
-		boolean fail  = cmdLine.getBooleanVal("fail");
-		String format = cmdLine.getStringVal("format");		
-		String streamServers = cmdLine.getStringVal("streams");
-
-		//String pFolderName = cmdLine.getStringVal("pFolderName");
-		//String f5list = cmdLine.getStringVal("f5list");
-		//int interval = cmdLine.getIntVal("interval");//in second		
-		//int age = cmdLine.getIntVal("age") * 1000;//in second
-		int age = 20 * 1000;//cmdLine.getIntVal("age") * 1000;//in second
-		int interval = 30;
-		String pFolderName = null;
-
-		if (!GUI && folder == null){// && f5list == null){
-			Logging.exit("Download folder need to be specified", 1);
-		}
-
-		NanoporeReaderStream reader = new NanoporeReaderStream();
-
-		reader.getTime = time;
-		reader.stats = stats;
-		reader.number = number;
-		reader.minLength = minLength;
-
-		reader.interval = interval;
-		reader.age = age;
-
-		//reader.f5List = f5list;
-		reader.folder = folder;		
-		reader.doFail = fail;
-		reader.output = output;
-		reader.format = format.toLowerCase();
-		reader.realtime = realtime;
-		reader.streamServers = streamServers;
-		NanoporeReaderWindow mGUI = null;
-
-		if (GUI){
-			reader.realtime = true;
-			System.setProperty("java.awt.headless", "false");
-			reader.stats = true;//GUI implies stats
-			reader.ready = false;//wait for the command from GUI
-
-			TimeTableXYDataset dataset = new TimeTableXYDataset();
-			mGUI = new NanoporeReaderWindow(reader,dataset);
-
-			while (!reader.ready){
-				Logging.info("NOT READY");
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {					
-					e.printStackTrace();
-				}			
-			}
-			Logging.info("GO");
-
-			new Thread(mGUI).start();
-		}else{
-			String msg = reader.prepareIO();
-			if (msg != null){
-				Logging.exit(msg, 1);
-			}
-		}
-		//reader need to wait until ready to go
-
-		//reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
-		try{
-			reader.readFastq(pFolderName);
-		}catch (JapsaException e){
-			System.err.println(e.getMessage());
-			e.getStackTrace();
-			if (mGUI != null)
-				mGUI.interupt(e);
-		}catch (Exception e){
-			throw e;
-		}finally{		
-			reader.close();
-		}
-
-	}//main
-
 	public String prepareIO(){
 		String msg = null;
 		try{
@@ -218,22 +99,21 @@ public class NanoporeReaderStream{
 	int passNumber = 0, failNumber = 0;
 	SequenceOutputStream sos;
 	ArrayList<SequenceOutputStream> networkOS = null;
-	boolean stats, number;
-	String //f5List = null, 
-	folder = null;
-	int minLength = 0;
-	boolean wait = true;
-	boolean realtime = true;
-	int interval = 1, age = 1000;
-	boolean doFail = false;
-	String output = "";
-	String streamServers = null;
+	public boolean stats, number;
+	public String folder = null;
+	public int minLength = 0;
+	public boolean wait = true;
+	public boolean realtime = true;
+	public int interval = 1, age = 1000;
+	public boolean doFail = false;
+	public String output = "";
+	public String streamServers = null;
 	boolean doLow = true;
-	boolean getTime = false;
+	public boolean getTime = false;
 	boolean done = false;
 
-	String format = "fastq";
-	boolean ready = true;
+	public String format = "fastq";
+	public boolean ready = true;
 	static byte MIN_QUAL = '!';
 
 	/**

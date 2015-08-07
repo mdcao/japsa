@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.tools.bio.np;
+package japsa.seq.nanopore;
 
 import java.io.BufferedReader;
 import java.util.ArrayList;

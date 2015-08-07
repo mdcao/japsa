@@ -40,6 +40,7 @@ import japsa.seq.Alphabet;
 import japsa.seq.FastqReader;
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
+import japsa.seq.nanopore.NanoporeReaderStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
@@ -51,83 +52,75 @@ import japsa.util.deploy.Deployable;
 @Deployable(
 	scriptName = "jsa.np.filter", 
 	scriptDesc = "Filter nanopore reads data from fastq file")
-public class NanoporeReadFilter// implements Closeable
-{
-	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = NanoporeReadFilter.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine(annotation.scriptName() + " [options]",
-				annotation.scriptDesc());
-		
-		cmdLine.addStdInputFile();
-		cmdLine.addStdOutputFile();
-		cmdLine.addInt("lenMin", 0, 
-				"Minimum sequence length");
-		
-		cmdLine.addInt("lenMax", Integer.MAX_VALUE, 
-				"Minimum sequence length");
-		
-		cmdLine.addDouble("qualMin", 0, 
-				"Minimum average quality");		
+public class NanoporeReadFilterCmd extends CommandLine{	
+	public NanoporeReadFilterCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 
-		cmdLine.addDouble("qualMax", 1000, 
-				"Maximum average quality");
+		addStdInputFile();
+		addStdOutputFile();
 		
-		cmdLine.addBoolean("excl2D", false, "Exclude 2D reads");
-		cmdLine.addBoolean("exclTemp", false, "Exclude template reads");
-		cmdLine.addBoolean("exclComp", false, "Exclude complement reads");
-		
-				
-		cmdLine.addString("format", "fastq", "Format of the output file");
-		args = cmdLine.stdParseLine_old(args);
-		/**********************************************************************/
+		addInt("lenMin", 0, "Minimum sequence length");
+		addInt("lenMax", Integer.MAX_VALUE, "Minimum sequence length");
+		addDouble("qualMin", 0, "Minimum average quality");		
+		addDouble("qualMax", 1000, "Maximum average quality");
+		addBoolean("excl2D", false, "Exclude 2D reads");
+		addBoolean("exclTemp", false, "Exclude template reads");
+		addBoolean("exclComp", false, "Exclude complement reads");
+		addString("format", "fastq", "Format of the output file");
+
+		addStdHelp();
+	} 
+
+	public static void main(String[] args) throws IOException {
+		CommandLine cmdLine = new NanoporeReadFilterCmd();
+		args = cmdLine.stdParseLine(args);
 
 		String output = cmdLine.getStringVal("output");
 		String input = cmdLine.getStringVal("input");
-		
-		
 		int lenMin  = cmdLine.getIntVal("lenMin");
 		int lenMax  = cmdLine.getIntVal("lenMax");
-		
 		double qualMin  = cmdLine.getDoubleVal("qualMin");
 		double qualMax  = cmdLine.getDoubleVal("qualMax");
-		
+
 		boolean exclude2D =  cmdLine.getBooleanVal("exclude2D");
 		boolean excludeTemplate =  cmdLine.getBooleanVal("excludeTemplate");
 		boolean excludeComplement =  cmdLine.getBooleanVal("excludeComplement");
-		
-						
+
+
 		String format = cmdLine.getStringVal("format");
-		
+
 		boolean fastaOutput = "fasta".equals(format.trim().toLowerCase());
-		
+
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
-		
+
 		FastqReader reader = "-".equals(input)? (new FastqReader(System.in) ) 
-				: (new FastqReader(input));
+			: (new FastqReader(input));
 		FastqSequence seq;
-		
-		
-		
+
+
+
 		while ( (seq = reader.nextSequence(Alphabet.DNA())) != null){
-			
+
 			//Min length
 			if (seq.length() < lenMin)
 				continue;
-			
+
 			//max length
 			if (seq.length() > lenMax)
 				continue;
-			
+
 			double qual = -1;
-			
+
 			//min quality
 			if (qualMin > 0){
 				qual = NanoporeReaderStream.averageQuality(seq);
 				if (qual < qualMin)
 					continue;				
 			}
-			
+
 			//max quality			
 			if (qualMax < 1000){
 				if (qual < 0)
@@ -135,24 +128,24 @@ public class NanoporeReadFilter// implements Closeable
 				if (qual >= qualMax)
 					continue;		
 			}
-			
+
 			if (excludeComplement && seq.getName().contains("complement"))
 				continue;
-			
+
 			if (excludeTemplate && seq.getName().contains("template"))
 				continue;
-			
+
 			if (exclude2D && seq.getName().contains("twodim"))
 				continue;
-			
+
 			//done all the fitlering
 			if (fastaOutput)
 				seq.writeFasta(sos);
 			else
 				seq.print(sos);
-			
+
 		}
-		
+
 		reader.close();		
 		sos.close();
 	}//main

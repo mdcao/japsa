@@ -165,6 +165,10 @@ public class CommandLine {
 		return res.toString();
 	}
 
+	/**
+	 * Deprecated: use usageString instead
+	 * @return
+	 */
 	@Deprecated
 	public String usageMessage() {
 		int indent = 18;

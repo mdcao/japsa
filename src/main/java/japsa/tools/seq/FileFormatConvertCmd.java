@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.seq.tools;
+package japsa.tools.seq;
 
 
 import japsa.seq.Alphabet;
@@ -53,26 +53,31 @@ import java.util.ArrayList;
  */
 @Deployable(scriptName = "jsa.seq.format",
             scriptDesc = "Convert sequence(s) from a format to another")
-public class FileFormatConverter {
+public class FileFormatConvertCmd extends CommandLine{	
+	public FileFormatConvertCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addStdInputFile();
+		addString("output", "-", "Name of the output file,  - for standard output");
+		addString("format", "fasta", "Format of output file. Options : japsa, fasta and phylip");
+		addStdAlphabet();
+	
+		addStdHelp();		
+	} 
+
 	/**
 	 * 
 	 * @param args
 	 */
 
 	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = FileFormatConverter.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] ",
-				annotation.scriptDesc());
+		CommandLine cmdLine = new FileFormatConvertCmd();
+		args = cmdLine.stdParseLine(args);
 		
-		cmdLine.addStdInputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addString("format", "fasta", "Format of output file. Options : japsa, fasta and phylip");
-		cmdLine.addStdAlphabet();
 		
-		args = cmdLine.stdParseLine_old(args);	
-		/********************************************************************/
 		String output = cmdLine.getStringVal("output");
 		String format = cmdLine.getStringVal("format");
 		String input = cmdLine.getStringVal("input");

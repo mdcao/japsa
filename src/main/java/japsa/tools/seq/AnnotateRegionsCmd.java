@@ -31,7 +31,7 @@
  * 09/05/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.seq.tools;
+package japsa.tools.seq;
 
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
@@ -50,30 +50,24 @@ import java.io.IOException;
  */
 @Deployable(scriptName = "jsa.seq.annotate",
 scriptDesc = "Annotate a list of regions using some annotation such as RefSeq")
-public class AnnotateRegions {
-	
-	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "japsa.seq.annotate";
-		String desc = "Annotate a list of regions using some annotation such as RefSeq\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [params]");
-		/**********************************************************************/
+public class AnnotateRegionsCmd extends CommandLine{	
+	public AnnotateRegionsCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 		
-		cmdLine.addString("input", null, "Name of the input file, - for standard input", true);
-		cmdLine.addString("anno", "anno", "Name of the annotation file,  - for standard output");
-		cmdLine.addString("output", "output", "Output");
-
-		/**********************************************************************/
-		cmdLine.addStdHelp();
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
+		addString("input", null, "Name of the input file, - for standard input", true);
+		addString("anno", "anno", "Name of the annotation file,  - for standard output");
+		addString("output", "output", "Output");
+			
+		addStdHelp();		
+	} 
+	
+	public static void main(String[] args) throws IOException {		
+		CommandLine cmdLine = new AnnotateRegionsCmd();		
+		args = cmdLine.stdParseLine(args);
+		
 		/**********************************************************************/
 		JapsaFileFormat annoF = new JapsaFileFormat(cmdLine.getStringVal("anno"));
 		JapsaFileFormat inputF= new JapsaFileFormat(cmdLine.getStringVal("input"));

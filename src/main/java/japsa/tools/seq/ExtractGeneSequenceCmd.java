@@ -32,7 +32,7 @@
  * 01/01/2013 - Minh Duc Cao, revised                                       
  ****************************************************************************/
 
-package japsa.seq.tools;
+package japsa.tools.seq;
 
 import japsa.seq.Alphabet;
 import japsa.seq.JapsaAnnotation;
@@ -53,22 +53,27 @@ import java.io.IOException;
  */
 @Deployable(scriptName = "jsa.seq.gff2fasta",
            scriptDesc = "Extract sequences from a gff annotation")
-public class ExtractGeneSequence {	
+public class ExtractGeneSequenceCmd extends CommandLine{	
+	public ExtractGeneSequenceCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("sequence", null, "The sequence (whole chromosome)",true);
+		addString("gff", null, "Annotation file in gff format",true);
+		addString("type", "gene", "types of features to be extracted (all, gene, CDS etc)");
+		addStdOutputFile();		
+		addStdAlphabet();//aphabet		
+			
+		
+		addStdHelp();		
+	} 
+
+	
 	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = ExtractGeneSequence.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] ",
-				annotation.scriptDesc());
-		
-		cmdLine.addString("sequence", null, "The sequence (whole chromosome)",true);
-		cmdLine.addString("gff", null, "Annotation file in gff format",true);
-		cmdLine.addString("type", "gene", "types of features to be extracted (all, gene, CDS etc)");
-		cmdLine.addStdOutputFile();		
-		
-		cmdLine.addStdAlphabet();//aphabet		
-		
-		args = cmdLine.stdParseLine_old(args);
+		CommandLine cmdLine = new ExtractGeneSequenceCmd();	
+		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		//Get dna 		
 		String alphabetOption = cmdLine.getStringVal("alphabet");		

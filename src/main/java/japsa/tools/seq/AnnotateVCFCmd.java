@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.seq.tools;
+package japsa.tools.seq;
 
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
@@ -49,53 +49,51 @@ import java.util.HashMap;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.seq.annovcf", scriptDesc = "Annotate variation from a vcf file using annotation from gff file ")
-public class AnnotateVCF {
+@Deployable(
+	scriptName = "jsa.seq.annovcf", 
+	scriptDesc = "Annotate variation in a vcf file using annotation from gff file"
+	)
+public class AnnotateVCFCmd extends CommandLine{	
+	public AnnotateVCFCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+		addString("gffin", "-",  "GFF file");
+		addInt("upstream", 0, "Add upstream ");
+		addInt("downstream", 0, "Add downstream ");		
+		addString("output", "-", "Name of output file, - for standard out");
+		addString("vcf", null, "Name of vcf file", true);
+
+		addStdHelp();		
+	} 
+
 	/**
 	 * @param args
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = AnnotateVCF.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/		
+		CommandLine cmdLine = new AnnotateVCFCmd();		
+		args = cmdLine.stdParseLine(args);
 
-		cmdLine.addString("gffin", "-",  "GFF file");
-		cmdLine.addInt("upstream", 0, "Add upstream ");
-		cmdLine.addInt("downstream", 0, "Add downstream ");		
-		cmdLine.addString("output", "-", "Name of output file, - for standard out");
-		cmdLine.addString("vcf", null, "Name of vcf file", true);
-		
-		args = cmdLine.stdParseLine_old(args);	
-		/**********************************************************************/
+
 		String gffFile   =  cmdLine.getStringVal("gffin");
 		String output  =  cmdLine.getStringVal("output");
 		String vcf  =  cmdLine.getStringVal("vcf");
-		
+
 		int upStr   = cmdLine.getIntVal("upstream");
 		int downStr   = cmdLine.getIntVal("downstream");
-		
-		
-		//BufferedReader in = SequenceReader.openFile(gffIn);
-		
-		//JapsaAnnotation anno = JapsaAnnotation.readGFF(in, upStr, downStr,"all");		
-		//in.close();
-		
-		
+
+
 		FileInputStream gffIn = new FileInputStream(gffFile);
 		HashMap<String, JapsaAnnotation>
 		annoMap = JapsaAnnotation.readMGFF(gffIn,upStr,downStr,"CDS");
 		gffIn.close();		
-		
-		
+
+
 		SequenceOutputStream out =  SequenceOutputStream.makeOutputStream(output);
-		//for (JapsaFeature feature : anno.getFeatureList()){
-		//	out.print(feature.getLength() + " " + feature.getType() + " " + feature.getID() + " " + feature.getParent());
-		//	out.println();
-		//}		
-		//out.close();
-		
+
 		JapsaAnnotation anno = null;
 		XAFReader xaf = new XAFReader(vcf);		
 		while (xaf.next() != null){
@@ -107,8 +105,8 @@ public class AnnotateVCF {
 			for (int i = 9; i < toks.length; i++){
 				out.print("\t" + toks[i].charAt(0));
 			}
-			
-			
+
+
 			if (anno == null || !anno.getAnnotationID().equals(chrom))
 				anno = annoMap.get(chrom);		
 			if (anno != null){
@@ -123,19 +121,19 @@ public class AnnotateVCF {
 							if (t.startsWith("product="))
 								out.print(";" + t);
 						}
-						
-						
+
+
 					}else if (feature.getStart() > pos)
 						break;//for					
 				}
 			}
 			out.println();
 		}
-		
+
 		xaf.close();		
 		out.close();
 	}
-	
-	
+
+
 
 }

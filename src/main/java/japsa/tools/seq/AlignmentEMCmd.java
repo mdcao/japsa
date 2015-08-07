@@ -32,8 +32,9 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.alignment;
+package japsa.tools.seq;
 
+import japsa.bio.alignment.ProbFSM;
 import japsa.bio.alignment.ProbFSM.Emission;
 import japsa.bio.alignment.ProbFSM.ProbThreeSM;
 import japsa.seq.Alphabet;
@@ -49,17 +50,24 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(scriptName = "jsa.seq.emalign", 
 scriptDesc = "Get the best alignment of 2 sequences using Expectation-Maximisation on Finite State Machine")
-public class AlignmentEM {
-	//public static SequenceOutputStream datOutGen , datOutEst; 
-	public static void main(String[] args) throws Exception{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = AlignmentEM.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine(annotation.scriptName() + " [options] <seq1> <seq2>", annotation.scriptDesc());		
-		/**********************************************************************/		
+public class AlignmentEMCmd extends CommandLine{	
+	public AlignmentEMCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options] seq1 seq2");
+		setDesc(annotation.scriptDesc());
 		
-		args = cmdLine.stdParseLine_old(args);	
-		/**********************************************************************/
-
+		//addBoolean("reverse",false,"Reverse sort order");	
+		
+		addStdHelp();		
+	} 
+	
+	//public static SequenceOutputStream datOutGen , datOutEst; 
+	public static void main(String[] args) throws Exception{				 		
+		CommandLine cmdLine = new AlignmentEMCmd();		
+		args = cmdLine.stdParseLine(args);	
+		
+		
 		Alphabet dna = Alphabet.DNA();
 		if (args.length <2){
 			System.err.println("Two sequence files are required\n" +

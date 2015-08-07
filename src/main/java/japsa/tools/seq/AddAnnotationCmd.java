@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.seq.tools;
+package japsa.tools.seq;
 
 
 import japsa.seq.JapsaAnnotation;
@@ -52,7 +52,21 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(scriptName = "jsa.seq.addanno",
             scriptDesc = "Add annotations to a Japsa file")
-public class AddAnnotation {
+public class AddAnnotationCmd extends CommandLine{	
+	public AddAnnotationCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("input", null, "Name of the input file in jsa format, - for standard input", true);
+		addString("anno", null, "Name of the new annotation file in jsa format",true);		
+		addString("output", "-", "Name of the output file,  - for standard output");		
+		addInt("upStr", 0 , "size of upstream regions for gene, <=0 for not adding");
+		addInt("downStr", 0 , "size of downstream regions for gene, <=0 for not adding");
+		
+		addStdHelp();		
+	} 
 	/**
 	 * 
 	 * @param args
@@ -60,35 +74,10 @@ public class AddAnnotation {
 
 	public static void main(String[] args) throws Exception {
 
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.seq.addanno";
-		String desc = "Add annotations to a Japsa file\n" + 
-		"Make sure corresponding IDs are the same\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [params]");
-		/**********************************************************************/
-
+		CommandLine cmdLine = new AddAnnotationCmd();		
+		args = cmdLine.stdParseLine(args);
 		
-		cmdLine.addString("input", null, "Name of the input file in jsa format, - for standard input", true);
-		cmdLine.addString("anno", null, "Name of the new annotation file in jsa format",true);		
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		
-		cmdLine.addInt("upStr", 0 , "size of upstream regions for gene, <=0 for not adding");
-		cmdLine.addInt("downStr", 0 , "size of downstream regions for gene, <=0 for not adding");
-		
-		cmdLine.addStdHelp();
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
 		/**********************************************************************/		
-
 
 		String output =   cmdLine.getStringVal("output");
 		String annoFile = cmdLine.getStringVal("anno");
