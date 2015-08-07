@@ -36,8 +36,14 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.tools.hts.tr;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -47,12 +53,6 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.SAMFileReader.ValidationStringency;
-
 
 
 /**
@@ -61,53 +61,40 @@ import net.sf.samtools.SAMFileReader.ValidationStringency;
  */
 @Deployable(scriptName = "jsa.trv.sam2fragment",
             scriptDesc = "Convert a sam file to list of fragment sizes")
-public class Sam2FragmentSize {
-	static int checkPoint = 2000000;
-	public static void main(String[] args) throws Exception {	
+public class Sam2FragmentSizeCmd extends CommandLine{	
+	public Sam2FragmentSizeCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("input", "-", "Name of input sam/bam file (- for from standard input)",true);
+		addString("output", "-", "Name of output file, (- for from standard out)");
+		addBoolean("recalc", false, "Recalculate fragment size instead of using the default");
 
-		/*********************** Setting up script ****************************/
-		Deployable annotation = Sam2FragmentSize.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]");
-		/**********************************************************************/
+		addInt("min",100,"The minimum size of a fragment");
+		addInt("max",1000,"The maxmum size of a fragment");		
 
-		cmdLine.addString("input", "-", "Name of input sam/bam file (- for from standard input)",true);
-		cmdLine.addString("output", "-", "Name of output file, (- for from standard out)");
-		cmdLine.addBoolean("recalc", false, "Recalculate fragment size instead of using the default");
-
-		cmdLine.addInt("min",100,"The minimum size of a fragment");
-		cmdLine.addInt("max",1000,"The maxmum size of a fragment");		
-
-		cmdLine.addBoolean("2", true, "Whether filter out reads with flag 0x002 turned off");
-		cmdLine.addStdHelp();
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(annotation.scriptDesc() + "\n" + cmdLine.usageMessage());	
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
+		addBoolean("2", true, "Whether filter out reads with flag 0x002 turned off");
+		
+		addStdHelp();		
+	} 
+	public static int checkPoint = 2000000;
+	public static void main(String[] args) throws Exception {		 		
+		CommandLine cmdLine = new Sam2FragmentSizeCmd();
+		args = cmdLine.stdParseLine(args);
 
 		String output = cmdLine.getStringVal("output");
 		String samFile = cmdLine.getStringVal("input");
 
 		//If there are errors
 		if (args == null) {
-			System.err.println(cmdLine.usageMessage());
+			System.err.println(cmdLine.usageString());
 			System.exit(-1);
 		}
 
 		final long last = System.currentTimeMillis();
-
-
-		//System.err.println("in = "  + samFile + " out = " + output + cmdLine.getBooleanVal("2"));		
-		//getInsertSizeModerate(samFile, output, cmdLine.getBooleanVal("2"),cmdLine.getIntVal("min"), cmdLine.getIntVal("max"), cmdLine.getBooleanVal("recalc"));		
 		getInsertSizeModerate2(samFile, output, cmdLine.getBooleanVal("2"),cmdLine.getIntVal("min"), cmdLine.getIntVal("max"), cmdLine.getBooleanVal("recalc"));
-
 
 		final long now = System.currentTimeMillis();
 		System.err.println("Stop after  " + (now - last) / 1000.0 + " seconds)");
@@ -120,10 +107,12 @@ public class Sam2FragmentSize {
 		if (min < 0) min = 0;//can't have any length less than 0
 
 		HashMap<String, PEFragment> hashPair = new HashMap<String, PEFragment>();
-
-		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SAMFileReader samReader = new  SAMFileReader(new File(inFile));
-
+		
+		
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
+		//SAMRecordIterator samIter = samReader.iterator();		
+		
 		SequenceOutputStream ps = SequenceOutputStream.makeOutputStream(outFile);		
 		SAMFileHeader samHeader = samReader.getFileHeader();
 		ps.print(samHeader.getTextHeader());

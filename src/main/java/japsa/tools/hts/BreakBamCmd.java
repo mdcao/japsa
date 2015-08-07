@@ -31,22 +31,22 @@
  * 02/10/2013 - Minh Duc Cao: Created                                        
  * 16/11/2013 - Minh Duc Cai: Revised 
  ****************************************************************************/
-package japsa.bio.hts;
+package japsa.tools.hts;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMTextWriter;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
 import java.io.File;
 import java.io.IOException;
 
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.SAMFileHeader.SortOrder;
-import net.sf.samtools.SAMFileReader.ValidationStringency;
 
 
 /**
@@ -56,8 +56,8 @@ import net.sf.samtools.SAMFileReader.ValidationStringency;
 @Deployable(
 	scriptName = "jsa.hts.breakbam",
 	scriptDesc = "Break a sam/bam file to smaller ones")
-public class BreakBam extends CommandLine{	
-	public BreakBam(){
+public class BreakBamCmd extends CommandLine{	
+	public BreakBamCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -73,7 +73,7 @@ public class BreakBam extends CommandLine{
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException{
-		CommandLine cmdLine = new BreakBam();
+		CommandLine cmdLine = new BreakBamCmd();
 		args = cmdLine.stdParseLine(args);
 		
 
@@ -81,21 +81,26 @@ public class BreakBam extends CommandLine{
 		String inFile = cmdLine.getStringVal("input");
 
 		int size = cmdLine.getIntVal("size");
-
-		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SAMFileReader samReader = new  SAMFileReader(new File(inFile));
+		
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));	
 		SAMFileHeader samHeader = samReader.getFileHeader();
-
+		
+		//TODO: should it be sorted?
 		samHeader.setSortOrder(SortOrder.unsorted);
+		
 		System.out.println(samHeader.getSortOrder());
 		if (size == 0)
 			size = -1;
-		boolean preOrder = false;
-
+		
 		int index = 1;
-		SAMFileWriterFactory factory = new SAMFileWriterFactory(); 
-		SAMFileWriter bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File("P"+index+"_" + output));
-
+		
+		SAMTextWriter samWriter = new SAMTextWriter(new File("P"+index+"_" + output));
+		samWriter.setSortOrder(SortOrder.unsorted, false);		
+		samWriter.writeHeader(samHeader.getTextHeader());
+		
+		
+		
 		int count = 0;	
 		int countAll = 0;
 
@@ -105,20 +110,22 @@ public class BreakBam extends CommandLine{
 
 			if (count == size){
 				//write this samRecord
-				bamWriter.close();
+				samWriter.close();
 
 				///start a new one
 				index ++;
 				count = 0;
-				bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File("P"+index+"_" + output));
+				samWriter = new SAMTextWriter(new File("P"+index+"_" + output));
+				samWriter.setSortOrder(SortOrder.unsorted, false);		
+				samWriter.writeHeader(samHeader.getTextHeader());				
 			}
 
 			count ++;
 			countAll ++;
-			bamWriter.addAlignment(sam);
+			samWriter.addAlignment(sam);
 		}//while
 		samReader.close();
 		System.out.println("Write " + countAll + " reads to " + index + " files" );
-		bamWriter.close();
+		samWriter.close();
 	}
 }

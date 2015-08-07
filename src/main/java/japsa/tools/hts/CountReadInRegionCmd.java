@@ -32,8 +32,13 @@
  * 15/05/2014 - Minh Duc Cao: Started
  *  
  ****************************************************************************/
-package japsa.bio.hts;
+package japsa.tools.hts;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceOutputStream;
@@ -46,12 +51,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileReader.ValidationStringency;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
-
-
 /**
  *A program to count reads overlapping or containted with regions from a bam/sam file
  *
@@ -62,47 +61,47 @@ import net.sf.samtools.SAMRecordIterator;
 	scriptName = "jsa.hts.countReads",
 	scriptDesc = "Count the number of reads in some regions from a sorted, indexed bam file"
 	)
-public class CountReadInRegion extends CommandLine{	
-	public CountReadInRegion(){
+public class CountReadInRegionCmd extends CommandLine{	
+	public CountReadInRegionCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options] <s1.bam> <s2.bam> <s3.bam> ...");
 		setDesc(annotation.scriptDesc());
-		
+
 		addString("xafFile", null, "Name of the regions file in xaf");	
 		addString("bedFile", null, "Name of the regions file in bed\n"+
-		                                   "Either xafFile or bedFile has to be specified");
-				
+			"Either xafFile or bedFile has to be specified");
+
 		addString("output", "-", "Name of output file, - for from standard out.");
 		addInt("flanking", 0, "Size of the flanking regions");
 		addInt("qual", 0, "Minimum quality");		
 		addInt("filterBits", 0, "Filter reads based on flag. Common values:\n 0    no filter\n 256  exclude secondary alignment \n 1024 exclude PCR/optical duplicates\n 2048 exclude supplementary alignments");
 
 		addBoolean("contained", false, "true: Reads contained in the region; false: reads overlap with the region");
-			
-		
+
+
 		addStdHelp();		
 	}  
 
 	public static void main(String[] args) throws IOException {
-		
-		CommandLine cmdLine = new CountReadInRegion();
+
+		CommandLine cmdLine = new CountReadInRegionCmd();
 		args = cmdLine.stdParseLine(args);
-		
-		
+
+
 		String output = cmdLine.getStringVal("output");
 		int flanking = cmdLine.getIntVal("flanking");		
 		if (flanking < 0)
 			flanking = 0;		
-				
+
 
 		int qual = cmdLine.getIntVal("qual");
 		int filter = cmdLine.getIntVal("filterBits");		
 		boolean contained = cmdLine.getBooleanVal("contained");
-		
+
 		String strFile = cmdLine.getStringVal("xafFile");
 		String bedFile = cmdLine.getStringVal("bedFile");
-		
+
 		if (strFile!= null &&  bedFile != null){
 			System.err.println("##ERROR: only one of bedFile and strFile is specified");
 			System.err.println(cmdLine.usageString());
@@ -115,35 +114,36 @@ public class CountReadInRegion extends CommandLine{
 		}
 		/**********************************************************************/
 		ArrayList<JapsaFeature>  myList;
-		
+
 		if(bedFile != null)
 			myList = JapsaFeature.readBED(bedFile);
 		else{
-			ArrayList<TandemRepeat> list = TandemRepeat.readFromFile(SequenceReader.openFile(strFile), new ArrayList<String>());			
+			ArrayList<TandemRepeat> list 
+			= TandemRepeat.readFromFile(SequenceReader.openFile(strFile), new ArrayList<String>());			
 			myList = new ArrayList<JapsaFeature>(list.size());
-			
+
 			for (TandemRepeat str:list){
 				myList.add(str);
 			}
 		}
-
-		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);		
-		SequenceOutputStream os = SequenceOutputStream.makeOutputStream(output);
- 
-		char sep = '\t';
 		
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SequenceOutputStream os = SequenceOutputStream.makeOutputStream(output);
+
+		char sep = '\t';
+
 		int notCount = 0;
 		os.print("#H:chr\tID\tstart\tend");
-		
-		SAMFileReader [] readers = new SAMFileReader[args.length];
+
+		SamReader [] readers = new SamReader[args.length];
 		for (int i = 0; i < readers.length; i++){
 			File file = new File(args[i]);		
 			os.print("\t" + file.getName().replace(".sam", "").replace(".bam",""));
-			readers[i] = new SAMFileReader(file);
+			readers[i] = SamReaderFactory.makeDefault().open(file);				
 		}
 		os.print("\n");
-		
-		
+
+
 		for (JapsaFeature str:myList){
 			int start = str.getStart() - flanking;
 			int end   = str.getEnd() +   flanking;
@@ -179,11 +179,11 @@ public class CountReadInRegion extends CommandLine{
 		for (int i = 0; i < readers.length; i++){
 			readers[i].close();
 		}
-		
+
 		os.close();
 		Logging.info("Ignore " + notCount + " reads");
 	}	
-	
+
 }
 
 

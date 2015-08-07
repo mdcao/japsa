@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.tools.hts.tr;
 
 import japsa.seq.SequenceOutputStream;
 
@@ -257,7 +257,7 @@ public class PEFragment implements Comparable<PEFragment>{
 					head.previous = null;
 				}
 
-				if (pairIn % Sam2FragmentSize.checkPoint == 0){
+				if (pairIn % Sam2FragmentSizeCmd.checkPoint == 0){
 					Date date = new Date();
 					System.err.println("No. of pairIn : " + pairIn + "No. of pairOut : " + pairOut +  " at  " + date.toString());
 					System.gc();

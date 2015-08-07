@@ -32,8 +32,11 @@
  * 16/11/2013 - Minh Duc Cao 
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.tools.hts.tr;
 
+import japsa.bio.tr.CompareTRV;
+import japsa.bio.tr.TandemRepeat;
+import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceOutputStream;
@@ -43,10 +46,11 @@ import japsa.util.deploy.Deployable;
 
 import java.io.BufferedReader;
 import java.io.OutputStream;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
+
+
 
 
 
@@ -58,42 +62,31 @@ import org.apache.commons.math3.distribution.NormalDistribution;
  */
 @Deployable(scriptName = "jsa.trv.fragment2var",
             scriptDesc = "Analyse tandem repeat variation from fragment sizes")
-public class Fragment2TRV {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.trv.fragment2var";
-		String desc = "Analyse tandem repeat variation from fragment sizes\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options] fragmentFile1 fragmentFile2 ...");
-		/**********************************************************************/		
+public class Fragment2TRVCmd extends CommandLine{	
+	public Fragment2TRVCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options] fragmentFile1 fragmentFile2 ...");
+		setDesc(annotation.scriptDesc());
+		
+		addString("trFile", null, "Name of the tandem repeat position file",true);
+		addString("output", "-",  "Name of the output file (- for standard output)");
 
-		cmdLine.addString("trFile", null,
-				"Name of the tandem repeat position file",true);
-		cmdLine.addString("output", "-",
-				"Name of the output file (- for standard output)");
+		addString("ansFile", null,"Name of the answer file, ignored if null");		
+		addString("bcfFile", null,"Name of the BCF file, ignored if null");
 
-		cmdLine.addString("ansFile", null,	"Name of the answer file, ignored if null");		
-		cmdLine.addString("bcfFile", null,	"Name of the BCF file, ignored if null");
-
-		cmdLine.addInt("fm", 0,"Mean of insert size, enter <= 0 for estimating from data");
-		cmdLine.addDouble("fd", 0,"Standard deviation of insert size, enter <= 0 for estimating from data");
-		cmdLine.addInt("gap", 3,"Gap");
-
-		cmdLine.addBoolean("sorted", true,
-				"The insert file has been sorted");
-
-		cmdLine.addStdHelp();	
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/
-
+		addInt("fm", 0,"Mean of insert size, enter <= 0 for estimating from data");
+		addDouble("fd", 0,"Standard deviation of insert size, enter <= 0 for estimating from data");
+		addInt("gap", 3,"Gap");
+		addBoolean("sorted", true, "The insert file has been sorted");
+		
+		addStdHelp();		
+	} 
+	
+	public static void main(String[] args) throws Exception {		
+		CommandLine cmdLine = new Fragment2TRVCmd();
+		args = cmdLine.stdParseLine(args);		
+		
 		String trFile = cmdLine.getStringVal("trFile");
 		String outFile = cmdLine.getStringVal("output");
 		String ansFile =  cmdLine.getStringVal("ansFile");

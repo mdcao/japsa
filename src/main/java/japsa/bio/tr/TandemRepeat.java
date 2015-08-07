@@ -78,7 +78,7 @@ public class TandemRepeat
 	 * This field is deprecated, changes to chrom
 	 */
 	@Deprecated
-	static String chrHd    = "chr";                 //01
+	public static String chrHd    = "chr";                 //01
 	//Property of a TR -- start, end are with regards to the reference genome	
 	private int     period = 2;
 	private double unitNo; //the length number of units on the ref

@@ -34,8 +34,16 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.hts;
+package japsa.tools.hts;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMTextWriter;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
@@ -45,14 +53,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
-
-import net.sf.samtools.SAMFileReader.ValidationStringency;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
 
 /**
  * Select reads that span an STR from a bam/sam file
@@ -64,25 +64,25 @@ import net.sf.samtools.SAMRecordIterator;
 	scriptName = "jsa.hts.selectSpan",
 	scriptDesc = "Filter reads that span some regions from a sorted b/sam file"
 	)
-public class SelectReadSpan extends CommandLine{	
-	public SelectReadSpan(){
+public class SelectReadSpanCmd extends CommandLine{	
+	public SelectReadSpanCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		
+
 		addStdInputFile();		
 		addString("trFile", null, "Name of the tr file",true);		
 		addString("output", "-", "Name of output sam file, - for from standard out.");
-			
+
 		addStdHelp();		
 	} 	
 	static int pad = 3;
 
 	public static void main(String[] args) throws Exception {
-		CommandLine cmdLine = new SelectReadSpan();
+		CommandLine cmdLine = new SelectReadSpanCmd();
 		args = cmdLine.stdParseLine(args);
-		
+
 		String output = cmdLine.getStringVal("output");
 		String samFile = cmdLine.getStringVal("input");
 		String trFile = cmdLine.getStringVal("trFile");
@@ -92,16 +92,15 @@ public class SelectReadSpan extends CommandLine{
 
 	static void filterSam(String inFile, String outFile, String trFile)
 		throws IOException {				
-		/////////////////////////////////////////////////////////////////////////////				
+		/////////////////////////////////////////////////////////////////////////////
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
 
-		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SAMFileReader samReader = new  SAMFileReader(new File(inFile));
+
 		SAMFileHeader samHeader = samReader.getFileHeader();		
-
-		boolean preOrder = false;
-		SAMFileWriterFactory factory = new SAMFileWriterFactory();		
-		SAMFileWriter bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File(outFile));	
-
+		SAMTextWriter samWriter = new SAMTextWriter(new File(outFile));
+		samWriter.setSortOrder(SortOrder.unsorted, false);		
+		samWriter.writeHeader( samHeader.getTextHeader());
 
 		ArrayList<TandemRepeat>  myList = TandemRepeat.readFromFile(SequenceReader.openFile(trFile), new ArrayList<String>());
 		TandemRepeat tr = myList.get(0);
@@ -113,6 +112,7 @@ public class SelectReadSpan extends CommandLine{
 		int trSeqIndex = samHeader.getSequenceIndex(tr.getChr());
 		if (trSeqIndex < 0){
 			samReader.close();
+			samWriter.close();
 			throw new RuntimeException("Sequence " + tr.getChr() + " not found in the header of b/sam file " + inFile);
 		}
 
@@ -134,7 +134,7 @@ public class SelectReadSpan extends CommandLine{
 				continue;
 
 			if (seqIndex == trSeqIndex && posStart < tr.getStart() - pad){
-				bamWriter.addAlignment(sam);
+				samWriter.addAlignment(sam);
 				count ++;
 				continue;
 			}
@@ -148,6 +148,7 @@ public class SelectReadSpan extends CommandLine{
 					trSeqIndex = samHeader.getSequenceIndex(tr.getChr());
 					if (trSeqIndex < 0){
 						samReader.close();
+						samWriter.close();
 						throw new RuntimeException("Sequence " + tr.getChr() + " not found in the header of b/sam file " + inFile);
 					}
 					System.err.print(tr.toString()+" : ");					
@@ -161,12 +162,12 @@ public class SelectReadSpan extends CommandLine{
 				break;
 
 			if (seqIndex == trSeqIndex && posStart > tr.getStart() - pad && posEnd < tr.getEnd() + pad){
-				bamWriter.addAlignment(sam);
+				samWriter.addAlignment(sam);
 				count ++;
 				continue;
 			}
 		}
-		bamWriter.close();
+		samWriter.close();
 		samReader.close();
 	}
 }

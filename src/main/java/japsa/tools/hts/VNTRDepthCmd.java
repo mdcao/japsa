@@ -31,17 +31,18 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.tools.hts;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.SAMFileReader.ValidationStringency;
 
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.XAFReader;
@@ -55,21 +56,26 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(scriptName = "jsa.tr.trdepth", 
 scriptDesc = "Compute read depth in repeats and flanking regions")
-public class VNTRDepth {
-	public static void main(String [] args) throws IOException, InterruptedException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = VNTRDepth.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options] samFile1 [samFile2 ..]", annotation.scriptDesc());		
-		/**********************************************************************/
-
-		cmdLine.addString("xafFile", "VNTR.xaf",  "XAF file containing repeat information");		
-		cmdLine.addInt("qual", 0, "Minimum mapping quality");
-		cmdLine.addBoolean("depth", false, "Include depth coverage (R3 and S3)");
-		cmdLine.addInt("filterBits", 0, "Filter reads based on flag. Common values:\n 0    no filter\n 256  exclude secondary alignment \n 1024 exclude PCR/optical duplicates\n 2048 exclude supplementary alignments");
-		cmdLine.addString("output", "-", "Name of output file, - for standard out");
-
-
-		String[] bamFiles = cmdLine.stdParseLine_old(args);			
+public class VNTRDepthCmd extends CommandLine{	
+	public VNTRDepthCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options] samFile1 [samFile2 ..]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("xafFile", "VNTR.xaf",  "XAF file containing repeat information");		
+		addInt("qual", 0, "Minimum mapping quality");
+		addBoolean("depth", false, "Include depth coverage (R3 and S3)");
+		addInt("filterBits", 0, "Filter reads based on flag. Common values:\n 0    no filter\n 256  exclude secondary alignment \n 1024 exclude PCR/optical duplicates\n 2048 exclude supplementary alignments");
+		addString("output", "-", "Name of output file, - for standard out");
+		
+		addStdHelp();		
+	} 
+	
+	public static void main(String [] args) throws IOException, InterruptedException{		 		
+		CommandLine cmdLine = new VNTRDepthCmd();		
+		String[] bamFiles = cmdLine.stdParseLine(args);			
+		
 		/**********************************************************************/
 		String xafFile     =  cmdLine.getStringVal("xafFile");	
 		String output      =  cmdLine.getStringVal("output");
@@ -79,10 +85,9 @@ public class VNTRDepth {
 
 		if (bamFiles.length == 0)		
 			return;		
-
-		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
-
-		SAMFileReader [] samReaders = new SAMFileReader[bamFiles.length];
+		
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);		
+		SamReader [] samReaders = new SamReader[bamFiles.length];		
 		String [] sampleID = new String[bamFiles.length];
 
 		for (int i = 0; i < samReaders.length;i++){
@@ -90,7 +95,7 @@ public class VNTRDepth {
 			sampleID[i] = file.getName();
 			sampleID[i] = sampleID[i].replaceAll(".sort.bam", "");
 			sampleID[i] = sampleID[i].replaceAll(".bam", "");
-			samReaders[i] = new  SAMFileReader(file);
+			samReaders[i] = SamReaderFactory.makeDefault().open(file);
 		}
 
 

@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.tools.hts.tr;
 
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
@@ -47,30 +47,23 @@ import java.io.BufferedReader;
  * 
  */
 @Deployable(scriptName = "jsa.trv.sortFragment",
-            scriptDesc = "Sort fragment file")
-public class SortFragmentFile {
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.stv.sortFragment";
-		String desc = "Sort fragment file\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
+scriptDesc = "Sort fragment file")
+public class SortFragmentFileCmd extends CommandLine{	
+	public SortFragmentFileCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 
-		cmdLine.addStdInputFile();
-		//cmdLine.addStdOutputFile();
-		cmdLine.addString("output", "-", "Name of the output file,  - for standard output");
-		cmdLine.addStdHelp();		
+		addStdInputFile();
+		addString("output", "-", "Name of the output file,  - for standard output");
 
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
+		addStdHelp();		
+	} 
+
+	public static void main(String[] args) throws Exception {		
+		CommandLine cmdLine = new SortFragmentFileCmd();
+		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/		
 
 		String output = cmdLine.getStringVal("output");
