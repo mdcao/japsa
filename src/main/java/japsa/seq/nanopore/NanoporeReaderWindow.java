@@ -601,8 +601,7 @@ public class NanoporeReaderWindow implements Runnable{
 				
 				//validate input
 
-				String _path = txtDir.getText().trim();
-				System.out.println("==========" + _path);
+				String _path = txtDir.getText().trim();				
 				if (_path.equals("")){
 					JOptionPane.showMessageDialog(null, "Please specify download directory", "Warning", JOptionPane.PLAIN_MESSAGE);
 					txtDir.grabFocus();

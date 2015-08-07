@@ -85,9 +85,9 @@ public class NanoporeReadFilterCmd extends CommandLine{
 		double qualMin  = cmdLine.getDoubleVal("qualMin");
 		double qualMax  = cmdLine.getDoubleVal("qualMax");
 
-		boolean exclude2D =  cmdLine.getBooleanVal("exclude2D");
-		boolean excludeTemplate =  cmdLine.getBooleanVal("excludeTemplate");
-		boolean excludeComplement =  cmdLine.getBooleanVal("excludeComplement");
+		boolean exclude2D =  cmdLine.getBooleanVal("excl2D");
+		boolean excludeTemplate =  cmdLine.getBooleanVal("exclTemp");
+		boolean excludeComplement =  cmdLine.getBooleanVal("exclComp");
 
 
 		String format = cmdLine.getStringVal("format");
@@ -103,7 +103,6 @@ public class NanoporeReadFilterCmd extends CommandLine{
 
 
 		while ( (seq = reader.nextSequence(Alphabet.DNA())) != null){
-
 			//Min length
 			if (seq.length() < lenMin)
 				continue;
