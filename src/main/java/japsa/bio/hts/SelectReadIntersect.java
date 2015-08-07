@@ -62,40 +62,30 @@ import net.sf.samtools.SAMRecordIterator;
  *FIXME: Generalise to any kinds of regions, not just STR 
  */
 
-@Deployable(scriptName = "jsa.hts.selectIntesect",
-            scriptDesc = "Filter reads that intersect with some regions from a sorted b/sam file")
+@Deployable(
+	scriptName = "jsa.hts.selectIntesect",
+    scriptDesc = "Filter reads that intersect with some regions from a sorted b/sam file")
 
-public class SelectReadIntersect {	
-	public static void main(String[] args) throws Exception {	
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.ngs.selectIntesect";
-		String desc = "Filter reads that intersect with some regions from a sorted b/sam file\n";	
-		//condition: 
-		// 1. s/bam file sorted, the sequence in str must be the same order as in the header file of the sam file
-		// 2. strs in each sequence are sorted
-		// 3. no strs overlap	
+public class SelectReadIntersect extends CommandLine{	
+	public SelectReadIntersect(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addStdInputFile();		
+		addString("strFile", null, "Name of the regions file",true);		
+		addString("output", "-", "Name of output sam file, - for from standard out.");
+		addInt("flanking", 120, "Flanking regions");
+		addInt("qual", 10, "Minimum quality");
+		addBoolean("pair", false, "Paired-end data");
 
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [params]");
-		/**********************************************************************/
-
-		cmdLine.addStdInputFile();		
-		cmdLine.addString("strFile", null, "Name of the regions file",true);		
-		cmdLine.addString("output", "-", "Name of output sam file, - for from standard out.");
-		cmdLine.addInt("flanking", 120, "Flanking regions");
-		cmdLine.addInt("qual", 10, "Minimum quality");
-		cmdLine.addBoolean("pair", false, "Paired-end data");
-		cmdLine.addStdHelp();		
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
+		addStdHelp();		
+	} 	
+	public static void main(String[] args) throws Exception {
+		CommandLine cmdLine = new SelectReadIntersect();
+		args = cmdLine.stdParseLine(args);		
+			
 		/**********************************************************************/		
 
 		String output = cmdLine.getStringVal("output");

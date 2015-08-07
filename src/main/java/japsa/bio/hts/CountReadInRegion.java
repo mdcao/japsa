@@ -58,29 +58,37 @@ import net.sf.samtools.SAMRecordIterator;
  *FIXME: Generalise to any kinds of regions, not just STR  
  */
 
-@Deployable(scriptName = "jsa.hts.countReads",
-scriptDesc = "Count the number of reads in some regions from a sorted, indexed bam file")
-public class CountReadInRegion {	
-	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = CountReadInRegion.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options] <s1.bam> <s2.bam> <s3.bam> ..." , annotation.scriptDesc());
-
-		cmdLine.addString("xafFile", null, "Name of the regions file in xaf");	
-		cmdLine.addString("bedFile", null, "Name of the regions file in bed\n"+
+@Deployable(
+	scriptName = "jsa.hts.countReads",
+	scriptDesc = "Count the number of reads in some regions from a sorted, indexed bam file"
+	)
+public class CountReadInRegion extends CommandLine{	
+	public CountReadInRegion(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options] <s1.bam> <s2.bam> <s3.bam> ...");
+		setDesc(annotation.scriptDesc());
+		
+		addString("xafFile", null, "Name of the regions file in xaf");	
+		addString("bedFile", null, "Name of the regions file in bed\n"+
 		                                   "Either xafFile or bedFile has to be specified");
 				
-		cmdLine.addString("output", "-", "Name of output file, - for from standard out.");
+		addString("output", "-", "Name of output file, - for from standard out.");
+		addInt("flanking", 0, "Size of the flanking regions");
+		addInt("qual", 0, "Minimum quality");		
+		addInt("filterBits", 0, "Filter reads based on flag. Common values:\n 0    no filter\n 256  exclude secondary alignment \n 1024 exclude PCR/optical duplicates\n 2048 exclude supplementary alignments");
 
-		cmdLine.addInt("flanking", 0, "Size of the flanking regions");
-		cmdLine.addInt("qual", 0, "Minimum quality");		
-		cmdLine.addInt("filterBits", 0, "Filter reads based on flag. Common values:\n 0    no filter\n 256  exclude secondary alignment \n 1024 exclude PCR/optical duplicates\n 2048 exclude supplementary alignments");
+		addBoolean("contained", false, "true: Reads contained in the region; false: reads overlap with the region");
+			
+		
+		addStdHelp();		
+	}  
 
-		cmdLine.addBoolean("contained", false, "true: Reads contained in the region; false: reads overlap with the region");
-
-		args = cmdLine.stdParseLine_old(args);
-		/**********************************************************************/		
-		//Get options
+	public static void main(String[] args) throws IOException {
+		
+		CommandLine cmdLine = new CountReadInRegion();
+		args = cmdLine.stdParseLine(args);
+		
 		
 		String output = cmdLine.getStringVal("output");
 		int flanking = cmdLine.getIntVal("flanking");		
@@ -97,12 +105,12 @@ public class CountReadInRegion {
 		
 		if (strFile!= null &&  bedFile != null){
 			System.err.println("##ERROR: only one of bedFile and strFile is specified");
-			System.err.println(cmdLine.usageMessage());
+			System.err.println(cmdLine.usageString());
 			System.exit(-1);			
 		}
 		if (strFile== null &&  bedFile == null){
 			System.err.println("##ERROR: one of bedFile and xafFile has to be specified");
-			System.err.println(cmdLine.usageMessage());
+			System.err.println(cmdLine.usageString());
 			System.exit(-1);			
 		}
 		/**********************************************************************/

@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.bio.hts;
+package japsa.tools.hts;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
@@ -55,33 +55,41 @@ import htsjdk.samtools.ValidationStringency;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.hts.errorAnalysis", 
-scriptDesc = "Error analysis of HTS sequencing data")
-public class HTSErrorAnalysis {
-	public static void main(String [] args) throws IOException, InterruptedException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = HTSErrorAnalysis.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/	
-		cmdLine.addString("bamFile", null,  "Name of bam file", true);
-		cmdLine.addString("reference", null, "Name of reference genome",true);
-		cmdLine.addString("pattern", null, "Pattern of read name, used for filtering");
-		cmdLine.addInt("qual", 0, "Minimum quality required");
+@Deployable(
+	scriptName = "jsa.hts.errorAnalysis",
+	scriptDesc = "Error analysis of HTS sequencing data")
+public class HTSErrorAnalysisCmd extends CommandLine{	
+	public HTSErrorAnalysisCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 
-		args = cmdLine.stdParseLine_old(args);			
-		/**********************************************************************/
-		//String bamFile = cmdLine.getStringVal("bamFile");
+		addString("bamFile", null,  "Name of bam file", true);
+		addString("reference", null, "Name of reference genome",true);
+		addString("pattern", null, "Pattern of read name, used for filtering");
+		addInt("qual", 0, "Minimum quality required");
+
+		addStdHelp();		
+	} 
+
+
+
+	public static void main(String [] args) throws IOException, InterruptedException{		 		
+		CommandLine cmdLine = new HTSErrorAnalysisCmd();		
+		args = cmdLine.stdParseLine(args);		
+
 		String reference = cmdLine.getStringVal("reference");		
 		int qual = cmdLine.getIntVal("qual");
 		String pattern = cmdLine.getStringVal("pattern");
 		String bamFile = cmdLine.getStringVal("bamFile");
-		
+
 		errorAnalysis(bamFile, reference, pattern, qual);		
-		
-		
-			//paramEst(bamFile, reference, qual);
+
+
+		//paramEst(bamFile, reference, qual);
 	}
-	
+
 
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
@@ -103,33 +111,33 @@ public class HTSErrorAnalysis {
 		Sequence chr = genomes.get(currentIndex);
 
 		long    totBaseIns = 0,
-				totBaseDel = 0,
-				totNumIns = 0,
-				totNumDel = 0,
-				totMisMatch = 0,
-				totMatch = 0;
-		
+			totBaseDel = 0,
+			totNumIns = 0,
+			totNumDel = 0,
+			totMisMatch = 0,
+			totMatch = 0;
+
 		long totReadBase = 0, totRefBase = 0;
 		int  numReads = 0;
 
 		int numNotAligned = 0;
-		
+
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
-			
+
 			if (pattern != null && (!sam.getReadName().contains(pattern)))
 				continue;
-			
+
 			//make the read seq			
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			if (readSeq.length() <= 1){
 				//Logging.warn(sam.getReadName() +" ignored");
 				continue;
 			}			
-			
+
 			numReads ++;
-			
-			
+
+
 			if (sam.getReadUnmappedFlag()){
 				numNotAligned ++;
 				continue;
@@ -137,9 +145,9 @@ public class HTSErrorAnalysis {
 
 			if (sam.getMappingQuality() < qual)
 				continue;
-			
-			
-			
+
+
+
 			//int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index
 			int refIndex = sam.getReferenceIndex();
 
@@ -148,11 +156,11 @@ public class HTSErrorAnalysis {
 				currentIndex = refIndex;
 				chr = genomes.get(currentIndex);
 			}
-			
-			japsa.util.HTSUtilities.IdentityProfile profile = 
-					HTSUtilities.identity(chr, readSeq, sam);			
 
-			
+			japsa.util.HTSUtilities.IdentityProfile profile = 
+				HTSUtilities.identity(chr, readSeq, sam);			
+
+
 			totBaseIns  += profile.baseIns;
 			totBaseDel  += profile.baseDel;
 			totNumIns   += profile.numIns;
@@ -166,17 +174,17 @@ public class HTSErrorAnalysis {
 			//numReadsConsidered ++;
 		}		
 		samReader.close();
-		
+
 
 		//Done
-				
+
 
 		System.out.println("Deletion " + totBaseDel + " " + totNumDel +" " + totBaseDel*1.0/totRefBase);
 		System.out.println("Insertion " + totBaseIns + " " + totNumIns+" " + totBaseIns*1.0/totRefBase);
 		System.out.println("MisMatch " + totMisMatch +" " + totMisMatch*1.0/totRefBase);
 		System.out.println("Match " + totMatch);
-		
-		
+
+
 		System.out.println("ReadBase " + totReadBase);
 		System.out.println("ReferenceBase " + totRefBase);	
 
@@ -184,7 +192,7 @@ public class HTSErrorAnalysis {
 		double probDel = (totNumDel + 1.0) / (totState0 + 3.0);
 		double probIns = (totNumIns + 1.0) / (totState0 + 3.0);
 
-		double probMatch = 1.0 - probDel - probIns;
+		//double probMatch = 1.0 - probDel - probIns;
 		double probCopy =  (totMatch + 1.0) / (totState0 + 2.0);
 		double probChange = (totMisMatch + 1.0) / (totState0 + 2.0);
 
@@ -192,23 +200,23 @@ public class HTSErrorAnalysis {
 		double probIE = (1.0 + totBaseIns - totNumIns) / (2.0 +totBaseIns);		
 
 		System.out.printf("Indentity %f %f %f %f\n",1.0 *totMatch/(totMatch + totMisMatch + totBaseDel +totBaseIns),
-				1.0 *totMisMatch/(totMatch + totMisMatch + totBaseDel +totBaseIns),
-				1.0 *totBaseIns/(totMatch + totMisMatch + totBaseDel +totBaseIns),
-				1.0 *totBaseDel/(totMatch + totMisMatch + totBaseDel +totBaseIns ));
+			1.0 *totMisMatch/(totMatch + totMisMatch + totBaseDel +totBaseIns),
+			1.0 *totBaseIns/(totMatch + totMisMatch + totBaseDel +totBaseIns),
+			1.0 *totBaseDel/(totMatch + totMisMatch + totBaseDel +totBaseIns ));
 
 		System.out.printf("Probs %f %f %f %f %f %f\n",probCopy, probChange, probIns, probDel, probIE, probDE);		
-		
+
 		System.out.println("========================= SUMMARY============================");
-		
+
 		System.out.printf("Total reads      :  %d\n", numReads);
 		System.out.printf("Unaligned reads  :  %d\n", numNotAligned);
-		
+
 		System.out.printf("Deletion rate    : %.4f\n",totBaseDel*1.0/totRefBase);
 		System.out.printf("Insertion rate   : %.4f\n",totBaseIns*1.0/totRefBase);
 		System.out.printf("Mismatch rate    : %.4f\n",totMisMatch*1.0/totRefBase);
 		System.out.printf("Identity rate    : %.4f\n",totMatch*1.0/totRefBase);
 		System.out.println("=============================================================");
-				
+
 	}
 
 }

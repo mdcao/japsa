@@ -37,16 +37,9 @@ package japsa.util.deploy;
 
 import japsa.bio.hts.BreakBam;
 import japsa.bio.hts.CountReadInRegion;
-import japsa.bio.hts.FastQRMEmptyRead;
-import japsa.bio.hts.FastQTrim;
 import japsa.bio.hts.HTSAlignmentParam;
-import japsa.bio.hts.HTSErrorAnalysis;
 import japsa.bio.hts.SelectReadIntersect;
 import japsa.bio.hts.SelectReadSpan;
-import japsa.bio.np.GeneStrainTyping;
-import japsa.bio.np.MLSTStrainTyping;
-import japsa.bio.np.ResistanceGene;
-import japsa.bio.np.SpeciesMixtureTyping;
 import japsa.bio.sim.SimHTSWithFSM;
 import japsa.bio.sim.SimProbFSM;
 import japsa.bio.tr.Fragment2TRV;
@@ -58,13 +51,17 @@ import japsa.bio.tr.Sam2FragmentSize;
 import japsa.bio.tr.SortFragmentFile;
 import japsa.bio.tr.VCF2TRV;
 import japsa.bio.tr.VNTRDepth;
-//import japsa.seq.nanopore.NanoporeReader;
+import japsa.tools.bio.np.GeneStrainTypingCmd;
+import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
+import japsa.tools.bio.np.ResistanceGeneCmd;
 import japsa.tools.bio.np.SpeciesMixtureTypingCmd;
 import japsa.tools.bio.phylo.NormaliseTree;
 import japsa.tools.bio.phylo.XMDistance;
 import japsa.tools.bio.phylo.XMDistance2;
+import japsa.tools.hts.FastQTrimCmd;
+import japsa.tools.hts.HTSErrorAnalysisCmd;
 import japsa.tools.seq.AddAnnotationCmd;
 import japsa.tools.seq.AlignmentEMCmd;
 import japsa.tools.seq.AnnotateRegionsCmd;
@@ -126,14 +123,13 @@ public class Deploy {
 
 		//jsa.hts.*
 		tools.add("HTS analysis tools:");
-		tools.add(new FastQTrim());
-		tools.add(new FastQRMEmptyRead());		
+		tools.add(new FastQTrimCmd());
 		tools.add(new BreakBam());
 		tools.add(new SelectReadIntersect());
 		tools.add(new SelectReadSpan());				
 		tools.add(new CountReadInRegion());
 		tools.add(new HTSAlignmentParam());
-		tools.add(new HTSErrorAnalysis());
+		tools.add(new HTSErrorAnalysisCmd());
 
 
 		//jsa.np.
@@ -143,9 +139,9 @@ public class Deploy {
 		tools.add(new NanoporeReadFilterCmd());		
 		tools.add(new SpeciesMixtureTypingCmd());
 		
-		tools.add(GeneStrainTyping.class);
-		tools.add(new MLSTStrainTyping());
-		tools.add(new ResistanceGene());		
+		tools.add(new GeneStrainTypingCmd());
+		tools.add(new MLSTStrainTypingCmd());
+		tools.add(new ResistanceGeneCmd());		
 
 		//jsa.trv.*
 		tools.add("Tandem repeat variation analysis tools:");

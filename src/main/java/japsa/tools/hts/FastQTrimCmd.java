@@ -31,7 +31,7 @@
  * 02/10/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.bio.hts;
+package japsa.tools.hts;
 
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
@@ -47,59 +47,65 @@ import java.io.IOException;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  * Program to trim reads in a fastq file and split the file to smaller pieces
  */
-@Deployable(scriptName = "jsa.hts.fqtrim",
-           scriptDesc = "Trim reads from a fastq file and break the file to smaller ones")
-public class FastQTrim {
+@Deployable(
+	scriptName = "jsa.hts.fqtrim",
+	scriptDesc = "Trim reads from a fastq file and break the file to smaller ones")
+public class FastQTrimCmd extends CommandLine{	
+	public FastQTrimCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+		addStdInputFile();			
+
+		addString("output", null, "Name of output fastq file, output files will be added with suffix P<index>_", true);
+		addInt("size", 0, "The number of reads per file, a negative number for not spliting");
+		addInt("begin", 0, "Begin position of a read (1-index, inclusive) - 0 for not trimming");
+
+		addBoolean("trim", false, "Whether to trim Ns at the 3' end. Note this will trim before begin/end trimming");
+		addInt("qual", 0, "Minimum of qual to be trimed from the 3', 0 for not trimming");
+		addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");	
+
+		addStdHelp();		
+	} 
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = FastQTrim.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
+
+		CommandLine cmdLine = new FastQTrimCmd();
+		args = cmdLine.stdParseLine(args);			
+		
 		/**********************************************************************/
-
-		cmdLine.addStdInputFile();			
-		
-		cmdLine.addString("output", null, "Name of output fastq file, output files will be added with suffix P<index>_", true);
-		cmdLine.addInt("size", 0, "The number of reads per file, a negative number for not spliting");
-		cmdLine.addInt("begin", 0, "Begin position of a read (1-index, inclusive) - 0 for not trimming");
-		
-		cmdLine.addBoolean("trim", false, "Whether to trim Ns at the 3' end. Note this will trim before begin/end trimming");
-		cmdLine.addInt("qual", 0, "Minimum of qual to be trimed from the 3', 0 for not trimming");
-		cmdLine.addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");	
-		
-		args = cmdLine.stdParseLine_old(args);			
-		/**********************************************************************/		
-
 		String output = cmdLine.getStringVal("output");
 		String inFile = cmdLine.getStringVal("input");
-		
+
 		int begin = cmdLine.getIntVal("begin");
 		int end = cmdLine.getIntVal("end");			
 		int size = cmdLine.getIntVal("size");
 		int qual = cmdLine.getIntVal("qual");
-		
+
 		boolean trim = cmdLine.getBooleanVal("trim");
-		
+
 		if (end > 0 && begin >= end) {
 			Logging.exit("Begin "+(begin) + " must be smaller than end (" + end +")", -1);			
 		}	
 
 		if (size == 0)
 			size = -1;
-			
+
 		int index = 1;
 		SequenceOutputStream outStream = 
-				 SequenceOutputStream.makeOutputStream("P"+index+"_" + output);
+			SequenceOutputStream.makeOutputStream("P"+index+"_" + output);
 
 		BufferedReader reader = SequenceReader.openFile(inFile);
 		String line = "";
 
 		int count = 0;		
 		int countAll = 0;
-		
+
 		while ( (line = reader.readLine()) != null){
 			String name  = line.trim();
 			if (name.charAt(0) != '@')
@@ -110,14 +116,14 @@ public class FastQTrim {
 			String seq = reader.readLine();
 			reader.readLine();//'+'
 			String qualStr = reader.readLine();
-			
+
 			int lastIndex = seq.length();
 			if (trim){			
 				while (lastIndex > 0 && seq.charAt(lastIndex - 1) =='N'){
 					lastIndex --;
 				}
 			}
-			
+
 			while (lastIndex > 0 && qualStr.charAt(lastIndex - 1) - '!' < qual){
 				lastIndex --;
 			}			
@@ -126,7 +132,7 @@ public class FastQTrim {
 				seq = seq.substring(0 , lastIndex);
 				qualStr = qualStr.substring(0 , lastIndex);
 			}
-			
+
 			if (begin > 0) {
 				if (begin > seq.length()){
 					seq  = "";
@@ -142,7 +148,7 @@ public class FastQTrim {
 				seq = seq.substring(0 , end);
 				qualStr = qualStr.substring(0 ,end);
 			}			
-			
+
 			if (count == size){
 				//write this file
 				outStream.close();
@@ -151,12 +157,12 @@ public class FastQTrim {
 				index ++;
 				count = 0;
 				outStream = //new SequenceOutputStream("P"+index+"_" + output);	
-				SequenceOutputStream.makeOutputStream("P"+index+"_" + output);
+					SequenceOutputStream.makeOutputStream("P"+index+"_" + output);
 			}
-			
+
 			count ++;
 			countAll ++;
-			
+
 			outStream.print(name);
 			outStream.print('\n');
 			outStream.print(seq);

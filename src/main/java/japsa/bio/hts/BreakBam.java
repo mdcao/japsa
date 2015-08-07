@@ -53,64 +53,56 @@ import net.sf.samtools.SAMFileReader.ValidationStringency;
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  * Program to break a fastq file to smaller pieces
  */
-@Deployable(scriptName = "jsa.hts.breakbam",
-            scriptDesc = "Break a sam/bam file to smaller ones")
-public class BreakBam{
+@Deployable(
+	scriptName = "jsa.hts.breakbam",
+	scriptDesc = "Break a sam/bam file to smaller ones")
+public class BreakBam extends CommandLine{	
+	public BreakBam(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addStdInputFile();			
+		addString("output", null, "Name of output s/bam file. If output file is .bam, bam format is outputed", true);
+		addInt("size", 50000000, "The number of reads per file, a negative number for not spliting");	
+		
+		addStdHelp();		
+	} 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException{
-
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.ngs.breakbam";
-		String desc = "Break a sam/bam file to smaller ones\n";
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
-
-		cmdLine.addStdInputFile();			
-		cmdLine.addString("output", null, "Name of output s/bam file. If output file is .bam, bam format is outputed", true);
-		cmdLine.addInt("size", 50000000, "The number of reads per file, a negative number for not spliting");
-
-		cmdLine.addStdHelp();		
-
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
+		CommandLine cmdLine = new BreakBam();
+		args = cmdLine.stdParseLine(args);
+		
 
 		String output = cmdLine.getStringVal("output");
 		String inFile = cmdLine.getStringVal("input");
-		
+
 		int size = cmdLine.getIntVal("size");
-		
+
 		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SAMFileReader samReader = new  SAMFileReader(new File(inFile));
 		SAMFileHeader samHeader = samReader.getFileHeader();
-		
+
 		samHeader.setSortOrder(SortOrder.unsorted);
 		System.out.println(samHeader.getSortOrder());
 		if (size == 0)
 			size = -1;
 		boolean preOrder = false;
-			
+
 		int index = 1;
 		SAMFileWriterFactory factory = new SAMFileWriterFactory(); 
 		SAMFileWriter bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File("P"+index+"_" + output));
-				
+
 		int count = 0;	
 		int countAll = 0;
-		
+
 		SAMRecordIterator samIter = samReader.iterator();
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();			
-			
+
 			if (count == size){
 				//write this samRecord
 				bamWriter.close();
@@ -120,7 +112,7 @@ public class BreakBam{
 				count = 0;
 				bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File("P"+index+"_" + output));
 			}
-			
+
 			count ++;
 			countAll ++;
 			bamWriter.addAlignment(sam);

@@ -60,95 +60,85 @@ import net.sf.samtools.SAMRecordIterator;
  * FIXME: 2. Test outputing to sam/bam file
  */
 
-@Deployable(scriptName = "jsa.hts.selectSpan",
-scriptDesc = "Filter reads that span some regions from a sorted b/sam file")
-public class SelectReadSpan {	
+@Deployable(
+	scriptName = "jsa.hts.selectSpan",
+	scriptDesc = "Filter reads that span some regions from a sorted b/sam file"
+	)
+public class SelectReadSpan extends CommandLine{	
+	public SelectReadSpan(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addStdInputFile();		
+		addString("trFile", null, "Name of the tr file",true);		
+		addString("output", "-", "Name of output sam file, - for from standard out.");
+			
+		addStdHelp();		
+	} 	
 	static int pad = 3;
 
-	public static void main(String[] args) throws Exception {		
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.ngs.selectSpan";
-		String desc = "Filter reads that span some STR regions from a sorted b/sam file\n";	
-//condition: 
-// 1. s/bam file sorted, the sequence in tr must be the same order as in the header file of the sam file
-// 2. trs in each sequence are sorted
-// 3. no trs overlap		
+	public static void main(String[] args) throws Exception {
+		CommandLine cmdLine = new SelectReadSpan();
+		args = cmdLine.stdParseLine(args);
 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/		
-		cmdLine.addStdInputFile();		
-		cmdLine.addString("trFile", null, "Name of the tr file",true);		
-		cmdLine.addString("output", "-", "Name of output sam file, - for from standard out.");
-		cmdLine.addStdHelp();
-		
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/		
-
 		String output = cmdLine.getStringVal("output");
 		String samFile = cmdLine.getStringVal("input");
 		String trFile = cmdLine.getStringVal("trFile");
-			
+
 		filterSam(samFile, output, trFile);		
 	}
-	
+
 	static void filterSam(String inFile, String outFile, String trFile)
-			throws IOException {				
+		throws IOException {				
 		/////////////////////////////////////////////////////////////////////////////				
-		
+
 		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SAMFileReader samReader = new  SAMFileReader(new File(inFile));
 		SAMFileHeader samHeader = samReader.getFileHeader();		
-				
+
 		boolean preOrder = false;
 		SAMFileWriterFactory factory = new SAMFileWriterFactory();		
 		SAMFileWriter bamWriter = factory.makeSAMOrBAMWriter(samHeader, preOrder, new File(outFile));	
-			
-		
+
+
 		ArrayList<TandemRepeat>  myList = TandemRepeat.readFromFile(SequenceReader.openFile(trFile), new ArrayList<String>());
 		TandemRepeat tr = myList.get(0);
-		
+
 		System.err.print(tr.toString()+" : ");
 		int trIndex = 0;
 		int count = 0;
-		
+
 		int trSeqIndex = samHeader.getSequenceIndex(tr.getChr());
 		if (trSeqIndex < 0){
 			samReader.close();
 			throw new RuntimeException("Sequence " + tr.getChr() + " not found in the header of b/sam file " + inFile);
 		}
-		
+
 		SAMRecordIterator samIter = samReader.iterator();
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();			
-			
+
 
 			int seqIndex = sam.getReferenceIndex();
-			
+
 			//the samrecod is in an ealier sequence
 			if (seqIndex < trSeqIndex)
 				continue;
-			
+
 			int posStart = sam.getAlignmentStart();
 			int posEnd = sam.getAlignmentEnd();
-			
+
 			if (seqIndex == trSeqIndex && posEnd <= tr.getEnd() + pad)
 				continue;
-			
+
 			if (seqIndex == trSeqIndex && posStart < tr.getStart() - pad){
 				bamWriter.addAlignment(sam);
 				count ++;
 				continue;
 			}
-			
+
 			while (seqIndex > trSeqIndex || (seqIndex == trSeqIndex && posStart > tr.getStart() - pad)){
 				trIndex ++;
 				System.err.println(count);
@@ -166,10 +156,10 @@ public class SelectReadSpan {
 					break;//while
 				}
 			}
-			
+
 			if (tr == null)
 				break;
-			
+
 			if (seqIndex == trSeqIndex && posStart > tr.getStart() - pad && posEnd < tr.getEnd() + pad){
 				bamWriter.addAlignment(sam);
 				count ++;
