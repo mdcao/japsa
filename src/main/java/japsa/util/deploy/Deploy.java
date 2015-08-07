@@ -36,32 +36,32 @@
 package japsa.util.deploy;
 
 import japsa.bio.hts.HTSAlignmentParam;
-import japsa.bio.sim.SimHTSWithFSM;
-import japsa.bio.sim.SimProbFSM;
+import japsa.tools.bio.hts.BreakBamCmd;
+import japsa.tools.bio.hts.CountReadInRegionCmd;
+import japsa.tools.bio.hts.FastQTrimCmd;
+import japsa.tools.bio.hts.HTSErrorAnalysisCmd;
+import japsa.tools.bio.hts.SelectReadIntersectCmd;
+import japsa.tools.bio.hts.SelectReadSpanCmd;
+import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.np.GeneStrainTypingCmd;
 import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.np.ResistanceGeneCmd;
 import japsa.tools.bio.np.SpeciesMixtureTypingCmd;
-import japsa.tools.bio.phylo.NormaliseTree;
-import japsa.tools.bio.phylo.XMDistance;
-import japsa.tools.bio.phylo.XMDistance2;
-import japsa.tools.hts.BreakBamCmd;
-import japsa.tools.hts.CountReadInRegionCmd;
-import japsa.tools.hts.FastQTrimCmd;
-import japsa.tools.hts.HTSErrorAnalysisCmd;
-import japsa.tools.hts.SelectReadIntersectCmd;
-import japsa.tools.hts.SelectReadSpanCmd;
-import japsa.tools.hts.VNTRDepthCmd;
-import japsa.tools.hts.tr.Fragment2TRVCmd;
-import japsa.tools.hts.tr.Japsa2TRCmd;
-import japsa.tools.hts.tr.ParseTRFCmd;
-import japsa.tools.hts.tr.Sam2FragmentSizeCmd;
-import japsa.tools.hts.tr.SortFragmentFileCmd;
-import japsa.tools.hts.tr.TRV2BedCmd;
-import japsa.tools.hts.tr.TRV2VCFCmd;
-import japsa.tools.hts.tr.VCF2TRVCmd;
+import japsa.tools.bio.phylo.NormaliseTreeCmd;
+import japsa.tools.bio.phylo.XMasCmd;
+import japsa.tools.bio.phylo.XMDistanceCmd;
+import japsa.tools.bio.sim.SimHTSWithFSMCmd;
+import japsa.tools.bio.sim.SimProbFSMCmd;
+import japsa.tools.bio.tr.Fragment2TRVCmd;
+import japsa.tools.bio.tr.Japsa2TRCmd;
+import japsa.tools.bio.tr.ParseTRFCmd;
+import japsa.tools.bio.tr.Sam2FragmentSizeCmd;
+import japsa.tools.bio.tr.SortFragmentFileCmd;
+import japsa.tools.bio.tr.TRV2BedCmd;
+import japsa.tools.bio.tr.TRV2VCFCmd;
+import japsa.tools.bio.tr.VCF2TRVCmd;
 import japsa.tools.seq.AddAnnotationCmd;
 import japsa.tools.seq.AlignmentEMCmd;
 import japsa.tools.seq.AnnotateRegionsCmd;
@@ -77,7 +77,7 @@ import japsa.tools.seq.SequenceStatsCmd;
 import japsa.tools.seq.SplitSequenceFileCmd;
 import japsa.tools.util.StreamClientCmd;
 import japsa.tools.util.StreamServerCmd;
-import japsa.tools.xm.ExpertModelDriver;
+import japsa.tools.xm.ExpertModelCmd;
 import japsa.util.CommandLine;
 import japsa.util.StringSeparator;
 
@@ -128,7 +128,8 @@ public class Deploy {
 		tools.add(new SelectReadIntersectCmd());
 		tools.add(new SelectReadSpanCmd());				
 		tools.add(new CountReadInRegionCmd());
-		tools.add(new HTSAlignmentParam());
+		//TODO: Fix the below
+		//tools.add(new HTSAlignmentParam());
 		tools.add(new HTSErrorAnalysisCmd());
 
 
@@ -162,18 +163,18 @@ public class Deploy {
 
 		//jsa.phylo		
 		tools.add("Phylogenetics analysis tools:");
-		tools.add(new XMDistance());
-		tools.add(new XMDistance2());
-		tools.add(new NormaliseTree());	
+		tools.add(new XMasCmd());
+		tools.add(new XMDistanceCmd());
+		tools.add(new NormaliseTreeCmd());	
 
 		//jsa.sim
 		tools.add("Alignment with Finite State Machines");
-		tools.add(new SimProbFSM());		
-		tools.add(new SimHTSWithFSM());
+		tools.add(new SimProbFSMCmd());		
+		tools.add(new SimHTSWithFSMCmd());
 
 		//jsa.xm
 		tools.add("Export Model compression");
-		tools.add(new ExpertModelDriver());
+		tools.add(new ExpertModelCmd());
 		//tools.add(.class);		
 	}	
 

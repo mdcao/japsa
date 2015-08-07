@@ -31,7 +31,7 @@
  * 20/06/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.tools.hts.tr;
+package japsa.tools.bio.tr;
 
 import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.Alphabet;

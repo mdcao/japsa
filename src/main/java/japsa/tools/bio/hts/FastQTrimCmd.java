@@ -31,7 +31,7 @@
  * 02/10/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.tools.hts;
+package japsa.tools.bio.hts;
 
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;

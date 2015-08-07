@@ -28,104 +28,95 @@
  ****************************************************************************/
 
 /**************************     REVISION HISTORY    **************************
- * 02/10/2013 - Minh Duc Cao: Created                                        
- * 16/11/2013 - Minh Duc Cai: Revised 
+ * File: Japsa2TR.java
+ * 16/11/2013 - Minh Duc Cao: Created
+ *
  ****************************************************************************/
-package japsa.tools.hts;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SAMTextWriter;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
+package japsa.tools.bio.tr;
+
+import japsa.bio.tr.TandemRepeat;
+import japsa.seq.JapsaAnnotation;
+import japsa.seq.JapsaFeature;
+import japsa.seq.JapsaFileFormat;
+import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import java.io.File;
 import java.io.IOException;
-
-
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
+ * FIXME: Need to test
  * @author Minh Duc Cao (http://www.caominhduc.org/)
- * Program to break a fastq file to smaller pieces
  */
-@Deployable(
-	scriptName = "jsa.hts.breakbam",
-	scriptDesc = "Break a sam/bam file to smaller ones")
-public class BreakBamCmd extends CommandLine{	
-	public BreakBamCmd(){
+@Deployable(scriptName = "jsa.trv.jsa2tr",
+            scriptDesc = "Convert tandem repeat annotation in JAPSA format to TR format")
+public class Japsa2TRCmd extends CommandLine{	
+	public Japsa2TRCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		
-		addStdInputFile();			
-		addString("output", null, "Name of output s/bam file. If output file is .bam, bam format is outputed", true);
-		addInt("size", 50000000, "The number of reads per file, a negative number for not spliting");	
+		addString("input", null, "Name of input JSA file, - for standard input",true);
+		addString("output", "-", "Name of output file, - for standard out");			
 		
 		addStdHelp();		
 	} 
+
 	/**
 	 * @param args
-	 */
-	public static void main(String[] args) throws IOException{
-		CommandLine cmdLine = new BreakBamCmd();
+	 */		
+	public static void main(String[] args) throws IOException{		
+		CommandLine cmdLine = new Japsa2TRCmd();		
 		args = cmdLine.stdParseLine(args);
 		
+		
+		String inputFile = cmdLine.getStringVal("input");		
+		String outputFile = cmdLine.getStringVal("output");
+		
+		SequenceOutputStream ps = SequenceOutputStream.makeOutputStream(outputFile);
 
-		String output = cmdLine.getStringVal("output");
-		String inFile = cmdLine.getStringVal("input");
+		//Read tnr
+		System.out.println(" Reading tandem repeats from " + inputFile);
+		JapsaAnnotation trAnno = null;//JapsaAnnotation.readDataFromFile(inputFile);		
+		 
+		JapsaFileFormat reader = null;
+		
+		if (inputFile.equals("-"))
+			reader = new JapsaFileFormat(System.in);
+		else
+			reader = new JapsaFileFormat(inputFile);
+		
+		
+		while ( (trAnno = reader.readAnnotation()) != null){
+			ArrayList<TandemRepeat> trs = new ArrayList<TandemRepeat>();
 
-		int size = cmdLine.getIntVal("size");
-		
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));	
-		SAMFileHeader samHeader = samReader.getFileHeader();
-		
-		//TODO: should it be sorted?
-		samHeader.setSortOrder(SortOrder.unsorted);
-		
-		System.out.println(samHeader.getSortOrder());
-		if (size == 0)
-			size = -1;
-		
-		int index = 1;
-		
-		SAMTextWriter samWriter = new SAMTextWriter(new File("P"+index+"_" + output));
-		samWriter.setSortOrder(SortOrder.unsorted, false);		
-		samWriter.writeHeader(samHeader.getTextHeader());
-		
-		
-		
-		int count = 0;	
-		int countAll = 0;
-
-		SAMRecordIterator samIter = samReader.iterator();
-		while (samIter.hasNext()){
-			SAMRecord sam = samIter.next();			
-
-			if (count == size){
-				//write this samRecord
-				samWriter.close();
-
-				///start a new one
-				index ++;
-				count = 0;
-				samWriter = new SAMTextWriter(new File("P"+index+"_" + output));
-				samWriter.setSortOrder(SortOrder.unsorted, false);		
-				samWriter.writeHeader(samHeader.getTextHeader());				
+			Iterator<JapsaFeature> iter = trAnno.iterator();
+			while (iter.hasNext()) {
+				trs.add(new TandemRepeat(iter.next()));
 			}
+			
+			System.out.println(" Writing " + trs.size() + " to " + outputFile);
 
-			count ++;
-			countAll ++;
-			samWriter.addAlignment(sam);
-		}//while
-		samReader.close();
-		System.out.println("Write " + countAll + " reads to " + index + " files" );
-		samWriter.close();
+			
+			String annoDesc = trAnno.getDescription();
+			ArrayList<String> dList = new ArrayList<String>();
+			String[] toks = annoDesc.split("\n");
+
+			for (int i = 0; i < toks.length; i++)
+				dList.add("#" + toks[i]);
+
+			dList.add("#TNR list from parsed");
+			
+			//ps.println("#ID:" + tnrs.getID());
+			//writeToFile(ps, STANDARD_HEADER, trs, dList, true);
+			TandemRepeat.writeToFile(ps, TandemRepeat.FULL_HEADER_WITH_ANNOTATIONS, trs, dList, true);			
+		}
+				
+		ps.close();
+		reader.close();
 	}
 }

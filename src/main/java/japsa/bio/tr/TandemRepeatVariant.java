@@ -109,7 +109,11 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	double evidence2;
 	
 	 @Deprecated
-	double mean = 0, std = 10;//a bland distribution
+	double mean = 0;//a bland distribution
+
+
+	@Deprecated
+	public double std = 10;
 
 	//public String start;
 

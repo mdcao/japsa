@@ -34,7 +34,7 @@
  *   -Inlude feature for simulation 
  ****************************************************************************/
 
-package japsa.tools.hts.tr;
+package japsa.tools.bio.tr;
 
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.JapsaAnnotation;

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
+ * Copyright (c) 2010 Minh Duc Cao, Monash University.  All rights reserved. *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright      *
  *    notice, this list of conditions and the following disclaimer in the    *
  *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the names of the institutions nor the names of the contributors*
+ * 3. Neither the name of Monash University nor the names of its contributors*
  *    may be used to endorse or promote products derived from this software  *
  *    without specific prior written permission.                             *
  *                                                                           *
@@ -27,31 +27,67 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/**************************     REVISION HISTORY    **************************
- * File: Deployable.java
- * 14/11/2013 - Minh Duc Cao: Created
- *
- ****************************************************************************/
+package japsa.tools.bio.phylo;
 
-package japsa.util.deploy;
+import japsa.bio.phylo.PhylogenyTree;
+import japsa.seq.SequenceReader;
+import japsa.util.CommandLine;
+import japsa.util.deploy.Deployable;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.io.BufferedReader;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+
+
 
 /**
- * Make sure to add the annotated class to the tool list in Deploy
- * @author Minh Duc Cao (http://www.caominhduc.org/)
+ * @author minhduc
+ * 
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface Deployable {
-	String  scriptName() default "jsa";
-	String  scriptDesc() default "Tools from Just Another Java Package for Statistical Sequence Analysis";		
-	String  scriptDocs() default "";
-	String  citation() default "";
-	boolean galaxyUse() default false;	
+@Deployable(scriptName = "jsa.phylo.normalise",
+			scriptDesc = "Normalise the length branch of a tree")
+public class NormaliseTreeCmd  extends CommandLine{	
+	public NormaliseTreeCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 		
-}
+		addStdInputFile();		
+		addString("output", "-", "Name of the file for output, - for stdout");
+				
+		addStdHelp();		
+	} 
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws IOException {		
+		CommandLine cmdLine = new NormaliseTreeCmd();
+		args = cmdLine.stdParseLine(args);
+				
+		String output = cmdLine.getStringVal("output");		
+		BufferedReader bf = SequenceReader.openFile(cmdLine.getStringVal("input"));		
+		
+		String line = null, str = "";
+		while ((line = bf.readLine()) != null) {
+			str = str + line.trim();
+		}
 
+		bf.close();
+
+		PhylogenyTree tree = PhylogenyTree.parseTree(str);
+		double sum = tree.sumHops();
+		double num = tree.numHops();
+
+		tree.scale(num / sum);
+
+		PrintStream ps = System.out;
+		if(!"-".equals(output))
+			ps = new PrintStream(new FileOutputStream(output));
+		
+		ps.println(tree.toString() + ";");
+
+		ps.close();
+	}
+}

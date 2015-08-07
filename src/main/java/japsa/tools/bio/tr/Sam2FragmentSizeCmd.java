@@ -36,7 +36,7 @@
  *  
  ****************************************************************************/
 
-package japsa.tools.hts.tr;
+package japsa.tools.bio.tr;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;

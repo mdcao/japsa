@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.tools.hts.tr;
+package japsa.tools.bio.tr;
 
 import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.SequenceOutputStream;

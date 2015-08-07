@@ -37,7 +37,7 @@ package japsa.tools.bio.phylo;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
-import japsa.tools.xm.ExpertModelDriver;
+import japsa.tools.xm.ExpertModelCmd;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
@@ -52,43 +52,48 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 
-@Deployable(scriptName = "jsa.phylo.distance2",
+@Deployable(scriptName = "jsa.phylo.xmdist",
 scriptDesc = "Generate a distance matrix from genomes (potentially not alignable")
-public class XMDistance2 {
+public class XMDistanceCmd  extends CommandLine{	
+	public XMDistanceCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+		addStdInputFile();		
+		addString("output", "output", "Name of the file for output (distances in phylip format)");
+
+
+		addInt("hashSize", 11, "Hash size");
+		addInt("context", 15, "Length of the context");
+		addInt("limit", 200, "Expert Limit");
+		addInt("thread", 1, "Number of threads");
+		addDouble("threshold", 0.15, "Listen threshold");
+		addInt("chance", 20, "Chances");
+		addBoolean("binaryHash", false, "Use binary hash or not");
+		addString("offsetType", "counts",
+			"Way of update offset/palindrome expert: possible value count, subs");
+		addBoolean("optimise", false,
+			"Running in optimise mode, just report the entropy,recommended for long sequence");
+		addInt("checkPoint", 1000000, "Frequency of check point");
+		addString("hashType", "hash",
+			"Type of Hash table: hash=hashtable, sft=SuffixTree,sfa = SuffixArray");
+		addBoolean("selfRep", true,
+			"Propose experts from the sequence to compressed?");	
+
+		addStdHelp();		
+	} 
 	//public static boolean adapt = false;
 
 	static double [] resultSingle;
 	static double [][] resultBG;
 	static ArrayList<Sequence> seqs;
 
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = XMDistance2.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]");
-		/**********************************************************************/		
-		cmdLine.addStdInputFile();		
-		cmdLine.addString("output", "output", "Name of the file for output (distances in phylip format)");
-
-
-		cmdLine.addInt("hashSize", 11, "Hash size");
-		cmdLine.addInt("context", 15, "Length of the context");
-		cmdLine.addInt("limit", 200, "Expert Limit");
-		cmdLine.addInt("thread", 1, "Number of threads");
-		cmdLine.addDouble("threshold", 0.15, "Listen threshold");
-		cmdLine.addInt("chance", 20, "Chances");
-		cmdLine.addBoolean("binaryHash", false, "Use binary hash or not");
-		cmdLine.addString("offsetType", "counts",
-				"Way of update offset/palindrome expert: possible value count, subs");
-		cmdLine.addBoolean("optimise", false,
-				"Running in optimise mode, just report the entropy,recommended for long sequence");
-		cmdLine.addInt("checkPoint", 1000000, "Frequency of check point");
-		cmdLine.addString("hashType", "hash",
-				"Type of Hash table: hash=hashtable, sft=SuffixTree,sfa = SuffixArray");
-		cmdLine.addBoolean("selfRep", true,
-				"Propose experts from the sequence to compressed?");
-
-		args = cmdLine.stdParseLine_old(args);		
-		/**********************************************************************/
+	public static void main(String[] args) throws Exception {		 		
+		CommandLine cmdLine = new XMDistanceCmd();
+		args = cmdLine.stdParseLine(args);
+		
 
 		String input = cmdLine.getStringVal("input");
 		int thread = cmdLine.getIntVal("thread");
@@ -144,12 +149,12 @@ public class XMDistance2 {
 			}
 		}
 		executor.shutdown();
-		
+
 		boolean finished = executor.awaitTermination(3, TimeUnit.DAYS);
-		
-		
+
+
 		double [][] mtx = new double[seqs.size()] [seqs.size()];
-		
+
 		Logging.info("ALL DONE " + finished);
 		for (int i = 0; i < seqs.size();i++){
 			mtx[i][i] = 0;
@@ -160,8 +165,8 @@ public class XMDistance2 {
 
 
 		PrintStream out = 
-				new PrintStream(new BufferedOutputStream(new FileOutputStream(
-						cmdLine.getStringVal("output"))));		
+			new PrintStream(new BufferedOutputStream(new FileOutputStream(
+				cmdLine.getStringVal("output"))));		
 		printMtx(seqs, mtx, out);		
 		/***********************************************
 		BufferedOutputStream out = 
@@ -188,7 +193,7 @@ public class XMDistance2 {
 
 
 	public static void printMtx(ArrayList<Sequence> dnaSeqs, double[][] mtx,
-			PrintStream out) {		
+		PrintStream out) {		
 		out.println(" " + dnaSeqs.size());
 		for (int s = 0; s < dnaSeqs.size(); s++) {
 			out.printf("%-12s ", dnaSeqs.get(s).getName());
@@ -206,7 +211,7 @@ public class XMDistance2 {
 		int index2;		
 
 		private CompressSingle(CommandLine cmdLine) throws Exception{
-			eModel = ExpertModelDriver.getExpertModel(cmdLine);
+			eModel = ExpertModelCmd.getExpertModel(cmdLine);
 		}
 
 		public CompressSingle(CommandLine cmdLine, int i1) throws Exception{
@@ -247,13 +252,13 @@ public class XMDistance2 {
 						resultBG[index1][index2] = e_ij; 
 					}
 					Logging.info("Thread GB " + index1 + " - " + index2 + " done");
-					
+
 
 					Logging.info("Thread GB2 " + index2 + " - " + index1 + " started");
 					mS[0] = seqs.get(index2);
 					mS[1] = seqs.get(index1);					
 					double e_ji = eModel.encode_optimise(mS);
-					
+
 					synchronized(resultBG){
 						resultBG[index2][index1] = e_ji; 
 					}

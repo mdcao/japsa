@@ -50,21 +50,25 @@ import java.util.ArrayList;
 
 @Deployable(scriptName = "jsa.phylo.xmas",
             scriptDesc = "Generate a distance matrix from aligned sequences")
-public class XMDistance {
+public class XMasCmd  extends CommandLine{	
+	public XMasCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addStdInputFile();		
+		addString("output", "output", "Name of the file for output (distances in phylip format)");
+		addBoolean("adapt", false, "Use adaptive");
+		
+		
+		addStdHelp();		
+	} 
 	public static boolean adapt = false;
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = XMDistance.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]");
-		/**********************************************************************/
+	public static void main(String[] args) throws Exception {		 		
+		CommandLine cmdLine = new XMasCmd();
+		args = cmdLine.stdParseLine(args);
 		
-		cmdLine.addStdInputFile();		
-		cmdLine.addString("output", "output", "Name of the file for output (distances in phylip format)");
-		cmdLine.addBoolean("adapt", false, "Use adaptive");
-		
-		//cmdLine.addString("inType", "fasta", "Type of input files: fasta or phylip");
-
-		args = cmdLine.stdParseLine_old(args);	
 		/**********************************************************************/
 		FastaReader sin = new FastaReader(new FileInputStream(cmdLine.getStringVal("input")));
 		ArrayList<Sequence> seqs = new ArrayList<Sequence>(100);

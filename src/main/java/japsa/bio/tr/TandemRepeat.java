@@ -51,8 +51,7 @@ import java.util.Iterator;
  * @author Minh Duc Cao (minhduc \dot cao \at gmail \dot com)
  *
  */
-public class TandemRepeat
-	extends JapsaFeature{
+public class TandemRepeat extends JapsaFeature{
 
 	/**
 	 * Header

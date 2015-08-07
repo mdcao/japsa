@@ -32,10 +32,12 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.tools.bio.tr;
 
+import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
+import japsa.util.deploy.Deployable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,36 +48,31 @@ import java.util.ArrayList;
  * @author minhduc
  * 
  */
-public class CompareTRV { 
-//FIXME: standardise
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "japsa.str strvcompare";
-		String desc = "compare TR variation to an answer file, use to evaluate\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/		
-		//cmdLine.addString("isize", null, "Name of the insert size file, - for standard in");		
-		cmdLine.addString("ansFile", null,	"Name of the answer file",true);
-		cmdLine.addInt("min", 0, "minimum length of TR region");
-		cmdLine.addInt("max", 10000, "maximum length of TR region");
-		cmdLine.addString("strviper", null,	"Name of the str file");
+@Deployable(
+	scriptName = "jsa.str.strvcompare",
+	scriptDesc = "Compare TR variation to an answer file, use to evaluate"
+	)
+public class CompareTRVCmd  extends CommandLine{	
+	public CompareTRVCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+		addString("ansFile", null,	"Name of the answer file",true);
+		addInt("min", 0, "minimum length of TR region");
+		addInt("max", 10000, "maximum length of TR region");
+		addString("strviper", null,	"Name of the str file");
 		//cmdLine.addString("lob", null,	"Name of the lobstr file");		
-		cmdLine.addString("vcf", null,	"Name of the results in vcf format (samtools and Dindel)");
-		cmdLine.addBoolean("baseline", false, "Benchmark against a baseline");
-		
-		cmdLine.addBoolean("help", false, "Display this usage and exit");
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/
-		
+		addString("vcf", null,	"Name of the results in vcf format (samtools and Dindel)");
+		addBoolean("baseline", false, "Benchmark against a baseline");	
+
+		addStdHelp();		
+	}  
+//FIXME: standardise
+	public static void main(String[] args) throws Exception {		
+		CommandLine cmdLine = new CompareTRVCmd();		
+		args = cmdLine.stdParseLine(args);
 
 		String  ans = cmdLine.getStringVal("ansFile");
 		String  lob = cmdLine.getStringVal("lob");
@@ -122,10 +119,10 @@ public class CompareTRV {
 				for (int i = 0; i < ansList.size(); i++){
 					TandemRepeatVariant trv = ansList.get(i).tandemRepeatClone();
 				
-					trv.mean = 0;
-					trv.var = 0;
-					trv.confidence = 0;
-					trv.std = 0;
+					trv.setMean(0);
+					trv.setVar(0);
+					trv.setConfidence(0);
+					trv.setStd(0);
 				
 					samtoolList.add(trv);
 				}	
@@ -202,8 +199,8 @@ public class CompareTRV {
 			
 			System.out.println("Enter : " + line + "   " + overlap + "   vs   " + indelSize);			
 						
-			tr.var = tr.var + indelSize/tr.getPeriod();
-			tr.mean = tr.var;
+			tr.setVar(tr.getVar() + indelSize/tr.getPeriod());
+			tr.setMean(tr.getVar());
 			tr.std = 2;
 		}
 		
@@ -267,7 +264,7 @@ public class CompareTRV {
 					sumL += pToks[x].length();
 				countL ++;
 			}
-			tr.var = tr.var + (sumL * 1.0 / countL - refLen)/tr.getPeriod();
+			tr.setVar(tr.getVar() + (sumL * 1.0 / countL - refLen)/tr.getPeriod());
 		}
 		
 		System.out.println("## " + indels + " indels found ");		
@@ -314,7 +311,7 @@ public class CompareTRV {
 				countL ++;
 				foundIndel = true;
 			}
-			tr.var = tr.var + (sumL * 1.0 / countL - refLen)/tr.getPeriod();
+			tr.setVar(tr.getVar() + (sumL * 1.0 / countL - refLen)/tr.getPeriod());
 			
 			if (foundIndel)
 				indels++;
@@ -341,9 +338,9 @@ public class CompareTRV {
 
 			if (pStr != null){
 				if (ans.getChr().equals(pStr.getChr()) && ans.getStart() == pStr.getStart() && ans.getEnd() == pStr.getEnd()){
-					ans.var = pStr.var;					
-					ans.mean = ans.var;
-					ans.confidence = pStr.confidence;
+					ans.setVar(pStr.getVar());					
+					ans.setMean(ans.getVar());
+					ans.setConfidence(pStr.getConfidence());
 					ans.std = 2.0;
 					pCount ++;
 					pStr = null;					
@@ -392,32 +389,32 @@ public class CompareTRV {
 
 			if (pStr != null && ans.compareTo(pStr) == 0){
 				//if (ans.chr.equals(pStr.chr) && ans.start == pStr.start && ans.end == pStr.end){
-					predicted = pStr.var;
+					predicted = pStr.getVar();
 					pCount ++;
 					pStr = null;					
 				//}
 			}
 
-			if (Math.round(predicted) == Math.round(ans.var))
+			if (Math.round(predicted) == Math.round(ans.getVar()))
 				sRight ++;	
 
-			if (Math.round(predicted) == Math.round(ans.var))
+			if (Math.round(predicted) == Math.round(ans.getVar()))
 				pRight ++;
-			else if (Math.round(predicted) * Math.round(ans.var) > 0)
+			else if (Math.round(predicted) * Math.round(ans.getVar()) > 0)
 				pRight ++;
 
 
-			if (Math.round(predicted) == Math.round(ans.var))
+			if (Math.round(predicted) == Math.round(ans.getVar()))
 				vRight ++;
-			else if (Math.round(predicted) * Math.round(ans.var) != 0)
+			else if (Math.round(predicted) * Math.round(ans.getVar()) != 0)
 				vRight ++;			
 
-			if (Math.abs(predicted - ans.var) <= range)
+			if (Math.abs(predicted - ans.getVar()) <= range)
 				rRight ++;
 
-			SSE += (predicted - ans.var) * (predicted - ans.var);
+			SSE += (predicted - ans.getVar()) * (predicted - ans.getVar());
 			
-			if (ans.var > 0.5){//an insertion				
+			if (ans.getVar() > 0.5){//an insertion				
 				if (predicted > 0.5){//predicted as an insertion
 					insTP ++;					
 					delTN ++;
@@ -431,7 +428,7 @@ public class CompareTRV {
 					delTN ++;
 					idFN++;
 				}				
-			}else if (ans.var < -0.5){//a deletion
+			}else if (ans.getVar() < -0.5){//a deletion
 				if (predicted > 0.5){//predicted as an insertion
 					insFP ++;					
 					delFN ++;
@@ -496,10 +493,10 @@ public class CompareTRV {
 		String [] toks = line.trim().split("\\t");
 
 
-		tr.tandemRepeat.setChr(toks[0]);
-		tr.tandemRepeat.setStart(Integer.parseInt(toks[1]));
-		tr.tandemRepeat.setEnd(Integer.parseInt(toks[2]));	
-		tr.tandemRepeat.setPeriod(Integer.parseInt(toks[4]));
+		tr.getTandemRepeat().setChr(toks[0]);
+		tr.getTandemRepeat().setStart(Integer.parseInt(toks[1]));
+		tr.getTandemRepeat().setEnd(Integer.parseInt(toks[2]));	
+		tr.getTandemRepeat().setPeriod(Integer.parseInt(toks[4]));
 		
 		String[] alle = toks[6].split(",");
 		tr.setVar(((Double.parseDouble(alle[0]) + Double.parseDouble(alle[1])) / tr.getPeriod()) / 2);		

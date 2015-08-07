@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.sim;
+package japsa.tools.bio.sim;
 
 import japsa.bio.alignment.ProbFSM.Emission;
 import japsa.bio.alignment.ProbFSM.ProbThreeSM;
@@ -50,31 +50,37 @@ import java.util.Random;
  */
 @Deployable(scriptName = "jsa.sim.testpfsm", 
 scriptDesc = "Testing estimation of parameters using a three state finite machine")
-public class SimProbFSM {
+public class SimProbFSMCmd  extends CommandLine{	
+	public SimProbFSMCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addInt("length", 1000, "Length");
+		addInt("num", 20, "Number of sequences");
+		
+		addDouble("miProb", 0.1, "Model probability of insertion");
+		addDouble("mdProb", 0.1, "Model probability of deletion");
+		addDouble("mmProb", 0.1, "Model probability of mutation");		
+		addDouble("meiProb", 0.2, "Model probability of extending insertion");
+		addDouble("medProb", 0.2, "Model probability of extending deletion");
+		
+		
+		addDouble("eiProb", 0.025, "Estimate probability of insertion");
+		addDouble("edProb", 0.025, "Estimate probability of deletion");
+		addDouble("emProb", 0.05, "Estimate probability of mutation");		
+		addDouble("eeiProb", 0.1, "Estimate probability of extending insertion");
+		addDouble("eedProb", 0.1, "Estimate probability of extending deletion");		
+	
+		
+		addStdHelp();		
+	} 
 	//public static SequenceOutputStream datOutGen , datOutEst; 
-	public static void main(String[] args) throws Exception{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = SimProbFSM.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/		
-
-		cmdLine.addInt("length", 1000, "Length");
-		cmdLine.addInt("num", 20, "Number of sequences");
+	public static void main(String[] args) throws Exception{		 		
+		CommandLine cmdLine = new SimProbFSMCmd();	
+		args = cmdLine.stdParseLine(args);
 		
-		cmdLine.addDouble("miProb", 0.1, "Model probability of insertion");
-		cmdLine.addDouble("mdProb", 0.1, "Model probability of deletion");
-		cmdLine.addDouble("mmProb", 0.1, "Model probability of mutation");		
-		cmdLine.addDouble("meiProb", 0.2, "Model probability of extending insertion");
-		cmdLine.addDouble("medProb", 0.2, "Model probability of extending deletion");
-		
-		
-		cmdLine.addDouble("eiProb", 0.025, "Estimate probability of insertion");
-		cmdLine.addDouble("edProb", 0.025, "Estimate probability of deletion");
-		cmdLine.addDouble("emProb", 0.05, "Estimate probability of mutation");		
-		cmdLine.addDouble("eeiProb", 0.1, "Estimate probability of extending insertion");
-		cmdLine.addDouble("eedProb", 0.1, "Estimate probability of extending deletion");		
-		
-		args = cmdLine.stdParseLine_old(args);	
 		/**********************************************************************/
 		int length   = cmdLine.getIntVal("length");
 		int numSeq = cmdLine.getIntVal("num");

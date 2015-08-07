@@ -27,64 +27,54 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/**************************     REVISION HISTORY    **************************
- * 20/06/2013 - Minh Duc Cao: Created                                        
- * 16/11/2013: MDC revised 
+/*                           Revision History                                
+ * 08/01/2012 - Minh Duc Cao: Revised                                        
+ *  
  ****************************************************************************/
-package japsa.tools.hts.tr;
 
-import japsa.bio.tr.TandemRepeatVariant;
+package japsa.tools.bio.tr;
+
 import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import java.io.IOException;
-import java.util.ArrayList;
-
-
+import java.io.BufferedReader;
 
 /**
- * Tool to convert trv to bed file
- * @author Minh Duc Cao (http://www.caominhduc.org/)
- *
+ * FIXME: Need to test
+ * @author minhduc
+ * 
  */
-@Deployable(scriptName = "jsa.trv.trv2bed",
-           scriptDesc = "Convert tandem repeat variation in trv format to bed format")
-public class TRV2BedCmd extends CommandLine{	
-	public TRV2BedCmd(){
+@Deployable(scriptName = "jsa.trv.sortFragment",
+scriptDesc = "Sort fragment file")
+public class SortFragmentFileCmd extends CommandLine{	
+	public SortFragmentFileCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		
-		addString("input", "-",
-				"Name of the input file in trv, - for standard input",true);
-		addString("output", "-",
-				"Name of the output file - for standard output)");
-		
+
+		addStdInputFile();
+		addString("output", "-", "Name of the output file,  - for standard output");
+
 		addStdHelp();		
 	} 
 
-	/**
-	 * @param args
-	 * @throws IOException 
-	 */
-	public static void main(String[] args) throws IOException {				
-		CommandLine cmdLine = new TRV2BedCmd();
+	public static void main(String[] args) throws Exception {		
+		CommandLine cmdLine = new SortFragmentFileCmd();
 		args = cmdLine.stdParseLine(args);
-		
-		
-		String inFile = cmdLine.getStringVal("input");
-		String outFile = cmdLine.getStringVal("output");		
-			
-		ArrayList<TandemRepeatVariant> trs = TandemRepeatVariant.readFromFile(inFile);
-		
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(outFile);		
-		for (int i = 0; i < trs.size();i++){
-			trs.get(i).writeBED(out);
-		}		
+		/**********************************************************************/		
 
-		out.close();	
+		String output = cmdLine.getStringVal("output");
+		String input = cmdLine.getStringVal("input");
+
+		BufferedReader in = SequenceReader.openFile(input);
+
+		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
+		PEFragment.LinkedPEFragment.read(in, out, 1000);
+		out.close();
+
 	}
 
 }

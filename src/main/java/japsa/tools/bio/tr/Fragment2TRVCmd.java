@@ -32,9 +32,8 @@
  * 16/11/2013 - Minh Duc Cao 
  ****************************************************************************/
 
-package japsa.tools.hts.tr;
+package japsa.tools.bio.tr;
 
-import japsa.bio.tr.CompareTRV;
 import japsa.bio.tr.TandemRepeat;
 import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.JapsaAnnotation;
@@ -49,6 +48,7 @@ import java.io.OutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
+
 
 
 
@@ -186,7 +186,7 @@ public class Fragment2TRVCmd extends CommandLine{
 	static void runAnalysisAAA(ArrayList<TandemRepeatVariant>  trvList, String[] insertFiles, double fm, double fd, int gap, OutputStream out, ArrayList<TandemRepeatVariant>  ansList) throws IOException {	
 		//Perform an initial comparision (only if answer is ready)
 		if (ansList != null)
-			CompareTRV.compareStr(ansList, trvList,0,10000);
+			CompareTRVCmd.compareStr(ansList, trvList,0,10000);
 
 		double [][] checkVar = new double[insertFiles.length + 1][trvList.size()];
 
@@ -267,7 +267,7 @@ public class Fragment2TRVCmd extends CommandLine{
 				tr.setConfidence(d.cumulativeProbability(tr.getVar() - 0.5, tr.getVar() + 0.5));
 			}//for i
 			if (ansList != null)
-				CompareTRV.compareStr(ansList, trvList,0,10000);
+				CompareTRVCmd.compareStr(ansList, trvList,0,10000);
 		}//for iFdx
 
 		String[] headers = {TandemRepeat.chrHd, TandemRepeat.startHd, TandemRepeat.endHd, 
@@ -312,7 +312,7 @@ public class Fragment2TRVCmd extends CommandLine{
 
 		//Perform an initial comparision (only if answer is ready)
 		if (ansList != null)
-			CompareTRV.compareStr(ansList, trvList,0,10000);
+			CompareTRVCmd.compareStr(ansList, trvList,0,10000);
 
 		double [][] checkVar = new double[insertFiles.length + 1][trvList.size()];
 
@@ -393,7 +393,7 @@ public class Fragment2TRVCmd extends CommandLine{
 				trv.setConfidence(d.cumulativeProbability(trv.getVar() - 0.5, trv.getVar() + 0.5));
 			}//for i
 			if (ansList != null)
-				CompareTRV.compareStr(ansList, trvList,0,10000);
+				CompareTRVCmd.compareStr(ansList, trvList,0,10000);
 		}//for iFdx
 
 		String[] headers = {TandemRepeat.chrHd, TandemRepeat.startHd, TandemRepeat.endHd, 
@@ -440,7 +440,7 @@ public class Fragment2TRVCmd extends CommandLine{
 
 		//Perform an initial comparision (only if answer is ready)
 		if (ansList != null)
-			CompareTRV.compareStr(ansList, trvList,0,10000);
+			CompareTRVCmd.compareStr(ansList, trvList,0,10000);
 
 		for (int fIdx = 0; fIdx < insertFiles.length; fIdx ++){
 			int [] counts = new int[trvList.size()];
@@ -636,7 +636,7 @@ public class Fragment2TRVCmd extends CommandLine{
 				trv.setConfidence(d.cumulativeProbability(trv.getVar() - 0.5, trv.getVar() + 0.5));
 			}//for i
 			if (ansList != null)
-				CompareTRV.compareStr(ansList, trvList,0,10000);
+				CompareTRVCmd.compareStr(ansList, trvList,0,10000);
 		}//for iFdx
 
 		String[] headers = TandemRepeatVariant.STANDARD_HEADERS;

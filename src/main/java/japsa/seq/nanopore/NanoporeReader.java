@@ -60,34 +60,38 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-//@Deployable(scriptName = "jsa.np.f5reader2", scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files")
+@Deployable(
+	scriptName = "jsa.np.f5reader2", 
+	scriptDesc = "Extract nanopore data (fastq/fasta and native data) from h5 files"
+	)
 public class NanoporeReader// implements Closeable
 {
 	public static void main(String[] args) throws OutOfMemoryError, Exception {
 		/*********************** Setting up script ****************************/
 		Deployable annotation = NanoporeReader.class.getAnnotation(Deployable.class);
 		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] f1.fast5 f2.fast5 ...",
-				annotation.scriptDesc());
+			+ annotation.scriptName() + " [options] f1.fast5 f2.fast5 ...",
+			annotation.scriptDesc());
 
 		cmdLine.addString("output", "-",
-				"Name of the output file, -  for stdout");
+			"Name of the output file, -  for stdout");
 		cmdLine.addString("type", "fastq", 
-				"Type of data to be extracted:" 
-						+ "\nfastq: sequence read in fastq format"
-						+ "\nevents: get events"
-						+ "\nmodels: get models"
-						+ "\nkeys:   list all keys"
-				);
+			"Type of data to be extracted:" 
+				+ "\nfastq: sequence read in fastq format"
+				+ "\nevents: get events"
+				+ "\nmodels: get models"
+				+ "\nkeys:   list all keys"
+			);
 
 		cmdLine.addInt("minLength", 0, 
-				"Minimum sequence length");
+			"Minimum sequence length");
 
 		cmdLine.addBoolean("stats", false, "Compute statistics of reads");
 		cmdLine.addBoolean("number", false, "Add a unique number to read name");
-		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");			
+		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");		
 
-		args = cmdLine.stdParseLine_old(args);
+		cmdLine.addStdHelp();		
+		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 
 		String type   = cmdLine.getStringVal("type");
@@ -453,7 +457,7 @@ public class NanoporeReader// implements Closeable
 	 */
 	public NanoporeReader (String fileName) throws JapsaException, OutOfMemoryError, Exception{		
 		FileFormat fileFormat = FileFormat.getFileFormat(FileFormat.FILE_TYPE_HDF5);
-		
+
 		if (fileFormat == null){
 			throw new JapsaException("Cannot read HDF5 file, possily because JHI5 is not installed or configured. Please refer to npReader installation guide or contact the deverlopers.");
 		}

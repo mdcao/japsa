@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2010 Minh Duc Cao, Monash University.  All rights reserved. *
+ * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright      *
  *    notice, this list of conditions and the following disclaimer in the    *
  *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the name of Monash University nor the names of its contributors*
+ * 3. Neither the names of the institutions nor the names of the contributors*
  *    may be used to endorse or promote products derived from this software  *
  *    without specific prior written permission.                             *
  *                                                                           *
@@ -27,76 +27,64 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-package japsa.tools.bio.phylo;
+/**************************     REVISION HISTORY    **************************
+ * 20/06/2013 - Minh Duc Cao: Created                                        
+ * 16/11/2013: MDC revised 
+ ****************************************************************************/
+package japsa.tools.bio.tr;
 
-import japsa.bio.phylo.PhylogenyTree;
-import japsa.seq.SequenceReader;
+import japsa.bio.tr.TandemRepeatVariant;
+import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import java.io.BufferedReader;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.util.ArrayList;
 
 
 
 /**
- * @author minhduc
- * 
+ * Tool to convert trv to bed file
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
+ *
  */
-@Deployable(scriptName = "jsa.phylo.normalise",
-			scriptDesc = "Normalise the length branch of a tree")
-public class NormaliseTree {
+@Deployable(scriptName = "jsa.trv.trv2bed",
+           scriptDesc = "Convert tandem repeat variation in trv format to bed format")
+public class TRV2BedCmd extends CommandLine{	
+	public TRV2BedCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("input", "-",
+				"Name of the input file in trv, - for standard input",true);
+		addString("output", "-",
+				"Name of the output file - for standard output)");
+		
+		addStdHelp();		
+	} 
+
 	/**
 	 * @param args
+	 * @throws IOException 
 	 */
-	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.phylo.normalise";
-		String desc = "Normalise the length branch of a tree\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]" );
-		/**********************************************************************/
+	public static void main(String[] args) throws IOException {				
+		CommandLine cmdLine = new TRV2BedCmd();
+		args = cmdLine.stdParseLine(args);
 		
-		cmdLine.addStdInputFile();		
-		cmdLine.addString("output", "-", "Name of the file for output, - for stdout");
-		cmdLine.addStdHelp();
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/
 		
-		String output = cmdLine.getStringVal("output");
+		String inFile = cmdLine.getStringVal("input");
+		String outFile = cmdLine.getStringVal("output");		
+			
+		ArrayList<TandemRepeatVariant> trs = TandemRepeatVariant.readFromFile(inFile);
 		
-		BufferedReader bf =
-				SequenceReader.openFile(cmdLine.getStringVal("input"));		
-		
-		String line = null, str = "";
-		while ((line = bf.readLine()) != null) {
-			str = str + line.trim();
-		}
+		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(outFile);		
+		for (int i = 0; i < trs.size();i++){
+			trs.get(i).writeBED(out);
+		}		
 
-		bf.close();
-
-		PhylogenyTree tree = PhylogenyTree.parseTree(str);
-		double sum = tree.sumHops();
-		double num = tree.numHops();
-
-		tree.scale(num / sum);
-
-		PrintStream ps = System.out;
-		if(!"-".equals(output))
-			ps = new PrintStream(new FileOutputStream(output));
-		
-		ps.println(tree.toString() + ";");
-
-		ps.close();
+		out.close();	
 	}
+
 }

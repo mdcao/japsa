@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.tools.hts;
+package japsa.tools.bio.hts;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;

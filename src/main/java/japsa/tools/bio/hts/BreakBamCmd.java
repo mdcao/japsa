@@ -27,54 +27,105 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 08/01/2012 - Minh Duc Cao: Revised                                        
- *  
+/**************************     REVISION HISTORY    **************************
+ * 02/10/2013 - Minh Duc Cao: Created                                        
+ * 16/11/2013 - Minh Duc Cai: Revised 
  ****************************************************************************/
+package japsa.tools.bio.hts;
 
-package japsa.tools.hts.tr;
-
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMTextWriter;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+
+
 
 /**
- * FIXME: Need to test
- * @author minhduc
- * 
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
+ * Program to break a fastq file to smaller pieces
  */
-@Deployable(scriptName = "jsa.trv.sortFragment",
-scriptDesc = "Sort fragment file")
-public class SortFragmentFileCmd extends CommandLine{	
-	public SortFragmentFileCmd(){
+@Deployable(
+	scriptName = "jsa.hts.breakbam",
+	scriptDesc = "Break a sam/bam file to smaller ones")
+public class BreakBamCmd extends CommandLine{	
+	public BreakBamCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-
-		addStdInputFile();
-		addString("output", "-", "Name of the output file,  - for standard output");
-
+		
+		addStdInputFile();			
+		addString("output", null, "Name of output s/bam file. If output file is .bam, bam format is outputed", true);
+		addInt("size", 50000000, "The number of reads per file, a negative number for not spliting");	
+		
 		addStdHelp();		
 	} 
-
-	public static void main(String[] args) throws Exception {		
-		CommandLine cmdLine = new SortFragmentFileCmd();
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws IOException{
+		CommandLine cmdLine = new BreakBamCmd();
 		args = cmdLine.stdParseLine(args);
-		/**********************************************************************/		
+		
 
 		String output = cmdLine.getStringVal("output");
-		String input = cmdLine.getStringVal("input");
+		String inFile = cmdLine.getStringVal("input");
 
-		BufferedReader in = SequenceReader.openFile(input);
+		int size = cmdLine.getIntVal("size");
+		
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));	
+		SAMFileHeader samHeader = samReader.getFileHeader();
+		
+		//TODO: should it be sorted?
+		samHeader.setSortOrder(SortOrder.unsorted);
+		
+		System.out.println(samHeader.getSortOrder());
+		if (size == 0)
+			size = -1;
+		
+		int index = 1;
+		
+		SAMTextWriter samWriter = new SAMTextWriter(new File("P"+index+"_" + output));
+		samWriter.setSortOrder(SortOrder.unsorted, false);		
+		samWriter.writeHeader(samHeader.getTextHeader());
+		
+		
+		
+		int count = 0;	
+		int countAll = 0;
 
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);		
-		PEFragment.LinkedPEFragment.read(in, out, 1000);
-		out.close();
+		SAMRecordIterator samIter = samReader.iterator();
+		while (samIter.hasNext()){
+			SAMRecord sam = samIter.next();			
 
+			if (count == size){
+				//write this samRecord
+				samWriter.close();
+
+				///start a new one
+				index ++;
+				count = 0;
+				samWriter = new SAMTextWriter(new File("P"+index+"_" + output));
+				samWriter.setSortOrder(SortOrder.unsorted, false);		
+				samWriter.writeHeader(samHeader.getTextHeader());				
+			}
+
+			count ++;
+			countAll ++;
+			samWriter.addAlignment(sam);
+		}//while
+		samReader.close();
+		System.out.println("Write " + countAll + " reads to " + index + " files" );
+		samWriter.close();
 	}
-
 }

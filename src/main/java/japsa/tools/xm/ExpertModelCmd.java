@@ -54,44 +54,46 @@ import java.util.Random;
 	scriptName = "jsa.xm.compress", 
 	scriptDesc = "Compression of DNA/protein sequences"
 	)
-public class ExpertModelDriver {
-
-
-	public static void main(String[] args) throws Exception {
-		Deployable annotation = ExpertModelDriver.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-			+ annotation.scriptName() + " [options] file1 file2 ...",
-			annotation.scriptDesc());
-
-		cmdLine.addInt("hashSize", 11, "Hash size");
-		cmdLine.addInt("context", 15, "Length of the context");
-		cmdLine.addInt("limit", 200, "Expert Limit");
-		cmdLine.addDouble("threshold", 0.15, "Listen threshold");
-		cmdLine.addInt("chance", 20, "Chances");
-		cmdLine.addBoolean("binaryHash", false, "Use binary hash or not");
-		cmdLine.addString("offsetType", "counts",
+public class ExpertModelCmd extends CommandLine{	
+	public ExpertModelCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options] file1 file2 ...");
+		setDesc(annotation.scriptDesc());
+		
+		
+		addInt("hashSize", 11, "Hash size");
+		addInt("context", 15, "Length of the context");
+		addInt("limit", 200, "Expert Limit");
+		addDouble("threshold", 0.15, "Listen threshold");
+		addInt("chance", 20, "Chances");
+		addBoolean("binaryHash", false, "Use binary hash or not");
+		addString("offsetType", "counts",
 			"Way of update offset/palindrome expert: possible value count, subs");
 
-		cmdLine.addString("real", null, "File name of the real compression");
-		cmdLine.addString("decode", null, "File name of the encoded");
-		cmdLine.addString("output", "decoded",
+		addString("real", null, "File name of the real compression");
+		addString("decode", null, "File name of the encoded");
+		addString("output", "decoded",
 			"The output file of decoded file");
-		cmdLine.addString("info", null, "File name of the infomation content");
-		cmdLine.addString("markov", null,
+		addString("info", null, "File name of the infomation content");
+		addString("markov", null,
 			"File name of the markov infomation content");
-		cmdLine.addBoolean("optimise", false,
+		addBoolean("optimise", false,
 			"Running in optimise mode, just report the entropy,recommended for long sequence");
 
-		cmdLine.addInt("checkPoint", 1000000, "Frequency of check point");
-		cmdLine.addString("hashType", "hash",
+		addInt("checkPoint", 1000000, "Frequency of check point");
+		addString("hashType", "hash",
 			"Type of Hash table: hash=hashtable, sft=SuffixTree,sfa = SuffixArray");
-		cmdLine.addBoolean("selfRep", true,
+		addBoolean("selfRep", true,
 			"Propose experts from the sequence to compressed?");
+		
+		addStdHelp();		
+	} 
 
 
-		//args = cmdLine.parseLine(args);
-		args = cmdLine.stdParseLine_old(args);
-
+	public static void main(String[] args) throws Exception {		
+		CommandLine cmdLine = new ExpertModelCmd();
+		args = cmdLine.stdParseLine(args);
 
 		ExpertModel eModel = getExpertModel(cmdLine);
 
@@ -100,7 +102,7 @@ public class ExpertModelDriver {
 		if (cmdLine.getStringVal("decode") == null
 			&& (args == null || args.length <= 0)) {
 			System.err
-			.println(cmdLine.usageMessage() + "\n");
+			.println(cmdLine.usageString() + "\n");
 			System.exit(1);
 		}
 
@@ -184,8 +186,7 @@ public class ExpertModelDriver {
 				System.out.println("Context : " + dnaArray[i].getName() + "\t"
 					+ dnaArray[i].length() + "");
 		}
-		System.out
-		.println("----------------------------------------------------------------------");
+		System.out.println("--------------------------------------------------------");
 
 		long start;
 		/*************************************************************************/
@@ -196,8 +197,7 @@ public class ExpertModelDriver {
 			double cost = eModel.encode_optimise(dnaArray);
 			long time = (System.currentTimeMillis() - start); //
 			System.out.printf("%f bps in %d ms\n", cost, time);
-			System.out
-			.println("=============================================================================");
+			System.out.println("=============================================================");
 
 		} else if (cmdLine.getStringVal("decode") != null) {
 			String file = cmdLine.getStringVal("decode");

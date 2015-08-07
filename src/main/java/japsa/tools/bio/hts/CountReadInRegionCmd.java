@@ -32,7 +32,7 @@
  * 15/05/2014 - Minh Duc Cao: Started
  *  
  ****************************************************************************/
-package japsa.tools.hts;
+package japsa.tools.bio.hts;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;

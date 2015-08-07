@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.sim;
+package japsa.tools.bio.sim;
 
 
 import htsjdk.samtools.SAMRecord;
@@ -62,35 +62,41 @@ import java.util.Random;
  */
 @Deployable(scriptName = "jsa.sim.htsSim", 
 scriptDesc = "Simulation of HTS sequencing with a probabistic finite (3) state machine")
-public class SimHTSWithFSM {
-	//public static SequenceOutputStream datOutGen , datOutEst; 
-	public static void main(String[] args) throws Exception{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = SimHTSWithFSM.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/		
-		cmdLine.addStdInputFile();		
-		cmdLine.addString("output", null, "Name of output fastq file", true);
+public class SimHTSWithFSMCmd  extends CommandLine{	
+	public SimHTSWithFSMCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 		
-		cmdLine.addInt("lm", 4000, "Read length means");
-		cmdLine.addInt("ls", 1500, "Read length standard deviation");		
+		addStdInputFile();		
+		addString("output", null, "Name of output fastq file", true);
 		
-		cmdLine.addDouble("mm", 0.15, "Probability of mismatches");		
+		addInt("lm", 4000, "Read length means");
+		addInt("ls", 1500, "Read length standard deviation");		
 		
-		cmdLine.addDouble("io", 0.1, "Probability of insertion opening");
-		cmdLine.addDouble("do", 0.1, "Probability of deletion opening");
+		addDouble("mm", 0.15, "Probability of mismatches");		
 		
-		cmdLine.addDouble("ie", 0.2, "Probability of insertion extension");
-		cmdLine.addDouble("de", 0.2, "Probability of deletion extension");
+		addDouble("io", 0.1, "Probability of insertion opening");
+		addDouble("do", 0.1, "Probability of deletion opening");
 		
-		cmdLine.addDouble("rand", 0.2, "Probability of random sequences");
+		addDouble("ie", 0.2, "Probability of insertion extension");
+		addDouble("de", 0.2, "Probability of deletion extension");
+		
+		addDouble("rand", 0.2, "Probability of random sequences");
 		//Note that this model forbids going directly from an insertion to deletion
 		//match = 1 - mismatch - del - ins
 		
-		cmdLine.addInt("seed", 0, "Random seed, <=0 for current time");		
-		cmdLine.addDouble("cov", 50, "Coverage");		
-		args = cmdLine.stdParseLine_old(args);			
-		/**********************************************************************/		
+		addInt("seed", 0, "Random seed, <=0 for current time");		
+		addDouble("cov", 50, "Coverage");	
+		
+		addStdHelp();		
+	} 
+	//public static SequenceOutputStream datOutGen , datOutEst; 
+	public static void main(String[] args) throws Exception{		 		
+		CommandLine cmdLine = new SimHTSWithFSMCmd();
+		args = cmdLine.stdParseLine(args);			
+		
 		
 		String output = cmdLine.getStringVal("output");
 		String inFile = cmdLine.getStringVal("input");		
