@@ -104,7 +104,7 @@ public class SpeciesMixtureTyping {
 		cmdLine.addDouble("qual", 0,  "Minimum alignment quality");
 		
 
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/
 
 		String output = cmdLine.getStringVal("output");

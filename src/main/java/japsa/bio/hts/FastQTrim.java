@@ -70,7 +70,7 @@ public class FastQTrim {
 		cmdLine.addInt("qual", 0, "Minimum of qual to be trimed from the 3', 0 for not trimming");
 		cmdLine.addInt("end", 0, "End position of a read (1-index, inclusive)  - 0 for not trimming");	
 		
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/		
 
 		String output = cmdLine.getStringVal("output");

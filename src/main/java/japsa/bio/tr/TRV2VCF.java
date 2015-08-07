@@ -78,11 +78,11 @@ public class TRV2VCF {
 		/**********************************************************************/
 		args = cmdLine.parseLine(args);
 		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
+			System.out.println(desc + cmdLine.usageMessage());			
 			System.exit(0);
 		}
 		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
+			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
 			System.exit(-1);
 		}	
 		/**********************************************************************/
@@ -93,7 +93,7 @@ public class TRV2VCF {
 		
 		if ("-".equals(refFile)){
 			System.err.println("ERROR: reference must be from some files");
-			System.err.println(cmdLine.usage());
+			System.err.println(cmdLine.usageMessage());
 			System.exit(-1);
 		}
 		ArrayList<TandemRepeatVariant> trvList = TandemRepeatVariant.readFromFile(inFile);

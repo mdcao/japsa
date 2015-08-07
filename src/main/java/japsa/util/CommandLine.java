@@ -34,6 +34,8 @@
 
 package japsa.util;
 
+import java.util.ArrayList;
+
 /**
  * An implementation of commandLine utilities. This class was written based
  * heavily on code from David Powell
@@ -42,73 +44,64 @@ package japsa.util;
  */
 
 public class CommandLine {
-	
-	private String usg = "";
+	/**
+	 * String describe the usage of the program (progname -i input -o output f1 f2 ...)
+	 */
+	private String usage = "";
+	/**
+	 * A concise description of the program
+	 */
 	private String desc = "";
-		
-	private int maxOptions = 100;
-	private String[] opts;
-	private char[] types;
-	private Object[] defaults;
-	private String[] helps;
-	private boolean[] option_set;
-	private boolean[] requires;
-	private int numOptions;
+	//List of options
+	ArrayList<Option> options;
 
-	Object[] values;	
+	//Error message during parse
 	String errors = null;
+
+	//Keep the commandline
 	String fullCmd = "";
 
+	@Deprecated
 	public CommandLine(int maxO) {
-		maxOptions = maxO;
-		opts = new String[maxOptions];
-		types = new char[maxOptions];
-		defaults = new Object[maxOptions];
-		helps = new String[maxOptions];
-
-		option_set = new boolean[maxOptions];
-		requires = new boolean[maxOptions];
-		values = new Object[maxOptions];
-		numOptions = 0;
+		options = new ArrayList<Option>(maxO);
 	}
-	
+
 	public CommandLine() {
-		this(100);
+		options = new ArrayList<Option>();
 	}
 
 	public CommandLine(String usageMsg) {
-		this(100);
-		usg = usageMsg;
+		this();
+		usage = usageMsg;
 	}
-	
+
 	public CommandLine(String usageMsg, String desc) {
 		this(usageMsg);
 		this.desc = desc;
 	}
 
-	public Object[] getDefaults() {
-		return defaults;
+	public void setUsage(String usg){
+		usage = usg;
 	}
 
-	public void setDefaults(Object[] defaults) {
-		this.defaults = defaults;
+	public void setDesc(String desc){
+		this.desc = desc;
 	}
-	
+
 	public String errors(){
 		return errors;
 	}
-	
+
 	public String fullCmd(){
 		return fullCmd;
 	}
-	
+
 	private void addError(String errorMsg){
 		if (errors == null)
 			errors = errorMsg + "\n";
 		else
 			errors = errors + errorMsg + "\n";
 	}
-
 
 	private static String spaces(int num) {
 		if (num <=1) return " ";
@@ -129,14 +122,24 @@ public class CommandLine {
 		return res.toString();
 	}
 
-	public String usage() {
-		int indent = 18;
-		StringBuffer res = new StringBuffer(usg + "\nOptions:\n");
-		for (int i = 0; i < numOptions; i++) {
-			res.append("  --" + opts[i]);
 
-			int len = opts[i].length();
-			switch (types[i]) {
+	public String usage(){
+		return usage;
+	}
+
+	/**
+	 * Get the string describing all options of the program
+	 * @return
+	 */
+
+	public String options(){
+		int indent = 18;
+		StringBuffer res = new StringBuffer();
+		for (Option option:options) {
+			res.append("  --" + option.optName);
+
+			int len = option.optName.length();
+			switch (option.optType) {
 			case 'b':
 				break;
 			case 'i':
@@ -155,8 +158,42 @@ public class CommandLine {
 
 			res.append(spaces(indent - len - 4));			
 
-			res.append(indentLines(helps[i], indent));
-			res.append("\n" + spaces(indent) + (requires[i]?"(REQUIRED)":"(default='" + defaults[i] + "')"));
+			res.append(indentLines(option.optHelp, indent));
+			res.append("\n" + spaces(indent) + (option.required?"(REQUIRED)":"(default='" + option.defaultValue + "')"));
+			res.append("\n");
+		}
+		return res.toString();
+	}
+
+	@Deprecated
+	public String usageMessage() {
+		int indent = 18;
+		StringBuffer res = new StringBuffer(usage + "\nOptions:\n");
+		for (Option option:options) {
+			res.append("  --" + option.optName);
+
+			int len = option.optName.length();
+			switch (option.optType) {
+			case 'b':
+				break;
+			case 'i':
+				res.append("=i");
+				len += 2;
+				break;
+			case 'f':
+				res.append("=d");
+				len += 2;
+				break;
+			case 's':
+				res.append("=s");
+				len += 2;
+				break;
+			}
+
+			res.append(spaces(indent - len - 4));			
+
+			res.append(indentLines(option.optHelp, indent));
+			res.append("\n" + spaces(indent) + (option.required?"(REQUIRED)":"(default='" + option.defaultValue + "')"));
 			res.append("\n");
 		}
 
@@ -164,20 +201,9 @@ public class CommandLine {
 	}
 
 	private void addOption(String opt, char type, Object def, String help, boolean req) {
-		if (numOptions >= maxOptions) {
-			System.err.println("ERROR: Too many options to CommandLine class");
-			System.exit(1);
-		}
-		opts[numOptions] = opt;
-		types[numOptions] = type;
-		defaults[numOptions] = def;
-		helps[numOptions] = help;
-		option_set[numOptions] = false;
-		requires[numOptions] = req;
-		
-		numOptions++;
+		options.add(new Option(opt, type, def, help, req));
 	}
-	
+
 	public void addBoolean(String opt, boolean def, String help, boolean req) {
 		addOption(opt, 'b', new Boolean(def), help, req);
 	}
@@ -214,88 +240,88 @@ public class CommandLine {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-					+ "'");
+				+ "'");
 			return false;
 		}
-		return option_set[o];
+		return options.get(o).optionSet;
 	}
 
 	Object getVal(String opt) {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-					+ "'");
+				+ "'");
 			return null;
 		}
-		return values[o];
+		return options.get(o).value;
 	}
 
 	public int getIntVal(String opt) {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-					+ "'");
+				+ "'");
 			return 0;
 		}
 
-		if (types[o] != 'i') {
+		if (options.get(o).optType != 'i') {
 			System.err.println("ERROR: Option '" + opt
-					+ "' is not an int option in getIntVal");
+				+ "' is not an int option in getIntVal");
 			return 0;
 		}
 
-		return ((Integer) values[o]).intValue();
+		return ((Integer) options.get(o).value);
 	}
 
 	public double getDoubleVal(String opt) {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-					+ "'");
+				+ "'");
 			return 0;
 		}
 
-		if (types[o] != 'f') {
+		if (options.get(o).optType != 'f') {
 			System.err.println("ERROR: Option '" + opt
-					+ "' is not a double option in getDoubleVal");
+				+ "' is not a double option in getDoubleVal");
 			return 0;
 		}
 
-		return ((Double) values[o]).doubleValue();
+		return ((Double) options.get(o).value);
 	}
 
 	public String getStringVal(String opt) {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-					+ "'");
+				+ "'");
 			return null;
 		}
 
-		if (types[o] != 's') {
+		if (options.get(o).optType != 's') {
 			System.err.println("ERROR: Option '" + opt
-					+ "' is not a string option in getStringVal");
+				+ "' is not a string option in getStringVal");
 			return null;
 		}
 
-		return (String) values[o];
+		return (String) options.get(o).value;
 	}
 
 	public boolean getBooleanVal(String opt) {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-					+ "'");
+				+ "'");
 			return false;
 		}
 
-		if (types[o] != 'b') {
+		if (options.get(o).optType  != 'b') {
 			System.err.println("ERROR: Option '" + opt
-					+ "' is not a boolean option in getBooleanVal");
+				+ "' is not a boolean option in getBooleanVal");
 			return false;
 		}
 
-		return ((Boolean) values[o]).booleanValue();
+		return ((Boolean) options.get(o).value).booleanValue();
 	}
 
 	int isOption(String opt, int noDashOk) {
@@ -311,16 +337,16 @@ public class CommandLine {
 		}
 
 		int match = -2;
-		for (int i = 0; i < numOptions; i++) {
-			if (opt.length() > opts[i].length())
+		for (int i = 0; i < options.size(); i++) {
+			if (opt.length() > options.get(i).optName.length())
 				continue;
 
-			String optStr = opts[i].substring(0, opt.length());
+			String optStr = options.get(i).optName.substring(0, opt.length());
 			if (opt.compareToIgnoreCase(optStr) == 0) {
 				if (match >= 0) {
 					addError("ERROR: Ambiguous option '" + opt
-							+ "' could be '" + opts[i] + "' or '" + opts[match]
-							+ "'");
+						+ "' could be '" + options.get(i).optName + "' or '" + options.get(match).optName
+						+ "'");
 					return match;
 				}
 				match = i;
@@ -328,21 +354,44 @@ public class CommandLine {
 		}
 		return match;
 	}
-	
-	
-		
-	
-	public String[] stdParseLine(String[] args) {
+
+	public String errorString(){
+		return (errors == null?"":errors) + "\n" + "Usage: " + usage() + "\nOptions:\n" + options();		
+	}
+	public String usageString(){
+		return desc + "\n\n" + "Usage: " + usage() + "\nOptions:\n" + options();
+	}
+
+
+	@Deprecated
+	public String[] stdParseLine_old(String[] args) {
 		addStdHelp();		
 		/**********************************************************************/
 		String[] ret = parseLine(args);
 		if (getBooleanVal("help")){
-			System.out.println(desc + "\n" + usage());			
+			System.out.println(usageString());			
 			System.exit(0);
 		}
-		
+
 		if (errors != null) {
-			System.err.println(errors + usage());
+			System.out.println(errorString());			
+			System.exit(-1);
+		}	
+		/**********************************************************************/
+		return ret;
+	}
+
+	public String[] stdParseLine(String[] args) {				
+		/**********************************************************************/
+		String[] ret = parseLine(args);
+		
+		if (isOption("help", 1) >=0 && getBooleanVal("help")){
+			System.out.println(usageString());			
+			System.exit(0);
+		}
+
+		if (errors != null) {
+			System.out.println(errorString());			
 			System.exit(-1);
 		}	
 		/**********************************************************************/
@@ -350,7 +399,7 @@ public class CommandLine {
 	}
 
 	public String[] parseLine(String[] args) {
-		
+
 		//Keep the original command line
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < args.length;i++){
@@ -358,79 +407,80 @@ public class CommandLine {
 			sb.append(args[i]);			
 		}
 		fullCmd = sb.toString();		
-					
-		
+
+
 		int i = 0;
 		int j = 0;
 		String[] res = new String[args.length];
 
 		// First setup defaults
-		for (int k = 0; k < numOptions; k++)
-			values[k] = defaults[k];
+		for (Option option:options)
+			option.value = option.defaultValue;
 
 		while (i < args.length) {
 			int o = isOption(args[i], 0);
 			if (o == -2) {
-				 addError("ERROR: Unknown option '"+args[i]+"'");
+				addError("ERROR: Unknown option '"+args[i]+"'");
 				return null;
 			}
 
 			if (o >= 0) {
-				option_set[o] = true;
+				Option option = options.get(o);
+				option.optionSet = true;
 
 				try {
-					switch (types[o]) {
+					switch (option.optType) {
 					case 'b':
 						if (args[i].indexOf("=") >= 0) {
 							String s = args[i]
-									.substring(args[i].indexOf("=") + 1);
+								.substring(args[i].indexOf("=") + 1);
 							if (s.equalsIgnoreCase("true"))
-								values[o] = Boolean.TRUE;
+								option.value = Boolean.TRUE;
 							else if (s.equalsIgnoreCase("yes"))
-								values[o] = Boolean.TRUE;
+								option.value = Boolean.TRUE;
 							else if (s.equalsIgnoreCase("on"))
-								values[o] = Boolean.TRUE;
+								option.value = Boolean.TRUE;
 							else if (s.equalsIgnoreCase("1"))
-								values[o] = Boolean.TRUE;
+								option.value = Boolean.TRUE;
 							else if (s.equalsIgnoreCase("false"))
-								values[o] = Boolean.FALSE;
+								option.value = Boolean.FALSE;
 							else if (s.equalsIgnoreCase("no"))
-								values[o] = Boolean.FALSE;
+								option.value = Boolean.FALSE;
 							else if (s.equalsIgnoreCase("off"))
-								values[o] = Boolean.FALSE;
+								option.value = Boolean.FALSE;
 							else if (s.equalsIgnoreCase("0"))
-								values[o] = Boolean.FALSE;
+								option.value = Boolean.FALSE;
 							else {
 								System.err
-										.println("ERROR: Unknown boolean option parameter '"
-												+ s + "'");
+								.println("ERROR: Unknown boolean option parameter '"
+									+ s + "'");
 								return null;
 							}
-						} else
-							values[o] = Boolean.TRUE;
+						}else
+							option.value = Boolean.TRUE;
 						break;
 					case 'i':
 						if (args[i].indexOf("=") >= 0)
-							values[o] = new Integer(args[i].substring(args[i].indexOf("=") + 1));
+							option.value = new Integer(args[i].substring(args[i].indexOf("=") + 1));
 						else {
-							values[o] = new Integer(args[i + 1]);
+							option.value = new Integer(args[i + 1]);
 							i++;
 						}
 						break;
 					case 'f':
 						if (args[i].indexOf("=") >= 0)
-							values[o] = new Double(args[i].substring(args[i].indexOf("=") + 1));
+							option.value = new Double(args[i].substring(args[i].indexOf("=") + 1));
 						else {
-							values[o] = new Double(args[i + 1]);
+							option.value = new Double(args[i + 1]);
 							i++;
 						}
 						break;
 					case 's':
 						if (args[i].indexOf("=") >= 0)
-							values[o] = args[i]
-									.substring(args[i].indexOf("=") + 1);
+							option.value = args[i]
+								.substring(args[i].indexOf("=") + 1);
 						else {
-							values[o] = args[i + 1];
+							option.value = args[i + 1];
 							i++;
 						}
 						break;
@@ -445,19 +495,17 @@ public class CommandLine {
 
 			i++;
 		}
-		
+
 		//check if any required params not set
-		
+
 		boolean pass = true;
-		for (int x = 0 ; x < numOptions; x++)
-			if (requires[x] & (!option_set[x])){
-				addError("ERROR: The required param '"+opts[x]+"' is not specified.");
+		for (Option option:options)
+			if (option.required & (!option.optionSet)){
+				addError("ERROR: The required param '"+option.optName+"' is not specified.");
 				pass = false;
 			}
 		if (!pass)
 			return null;
-		
-			
 
 		String[] r = new String[j];
 		for (int k = 0; k < j; k++)
@@ -465,52 +513,46 @@ public class CommandLine {
 		return r;
 	}
 
-	public void printOptions() {
-		System.out
-				.println("======================================================");
-		for (int i = 0; i < numOptions; i++) {
-			System.out.printf("%15s = " + values[i] + "\n", opts[i]);
-		}
-		System.out
-				.println("======================================================");
-	}
-
 	///Some standard options	
 	public void addStdInputFile(){
 		addString("input", null, "Name of the input file, - for standard input", true);
 	}
-	
+
 	public void addStdOutputFile(){
 		addString("output", null, "Name of the output file, - for standard output", true);
 	}
 
-	
 	public void addStdAlphabet(){
 		addString("alphabet", "DNA", "Alphabet of the input file. Options: DNA (DNA=DNA16), DNA4\n(ACGT), DNA5(ACGTN), DNA16 and Protein");
 	}
-	
+
 	public void addStdHelp(){
 		addBoolean("help", false, "Display this usage and exit");
 	}
-	
-	public static class Option{
-		
-		enum TYPE {B,I,F,S};
-		
-		String optName;
-		char optType;
+
+	/**
+	 * Represent an option from the command line
+	 * @author minhduc
+	 *
+	 */
+	public static class Option{		
+		String optName; //The name of the option
+		char optType;   //The type of the option
 		Object defaultValue;
+		Object value = null;
 		String optHelp;
 		boolean required;
 		boolean optionSet = false;
-		
+
 		public Option(String opt, char type, Object def, String help, boolean req) {
 			optName = opt;			
 			optType = type;
 			defaultValue = def;
 			optHelp = help;			
 			required = req;
-			
-		}	
+		}
+		public Option(String opt, char type, Object def, String help) {
+			this(opt, type, def,help,true);
+		}
 	}
 }

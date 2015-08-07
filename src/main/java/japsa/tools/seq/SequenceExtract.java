@@ -18,29 +18,37 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  * 
  */
-@Deployable(scriptName = "jsa.seq.extract", scriptDesc = "Extract subsequences", lastModified = "2014-04-07")
-public class SequenceExtract {
+@Deployable(
+	scriptName = "jsa.seq.extract", 
+	scriptDesc = "Extract subsequences"
+)
+public class SequenceExtract extends CommandLine {
+	public SequenceExtract(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options] <chr:start-end> <chr:start-end> ...");
+		setDesc(annotation.scriptDesc()); 
+		///////////////////////////////////////////////////////////////
+		
+		addStdInputFile();
+		addStdOutputFile();		
+		
+		addStdAlphabet();
+		addBoolean("reverse", false , "Reverse complement the subsequence");
+		
+		addString("format", "fasta",
+				"format of the output file (jsa and fasta)");
+		
+		addStdHelp();
+	}
 
 	/**
 	 * @param args
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = SequenceExtract.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] <chr:start-end> <chr:start-end> ...",
-				annotation.scriptDesc());
-		
-		cmdLine.addStdInputFile();
-		cmdLine.addStdOutputFile();		
-		
-		cmdLine.addStdAlphabet();
-		cmdLine.addBoolean("reverse", false , "Reverse complement the subsequence");
-		
-		cmdLine.addString("format", "fasta",
-				"format of the output file (jsa and fasta)");
-		
+		/*********************** Setting up script ****************************/		
+		CommandLine cmdLine = new SequenceExtract();		
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 

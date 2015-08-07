@@ -72,11 +72,11 @@ public class Japsa2TR {
 		cmdLine.addStdHelp();
 		args = cmdLine.parseLine(args);
 		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());
+			System.out.println(desc + cmdLine.usageMessage());
 			System.exit(0);
 		}
 		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
+			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
 			System.exit(-1);
 		}	
 		/**********************************************************************/

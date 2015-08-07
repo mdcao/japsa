@@ -83,11 +83,11 @@ public class Sam2FragmentSize {
 		/**********************************************************************/
 		args = cmdLine.parseLine(args);
 		if (cmdLine.getBooleanVal("help")){
-			System.out.println(annotation.scriptDesc() + "\n" + cmdLine.usage());	
+			System.out.println(annotation.scriptDesc() + "\n" + cmdLine.usageMessage());	
 			System.exit(0);
 		}
 		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
+			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
 			System.exit(-1);
 		}	
 		/**********************************************************************/		
@@ -97,7 +97,7 @@ public class Sam2FragmentSize {
 
 		//If there are errors
 		if (args == null) {
-			System.err.println(cmdLine.usage());
+			System.err.println(cmdLine.usageMessage());
 			System.exit(-1);
 		}
 

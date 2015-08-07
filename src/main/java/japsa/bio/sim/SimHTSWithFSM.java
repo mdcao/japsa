@@ -89,7 +89,7 @@ public class SimHTSWithFSM {
 		
 		cmdLine.addInt("seed", 0, "Random seed, <=0 for current time");		
 		cmdLine.addDouble("cov", 50, "Coverage");		
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/		
 		
 		String output = cmdLine.getStringVal("output");

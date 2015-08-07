@@ -39,57 +39,44 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.deploy.Deploy;
 import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
-
 
 
 /**
  * @author Minh Duc Cao (http://www.caominhduc.org/)
  *
  */
-@Deployable
-(scriptName = "jsa.seq.join",
-scriptDesc = "Join multiple sequences into one",
-options = {		
-	"S" 
-	+ Deploy.FIELD_SEP + "alphabet"				
-	+ Deploy.FIELD_SEP + "DNA" 
-	+ Deploy.FIELD_SEP + "Alphabet of the input file. Options: DNA (DNA=DNA16), DNA4\n(ACGT), DNA5(ACGTN), DNA16 and Protein" 
-	+ Deploy.FIELD_SEP + "false",
-	"S" 
-	+ Deploy.FIELD_SEP + "output"				
-	+ Deploy.FIELD_SEP + "-" 
-	+ Deploy.FIELD_SEP + "Name of the output file, - for standard output" 
-	+ Deploy.FIELD_SEP + "false",			
-	"S" 
-	+ Deploy.FIELD_SEP + "name"				
-	+ Deploy.FIELD_SEP + "seq" 
-	+ Deploy.FIELD_SEP + "Name of the combined sequence" 
-	+ Deploy.FIELD_SEP + "false",
-	"B" 
-	+ Deploy.FIELD_SEP + "removeN"				
-	+ Deploy.FIELD_SEP + "false" 
-	+ Deploy.FIELD_SEP + "Remove wildcards or not" 
-	+ Deploy.FIELD_SEP + "false"},
-optionFree = " file1 file2 ..."
-)
+@Deployable(
+	scriptName = "jsa.seq.join",
+	scriptDesc = "Join multiple sequences into one"
+	)
 
-
-public class JoinSequenceFile {
+public class JoinSequenceTool extends CommandLine{	
+	public JoinSequenceTool(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options] file1 file2 ...");
+		setDesc(annotation.scriptDesc()); 
+		
+		addStdAlphabet();
+		addString("output", "-", "Name of the output file, - for standard output");
+		addString("name", "newseq", "Name of the new sequence");
+		addBoolean("removeN", false, "Remove wildcards (N)");
+		
+		addStdHelp();		
+	}
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException{
 		/*********************** Setting up script ****************************/
-		Deployable annotation = JoinSequenceFile.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = Deploy.setupCmdLine(annotation);	
+		JoinSequenceTool cmdLine = new JoinSequenceTool();		
 		args = cmdLine.stdParseLine(args);		
-		/**********************************************************************/
-		//Get dna 		
+		/*********************************************************************/
+		//Get dna		
 		String alphabetOption = cmdLine.getStringVal("alphabet");		
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)

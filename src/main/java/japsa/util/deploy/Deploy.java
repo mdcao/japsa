@@ -71,7 +71,7 @@ import japsa.tools.bio.np.NanoporeReaderStream;
 import japsa.tools.bio.phylo.NormaliseTree;
 import japsa.tools.bio.phylo.XMDistance;
 import japsa.tools.bio.phylo.XMDistance2;
-import japsa.tools.seq.JoinSequenceFile;
+import japsa.tools.seq.JoinSequenceTool;
 import japsa.tools.seq.SequenceExtract;
 import japsa.tools.seq.SequenceReverseComplement;
 import japsa.tools.seq.SequenceSort;
@@ -107,126 +107,79 @@ public class Deploy {
 	static{
 		//jsa.seq.*
 		tools.add("Sequence manipulation tools:");
-		tools.add(SequenceStats.class);
-		tools.add(SequenceSort.class);
-		tools.add(SequenceExtract.class);
-		tools.add(SequenceReverseComplement.class);		
-		tools.add(Bed2Japsa.class);
-		tools.add(SplitSequenceFile.class);
-		tools.add(JoinSequenceFile.class);	
-		tools.add(FileFormatConverter.class);
-		tools.add(AddAnnotation.class);
-		tools.add(AnnotateRegions.class);
-		tools.add(AnnotateVCF.class);
-		tools.add(ExtractGeneSequence.class);
-		tools.add(AlignmentEM.class);
+		tools.add(new SequenceStats());
+		tools.add(new SequenceSort());
+		tools.add(new SequenceExtract());
+		tools.add(new SequenceReverseComplement());		
+		tools.add(new Bed2Japsa());
+		tools.add(new SplitSequenceFile());
+		tools.add(new JoinSequenceTool());	
+		tools.add(new FileFormatConverter());
+		tools.add(new AddAnnotation());
+		tools.add(new AnnotateRegions());
+		tools.add(new AnnotateVCF());
+		tools.add(new ExtractGeneSequence());
+		tools.add(new AlignmentEM());
 
 		//tools.add(MarkovCompress.class);
 
 		//jsa.hts.*
 		tools.add("HTS analysis tools:");
-		tools.add(FastQTrim.class);
-		tools.add(FastQRMEmptyRead.class);		
-		tools.add(BreakBam.class);
-		tools.add(SelectReadIntersect.class);
-		tools.add(SelectReadSpan.class);				
-		tools.add(CountReadInRegion.class);
-		tools.add(HTSAlignmentParam.class);
-		tools.add(HTSErrorAnalysis.class);
+		tools.add(new FastQTrim());
+		tools.add(new FastQRMEmptyRead());		
+		tools.add(new BreakBam());
+		tools.add(new SelectReadIntersect());
+		tools.add(new SelectReadSpan());				
+		tools.add(new CountReadInRegion());
+		tools.add(new HTSAlignmentParam());
+		tools.add(new HTSErrorAnalysis());
 
 
 		//jsa.np.
-		//tools.add(NanoporeReader.class);
+		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
-		tools.add(NanoporeReaderStream.class);
-		tools.add(NanoporeReadFilter.class);		
+		tools.add(new NanoporeReaderStream());
+		tools.add(new NanoporeReadFilter());		
 		tools.add(SpeciesMixtureTyping.class);		
 		tools.add(GeneStrainTyping.class);
-		tools.add(MLSTStrainTyping.class);
-		tools.add(ResistanceGene.class);		
+		tools.add(new MLSTStrainTyping());
+		tools.add(new ResistanceGene());		
 
 		//jsa.trv.*
 		tools.add("Tandem repeat variation analysis tools:");
-		tools.add(ParseTRF.class);		
-		tools.add(Sam2FragmentSize.class);
-		tools.add(SortFragmentFile.class);
-		tools.add(Fragment2TRV.class);
-		tools.add(TRV2VCF.class);
-		tools.add(VCF2TRV.class);		
-		tools.add(Japsa2TR.class);
-		tools.add(TRV2Bed.class);	
-		tools.add(VNTRDepth.class);
+		tools.add(new ParseTRF());		
+		tools.add(new Sam2FragmentSize());
+		tools.add(new SortFragmentFile());
+		tools.add(new Fragment2TRV());
+		tools.add(new TRV2VCF());
+		tools.add(new VCF2TRV());		
+		tools.add(new Japsa2TR());
+		tools.add(new TRV2Bed());	
+		tools.add(new VNTRDepth());
 
 		tools.add("Utilities:");
-		tools.add(StreamServer.class);
+		tools.add(new StreamServer());
 		tools.add(StreamClient.class);
-		//tools.add(StreamClient.class);
+		//tools.add(StreamClient());
 
 		//jsa.phylo		
 		tools.add("Phylogenetics analysis tools:");
-		tools.add(XMDistance.class);
-		tools.add(XMDistance2.class);
-		tools.add(NormaliseTree.class);	
+		tools.add(new XMDistance());
+		tools.add(new XMDistance2());
+		tools.add(new NormaliseTree());	
 
 		//jsa.sim
 		tools.add("Alignment with Finite State Machines");
-		tools.add(SimProbFSM.class);		
-		tools.add(SimHTSWithFSM.class);
+		tools.add(new SimProbFSM());		
+		tools.add(new SimHTSWithFSM());
 
 		//jsa.xm
 		tools.add("Export Model compression");
-		tools.add(ExpertModelDriver.class);
+		tools.add(new ExpertModelDriver());
 		//tools.add(.class);		
 	}	
-	
-	public static void generateDocs(){
-		
-	}
-	
-
-	/**
-	 * Extract the annotation to command line
-	 * @param annotation
-	 * @return
-	 */
-	public static CommandLine setupCmdLine(Deployable annotation){ 
-		CommandLine cmdLine = new CommandLine("\nUsage:\n   "
-			+ annotation.scriptName() + " [options]"
-			+ annotation.optionFree() + "\n",
-			annotation.scriptDesc());
-
-		for (String opt: annotation.options()){
-			String [] optToks = opt.split(Deploy.FIELD_SEP);
-			if (optToks.length < 4)
-				throw new RuntimeException("Problem with annotation setting " + opt);
-
-			char type = optToks[0].charAt(0);//get the first char
-
-			switch (type){
-			case 'S':
-			case 's':				
-				cmdLine.addString(optToks[1], "null".equalsIgnoreCase(optToks[2])? null:optToks[2], optToks[3], optToks.length > 4 && Boolean.parseBoolean(optToks[4]));				
-				break;
-			case 'F':
-			case 'f':				
-				cmdLine.addDouble(optToks[1], Double.parseDouble(optToks[2]) , optToks[3], optToks.length > 4 && Boolean.parseBoolean(optToks[4]));
-				break;
-			case 'I':
-			case 'i':
-				cmdLine.addInt(optToks[1], Integer.parseInt(optToks[2]) , optToks[3], optToks.length > 4 && Boolean.parseBoolean(optToks[4]));
-				break;
-			case 'B':
-			case 'b':
-				cmdLine.addBoolean(optToks[1], Boolean.parseBoolean(optToks[2]) , optToks[3], optToks.length > 4 && Boolean.parseBoolean(optToks[4]));
-				break;
-
-			default: throw new RuntimeException("Unknown option type " + type);
-			}
-		}
 
 
-		return cmdLine;
-	}
 
 	/**
 	 * Method to set up Japsa directory
@@ -481,46 +434,54 @@ public class Deploy {
 
 		outJsaMain.println(echoStr + "List of tools:");		
 
-		for (Object obj : toolList) {	
-			if (!(obj instanceof Class<?>)){
+		for (Object obj : toolList) {
+
+			//A string separated
+			if ((obj instanceof String)){
 				outJsaMain.println(echoStr);
 				outJsaMain.printf(echoStr + "%s\n",obj);
 				continue;
-			}				
-			Class<?> tool = (Class<?>) obj;
+			}			
+			if (obj instanceof CommandLine){
+				Class<?> tool = obj.getClass();
+				
+				Deployable annotation = (Deployable) tool.getAnnotation(Deployable.class);
+				File file = new File(japsaPath + File.separator +  "bin" + File.separator + annotation.scriptName() + suffixStr);
 
-			Deployable annotation = tool.getAnnotation(Deployable.class);
-			File file = new File(japsaPath + File.separator +  "bin" + File.separator + annotation.scriptName() + suffixStr);
+				if(isWindows){
+					PrintStream out = new PrintStream(new FileOutputStream(file));
+					out.println("@echo off");			
 
-			if(isWindows){
-				PrintStream out = new PrintStream(new FileOutputStream(file));
-				out.println("@echo off");			
+					out.println("if \"%JSA_MEM%\"==\"\" (set JSA_MEM=" + maxMem+")");			
 
-				out.println("if \"%JSA_MEM%\"==\"\" (set JSA_MEM=" + maxMem+")");			
+					out.println("set JSA_CP=" + classPath);
+					out.println();
+					out.println(javaCommand +" -classpath %JSA_CP% " + tool.getCanonicalName() + " %*");
+					out.close();				
+				}else{
+					PrintStream out = new PrintStream(new FileOutputStream(file));
+					out.println("#!/bin/sh\n");
+					out.println("case $JSA_MEM in\n  '')JSA_MEM="+maxMem +";;\n  *);;\nesac\n\n");
+					out.println("case $JSA_CP in\n  '')JSA_CP="
+						+ classPath
+						+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
 
-				out.println("set JSA_CP=" + classPath);
-				out.println();
-				out.println(javaCommand +" -classpath %JSA_CP% " + tool.getCanonicalName() + " %*");
-				out.close();				
-			}else{
-				PrintStream out = new PrintStream(new FileOutputStream(file));
-				out.println("#!/bin/sh\n");
-				out.println("case $JSA_MEM in\n  '')JSA_MEM="+maxMem +";;\n  *);;\nesac\n\n");
-				out.println("case $JSA_CP in\n  '')JSA_CP="
-					+ classPath
-					+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
+					//out.println("JSA_CMD=\"`basename $0` $@\"\n");
 
-				//out.println("JSA_CMD=\"`basename $0` $@\"\n");
+					out.println(javaCommand + " -classpath ${JSA_CP} "
+						+ tool.getCanonicalName() + " \"$@\"");
+					out.close();
 
-				out.println(javaCommand + " -classpath ${JSA_CP} "
-					+ tool.getCanonicalName() + " \"$@\"");
-				out.close();
-
-				Runtime.getRuntime().exec(
-					"chmod a+x " + file.getCanonicalPath());	
+					Runtime.getRuntime().exec(
+						"chmod a+x " + file.getCanonicalPath());	
+				}
+				System.out.println(" " + file.getCanonicalPath() + " created");
+				outJsaMain.printf(echoStr + "  %-23s  %s\n", annotation.scriptName(),	annotation.scriptDesc());
+			}//if
+			else{
+				System.err.println("Cannot generate script for " + obj + "  " + obj.getClass());
 			}
-			System.out.println(" " + file.getCanonicalPath() + " created");
-			outJsaMain.printf(echoStr + "  %-23s  %s\n", annotation.scriptName(),	annotation.scriptDesc());
+
 		}
 		//Done				
 		if (!isWindows){
@@ -598,17 +559,8 @@ public class Deploy {
 		cmdLine.addBoolean("version", false, "Get version and exit");
 		cmdLine.addString("server", "na", "Run on server: yes/true for yes; no/false for no");
 
-		cmdLine.addStdHelp();// help
-		/********************** Standard processing ***************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")) {
-			System.out.println(cmdLine.usage());
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
-			System.exit(-1);
-		}
+		cmdLine.addStdHelp();		
+		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		if (cmdLine.getBooleanVal("version")){
 			System.out.println(VERSION);
@@ -645,7 +597,7 @@ public class Deploy {
 				uninstallScripts(tools, "jsa");			
 		} else {
 			System.err.println("Mode " + mode + " not recognised");
-			System.err.println(cmdLine.usage());
+			System.err.println(cmdLine.errors() + "\n" + "Usage: " + cmdLine.usage() + "\nOptions:\n" + cmdLine.options());
 			System.exit(-1);
 		}
 	}

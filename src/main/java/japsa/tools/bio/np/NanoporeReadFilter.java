@@ -48,14 +48,15 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.np.filter", scriptDesc = "Filter nanopore reads data from fastq file")
+@Deployable(
+	scriptName = "jsa.np.filter", 
+	scriptDesc = "Filter nanopore reads data from fastq file")
 public class NanoporeReadFilter// implements Closeable
 {
 	public static void main(String[] args) throws IOException {
 		/*********************** Setting up script ****************************/
 		Deployable annotation = NanoporeReadFilter.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options]",
+		CommandLine cmdLine = new CommandLine(annotation.scriptName() + " [options]",
 				annotation.scriptDesc());
 		
 		cmdLine.addStdInputFile();
@@ -78,7 +79,7 @@ public class NanoporeReadFilter// implements Closeable
 		
 				
 		cmdLine.addString("format", "fastq", "Format of the output file");
-		args = cmdLine.stdParseLine(args);
+		args = cmdLine.stdParseLine_old(args);
 		/**********************************************************************/
 
 		String output = cmdLine.getStringVal("output");

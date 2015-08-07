@@ -48,19 +48,26 @@ import java.io.IOException;
  * @author Minh Duc Cao
  * 
  */
-@Deployable(scriptName = "jsa.seq.stats",
-           scriptDesc = "Show statistical composition of sequences stored in a file (or from STDIN)")
-public class SequenceStats {	
-	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = SequenceStats.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] ",
-				annotation.scriptDesc());
+@Deployable(
+	scriptName = "jsa.seq.stats",
+	scriptDesc = "Show statistical composition of sequences stored in a file (or from STDIN)",
+	scriptDocs = ""
+		+ ""
+	)
+public class SequenceStats extends CommandLine{	
+	public SequenceStats(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 		
-		cmdLine.addStdInputFile();
-		cmdLine.addStdAlphabet();//aphabet		
+		addStdInputFile();
+		addStdAlphabet();//aphabet
 		
+		addStdHelp();		
+	}
+	public static void main(String[] args) throws IOException {				
+		CommandLine cmdLine = new SequenceStats();
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		//Get dna 		
@@ -71,7 +78,7 @@ public class SequenceStats {
 
 		String input = cmdLine.getStringVal("input");
 		/**********************************************************************/	
-		
+
 
 		SequenceReader reader = SequenceReader.getReader(input);
 		long total = 0;
@@ -113,11 +120,11 @@ public class SequenceStats {
 		for (int index = 0; index < counts.length; index++) {
 			if (counts[index] > 0)
 				System.out.printf("%10d  %c : %5.2f%%\n", counts[index], alphabet
-						.int2char(index), (counts[index] * 100.0 / seq.length()));
+					.int2char(index), (counts[index] * 100.0 / seq.length()));
 		}
 		if (others > 0)
 			System.out.printf("%10d  %c : %5.2f%%\n", others, 'X',
-					(others * 100.0 / seq.length()));
+				(others * 100.0 / seq.length()));
 
 	}
 

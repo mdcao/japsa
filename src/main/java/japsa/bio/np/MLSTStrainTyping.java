@@ -97,7 +97,7 @@ public class MLSTStrainTyping {
 		cmdLine.addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
 		cmdLine.addBoolean("twodonly", false,  "Use only two dimentional reads");		
 
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/
 
 		String mlst = cmdLine.getStringVal("mlst");

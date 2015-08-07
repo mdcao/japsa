@@ -51,7 +51,6 @@ import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
-import japsa.util.deploy.Deploy;
 import japsa.util.deploy.Deployable;
 
 /**
@@ -60,85 +59,33 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-@Deployable(
+@Deployable(	
 	scriptName = "jsa.np.f5reader", 
-	scriptDesc = "Extract Oxford Nanopore sequencing data from FAST5 files, perform an initial analysis of the date and stream them to realtime analysis pipelines",
-	options = {
-		//////////////////////////////////////////////////////////
-		"B" 
-		+ Deploy.FIELD_SEP + "GUI"				
-		+ Deploy.FIELD_SEP + false 
-		+ Deploy.FIELD_SEP + "Run with a Graphical User Interface" 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////
-		"B" 
-		+ Deploy.FIELD_SEP + "realtime"	
-		+ Deploy.FIELD_SEP + false 
-		+ Deploy.FIELD_SEP + "Run the program in real-time mode, i.e., keep waiting for new data from Metrichor agent " 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////
-		"S" 
-		+ Deploy.FIELD_SEP + "folder"				
-		+ Deploy.FIELD_SEP + "null"
-		+ Deploy.FIELD_SEP + "The folder containing base-called reads" 
-		+ Deploy.FIELD_SEP + false
-		,//////////////////////////////////////////////////////////
-		"B" 
-		+ Deploy.FIELD_SEP + "fail"				
-		+ Deploy.FIELD_SEP + false 
-		+ Deploy.FIELD_SEP + "Get sequence reads from fail folder" 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////		
-		"S" 
-		+ Deploy.FIELD_SEP + "output"				
-		+ Deploy.FIELD_SEP + "-" 
-		+ Deploy.FIELD_SEP + "Name of the output file, - for stdout" 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////		
-		"S" 
-		+ Deploy.FIELD_SEP + "streams"				
-		+ Deploy.FIELD_SEP + "null" 
-		+ Deploy.FIELD_SEP + "Stream output to some servers, format \"IP:port,IP:port\" (no spaces)" 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////		
-		"S" 
-		+ Deploy.FIELD_SEP + "format"				
-		+ Deploy.FIELD_SEP + "fastq" 
-		+ Deploy.FIELD_SEP + "Format of sequence reads (fastq or fasta)" 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////
-		"I"
-		+ Deploy.FIELD_SEP + "minLength"				
-		+ Deploy.FIELD_SEP + 0 
-		+ Deploy.FIELD_SEP + "Minimum read length" 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////
-		"B"
-		+ Deploy.FIELD_SEP + "number"				
-		+ Deploy.FIELD_SEP + false 
-		+ Deploy.FIELD_SEP + "Add a unique number to read name" 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////
-		"B"
-		+ Deploy.FIELD_SEP + "stats"				
-		+ Deploy.FIELD_SEP + false 
-		+ Deploy.FIELD_SEP + "Generate a report of read statistics" 
-		+ Deploy.FIELD_SEP + false
-		,////////////////////////////////////////////////////////
-		"B"
-		+ Deploy.FIELD_SEP + "time"				
-		+ Deploy.FIELD_SEP + false 
-		+ Deploy.FIELD_SEP + "Extract the sequencing time of each read -- only work with Metrichor > 1.12" 
-		+ Deploy.FIELD_SEP + false
-	}
+	scriptDesc = 
+	"Extract Oxford Nanopore sequencing data from FAST5 files, perform an "
+	+ "initial analysis of the date and stream them to realtime analysis pipelines"
 	)
-public class NanoporeReaderStream
-{
+
+public class NanoporeReaderStream{
 	public static void main(String[] args) throws OutOfMemoryError, Exception {
 		/*********************** Setting up script ****************************/
 		Deployable annotation = NanoporeReaderStream.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = Deploy.setupCmdLine(annotation);
-		args = cmdLine.stdParseLine(args);
+		CommandLine cmdLine = new CommandLine(annotation.scriptName() + " [options]",
+			annotation.scriptDesc());		
+
+		cmdLine.addBoolean("GUI", false,"Run with a Graphical User Interface");
+		cmdLine.addBoolean("realtime", false,"Run the program in real-time mode, i.e., keep waiting for new data from Metrichor agent");
+		cmdLine.addString("folder", null,"The folder containing base-called reads");
+		cmdLine.addBoolean("fail", false,"Get sequence reads from fail folder");
+		cmdLine.addString("output", "-","Name of the output file, - for stdout");
+		cmdLine.addString("streams", null,"Stream output to some servers, format \"IP:port,IP:port\" (no spaces)");
+		cmdLine.addString("format", "fastq","Format of sequence reads (fastq or fasta)");
+		cmdLine.addInt("minLength", 0,"Minimum read length");
+		cmdLine.addBoolean("number", false,"Add a unique number to read name");
+		cmdLine.addBoolean("stats", false,"Generate a report of read statistics");
+		cmdLine.addBoolean("time", false,"Extract the sequencing time of each read -- only work with Metrichor > 1.12");		
+
+		args = cmdLine.stdParseLine_old(args);
 		/**********************************************************************/
 
 		String output = cmdLine.getStringVal("output");		

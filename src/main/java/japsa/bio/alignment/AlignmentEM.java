@@ -54,16 +54,16 @@ public class AlignmentEM {
 	public static void main(String[] args) throws Exception{
 		/*********************** Setting up script ****************************/
 		Deployable annotation = AlignmentEM.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options] <seq1> <seq2>", annotation.scriptDesc());		
+		CommandLine cmdLine = new CommandLine(annotation.scriptName() + " [options] <seq1> <seq2>", annotation.scriptDesc());		
 		/**********************************************************************/		
 		
-		args = cmdLine.stdParseLine(args);	
+		args = cmdLine.stdParseLine_old(args);	
 		/**********************************************************************/
 
 		Alphabet dna = Alphabet.DNA();
 		if (args.length <2){
-			System.err.println("Two sequence files are required" +
-			cmdLine.usage());
+			System.err.println("Two sequence files are required\n" +
+			cmdLine.errorString());
 			System.exit(-1);
 		}
 		

@@ -74,7 +74,7 @@ public class SimProbFSM {
 		cmdLine.addDouble("eeiProb", 0.1, "Estimate probability of extending insertion");
 		cmdLine.addDouble("eedProb", 0.1, "Estimate probability of extending deletion");		
 		
-		args = cmdLine.stdParseLine(args);	
+		args = cmdLine.stdParseLine_old(args);	
 		/**********************************************************************/
 		int length   = cmdLine.getIntVal("length");
 		int numSeq = cmdLine.getIntVal("num");

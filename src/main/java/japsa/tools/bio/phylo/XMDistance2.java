@@ -87,7 +87,7 @@ public class XMDistance2 {
 		cmdLine.addBoolean("selfRep", true,
 				"Propose experts from the sequence to compressed?");
 
-		args = cmdLine.stdParseLine(args);		
+		args = cmdLine.stdParseLine_old(args);		
 		/**********************************************************************/
 
 		String input = cmdLine.getStringVal("input");

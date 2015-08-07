@@ -69,7 +69,7 @@ public class StreamServer {
 		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
 		/**********************************************************************/
 		cmdLine.addInt("port", DEFAULT_PORT,  "Port to listen to");
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/		
 		//String output = cmdLine.getStringVal("output");
 		int port = cmdLine.getIntVal("port");

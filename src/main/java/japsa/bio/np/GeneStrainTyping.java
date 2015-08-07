@@ -112,7 +112,7 @@ public class GeneStrainTyping {
 		cmdLine.addInt("sim", 0,  "Scale for simulation");
 		cmdLine.addBoolean("GUI", false,  "Run on GUI");
 
-		args = cmdLine.stdParseLine(args);		
+		args = cmdLine.stdParseLine_old(args);		
 		/**********************************************************************/
 
 		String output = cmdLine.getStringVal("output");

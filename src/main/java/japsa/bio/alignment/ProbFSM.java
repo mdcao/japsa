@@ -46,7 +46,6 @@ import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.ByteArray;
 import japsa.util.JapsaMath;
-import japsa.util.JapsaTimer;
 import japsa.util.Logging;
 
 
@@ -125,6 +124,7 @@ public abstract class ProbFSM {
 		MachineState currentState = states[0];
 
 		double toss;
+		@SuppressWarnings("unused")
 		double cost = 0;
 		while (indexSrc < mSeq.length()){
 			toss = rnd.nextDouble();//chosing the transition

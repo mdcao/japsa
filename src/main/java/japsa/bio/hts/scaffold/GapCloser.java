@@ -69,7 +69,7 @@ public class GapCloser {
 		
 
 		//String [] processArgs = 
-				cmdLine.stdParseLine(args);		
+				cmdLine.stdParseLine_old(args);		
 		/**********************************************************************/
 		String output = cmdLine.getStringVal("output");
 		String bamFile = cmdLine.getStringVal("bamFile");

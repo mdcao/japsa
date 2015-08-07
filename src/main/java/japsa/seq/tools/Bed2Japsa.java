@@ -75,7 +75,7 @@ public class Bed2Japsa {
 		cmdLine.addString("sequence", null,
 				"Name of the sequence file");				
 
-		args = cmdLine.stdParseLine(args);
+		args = cmdLine.stdParseLine_old(args);
 		/**********************************************************************/
 		
 		String inFile = cmdLine.getStringVal("input");		
@@ -83,7 +83,7 @@ public class Bed2Japsa {
 		String seqFile = cmdLine.getStringVal("sequence");
 		
 		if ("-".equals(seqFile)){
-			System.err.println("ERROR: A sequence file must be suplied (not -)\n" + cmdLine.usage());
+			System.err.println("ERROR: A sequence file must be suplied (not -)\n" + cmdLine.usageMessage());
 			System.exit(-1);
 		}		
 		

@@ -68,7 +68,7 @@ public class SplitSequenceFile {
 		cmdLine.addString("output", "out_", "Prefix of the output files");
 		cmdLine.addString("format", "fasta", "Format of output files. Options : japsa or fasta");
 					
-		args = cmdLine.stdParseLine(args);
+		args = cmdLine.stdParseLine_old(args);
 		/**********************************************************************/
 
 		//Get dna 		

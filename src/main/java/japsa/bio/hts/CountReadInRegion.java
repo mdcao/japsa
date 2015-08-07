@@ -78,7 +78,7 @@ public class CountReadInRegion {
 
 		cmdLine.addBoolean("contained", false, "true: Reads contained in the region; false: reads overlap with the region");
 
-		args = cmdLine.stdParseLine(args);
+		args = cmdLine.stdParseLine_old(args);
 		/**********************************************************************/		
 		//Get options
 		
@@ -97,12 +97,12 @@ public class CountReadInRegion {
 		
 		if (strFile!= null &&  bedFile != null){
 			System.err.println("##ERROR: only one of bedFile and strFile is specified");
-			System.err.println(cmdLine.usage());
+			System.err.println(cmdLine.usageMessage());
 			System.exit(-1);			
 		}
 		if (strFile== null &&  bedFile == null){
 			System.err.println("##ERROR: one of bedFile and xafFile has to be specified");
-			System.err.println(cmdLine.usage());
+			System.err.println(cmdLine.usageMessage());
 			System.exit(-1);			
 		}
 		/**********************************************************************/

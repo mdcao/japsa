@@ -53,22 +53,27 @@ import java.util.Collections;
  */
 @Deployable(scriptName = "jsa.seq.sort",
 scriptDesc = "Sort sequences based on their lengths")
-public class SequenceSort {	
+public class SequenceSort extends CommandLine{	
+	public SequenceSort(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addStdInputFile();
+		addStdOutputFile();		
+		addStdAlphabet();
+		addBoolean("number",false,"Add the order number to the beginning of contig name");
+		addBoolean("reverse",false,"Reverse sort order");
+		addString("sortKey","length","Sort key");
+		
+		addStdHelp();		
+	} 
+
 	public static void main(String[] args) throws IOException {		
 
-		/*********************** Setting up script ****************************/
-		Deployable annotation = SequenceSort.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] ",
-				annotation.scriptDesc());
-
-		cmdLine.addStdInputFile();
-		cmdLine.addStdOutputFile();		
-		cmdLine.addStdAlphabet();
-		cmdLine.addBoolean("number",false,"Add the order number to the beginning of contig name");
-		cmdLine.addBoolean("reverse",false,"Reverse sort order");
-		cmdLine.addString("sortKey","length","Sort key");
-
+		/*********************** Setting up script ****************************/		
+		CommandLine cmdLine = new SequenceSort();		
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		String inputOption = cmdLine.getStringVal("input");

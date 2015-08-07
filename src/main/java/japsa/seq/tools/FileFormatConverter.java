@@ -71,7 +71,7 @@ public class FileFormatConverter {
 		cmdLine.addString("format", "fasta", "Format of output file. Options : japsa, fasta and phylip");
 		cmdLine.addStdAlphabet();
 		
-		args = cmdLine.stdParseLine(args);	
+		args = cmdLine.stdParseLine_old(args);	
 		/********************************************************************/
 		String output = cmdLine.getStringVal("output");
 		String format = cmdLine.getStringVal("format");

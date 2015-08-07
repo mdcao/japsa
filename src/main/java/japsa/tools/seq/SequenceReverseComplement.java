@@ -50,19 +50,23 @@ import java.io.IOException;
  */
 @Deployable(scriptName = "jsa.seq.rev",
            scriptDesc = "Reverse complement sequences (must be DNA)")
-public class SequenceReverseComplement {	
+public class SequenceReverseComplement extends CommandLine {	
+	public SequenceReverseComplement(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc()); 
+		
+		addStdInputFile();
+		addStdOutputFile();		
+		addStdAlphabet();//aphabet
+		
+		addStdHelp();
+	}
+	
 	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = SequenceReverseComplement.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options] ",
-				annotation.scriptDesc());
-		
-		cmdLine.addStdInputFile();
-		cmdLine.addStdOutputFile();
-		
-		cmdLine.addStdAlphabet();//aphabet		
-		
+		/*********************** Setting up script ****************************/		
+		CommandLine cmdLine = new SequenceReverseComplement();		
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/	
 		

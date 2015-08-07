@@ -67,7 +67,7 @@ public class AnnotateVCF {
 		cmdLine.addString("output", "-", "Name of output file, - for standard out");
 		cmdLine.addString("vcf", null, "Name of vcf file", true);
 		
-		args = cmdLine.stdParseLine(args);	
+		args = cmdLine.stdParseLine_old(args);	
 		/**********************************************************************/
 		String gffFile   =  cmdLine.getStringVal("gffin");
 		String output  =  cmdLine.getStringVal("output");

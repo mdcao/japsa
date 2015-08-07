@@ -69,7 +69,7 @@ public class VNTRDepth {
 		cmdLine.addString("output", "-", "Name of output file, - for standard out");
 
 
-		String[] bamFiles = cmdLine.stdParseLine(args);			
+		String[] bamFiles = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/
 		String xafFile     =  cmdLine.getStringVal("xafFile");	
 		String output      =  cmdLine.getStringVal("output");

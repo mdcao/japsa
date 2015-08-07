@@ -103,7 +103,7 @@ public class StreamClient implements Closeable{
 		//		"Name of the output file, -  for stdout");
 		cmdLine.addStdInputFile();
 		cmdLine.addString("streamServer",null, "Stream output to a server, format IP:port",true);		
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/
 		String input = cmdLine.getStringVal("input");
 		StreamClient client = new StreamClient(cmdLine.getStringVal("streamServer"));

@@ -68,7 +68,7 @@ public class ExtractGeneSequence {
 		
 		cmdLine.addStdAlphabet();//aphabet		
 		
-		args = cmdLine.stdParseLine(args);
+		args = cmdLine.stdParseLine_old(args);
 		/**********************************************************************/
 		//Get dna 		
 		String alphabetOption = cmdLine.getStringVal("alphabet");		

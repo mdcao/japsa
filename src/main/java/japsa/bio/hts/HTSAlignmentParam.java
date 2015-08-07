@@ -79,7 +79,7 @@ public class HTSAlignmentParam {
 
 		cmdLine.addInt("qual", 0, "Minimum quality required");
 
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/
 		//String bamFile = cmdLine.getStringVal("bamFile");
 		reference = cmdLine.getStringVal("reference");		

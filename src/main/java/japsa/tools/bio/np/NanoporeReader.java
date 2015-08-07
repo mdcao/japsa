@@ -87,7 +87,7 @@ public class NanoporeReader// implements Closeable
 		cmdLine.addBoolean("number", false, "Add a unique number to read name");
 		cmdLine.addString("f5list",null, "File containing list of fast5 files, one file per line");			
 
-		args = cmdLine.stdParseLine(args);
+		args = cmdLine.stdParseLine_old(args);
 		/**********************************************************************/
 
 		String type   = cmdLine.getStringVal("type");

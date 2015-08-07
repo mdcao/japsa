@@ -64,7 +64,7 @@ public class XMDistance {
 		
 		//cmdLine.addString("inType", "fasta", "Type of input files: fasta or phylip");
 
-		args = cmdLine.stdParseLine(args);	
+		args = cmdLine.stdParseLine_old(args);	
 		/**********************************************************************/
 		FastaReader sin = new FastaReader(new FileInputStream(cmdLine.getStringVal("input")));
 		ArrayList<Sequence> seqs = new ArrayList<Sequence>(100);

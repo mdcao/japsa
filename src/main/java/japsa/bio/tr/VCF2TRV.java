@@ -70,11 +70,11 @@ public class VCF2TRV {
 		/**********************************************************************/
 		args = cmdLine.parseLine(args);
 		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usage());			
+			System.out.println(desc + cmdLine.usageMessage());			
 			System.exit(0);
 		}
 		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usage());
+			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
 			System.exit(-1);
 		}	
 		/**********************************************************************/
@@ -86,7 +86,7 @@ public class VCF2TRV {
 		String sample = cmdLine.getStringVal("sample");
 		
 		if ("-".equals(trf) || "-".equals(vcf)){
-			System.err.println("ERROR tr and cvf cannot be -\n" + cmdLine.usage());
+			System.err.println("ERROR tr and cvf cannot be -\n" + cmdLine.usageMessage());
 			System.exit(-1);
 		}
 		

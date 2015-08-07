@@ -64,7 +64,7 @@ public class FastQRMEmptyRead {
 		cmdLine.addString("1", null, "Name of the first fastq file", true);
 		cmdLine.addString("2", null, "Name of the second fastq file for paired end");	
 		
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/		
 
 		String f1 = cmdLine.getStringVal("1");

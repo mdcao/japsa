@@ -68,7 +68,7 @@ public class HTSErrorAnalysis {
 		cmdLine.addString("pattern", null, "Pattern of read name, used for filtering");
 		cmdLine.addInt("qual", 0, "Minimum quality required");
 
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/
 		//String bamFile = cmdLine.getStringVal("bamFile");
 		String reference = cmdLine.getStringVal("reference");		

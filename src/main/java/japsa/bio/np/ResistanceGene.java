@@ -103,7 +103,7 @@ public class ResistanceGene {
 		cmdLine.addDouble("il", 0.9,   "Threshold for Illumina");
 		cmdLine.addBoolean("twodonly", false,  "Use only two dimentional reads");
 
-		args = cmdLine.stdParseLine(args);			
+		args = cmdLine.stdParseLine_old(args);			
 		/**********************************************************************/
 
 		String output = cmdLine.getStringVal("output");

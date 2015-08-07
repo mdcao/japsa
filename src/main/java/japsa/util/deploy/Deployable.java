@@ -50,28 +50,7 @@ public @interface Deployable {
 	String  scriptName() default "jsa";
 	String  scriptDesc() default "Tools from Just Another Java Package for Statistical Sequence Analysis";
 	String  lastModified() default "2014-01-01";
-	String  libs() default "";
-	
-	//Define option of this deployable class
-	String [] options () default {};
-	/***************Sample of option*********************************
-	options = {
-			//////////////////////////////////////////////////////////
-			"S" 
-			+ Deploy.FIELD_SEP + "input"				
-			+ Deploy.FIELD_SEP + "null" 
-			+ Deploy.FIELD_SEP + "Name of the input bam file" 
-			+ Deploy.FIELD_SEP + "true"				
-			,////////////////////////////////////////////////////////
-			"S" 
-			+ Deploy.FIELD_SEP + "output"				
-			+ Deploy.FIELD_SEP + "null" 
-			+ Deploy.FIELD_SEP + "Name of the input bam file" 
-			+ Deploy.FIELD_SEP + "true"
-	}
-	/****************************************************************/
-	
-	String  optionFree () default "";
+	String  libs() default "";	
 	String  scriptDocs() default "";
 	String  citation() default "";
 	boolean galaxyUse() default false;	
