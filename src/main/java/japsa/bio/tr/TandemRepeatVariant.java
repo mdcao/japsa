@@ -306,7 +306,14 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	public void addEvidence2(double moreEvi){
 		evidence2 += moreEvi;
 	}	
+	
+	public double getEvidence(){
+		return evidence;
+	}
 
+	public double getEvidence2(){
+		return evidence2;
+	}
 
 	public static ArrayList<TandemRepeatVariant> readFromFile(String fileName) throws IOException{
 		//Start with the default header

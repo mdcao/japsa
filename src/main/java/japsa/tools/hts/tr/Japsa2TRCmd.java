@@ -33,8 +33,9 @@
  *
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.tools.hts.tr;
 
+import japsa.bio.tr.TandemRepeat;
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.JapsaFileFormat;
@@ -52,34 +53,26 @@ import java.util.Iterator;
  */
 @Deployable(scriptName = "jsa.trv.jsa2tr",
             scriptDesc = "Convert tandem repeat annotation in JAPSA format to TR format")
-public class Japsa2TR {
+public class Japsa2TRCmd extends CommandLine{	
+	public Japsa2TRCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("input", null, "Name of input JSA file, - for standard input",true);
+		addString("output", "-", "Name of output file, - for standard out");			
+		
+		addStdHelp();		
+	} 
 
 	/**
 	 * @param args
 	 */		
-	public static void main(String[] args) throws IOException{
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.trv.jsa2tr";
-		String desc = "Convert tandem repeat annotation in JAPSA format to TR format\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
-		cmdLine.addString("input", null,
-		"Name of input JSA file, - for standard input",true);
-		cmdLine.addString("output", "-",
-		"Name of output file, - for standard out");		
+	public static void main(String[] args) throws IOException{		
+		CommandLine cmdLine = new Japsa2TRCmd();		
+		args = cmdLine.stdParseLine(args);
 		
-		/**********************************************************************/
-		cmdLine.addStdHelp();
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/
 		
 		String inputFile = cmdLine.getStringVal("input");		
 		String outputFile = cmdLine.getStringVal("output");

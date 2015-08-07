@@ -31,8 +31,9 @@
  * 20/06/2013 - Minh Duc Cao: Created                                        
  * 16/11/2013: MDC revised 
  ****************************************************************************/
-package japsa.bio.tr;
+package japsa.tools.hts.tr;
 
+import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -49,38 +50,30 @@ import java.util.ArrayList;
  */
 @Deployable(scriptName = "jsa.trv.trv2bed",
            scriptDesc = "Convert tandem repeat variation in trv format to bed format")
-public class TRV2Bed {
+public class TRV2BedCmd extends CommandLine{	
+	public TRV2BedCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("input", "-",
+				"Name of the input file in trv, - for standard input",true);
+		addString("output", "-",
+				"Name of the output file - for standard output)");
+		
+		addStdHelp();		
+	} 
 
 	/**
 	 * @param args
 	 * @throws IOException 
 	 */
-	public static void main(String[] args) throws IOException {		
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.trv.trv2bed";
-		String desc = "Convert tandem repeat variation in trv format to bed format\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [options]");
-		/**********************************************************************/
-
-		cmdLine.addString("input", "-",
-				"Name of the input file in trv, - for standard input",true);
-		cmdLine.addString("output", "-",
-				"Name of the output file - for standard output)");
-
-
-		cmdLine.addStdHelp();	
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/
-
+	public static void main(String[] args) throws IOException {				
+		CommandLine cmdLine = new TRV2BedCmd();
+		args = cmdLine.stdParseLine(args);
+		
+		
 		String inFile = cmdLine.getStringVal("input");
 		String outFile = cmdLine.getStringVal("output");		
 			

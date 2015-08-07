@@ -34,8 +34,9 @@
  *   -Inlude feature for simulation 
  ****************************************************************************/
 
-package japsa.bio.tr;
+package japsa.tools.hts.tr;
 
+import japsa.bio.tr.TandemRepeat;
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
@@ -57,7 +58,22 @@ import java.util.Iterator;
  */
 @Deployable(scriptName = "jsa.trv.parseTRF",
             scriptDesc = "Parse trf output to jsa, bed or tr format")
-public class ParseTRF{
+public class ParseTRFCmd extends CommandLine{	
+	public ParseTRFCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("input", null, "Name of the input file (output of TRF), - for standard input", true);
+		addString("output", "-", "Name of output file, - for standard output");
+		addString("format", "jsa", "Format of the output file. Options: jsa, bed, xaf");
+		addString("sequence", null, "Name of the sequence file (has to be the same file to run TRF)");
+		addInt("max", 6,"Maximum unit size");
+		addInt("min", 2,"Minimum unit size");	
+		
+		addStdHelp();		
+	} 
 	
 	/**
 	 * Parse the result from Tandem Repeat Finder into various annotation format
@@ -68,33 +84,10 @@ public class ParseTRF{
 	 *  
 	 * @param args
 	 */
-	public static void main(String[] args) throws Exception {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = ParseTRF.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]");
-		/**********************************************************************/	
-
-		//cmdLine.addStdInputFile();
-		cmdLine.addString("input", null, "Name of the input file (output of TRF), - for standard input", true);
-		cmdLine.addString("output", "-", "Name of output file, - for standard output");
-		cmdLine.addString("format", "jsa", "Format of the output file. Options: jsa, bed, xaf");
-		cmdLine.addString("sequence", null, "Name of the sequence file (has to be the same file to run TRF)");
-		cmdLine.addInt("max", 6,"Maximum unit size");
-		cmdLine.addInt("min", 2,"Minimum unit size");		
+	public static void main(String[] args) throws Exception {		 		
+		CommandLine cmdLine = new ParseTRFCmd();
+		args = cmdLine.stdParseLine(args);
 		
-		cmdLine.addStdHelp();		
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);		
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(annotation.scriptDesc() + "\n" + cmdLine.usageMessage());			
-			System.exit(0);
-		}		
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}		
-		/**********************************************************************/	
-
 		String inputFile = cmdLine.getStringVal("input");
 		String outputFile = cmdLine.getStringVal("output");				
 		String format = cmdLine.getStringVal("format");

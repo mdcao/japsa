@@ -38,11 +38,6 @@ package japsa.util.deploy;
 import japsa.bio.hts.HTSAlignmentParam;
 import japsa.bio.sim.SimHTSWithFSM;
 import japsa.bio.sim.SimProbFSM;
-import japsa.bio.tr.Japsa2TR;
-import japsa.bio.tr.ParseTRF;
-import japsa.bio.tr.TRV2Bed;
-import japsa.bio.tr.TRV2VCF;
-import japsa.bio.tr.VCF2TRV;
 import japsa.tools.bio.np.GeneStrainTypingCmd;
 import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
@@ -60,8 +55,13 @@ import japsa.tools.hts.SelectReadIntersectCmd;
 import japsa.tools.hts.SelectReadSpanCmd;
 import japsa.tools.hts.VNTRDepthCmd;
 import japsa.tools.hts.tr.Fragment2TRVCmd;
+import japsa.tools.hts.tr.Japsa2TRCmd;
+import japsa.tools.hts.tr.ParseTRFCmd;
 import japsa.tools.hts.tr.Sam2FragmentSizeCmd;
 import japsa.tools.hts.tr.SortFragmentFileCmd;
+import japsa.tools.hts.tr.TRV2BedCmd;
+import japsa.tools.hts.tr.TRV2VCFCmd;
+import japsa.tools.hts.tr.VCF2TRVCmd;
 import japsa.tools.seq.AddAnnotationCmd;
 import japsa.tools.seq.AlignmentEMCmd;
 import japsa.tools.seq.AnnotateRegionsCmd;
@@ -145,14 +145,14 @@ public class Deploy {
 
 		//jsa.trv.*
 		tools.add("Tandem repeat variation analysis tools:");
-		tools.add(new ParseTRF());		
+		tools.add(new ParseTRFCmd());		
 		tools.add(new Sam2FragmentSizeCmd());
 		tools.add(new SortFragmentFileCmd());
 		tools.add(new Fragment2TRVCmd());
-		tools.add(new TRV2VCF());
-		tools.add(new VCF2TRV());		
-		tools.add(new Japsa2TR());
-		tools.add(new TRV2Bed());	
+		tools.add(new TRV2VCFCmd());
+		tools.add(new VCF2TRVCmd());		
+		tools.add(new Japsa2TRCmd());
+		tools.add(new TRV2BedCmd());	
 		tools.add(new VNTRDepthCmd());
 
 		tools.add("Utilities:");

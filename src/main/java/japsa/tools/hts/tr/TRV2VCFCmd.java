@@ -31,8 +31,9 @@
  * 20/06/2013 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.bio.tr;
+package japsa.tools.hts.tr;
 
+import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -52,40 +53,32 @@ import java.util.ArrayList;
  */
 @Deployable(scriptName = "jsa.trv.trv2vcf",
             scriptDesc = "Convert tandem repeat variation in trv format to vcf")
-public class TRV2VCF {
+public class TRV2VCFCmd extends CommandLine{	
+	public TRV2VCFCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("input", null,
+				"Name of the input file in trv, - for standard in",true);		
+		addString("reference", null,
+				"File containing the reference genome",true);		
+			
+		addStdAlphabet();
+		addString("output", "-",
+				"Name of the output file ( - for standard output)");
+		
+		addStdHelp();		
+	} 
 	/**
 	 * @param args
 	 * @throws IOException 
 	 */
-	public static void main(String[] args) throws IOException {		
-		/*********************** Setting up script ****************************/		 
-		String scriptName = "jsa.trv.trv2vcf";
-		String desc = "Convert tandem repeat variation in trv format to vcf\n";		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + scriptName + " [params]");
-		/**********************************************************************/
+	public static void main(String[] args) throws IOException {				
+		CommandLine cmdLine = new TRV2VCFCmd();		
+		args = cmdLine.stdParseLine(args);
 
-		cmdLine.addString("input", null,
-				"Name of the input file in trv, - for standard in",true);		
-		cmdLine.addString("reference", null,
-				"File containing the reference genome",true);		
-		//cmdLine.addStdDNA();		
-		cmdLine.addStdAlphabet();
-		cmdLine.addString("output", "-",
-				"Name of the output file ( - for standard output)");
-
-
-		cmdLine.addStdHelp();	
-		/**********************************************************************/
-		args = cmdLine.parseLine(args);
-		if (cmdLine.getBooleanVal("help")){
-			System.out.println(desc + cmdLine.usageMessage());			
-			System.exit(0);
-		}
-		if (cmdLine.errors() != null) {
-			System.err.println(cmdLine.errors() + cmdLine.usageMessage());
-			System.exit(-1);
-		}	
-		/**********************************************************************/
 		String inFile = cmdLine.getStringVal("input");
 		String refFile = cmdLine.getStringVal("reference");		
 		String outFile = cmdLine.getStringVal("output");
@@ -93,7 +86,7 @@ public class TRV2VCF {
 		
 		if ("-".equals(refFile)){
 			System.err.println("ERROR: reference must be from some files");
-			System.err.println(cmdLine.usageMessage());
+			System.err.println(cmdLine.usageString());
 			System.exit(-1);
 		}
 		ArrayList<TandemRepeatVariant> trvList = TandemRepeatVariant.readFromFile(inFile);
@@ -127,7 +120,7 @@ public class TRV2VCF {
 
 
 
-			int nuc = (int) Math.round(trv.var * period);
+			int nuc = (int) Math.round(trv.getVar() * period);
 			if (nuc == 0)
 				continue;//no variation
 
@@ -145,7 +138,7 @@ public class TRV2VCF {
 			}			
 
 			int qual = (int) 
-					(JapsaMath.prob2phred(1 - trv.confidence));			
+					(JapsaMath.prob2phred(1 - trv.getConfidence()));			
 
 			if (nuc < 0){//deletion
 				//remove of nuc nucleotides at the end
@@ -156,7 +149,7 @@ public class TRV2VCF {
 				out.print(trv.getChr() + '\t' + (end + nuc) +"\t.\t"+ref+"\t"+seq.charAt(end + nuc - 1)+"\t" 
 						+  qual + "\t"  //qual 
 						+ (qual>3?"PASS":"q3")+"\t" //filter
-						+ "NS=" + trv.evidence + "\t" 
+						+ "NS=" + trv.getEvidence() + "\t" 
 						+"\n");				
 			}else{//insertion
 				StringBuilder alt = new StringBuilder();
@@ -173,7 +166,7 @@ public class TRV2VCF {
 				out.print(trv.getChr() + '\t' + (end + nuc) +"\t.\t"+seq.charAt(end- 1)+'\t' + alt + "\t"
 						+  qual + "\t"  //qual 
 						+ (qual>3?"PASS":"q3")+"\t" //filter
-						+ "NS=" + trv.evidence + "\t" 
+						+ "NS=" + trv.getEvidence() + "\t" 
 						+"\n");						
 			}//else
 		}

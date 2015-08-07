@@ -52,7 +52,7 @@ JAR_FILE=japsa.jar
 LIB_DIR=libs
 
 #List of external libraries
-EXT_LIBS=colloquial.jar commons-math3-3.0.jar sam-1.84.jar jhdf5.jar jhdfobj.jar htsjdk-1.126.jar guava-18.0.jar jcommon-1.0.23.jar jfreechart-1.0.19.jar JRIEngine.jar JRI.jar  
+EXT_LIBS=colloquial.jar commons-math3-3.0.jar jhdf5.jar jhdfobj.jar htsjdk-1.126.jar guava-18.0.jar jcommon-1.0.23.jar jfreechart-1.0.19.jar JRIEngine.jar JRI.jar  
 
 ###########################################################################
 ##What this scripts does:
