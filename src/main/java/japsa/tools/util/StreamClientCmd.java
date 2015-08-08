@@ -51,7 +51,7 @@ import java.net.Socket;
 @Deployable(
 	scriptName = "jsa.util.streamClient",
 	scriptDesc = "Listen for input from the standard input and output to a stream",
-	seeAlso = "jsa.np.streamServer, jsa.np.filter, jsa.np.f5reader"
+	seeAlso = "jsa.util.streamServer, jsa.np.filter, jsa.np.f5reader"
 	)
 
 public class StreamClientCmd extends CommandLine{	

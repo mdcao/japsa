@@ -34,9 +34,9 @@ Options
 See also
 ~~~~~~~~
 
-jsa.np.streamClient_, jsa.np.filter.jsa.np.f5reader_
+jsa.util.streamClient_, jsa.np.filter.jsa.np.f5reader_
 
-.. _jsa.np.streamClient: jsa.np.streamClient.html
+.. _jsa.util.streamClient: jsa.util.streamClient.html
 .. _jsa.np.filter.jsa.np.f5reader: jsa.np.filter.jsa.np.f5reader.html
 
 
