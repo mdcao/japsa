@@ -50,7 +50,8 @@ import java.net.Socket;
  */
 @Deployable(
 	scriptName = "jsa.util.streamClient",
-	scriptDesc = "Listen for input from the standard input and output to a stream"
+	scriptDesc = "Listen for input from the standard input and output to a stream",
+	seeAlso = "jsa.np.streamServer, jsa.np.filter, jsa.np.f5reader"
 	)
 
 public class StreamClientCmd extends CommandLine{	
@@ -61,8 +62,8 @@ public class StreamClientCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addStdInputFile();
-		addString("streamServer",null, "Stream output to a server, format IP:port",true);			
-
+		addString("server",null, "Stream output to one or more servers, format IP:port,IP:port",true);
+		
 		addStdHelp();
 	} 
 
@@ -94,6 +95,16 @@ public class StreamClientCmd extends CommandLine{
 		}
 		client.close();		
 
-
 	}
 }
+/*RST*
+----------------------------------------------------
+*jsa.util.streamClient*: Streams data over a network
+----------------------------------------------------
+
+*jsa.util.streamClient* streams data over the network to a listening server
+(*jsa.util.streamServer*).
+ 
+ <usage>
+ 
+*RST*/

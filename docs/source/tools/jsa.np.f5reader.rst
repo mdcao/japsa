@@ -2,9 +2,9 @@
 *npReader*: real-time conversion and analysis of Nanopore sequencing data
 -------------------------------------------------------------------------
 
-*npReader* (jsa.np.f5reader) is a program that extract Oxford Nanopore
-sequencing data from FAST5 files, perform an initial analysis of the date and
-stream them to real-time analysis pipelines. These pipelines can run on the
+*npReader* (jsa.np.f5reader) is a program that extracts Oxford Nanopore
+sequencing data from FAST5 files, performs an initial analysis of the date and
+streams them to real-time analysis pipelines. These pipelines can run on the
 same computer or on computing clouds/high performance clusters.
 
 npReader is included in the `Japsa package <http://mdcao.github.io/japsa/>`_.
@@ -38,9 +38,7 @@ prompted for "Path to HDF library" during installation of Japsa.
 Synopsis
 ~~~~~~~~
 
-*jsa.np.f5reader*: Extract Oxford Nanopore sequencing data from FAST5 files,
-perform an initial analysis of the date and stream them to realtime analysis
-pipelines
+*jsa.np.f5reader*:Extract Oxford Nanopore sequencing data from FAST5 files, perform an initial analysis of the date and stream them to realtime analysis pipelines
 
 ~~~~~
 Usage
@@ -54,8 +52,7 @@ Options
 ~~~~~~~
   --GUI           Run with a Graphical User Interface
                   (default='false')
-  --realtime      Run the program in real-time mode, i.e., keep waiting for new
-                  data from the Metrichor agent
+  --realtime      Run the program in real-time mode, i.e., keep waiting for new data from Metrichor agent
                   (default='false')
   --folder=s      The folder containing base-called reads
                   (default='null')
@@ -63,8 +60,7 @@ Options
                   (default='false')
   --output=s      Name of the output file, - for stdout
                   (default='-')
-  --streams=s     Stream output to some servers, format "IP:port,IP:port"
-                  (no spaces)
+  --streams=s     Stream output to some servers, format "IP:port,IP:port" (no spaces)
                   (default='null')
   --format=s      Format of sequence reads (fastq or fasta)
                   (default='fastq')
@@ -74,19 +70,23 @@ Options
                   (default='false')
   --stats         Generate a report of read statistics
                   (default='false')
-  --time          Extract the sequencing time of each read -- only work with
-                  Metrichor > 1.12
+  --time          Extract the sequencing time of each read -- only work with Metrichor > 1.12
                   (default='false')
   --help          Display this usage and exit
                   (default='false')
 
+
 ~~~~~~~~
 See also
 ~~~~~~~~
-jsa.np.filter_, jsa.util.streamServer, jsa.util.streamClient,
-jsa.np.speciesTyping, jsa.np.geneStrainTyping, jsa.np.resistGenes
+
+jsa.np.filter_, jsa.util.streamServer_, jsa.util.streamClient_
 
 .. _jsa.np.filter: jsa.np.filter.html
+.. _jsa.util.streamServer: jsa.util.streamServer.html
+.. _jsa.util.streamClient: jsa.util.streamClient.html
+
+
 
 ~~~~~~~~~~~~~~
 Usage examples
@@ -166,9 +166,4 @@ One can also use *tee* to group data into different bins *in real-time* with
    > all.fq
    
 These bins can also be piped/streamed to different analysis pipelines as above.
-
-~~~~~~~~
-Citation
-~~~~~~~~
-A paper describing npReader is under review.
 

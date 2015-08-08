@@ -49,9 +49,12 @@ import java.lang.annotation.Target;
 public @interface Deployable {
 	String  scriptName() default "jsa";
 	String  scriptDesc() default "Tools from Just Another Java Package for Statistical Sequence Analysis";		
-	String  scriptDocs() default "";
+//	String  scriptDocs() default "";
 	String  citation() default "";
+	String  seeAlso() default "";
+	
 	boolean galaxyUse() default false;	
+	boolean docsGen() default false;
 		
 }
 

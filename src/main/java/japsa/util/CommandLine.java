@@ -44,6 +44,7 @@ import java.util.ArrayList;
  */
 
 public class CommandLine {
+	
 	/**
 	 * String describe the usage of the program (progname -i input -o output f1 f2 ...)
 	 */
@@ -60,11 +61,6 @@ public class CommandLine {
 
 	//Keep the commandline
 	String fullCmd = "";
-
-	@Deprecated
-	public CommandLine(int maxO) {
-		options = new ArrayList<Option>(maxO);
-	}
 
 	public CommandLine() {
 		options = new ArrayList<Option>();
@@ -388,7 +384,7 @@ public class CommandLine {
 	public String[] stdParseLine(String[] args) {				
 		/**********************************************************************/
 		String[] ret = parseLine(args);
-		
+
 		if (isOption("help", 1) >=0 && getBooleanVal("help")){
 			System.out.println(usageString());			
 			System.exit(0);
@@ -559,4 +555,5 @@ public class CommandLine {
 			this(opt, type, def,help,true);
 		}
 	}
+	
 }

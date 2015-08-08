@@ -1,13 +1,15 @@
-----------------------------------------
-*jsa.np.filter*: Filter sequencing reads
-----------------------------------------
+---------------------------------------
+*jsa.np.filter*: Filter sequencing data 
+---------------------------------------
 
-*jsa.np.filter* is a program that filters sequencing reads based
-on the read length, quality and type. The program can read/write from/to a file
-or a stream and can be integrated into a streaming pipeline.
+*jsa.np.filter* filters sequencing data based on sequence read type, length and
+quality. Examples of its usage can be found on jsa.np.f5reader_.
 
-*jsa.np.filter* is included in the `Japsa package <http://mdcao.github.io/japsa/>`_.
+~~~~~~~~
+Synopsis
+~~~~~~~~
 
+*jsa.np.filter*:Filter nanopore reads data from fastq file
 
 ~~~~~
 Usage
@@ -15,11 +17,10 @@ Usage
 ::
 
    jsa.np.filter [options]
-   
-~~~~~~~~
-Options:
-~~~~~~~~
 
+~~~~~~~
+Options
+~~~~~~~
   --input=s       Name of the input file, - for standard input
                   (REQUIRED)
   --output=s      Name of the output file, - for standard output
@@ -47,8 +48,13 @@ Options:
 ~~~~~~~~
 See also
 ~~~~~~~~
-jsa.util.streamServer, jsa.util.streamClient, jsa.np.f5reader_.
+
+jsa.np.f5reader_, jsa.util.streamServer_, jsa.util.streamClient_
 
 .. _jsa.np.f5reader: jsa.np.f5reader.html
+.. _jsa.util.streamServer: jsa.util.streamServer.html
+.. _jsa.util.streamClient: jsa.util.streamClient.html
+
+
 
 

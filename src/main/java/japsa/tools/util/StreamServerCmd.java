@@ -51,9 +51,11 @@ import com.google.common.io.ByteStreams;
 @Deployable(
 		scriptName = "jsa.util.streamServer",
 		scriptDesc = "Listen for input from a stream and output to the standard output",
-		scriptDocs = "jsa.util.streamServer implements a server that listen at "
-				+ "a specified port. Upon receiving data from a client, it forwards the stream "
-				+ "data to standard output")
+		seeAlso = "jsa.np.streamClient, jsa.np.filter.jsa.np.f5reader"
+		//scriptDocs = "jsa.util.streamServer implements a server that listen at "
+		//		+ "a specified port. Upon receiving data from a client, it forwards the stream "
+		//		+ "data to standard output"
+		)
 public class StreamServerCmd extends CommandLine{
 	public static int DEFAULT_PORT = 3456;
 	public StreamServerCmd(){
@@ -90,3 +92,20 @@ public class StreamServerCmd extends CommandLine{
 	    Logging.info("Connection closed");	    
 	}
 }
+
+/*RST*
+----------------------------------------------------------------
+*jsa.util.streamServer*: Receiving streaming data over a network
+----------------------------------------------------------------
+
+*jsa.util.streamServer* implements a server that listen at a specified port. 
+Upon receiving data from a client, it forwards the stream data to standard 
+output. *jsa.util.streamServer* and *jsa.util.streamClient* can be used to
+set up streaming applications such as real-time analyses. By default, 
+the server listens port 3456, unless specified otherwise.
+
+<usage>
+
+
+*RST*/
+
