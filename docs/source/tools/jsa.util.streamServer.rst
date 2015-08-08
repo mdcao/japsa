@@ -6,7 +6,7 @@
 Upon receiving data from a client, it forwards the stream data to standard 
 output. *jsa.util.streamServer* and *jsa.util.streamClient* can be used to
 set up streaming applications such as real-time analyses. By default, 
-the server listens port 3456, unless specified otherwise.
+the server listens on port 3456, unless specified otherwise.
 
 ~~~~~~~~
 Synopsis
@@ -38,6 +38,7 @@ jsa.util.streamClient_, jsa.np.filter.jsa.np.f5reader_
 
 .. _jsa.util.streamClient: jsa.util.streamClient.html
 .. _jsa.np.filter.jsa.np.f5reader: jsa.np.filter.jsa.np.f5reader.html
+
 
 
 
