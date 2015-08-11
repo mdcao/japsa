@@ -72,7 +72,9 @@ public class XMasCmd  extends CommandLine{
 		/**********************************************************************/
 		FastaReader sin = new FastaReader(new FileInputStream(cmdLine.getStringVal("input")));
 		ArrayList<Sequence> seqs = new ArrayList<Sequence>(100);
+		
 		Sequence seq;
+		
 		while ((seq = sin.nextSequence(Alphabet.DNA4())) != null){
 			seqs.add(seq);
 		}
@@ -307,10 +309,29 @@ and outputs a distance matrix in the format required by the PHYLIP package
 to run neighbour joining.
  
 *XMas* is included in the `Japsa package <http://mdcao.github.io/japsa/>`_. 
-Please see check the installation page for instructions.  
+Please see check the installation_ page for instructions.  
 
+.. _installation: ../install.html
 
 <usage>
+
+-------------
+Usage samples
+-------------
+
+At the moment, XMas is designed to worked with aligned sequences, with indels 
+and wildcards (*e.g.*, N) removed. XMas reads in these aligned sequences from
+a fasta file, and output the distances to a file in a format ready to run
+neibour-joining with PHYLIP. For examples::
+   	
+   	jsa.phylo.xmas -i sequences.fas -o infile
+
+And run phylip neighbor-joining from the distances in *infile*::
+
+   phylip neighbor
+   
+   	 
+
 
 
 
