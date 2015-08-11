@@ -38,7 +38,7 @@ prompted for "Path to HDF library" during installation of Japsa.
 Synopsis
 ~~~~~~~~
 
-*jsa.np.f5reader*:Extract Oxford Nanopore sequencing data from FAST5 files, perform an initial analysis of the date and stream them to realtime analysis pipelines
+*jsa.np.f5reader*:Extract and stream Oxford Nanopore sequencing data in real-time
 
 ~~~~~
 Usage

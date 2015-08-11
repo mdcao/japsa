@@ -48,8 +48,11 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.seq.emalign", 
-scriptDesc = "Get the best alignment of 2 sequences using Expectation-Maximisation on Finite State Machine")
+@Deployable(
+	scriptName = "jsa.seq.emalign", 
+	scriptDesc = "Get the best alignment of 2 sequences using Expectation-Maximisation on Finite State Machine"
+)
+
 public class AlignmentEMCmd extends CommandLine{	
 	public AlignmentEMCmd(){
 		super();
@@ -103,3 +106,13 @@ public class AlignmentEMCmd extends CommandLine{
 		
 	}
 }
+
+/*RST*
+----------------------------------------------
+*jsa.seq.emalign* Align two sequences using EM
+----------------------------------------------
+
+
+<usage> 
+
+*RST*/

@@ -40,23 +40,19 @@ Options
 
 
 
--------------
+~~~~~~~~~~~~~
 Usage samples
--------------
+~~~~~~~~~~~~~
 
 At the moment, XMas is designed to worked with aligned sequences, with indels 
 and wildcards (*e.g.*, N) removed. XMas reads in these aligned sequences from
 a fasta file, and output the distances to a file in a format ready to run
 neibour-joining with PHYLIP. For examples::
    	
-   	jsa.phylo.xmas -i sequences.fas -o infile
+   jsa.phylo.xmas -i sequences.fas -o infile
 
 And run phylip neighbor-joining from the distances in *infile*::
 
    phylip neighbor
-   
-   	 
-
-
-
+ 
 

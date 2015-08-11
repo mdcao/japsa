@@ -108,10 +108,4 @@ public class AnnotateRegionsCmd extends CommandLine{
 		inputF.close();
 				
 	}
-	
-	
-	
-	
-	
-	
 }

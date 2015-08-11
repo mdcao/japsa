@@ -1,5 +1,5 @@
 =============
-List of Tools
+List of tools
 =============
 
 This chapter presents the list of tools provided by Japsa.
@@ -8,6 +8,14 @@ This chapter presents the list of tools provided by Japsa.
 .. toctree::
    :maxdepth: 1
 
+   jsa.seq.stats.rst
+   jsa.seq.sort.rst
+   jsa.seq.extract.rst
+   jsa.seq.split.rst
+   jsa.seq.join.rst
+   jsa.seq.annovcf.rst
+   jsa.seq.gff2fasta.rst
+   jsa.seq.emalign.rst
    jsa.np.f5reader.rst
    jsa.np.filter.rst
    jsa.util.streamServer.rst

@@ -50,7 +50,7 @@ import java.io.IOException;
  */
 @Deployable(
 	scriptName = "jsa.seq.stats",
-	scriptDesc = "Show statistical composition of sequences stored in a file (or from STDIN)"
+	scriptDesc = "Show statistical composition of sequences)"
 	)
 public class SequenceStatsCmd extends CommandLine{	
 	public SequenceStatsCmd(){
@@ -125,5 +125,20 @@ public class SequenceStatsCmd extends CommandLine{
 				(others * 100.0 / seq.length()));
 
 	}
-
 }
+
+/*RST*
+----------------------------------------------------------------------
+*jsa.seq.stats*: Show statistics of sequences
+----------------------------------------------------------------------
+
+*jsa.seq.stats* shows the compositional statistics of sequences in file 
+or from standard input). It is included in the 
+`Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+<usage> 
+
+*RST*/

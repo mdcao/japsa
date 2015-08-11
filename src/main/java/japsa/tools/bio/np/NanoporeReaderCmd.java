@@ -49,10 +49,8 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(	
 	scriptName = "jsa.np.f5reader", 
-	scriptDesc = 
-	"Extract Oxford Nanopore sequencing data from FAST5 files, perform an "
-		+ "initial analysis of the date and stream them to realtime analysis pipelines",
-		seeAlso = "jsa.np.filter, jsa.util.streamServer, jsa.util.streamClient,jsa.np.speciesTyping, jsa.np.resistGenes, jsa.np.geneStrainTyping"
+	scriptDesc = "Extract and stream Oxford Nanopore sequencing data in real-time",
+	seeAlso = "jsa.np.filter, jsa.util.streamServer, jsa.util.streamClient,jsa.np.speciesTyping, jsa.np.resistGenes, jsa.np.geneStrainTyping"
 	)
 public class NanoporeReaderCmd extends CommandLine{	
 	public NanoporeReaderCmd(){

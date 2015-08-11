@@ -103,3 +103,13 @@ public class JoinSequenceCmd extends CommandLine{
 		sb.writeFasta(output);		
 	}
 }
+
+/*RST*
+-----------------------------------------------------
+*jsa.seq.join*: Join multiple sequences into one file 
+-----------------------------------------------------
+
+
+<usage> 
+
+*RST*/

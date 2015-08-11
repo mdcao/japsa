@@ -133,7 +133,22 @@ public class AnnotateVCFCmd extends CommandLine{
 		xaf.close();		
 		out.close();
 	}
-
-
-
 }
+
+/*RST*
+--------------------------------------
+*jsa.seq.annovcf*: Annotate a vcf file 
+--------------------------------------
+
+*jsa.seq.annovcf*: reads annotations from a gff file and annotates a vcf file 
+(i.e., identify the functional of variation). 
+
+*jsa.seq.annovcf* is included in the 
+`Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+<usage> 
+
+*RST*/

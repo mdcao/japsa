@@ -101,3 +101,19 @@ public class SequenceExtractCmd extends CommandLine {
 		return null;
 	}
 }
+
+/*RST*
+-----------------------------------------------------
+*jsa.seq.extract*: Extract subsequences from a genome 
+-----------------------------------------------------
+
+
+*jsa.seq.extract* is included in the 
+`Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+<usage> 
+
+*RST*/

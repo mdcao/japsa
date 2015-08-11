@@ -49,24 +49,24 @@ import java.io.IOException;
  *
  */
 @Deployable(scriptName = "jsa.seq.split",
-            scriptDesc = "Break a multiple sequence files to each sequence per file")
+scriptDesc = "Break a multiple sequence files to each sequence per file")
 public class SplitSequenceFileCmd extends CommandLine{	
 	public SplitSequenceFileCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		
-						
+
+
 		addStdInputFile();
 		addStdAlphabet();
-		
+
 		addString("output", "out_", "Prefix of the output files");
 		addString("format", "fasta", "Format of output files. Options : japsa or fasta");
 
 		addStdHelp();		
 	}
-	
+
 	/**
 	 * @param args
 	 */
@@ -80,14 +80,14 @@ public class SplitSequenceFileCmd extends CommandLine{
 		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
 		if (alphabet == null)
 			alphabet = Alphabet.DNA5();
-		
+
 		String output = cmdLine.getStringVal("output");
 		String format = cmdLine.getStringVal("format");
 		String input = cmdLine.getStringVal("input");
 
-				
+
 		SequenceReader reader = SequenceReader.getReader(input);
-		
+
 		Sequence seq;
 		if (format.equals("fasta")){
 			while ((seq = reader.nextSequence(alphabet)) != null){
@@ -97,10 +97,23 @@ public class SplitSequenceFileCmd extends CommandLine{
 			while ((seq = reader.nextSequence(alphabet)) != null){
 				seq.writeJSA(output+seq.getName()+".jsa");
 			}
-		}   
-		
-		
-				
+		}		
 		reader.close();
 	}
 }
+
+/*RST*
+---------------------------------------------
+*jsa.seq.split*: Split multiple sequence file
+---------------------------------------------
+
+*jsa.seq.split* splits a file containing multiple sequences to each file
+containing a sequence. It is included in the 
+`Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+<usage> 
+
+*RST*/

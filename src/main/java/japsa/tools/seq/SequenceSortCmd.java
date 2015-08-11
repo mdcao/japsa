@@ -59,14 +59,14 @@ public class SequenceSortCmd extends CommandLine{
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		
+
 		addStdInputFile();
 		addStdOutputFile();		
 		addStdAlphabet();
 		addBoolean("number",false,"Add the order number to the beginning of contig name");
 		addBoolean("reverse",false,"Reverse sort order");
 		addString("sortKey","length","Sort key");
-		
+
 		addStdHelp();		
 	} 
 
@@ -156,3 +156,22 @@ public class SequenceSortCmd extends CommandLine{
 		}
 	}
 }
+
+
+/*RST*
+--------------------------------------------
+*jsa.seq.sort*: Sort the sequences in a file
+--------------------------------------------
+
+*jsa.seq.sort* sort the sequences from a file or from a standard input into
+some order.
+
+*jsa.seq.sort* is included in the 
+`Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+<usage> 
+
+*RST*/

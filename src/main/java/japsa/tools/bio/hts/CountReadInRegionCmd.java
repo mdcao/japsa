@@ -182,8 +182,9 @@ public class CountReadInRegionCmd extends CommandLine{
 
 		os.close();
 		Logging.info("Ignore " + notCount + " reads");
-	}	
+	}
 
 }
+
 
 

@@ -64,8 +64,7 @@ public class ExtractGeneSequenceCmd extends CommandLine{
 		addString("gff", null, "Annotation file in gff format",true);
 		addString("type", "gene", "types of features to be extracted (all, gene, CDS etc)");
 		addStdOutputFile();		
-		addStdAlphabet();//aphabet		
-			
+		addStdAlphabet();//aphabet			
 		
 		addStdHelp();		
 	} 
@@ -114,3 +113,16 @@ public class ExtractGeneSequenceCmd extends CommandLine{
 		out.close();
 	}
 }
+
+/*RST*
+----------------------------------------------------------
+*jsa.seq.gff2fasta*: Join multiple sequences into one file 
+----------------------------------------------------------
+
+*jsa.seq.gff2fasta* extract the functional sequences (genes, CDS, etc) from
+a gff file and a sequence file.
+
+<usage> 
+
+*RST*/
+

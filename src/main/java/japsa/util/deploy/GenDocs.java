@@ -118,7 +118,7 @@ public class GenDocs {
 
 		PrintStream toolIndex = new PrintStream(new FileOutputStream(docDir + "/index.rst"));
 
-		toolIndex.println("=============\nList of Tools\n=============\n");
+		toolIndex.println("=============\nList of tools\n=============\n");
 		toolIndex.println("This chapter presents the list of tools provided by Japsa.\n"
 			+ " We are in the process of documenting 40+ tools, so stay tuned.\n");
 
@@ -137,8 +137,8 @@ public class GenDocs {
 				if (doc.trim().equals("<usage>")){
 					outOS.print("~~~~~~~~\nSynopsis\n~~~~~~~~\n\n");
 					outOS.print("*" + scriptName + "*:" + annotation.scriptDesc()+"\n\n");
-					outOS.print("~~~~~\nUsage\n~~~~~\n::\n\n   "+cmd.usage()+"\n\n");
-					outOS.print("~~~~~~~\nOptions\n~~~~~~~\n"+cmd.options()+"\n\n");						
+					outOS.print("~~~~~\nUsage\n~~~~~\n::\n\n   "+cmd.usage() + "\n\n");
+					outOS.print("~~~~~~~\nOptions\n~~~~~~~\n"+cmd.options().replace("_","\\_")+"\n\n");						
 
 					if (annotation.seeAlso().length() > 0){
 						boolean seeAlso = false;
