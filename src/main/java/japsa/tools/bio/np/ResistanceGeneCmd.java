@@ -143,7 +143,5 @@ public class ResistanceGeneCmd extends CommandLine{
 		paTyping.ilThreshold = il;
 		paTyping.typing(bamFile);
 		paTyping.datOS.close();
-
-
 	}
 }

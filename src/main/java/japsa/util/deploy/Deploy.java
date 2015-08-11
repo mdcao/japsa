@@ -48,6 +48,7 @@ import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.np.ResistanceGeneCmd;
+import japsa.tools.bio.np.ResistanceGeneCmd2;
 import japsa.tools.bio.np.SpeciesMixtureTypingCmd;
 import japsa.tools.bio.phylo.NormaliseTreeCmd;
 import japsa.tools.bio.phylo.XMasCmd;
@@ -143,6 +144,7 @@ public class Deploy {
 		tools.add(new GeneStrainTypingCmd());
 		tools.add(new MLSTStrainTypingCmd());
 		tools.add(new ResistanceGeneCmd());		
+		tools.add(new ResistanceGeneCmd2());
 
 		//jsa.trv.*
 		tools.add("Tandem repeat variation analysis tools:");

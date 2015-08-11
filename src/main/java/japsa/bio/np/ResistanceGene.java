@@ -70,9 +70,11 @@ import java.util.HashSet;
  */
 
 public class ResistanceGene {
-//TODO: make the below private
+	//TODO: make the below private
 	public double ilThreshold = 0.9;
 	HashMap<String, HashSet<String>> aroMap;//map a gene to function/annotations
+
+	//Map every gene to a list of reads that align to this gene
 	HashMap<String, ArrayList<Sequence>> alignmentMap;
 	HashMap<String, ArrayList<SAMRecord>> samMap;
 
@@ -92,12 +94,7 @@ public class ResistanceGene {
 
 	public double scoreThreshold = 2;
 
-	//HashMap<String,XYSeries> plotData = new HashMap<String,XYSeries>();
-	//String figureFile = "out.png";
 	public boolean twoDOnly = false;
-
-	String functionFile = "Function.txt";
-	String gene2FunctionFile = "Gene2Function.txt";
 
 	ArrayList<String> functions = new ArrayList<String>();	
 	ArrayList<String> functionNames = new ArrayList<String>();
@@ -107,21 +104,20 @@ public class ResistanceGene {
 	public IntArray hoursArray = null;
 	public IntArray readCountArray = null;
 	int arrayIndex = 0;
-	
+
 	long firstReadTime = 0;
 
 	public ResistanceGene(){
 	}
 
 	HashMap<String, ArrayList<Sequence>> familyMap;
-
 	HashMap<String, String> gene2Group;
 	HashMap<String, String> gene2PrimaryGroup;
 	HashSet<String> groupSet, primaryGroupSet, geneSet;
 
 	ArrayList<Sequence> geneList;
 	HashMap<String, Sequence> geneMap;
-	
+
 
 	//TODO: make below protected/private
 	public void getGeneClassInformation(String mcoordFile) throws IOException{
@@ -138,12 +134,12 @@ public class ResistanceGene {
 		for (Sequence g:genes){
 			myMap.put(g.getName(), g);
 		}
-		
-		
+
+
 		groupSet = new HashSet<String>();
 		primaryGroupSet = new HashSet<String>();
 		geneSet = new HashSet<String>();
-		
+
 
 		String fn = "GeneClassification.csv";
 
@@ -182,12 +178,11 @@ public class ResistanceGene {
 			}
 		}
 		bf.close();
-					
-		
+
+
 		groupSet.addAll(gene2Group.values());
 		primaryGroupSet.addAll(gene2PrimaryGroup.values());
 
-		//Read the target genes (get from Illumina)
 		targetGenes = new HashSet<String>();	
 		targetGroup = new HashSet<String>();
 		targetPrimaryGroup = new HashSet<String>();
@@ -200,8 +195,8 @@ public class ResistanceGene {
 			String tGeneID = tt[0] + "_" + tt[1];
 
 			if (Double.parseDouble(toks[10]) >= this.ilThreshold * 100 
-					&& Double.parseDouble(toks[6]) >= this.ilThreshold * 100 
-					&& geneMap.containsKey(tGeneID)){
+				&& Double.parseDouble(toks[6]) >= this.ilThreshold * 100 
+				&& geneMap.containsKey(tGeneID)){
 				targetGenes.add(tGeneID);
 				targetGroup.add(gene2Group.get(tGeneID));
 				targetPrimaryGroup.add(gene2PrimaryGroup.get(tGeneID));				
@@ -236,7 +231,7 @@ public class ResistanceGene {
 		String needleOut = prefix + geneID + "_" + this.currentReadCount + "_consensus.needle";
 
 		String cmd = "needle -gapopen 10 -gapextend 0.5 -asequence " 
-				+ faAFile + " -bsequence " + consensusFile + " -outfile " + needleOut;
+			+ faAFile + " -bsequence " + consensusFile + " -outfile " + needleOut;
 		Logging.info("Running " + cmd);
 		Process process = Runtime.getRuntime().exec(cmd);
 		process.waitFor();		
@@ -257,7 +252,7 @@ public class ResistanceGene {
 	}
 
 	public double checkHMM(Sequence consensus, Sequence gene){
-		
+
 		if (gene.length() > 2700 || consensus.length() > 4000 || gene.length() * consensus.length() > 6000000){
 			Logging.info("SKIP " + gene.getName() + " " + gene.length() + " vs " + consensus.length());			
 			return 0;
@@ -284,12 +279,14 @@ public class ResistanceGene {
 		pGroup.add(gene2Group.get(geneID));
 		pPrimaryGroup.add(gene2PrimaryGroup.get(geneID));		
 	}
+
+
 	HashSet<String> pGenes = new HashSet<String>();
 	HashSet<String> pGroup = new HashSet<String>();
 	HashSet<String> pPrimaryGroup = new HashSet<String>();
+
+
 	private void antiBioticsProfile() throws IOException, InterruptedException{
-
-
 		int step = currentReadCount;
 		if (hoursArray != null) 
 			step = hoursArray.get(arrayIndex);
@@ -301,29 +298,23 @@ public class ResistanceGene {
 			//TODO: to remove
 			if (pPrimaryGroup.contains(gene2PrimaryGroup.get(geneID)))
 				continue;
-			
+
 			if (pGenes.contains(geneID))
 				continue;
 
 			ArrayList<Sequence> alignmentList =  alignmentMap.get(geneID);
 			Sequence 
-				consensus = ErrorCorrection.consensusSequence(alignmentList, prefix + "_" + geneID + "_" + this.currentReadCount, msa);
+			consensus = ErrorCorrection.consensusSequence(alignmentList, prefix + "_" + geneID + "_" + this.currentReadCount, msa);
 
 			if (consensus == null){
 				//Not consider this gene at all
 				continue;//gene
 			}
 
-			if (global.equals("hmm")){
-				//	double cutoff = 0.6;				
+			if (global.equals("hmm")){				
 				{	
 					double score = checkHMM(consensus, gene);
-					
-					//if (score == 0 && gene2PrimaryGroup.get(geneID).equals("Daptomycin-Rifampin")){
-					//	score = 0.8;
-					//	Logging.info("XXXX " + geneID);
-					//}
-					
+
 					Logging.info("REF: " + geneID + " " + score + " " + gene.length() + " " + consensus.length()+ " " + gene2Group.get(geneID)+ " " + gene2PrimaryGroup.get(geneID));
 
 					Double oldScore = maxScores.get(gene2PrimaryGroup.get(geneID));
@@ -334,7 +325,7 @@ public class ResistanceGene {
 					Logging.info("SGF: " + score + " " + geneID + " " + targetGenes.contains(geneID));
 					Logging.info("SCF: " + score + " " + gene2Group.get(geneID) + " " + targetGroup.contains(gene2Group.get(geneID)));
 					Logging.info("SPF: " + score + " " + gene2PrimaryGroup.get(geneID) + " " + targetPrimaryGroup.contains(gene2PrimaryGroup.get(geneID)));
-					
+
 					if (score >= scoreThreshold){
 						addPreditedGene(geneID);
 						Logging.info("ADDF " + geneID + " " + gene2Group.get(geneID)+ " " + gene2PrimaryGroup.get(geneID) + " " + step + " " + geneID);						
@@ -352,12 +343,12 @@ public class ResistanceGene {
 						maxScores.put(gene2PrimaryGroup.get(geneID), score);
 					}
 
-					
+
 					Logging.info("SGA: " + score + " " + geneID + " " + targetGenes.contains(geneID));
 					Logging.info("SCA: " + score + " " + gene2Group.get(geneID) + " " + targetGroup.contains(gene2Group.get(geneID)));
 					Logging.info("SPA: " + score + " " + gene2PrimaryGroup.get(geneID) + " " + targetPrimaryGroup.contains(gene2PrimaryGroup.get(geneID)));
-					
-					
+
+
 					if (score >= scoreThreshold){
 						addPreditedGene(geneID);
 						Logging.info("ADDA " + geneID + " " + gene2Group.get(geneID)+ " " + gene2PrimaryGroup.get(geneID) + " " + step + " " + allele.getName());
@@ -375,8 +366,8 @@ public class ResistanceGene {
 					if (oldScore == null || oldScore < score){
 						maxScores.put(gene2PrimaryGroup.get(geneID), score);
 					}
-					
-					
+
+
 					Logging.info("SGF: " + score + " " + geneID + " " + targetGenes.contains(geneID));
 					Logging.info("SCF: " + score + " " + gene2Group.get(geneID) + " " + targetGroup.contains(gene2Group.get(geneID)));
 					Logging.info("SPF: " + score + " " + gene2PrimaryGroup.get(geneID) + " " + targetPrimaryGroup.contains(gene2PrimaryGroup.get(geneID)));
@@ -392,17 +383,17 @@ public class ResistanceGene {
 				for (Sequence allele:alleleList){					
 					double score = checkNeedle(consensusFile, allele);					
 					Logging.info("REA: " + geneID + " " + score + " " + allele.length() + " " + consensus.length() + " " + gene2Group.get(geneID)+ " " + gene2PrimaryGroup.get(geneID) );
-					
+
 					Double oldScore = maxScores.get(gene2PrimaryGroup.get(geneID));
 					if (oldScore == null || oldScore < score){
 						maxScores.put(gene2PrimaryGroup.get(geneID), score);
 					}									
-					
+
 					Logging.info("SGA: " + score + " " + geneID + " " + targetGenes.contains(geneID));
 					Logging.info("SCA: " + score + " " + gene2Group.get(geneID) + " " + targetGroup.contains(gene2Group.get(geneID)));
 					Logging.info("SPA: " + score + " " + gene2PrimaryGroup.get(geneID) + " " + targetPrimaryGroup.contains(gene2PrimaryGroup.get(geneID)));
-					
-					
+
+
 					if (score >= scoreThreshold){
 						Logging.info("ADDA " + geneID + " " + gene2Group.get(geneID)+ " " + gene2PrimaryGroup.get(geneID) + " " + step  + " " + allele.getName());
 						addPreditedGene(geneID);			
@@ -463,6 +454,7 @@ public class ResistanceGene {
 
 		datOS.println();
 		datOS.flush();
+
 		/****************************************************************
 		int [] myProfile = new int[functions.size()];
 		for (String geneID: myGenes){			
@@ -493,7 +485,7 @@ public class ResistanceGene {
 	 */
 	public void typing(String bamFile) throws IOException, InterruptedException{		
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
-		
+
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader;
 		if ("-".equals(bamFile))
@@ -502,17 +494,17 @@ public class ResistanceGene {
 			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
 		SAMRecordIterator samIter = samReader.iterator();
-		
+
 		String readName = "";
 		//A dummy sequence
 		Sequence readSequence = new Sequence(Alphabet.DNA(),1,"");
 		while (samIter.hasNext()){
 			SAMRecord record = samIter.next();
-			
+
 			if (firstReadTime <=0)
 				firstReadTime = System.currentTimeMillis();
 
-			
+
 			if (this.twoDOnly && !record.getReadName().contains("twodim")){
 				continue;
 			}
@@ -571,7 +563,7 @@ public class ResistanceGene {
 		samReader.close();
 		antiBioticsProfile();
 		//makeStackedChart();
-		
+
 		for (String pg:maxScores.keySet()){			
 			double score = maxScores.get(pg);
 			Logging.info("SCORE: " + pg + " " + score + " " + targetPrimaryGroup.contains(pg));
@@ -580,58 +572,6 @@ public class ResistanceGene {
 		DateFormat df = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
 		Logging.info("END : " + df.format(Calendar.getInstance().getTime()));
 	}
-
-	/************************************************************************
-	ArrayList<int[]> antibioticProfiles = new ArrayList<int[]>(); 
-	private void makeStackedChart() throws IOException{
-		if (antibioticProfiles.size() <=0)
-			return;
-
-		DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-		for (int r = 0; r < functions.size(); r++) {
-			String rowKey = functions.get(r);
-			for (int c = 0; c < antibioticProfiles.size(); c++) {
-				Double columnKey = new Double(100 * c);
-				dataset.addValue(antibioticProfiles.get(c)[r], rowKey, columnKey);
-			}
-		}
-
-
-		final JFreeChart chart = ChartFactory.createStackedAreaChart(
-				"Antibiotic gene profile",      // chart title
-				"Read number",                // domain axis label
-				"Gene number",                   // range axis label
-				dataset,                   // data
-				PlotOrientation.VERTICAL,  // orientation
-				true,                      // include legend
-				true,
-				false
-				);
-		chart.setBackgroundPaint(Color.white);
-
-
-		final CategoryPlot plot = (CategoryPlot) chart.getPlot();
-
-
-		//plot.setForegroundAlpha(0.5f);
-		plot.setBackgroundPaint(Color.WHITE);		
-		//plot.setDomainGridlinePaint(Color.white);
-		//plot.setRangeGridlinePaint(Color.white);
-
-		final CategoryAxis domainAxis = plot.getDomainAxis();
-		domainAxis.setLowerMargin(0.0);
-		domainAxis.setUpperMargin(0.0);
-
-		// change the auto tick unit selection to integer units only...
-		final NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
-		//rangeAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());		
-
-
-		File chartFile = new File(figureFile);
-		ChartUtilities. saveChartAsPNG(chartFile , chart , 640 , 480 );
-	}
-/
-	 * @param <K>************************************************************************/
 	private <K> String stats(HashSet<K> a, HashSet<K> p, Collection<K> universe){
 		int TP = 0, FP = 0, FN = 0;
 		for (K s:p){
@@ -642,19 +582,17 @@ public class ResistanceGene {
 			}			
 		}
 		FN = a.size() - TP;
-		
+
 		int TN = universe.size() - TP - FP - FN;
-		
+
 		double precision = (TP * 1.0) / (TP + FP);
 		double recall = (TP * 1.0) / (TP + FN);
 		double specificity = ( TN * 1.0 ) / (TN + FP);
-		
-		
+
+
 		double f1 = 2 * precision * recall/ (precision + recall);
 		double accuracy = (TP + TN + 0.0)/(universe.size());
-		
+
 		return f1 +"\t" + precision + "\t" + recall + "\t" + specificity + "\t" + accuracy + "\t" + TP + "\t" + TN + "\t" + FP + "\t" + FN;		
 	}
-
-
 }

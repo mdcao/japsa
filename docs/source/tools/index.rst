@@ -12,3 +12,4 @@ This chapter presents the list of tools provided by Japsa.
    jsa.np.filter.rst
    jsa.util.streamServer.rst
    jsa.util.streamClient.rst
+   jsa.phylo.xmas.rst

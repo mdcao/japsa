@@ -46,6 +46,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  * This class is used to deploy tools: create a makefile to generate scripts
@@ -60,6 +61,58 @@ public class GenDocs {
 	 */
 	public static void genDocs(ArrayList<Object> toolList) 
 		throws IOException{		
+
+		//First check what tools has documentation
+		ArrayList<CommandLine> cmdTools = new ArrayList<CommandLine>();
+		ArrayList<ArrayList<String>> cmdDocs = new ArrayList<ArrayList<String>>();
+		HashSet<String> cmdSet = new HashSet<String>();
+
+		for (Object obj : toolList) {
+			if (obj instanceof CommandLine){
+				CommandLine cmdObj = (CommandLine) obj;
+				Class<?> tool =  obj.getClass();				
+
+				Deployable annotation = (Deployable) tool.getAnnotation(Deployable.class);
+				if (annotation == null)
+					continue;//for
+
+				String scriptName = annotation.scriptName();
+				ArrayList<String> docs = new ArrayList<String>();
+
+				File sourceFile = new File("src/main/java/" + tool.getCanonicalName().replace('.', '/') + ".java");
+				if (!sourceFile.isFile())
+					continue;		
+
+				BufferedReader bf = new BufferedReader (new FileReader(sourceFile));
+				String line = "";
+				boolean addDocs = false;
+				while ((line = bf.readLine())!= null){
+					if (line.trim().startsWith("/*RST*")){
+						//Start reading
+						addDocs = true;
+						continue;
+					}					
+					if (line.trim().startsWith("*RST*/")){
+						break;
+					}
+
+					if (addDocs)
+						docs.add(line.replaceAll("\\*#/", "\\*/"));					
+				}
+
+				bf.close();
+				if (docs.size() == 0){
+					System.out.println("No document found for " + scriptName);
+					continue;
+				}
+
+				cmdDocs.add(docs);
+				cmdTools.add(cmdObj);				
+				cmdSet.add(scriptName);
+			}
+		}
+
+		//Generating index file
 		System.out.println("Generating documentation :");
 		String docDir = "docs/source/tools";
 
@@ -70,95 +123,66 @@ public class GenDocs {
 			+ " We are in the process of documenting 40+ tools, so stay tuned.\n");
 
 		toolIndex.println(".. toctree::\n   :maxdepth: 1\n");		
-					
-		for (Object obj : toolList) {
-			//A string separated
-			
-			if (obj instanceof CommandLine){
-				CommandLine cmdObj = (CommandLine) obj;
-				Class<?> tool =  obj.getClass();				
 
-				Deployable annotation = (Deployable) tool.getAnnotation(Deployable.class);
-				if (annotation == null)
-					continue;
-				
-				String scriptName = annotation.scriptName();
-				
-				ArrayList<String> docs = new ArrayList<String>();
-				
-				File sourceFile = new File("src/main/java/" + tool.getCanonicalName().replace('.', '/') + ".java");
-				if (!sourceFile.isFile())
-					continue;		
-								
-				BufferedReader bf = new BufferedReader (new FileReader(sourceFile));
-				String line = "";
-				boolean addDocs = false;
-				while ((line = bf.readLine())!= null){
-					if (line.startsWith("/*RST*")){
-						//Start reading
-						addDocs = true;
-						continue;
-					}					
-					if (line.startsWith("*RST*/")){
-						break;
-					}
-					
-					if (addDocs)
-						docs.add(line.replaceAll("\\*#/", "\\*/"));					
-				}
-				
-				bf.close();
-				if (docs.size() == 0){
-					System.out.println("No document found for " + scriptName);
-					continue;
-				}
-				//1. Prepare for the script				
-				SequenceOutputStream outOS = SequenceOutputStream.makeOutputStream(docDir + "/" + scriptName + ".rst");
-				for (String doc:docs){
-					if (doc.trim().equals("<usage>")){
-						outOS.print("~~~~~~~~\nSynopsis\n~~~~~~~~\n\n");
-						outOS.print("*" + scriptName + "*:" + annotation.scriptDesc()+"\n\n");
-						outOS.print("~~~~~\nUsage\n~~~~~\n::\n\n   "+cmdObj.usage()+"\n\n");
-						outOS.print("~~~~~~~\nOptions\n~~~~~~~\n"+cmdObj.options()+"\n\n");						
-						 
-						if (annotation.seeAlso().length() > 0){
-							boolean seeAlso = false;
+
+		for (int i = 0; i < cmdTools.size();i++){
+			CommandLine cmd = cmdTools.get(i);
+			ArrayList<String> docs = cmdDocs.get(i);			
+			Deployable annotation = (Deployable) cmd.getClass().getAnnotation(Deployable.class);			
+			String scriptName = annotation.scriptName();
+
+			SequenceOutputStream outOS = SequenceOutputStream.makeOutputStream(docDir + "/" + scriptName + ".rst");
+
+			for (String doc:docs){
+				if (doc.trim().equals("<usage>")){
+					outOS.print("~~~~~~~~\nSynopsis\n~~~~~~~~\n\n");
+					outOS.print("*" + scriptName + "*:" + annotation.scriptDesc()+"\n\n");
+					outOS.print("~~~~~\nUsage\n~~~~~\n::\n\n   "+cmd.usage()+"\n\n");
+					outOS.print("~~~~~~~\nOptions\n~~~~~~~\n"+cmd.options()+"\n\n");						
+
+					if (annotation.seeAlso().length() > 0){
+						boolean seeAlso = false;
+
+						StringBuilder sb = new StringBuilder();
+
+						String [] toks = annotation.seeAlso().split(",");
+						for (String tok:toks){
+							tok = tok.trim();
+							if (tok.length()<=0) 
+								continue;
 							
-							StringBuilder sb = new StringBuilder();
-
-							String [] toks = annotation.seeAlso().split(",");
-							for (String tok:toks){
-								tok = tok.trim();
-								if (tok.length()<=0) 
-									continue;
-								
-								if (!seeAlso){
-									outOS.print("~~~~~~~~\nSee also\n~~~~~~~~\n\n" + tok + "_");
-									seeAlso = true;
-								}else{
-									outOS.print(", " + tok + "_");
-								}								
-								
-								sb.append(".. _" + tok+": " + tok+".html\n");								
+							
+							if (cmdSet.contains(tok)){
+								sb.append(".. _" + tok+": " + tok+".html\n");
+								tok = tok + "_";
 							}
-							if (sb.length() > 0)
-								outOS.print("\n\n" + sb.toString() + "\n");							
-						}
-						if (annotation.citation().length() > 0){
-							outOS.print("~~~~~~~~\nCitation\n~~~~~~~~\n\n" + annotation.citation() + "\n\n");							
-						}						
-					}else
-						outOS.print(doc);
-					
-					outOS.println();
-				}
-				
-				outOS.close();
-				
-				toolIndex.println("   " + scriptName + ".rst");
 
-				System.out.println(" " + docDir + "/" + scriptName + ".rst created");
+							if (!seeAlso){
+								outOS.print("~~~~~~~~\nSee also\n~~~~~~~~\n\n" + tok);
+								seeAlso = true;
+							}else{
+								outOS.print(", " + tok);
+							}								
+
+															
+						}
+						if (sb.length() > 0)
+							outOS.print("\n\n" + sb.toString() + "\n");							
+					}
+					if (annotation.citation().length() > 0){
+						outOS.print("~~~~~~~~\nCitation\n~~~~~~~~\n\n" + annotation.citation() + "\n\n");							
+					}						
+				}else
+					outOS.print(doc);
+
+				outOS.println();
 			}
+
+			outOS.close();
+			toolIndex.println("   " + scriptName + ".rst");
+			System.out.println(" " + docDir + "/" + scriptName + ".rst created");
+
+
 		}
 		toolIndex.close();	
 	}
