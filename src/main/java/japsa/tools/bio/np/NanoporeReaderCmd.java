@@ -173,10 +173,10 @@ public class NanoporeReaderCmd extends CommandLine{
 
 /*RST*
 -------------------------------------------------------------------------
- *npReader*: real-time conversion and analysis of Nanopore sequencing data
+*npReader*: real-time conversion and analysis of Nanopore sequencing data
 -------------------------------------------------------------------------
 
- *npReader* (jsa.np.f5reader) is a program that extracts Oxford Nanopore
+*npReader* (jsa.np.f5reader) is a program that extracts Oxford Nanopore
 sequencing data from FAST5 files, performs an initial analysis of the date and
 streams them to real-time analysis pipelines. These pipelines can run on the
 same computer or on computing clouds/high performance clusters.
