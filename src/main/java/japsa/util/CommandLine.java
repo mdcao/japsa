@@ -554,6 +554,34 @@ public class CommandLine {
 		public Option(String opt, char type, Object def, String help) {
 			this(opt, type, def,help,true);
 		}
-	}
-	
+		
+		//For use in galaxy wraper:		
+		boolean galaxyUse = false;		
+		String  galaxyFormat = null;//bam, text, etc
+
+		/**
+		 * @return the galaxyUse
+		 */
+		public boolean isGalaxyUse() {
+			return galaxyUse;
+		}
+		/**
+		 * @param galaxyUse the galaxyUse to set
+		 */
+		public void setGalaxyUse(boolean galaxyUse) {
+			this.galaxyUse = galaxyUse;
+		}
+		/**
+		 * @return the galaxyFormat
+		 */
+		public String getGalaxyFormat() {
+			return galaxyFormat;
+		}
+		/**
+		 * @param galaxyFormat the galaxyFormat to set
+		 */
+		public void setGalaxyFormat(String galaxyFormat) {
+			this.galaxyFormat = galaxyFormat;
+		}		
+	}	
 }

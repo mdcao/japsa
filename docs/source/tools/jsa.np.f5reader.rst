@@ -12,21 +12,21 @@ It requires
 `JAVA HDF5 INTERFACE (JHI5) library <https://www.hdfgroup.org/products/java/JNI/jhi5/index.html>`_
 to be installed prior to setting up Japsa. Details of installation as follows:
 
- **On Windows/Mac**
+**On Windows/Mac**
 
 1. Download and install HDF-View from
 https://www.hdfgroup.org/products/java/release/download.html.
 Note the folder that the JHI library is installed, e.g.,
- *C:\\Program Files\\HDF_Group\\HDFView\\2.11.0\\lib*
+*C:\\Program Files\\HDF_Group\\HDFView\\2.11.0\\lib*
 
 2. Follow the instructions to install Japsa on
 http://japsa.readthedocs.org/en/latest/install.html.
 Upon prompting for "Path to HDF library", enter the above path.
 
- **On Linux**
+**On Linux**
 
 You can either install the JHI5 library by downloading the software from
- *https://www.hdfgroup.org/products/java/JNI/jhi5/index.html* or from your
+*https://www.hdfgroup.org/products/java/JNI/jhi5/index.html* or from your
 Linux distribution software repository, such as::
 
    sudo apt-get install libjhdf5-jni
@@ -142,7 +142,7 @@ MinION and the Metrichor agent to these pipelines::
 One can run *npReader* on a computing cloud if the download folder (containing
 base-called data) can be mounted to the cloud. In such case, npReader can
 direct stream data to the pipelines without the need of
- *jsa.util.streamServer*::
+*jsa.util.streamServer*::
 
    jsa.np.f5reader -realtime -folder c:\Downloads\ -fail -output - | \
    bwa mem -t 8 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -Y -K 10000 index - | \
@@ -157,7 +157,7 @@ from npReader via pipe::
    jsa.np.filter -input - -lenMin 2000 --qualMin 10 -output goodreads.fq
 
 One can also use *tee* to group data into different bins *in real-time* with
- *jsa.np.filter*::
+*jsa.np.filter*::
 
    jsa.np.f5reader -realtime -folder c:\Downloads\ -fail -output - | \   
    tee >(jsa.np.filter -input - -lenMax 2000 -output 0k2k.fq) \ 
