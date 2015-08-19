@@ -98,16 +98,17 @@ public class SequenceSortCmd extends CommandLine{
 		String sortKeyOptionPrefix = sortKeyOption + "=";
 		int sortKeyOptionIndex = sortKeyOptionPrefix.length();
 		while ((seq = reader.nextSequence(alphabet))!= null){
-			String [] toks = seq.getName().split(" ");
 
 			SequenceLength seqL = new SequenceLength(seq);
 			if (sortKeyOption.equals("length"))
 				seqL.keyCompare = seq.length();
 			else{
+				String [] toks = seq.getName().split(" ");
+
 				for (int i = 0; i < toks.length;i++){
 					if (toks[i].startsWith(sortKeyOptionPrefix)){
 						double t = Double.parseDouble(toks[i].substring(sortKeyOptionIndex));
-						seqL.keyCompare = (long) t;						
+						seqL.keyCompare = t;						
 					}	
 				}
 			}
@@ -142,7 +143,7 @@ public class SequenceSortCmd extends CommandLine{
 
 	static class SequenceLength implements Comparable<SequenceLength>{
 		Sequence seq;
-		long keyCompare;
+		double keyCompare;
 		SequenceLength(Sequence seq){
 			this.seq = seq;
 		}
@@ -157,16 +158,15 @@ public class SequenceSortCmd extends CommandLine{
 	}
 }
 
-
 /*RST*
 --------------------------------------------
-*jsa.seq.sort*: Sort the sequences in a file
+ *jsa.seq.sort*: Sort the sequences in a file
 --------------------------------------------
 
-*jsa.seq.sort* sort the sequences from a file or from a standard input into
+ *jsa.seq.sort* sort the sequences from a file or from a standard input into
 some order.
 
-*jsa.seq.sort* is included in the 
+ *jsa.seq.sort* is included in the 
 `Japsa package <http://mdcao.github.io/japsa/>`_. 
 Please see check the installation_ page for instructions.  
 
@@ -174,4 +174,4 @@ Please see check the installation_ page for instructions.
 
 <usage> 
 
-*RST*/
+ *RST*/

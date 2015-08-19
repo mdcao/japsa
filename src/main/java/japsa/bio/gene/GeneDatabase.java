@@ -171,8 +171,8 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 	public static class GeneFamily implements Iterable<Sequence>{
 		private final int fID;
 		private ArrayList<Sequence> geneAlleles;//known instance of this family
-		Sequence rep = null;//The representation of this gene family		
-
+		Sequence rep = null;//The representation of this gene family
+		
 		public GeneFamily(int id){
 			fID = id;
 			geneAlleles = new ArrayList<Sequence>();

@@ -46,7 +46,7 @@ import java.io.PrintStream;
  * 
  */
 @Deployable(scriptName = "jsa.phylo.normalise",
-			scriptDesc = "Normalise the length branch of a tree")
+			scriptDesc = "Scale branches of a tree so that the sum of branch lengths is equal to a value")
 public class NormaliseTreeCmd  extends CommandLine{	
 	public NormaliseTreeCmd(){
 		super();
@@ -54,7 +54,8 @@ public class NormaliseTreeCmd  extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		
-		addStdInputFile();		
+		addStdInputFile();
+		addDouble("sum",1.0,"Sum of branches after normalising");
 		addString("output", "-", "Name of the file for output, - for stdout");
 				
 		addStdHelp();		
@@ -67,7 +68,9 @@ public class NormaliseTreeCmd  extends CommandLine{
 		args = cmdLine.stdParseLine(args);
 				
 		String output = cmdLine.getStringVal("output");		
-		BufferedReader bf = SequenceReader.openFile(cmdLine.getStringVal("input"));		
+		double nSum   = cmdLine.getDoubleVal("sum");
+		
+		BufferedReader bf = SequenceReader.openFile(cmdLine.getStringVal("input"));	
 		
 		String line = null, str = "";
 		while ((line = bf.readLine()) != null) {
@@ -80,7 +83,7 @@ public class NormaliseTreeCmd  extends CommandLine{
 		double sum = tree.sumHops();
 		double num = tree.numHops();
 
-		tree.scale(num / sum);
+		tree.scale(nSum * num / sum);
 
 		PrintStream ps = System.out;
 		if(!"-".equals(output))
@@ -91,3 +94,22 @@ public class NormaliseTreeCmd  extends CommandLine{
 		ps.close();
 	}
 }
+
+
+/*RST*
+-------------------------------------------------------------
+*jsa.phylo.normalise*: Normalise branch length of a phylogeny 
+-------------------------------------------------------------
+
+*jsa.phylo.normalise* scales the branches of a phylogeny so that their sum
+equates to a value.
+ 
+*jsa.phylo.normalise* is included in the `Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+<usage>
+
+
+*RST*/

@@ -44,7 +44,7 @@ import java.util.ArrayList;
  */
 
 public class CommandLine {
-	
+
 	/**
 	 * String describe the usage of the program (progname -i input -o output f1 f2 ...)
 	 */
@@ -544,6 +544,11 @@ public class CommandLine {
 		boolean required;
 		boolean optionSet = false;
 
+		//For use in galaxy wraper:		
+		boolean galaxyUse = false;		
+		String  galaxyFormat = null;//bam, text, etc
+
+
 		public Option(String opt, char type, Object def, String help, boolean req) {
 			optName = opt;			
 			optType = type;
@@ -554,11 +559,8 @@ public class CommandLine {
 		public Option(String opt, char type, Object def, String help) {
 			this(opt, type, def,help,true);
 		}
-		
-		//For use in galaxy wraper:		
-		boolean galaxyUse = false;		
-		String  galaxyFormat = null;//bam, text, etc
 
+		//
 		/**
 		 * @return the galaxyUse
 		 */
