@@ -69,13 +69,13 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 	public void write2File(String fileName, boolean includeAlleles) throws IOException{
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(fileName);
 		for (GeneDatabase.GeneFamily family:geneFamilies){
-			family.represetationSequence().writeFasta(sos);
+			Sequence rep = family.represetationSequence();			
+			rep.writeFasta(sos);
 			if (includeAlleles){
 				for (Sequence seq:family){
 					seq.writeFasta(sos);
 				}
-			}
-			
+			}			
 		}		
 		sos.close();
 	}
@@ -171,11 +171,30 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 	public static class GeneFamily implements Iterable<Sequence>{
 		private final int fID;
 		private ArrayList<Sequence> geneAlleles;//known instance of this family
-		Sequence rep = null;//The representation of this gene family
+		//Sequence rep = null;//The representation of this gene family
+		
+		int repIndex = -1;		
+		String desc = "";
 		
 		public GeneFamily(int id){
 			fID = id;
 			geneAlleles = new ArrayList<Sequence>();
+		}
+
+
+		/**
+		 * @return the desc
+		 */
+		public String getDesc() {
+			return desc;
+		}
+
+
+		/**
+		 * @param desc the desc to set
+		 */
+		public void setDesc(String desc) {			
+			this.desc = desc;
 		}
 
 
@@ -184,13 +203,15 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 		}
 
 		public Sequence represetationSequence(){
+			Sequence rep = geneAlleles.get(repIndex).clone();
+			rep.setDesc(desc + ";index=" +repIndex);
+			rep.setName(familyID());
 			return rep;
 		}
 
-		private void updateRep(Sequence seq){
-			if (rep == null || seq.length() > rep.length()){
-				rep = seq.clone();
-				rep.setName(familyID());
+		private void updateRep(int newIndex){
+			if (repIndex < 0 || geneAlleles.get(newIndex).length() > geneAlleles.get(repIndex).length()){
+				repIndex = newIndex;
 			}
 		}
 
@@ -214,8 +235,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 			nSeq.setDesc(nSeq.getName() + " " + nSeq.getDesc());			
 			nSeq.setName(familyID() + "_" + (geneAlleles.size()));			
 			geneAlleles.add(nSeq);
-
-			updateRep(seq);			
+			updateRep(geneAlleles.size() - 1);			
 			return nSeq.getName();			
 		}
 

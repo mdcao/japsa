@@ -43,6 +43,7 @@ import japsa.util.deploy.Deployable;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -87,7 +88,7 @@ public class AnnotateVCFCmd extends CommandLine{
 
 
 		FileInputStream gffIn = new FileInputStream(gffFile);
-		HashMap<String, JapsaAnnotation>
+		ArrayList<JapsaAnnotation>
 		annoMap = JapsaAnnotation.readMGFF(gffIn,upStr,downStr,"CDS");
 		gffIn.close();		
 
@@ -107,8 +108,14 @@ public class AnnotateVCFCmd extends CommandLine{
 			}
 
 
-			if (anno == null || !anno.getAnnotationID().equals(chrom))
-				anno = annoMap.get(chrom);		
+			if (anno == null || !anno.getAnnotationID().equals(chrom)){
+				for (JapsaAnnotation tAnno:annoMap)
+					if (tAnno.getAnnotationID().equals(chrom)){
+						anno = tAnno;
+						break;//for
+					}
+			}
+			
 			if (anno != null){
 				//System.out.println(anno.getAnnotationID() + " : " + anno.numFeatures() + " " + pos);
 				for (int i =0; i < anno.numFeatures(); i++){

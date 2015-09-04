@@ -37,90 +37,92 @@ package japsa.tools.bio.np;
 import java.io.BufferedReader;
 import java.io.IOException;
 
-import japsa.bio.np.SpeciesMixtureTyping;
+import japsa.bio.np.GeneStrainTyping;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.IntArray;
 import japsa.util.deploy.Deployable;
 
-
 /**
  * @author minhduc
  *
  */
-@Deployable(
-	scriptName = "jsa.np.speciesTyping", 
-	scriptDesc = "Species typing using Nanopore Sequencing"
-	)
-public class SpeciesMixtureTypingCmd extends CommandLine {
 
-	public SpeciesMixtureTypingCmd(){
+@Deployable(
+	scriptName = "jsa.np.rtStrainTyping", 
+	scriptDesc = "Realtime strain typing using Nanopore sequencing data")
+public class RealtimeStrainTypingCmd extends CommandLine{	
+	public RealtimeStrainTypingCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
+		
+		addString("output", "output.dat",  "Output file");
+		addString("profile", null,  "Output file containing gene profile of all strains",true);		
+		addString("bamFile", null,  "The bam file",true);
+		addString("geneFile", null,  "The gene file",true);
 
-		addString("output", "output.dat",  "Output file");		
-		addString("bamFile", null,  "The bam file");		
-		addString("indexFile", null,  "indexFile ");
+		addInt("top", 10,  "The number of top strains");
 		addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-		addBoolean("GUI", false,  "Run on GUI");
-		addInt("number", 50,  "Number of reads");
 		addInt("timestamp", 0,  "Timestamp to check, if <=0 then use read number instead");
-		addInt("sim", 0,  "Scale for simulation");
-		addDouble("qual", 0,  "Minimum alignment quality");
+		addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
 
+		addBoolean("twodonly", false,  "Use only two dimentional reads");
+		
 		addStdHelp();		
 	} 
+
 	/**
 	 * @param args
-	 * @throws IOException 
-	 * @throws InterruptedException 
 	 */
-	public static void main(String[] args) throws IOException, InterruptedException {
-		CommandLine cmdLine = new SpeciesMixtureTypingCmd();		
-		args = cmdLine.stdParseLine(args);		
+	public static void main(String[] args) throws IOException, InterruptedException{
+		CommandLine cmdLine = new RealtimeStrainTypingCmd();		
+		args = cmdLine.stdParseLine(args);
 		
 		/**********************************************************************/
 
-		String output    = cmdLine.getStringVal("output");
-		String bamFile   = cmdLine.getStringVal("bamFile");			
-		String indexFile = cmdLine.getStringVal("indexFile");
-		String hours     = cmdLine.getStringVal("hours");
-		boolean GUI      = cmdLine.getBooleanVal("GUI");
-		int number       = cmdLine.getIntVal("number");
-		double qual      = cmdLine.getDoubleVal("qual");
-		
-		SpeciesMixtureTyping paTyping = new SpeciesMixtureTyping(GUI);
+		String output = cmdLine.getStringVal("output");
+		String profile = cmdLine.getStringVal("profile");				
+		String bamFile = cmdLine.getStringVal("bamFile");
+		String geneFile = cmdLine.getStringVal("geneFile");
+		String hours = cmdLine.getStringVal("hours");
+		int top = cmdLine.getIntVal("top");		
+		int read = cmdLine.getIntVal("read");		
+		int timestamp = cmdLine.getIntVal("timestamp");
+		{
+			GeneStrainTyping paTyping = new GeneStrainTyping();	
+			paTyping.readNumber = read;
+			if (hours !=null){
+				BufferedReader bf = SequenceReader.openFile(hours);
+				String line = bf.readLine();//first line
+				paTyping.hoursArray = new IntArray();
+				paTyping.readCountArray = new IntArray();
 
-		paTyping.simulation = cmdLine.getIntVal("sim");
-		paTyping.qual = qual;
+				while ((line = bf.readLine())!= null){
+					String [] tokens = line.split("\\s");
+					int hrs = Integer.parseInt(tokens[0]);
+					int readCount = Integer.parseInt(tokens[2]);
 
-		if (hours !=null){
-			BufferedReader bf = SequenceReader.openFile(hours);
-			String line = bf.readLine();//first line -> ignore
-			paTyping.hoursArray = new IntArray();
-			paTyping.readCountArray = new IntArray();
-
-			while ((line = bf.readLine())!= null){
-				String [] tokens = line.split("\\s+");
-				int hrs = Integer.parseInt(tokens[0]);
-				int readCount = Integer.parseInt(tokens[2]);
-
-				paTyping.hoursArray.add(hrs);
-				paTyping.readCountArray.add(readCount);	
+					paTyping.hoursArray.add(hrs);
+					paTyping.readCountArray.add(readCount);	
+				}
 			}
-			bf.close();
+
+
+			if (paTyping.readNumber < 1)
+				paTyping.readNumber = 1;
+
+			paTyping.datOS = SequenceOutputStream.makeOutputStream(output);
+			paTyping.datOS.print("step\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
+			paTyping.readGenes(geneFile);
+			paTyping.readKnowProfiles(profile);
+			paTyping.timestamp = timestamp;			
+			paTyping.typing(bamFile,  top);
+			paTyping.datOS.close();
 		}
-
-		//	paTyping.prefix = prefix;
-		paTyping.countsOS = SequenceOutputStream.makeOutputStream(output);
-		paTyping.preTyping(indexFile);
-		paTyping.typing(bamFile, number);
-		paTyping.countsOS.close();
-		paTyping.close();		
-
 	}
+
 
 }

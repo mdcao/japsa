@@ -34,93 +34,71 @@
  ****************************************************************************/
 package japsa.tools.bio.np;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 
-import japsa.bio.np.SpeciesMixtureTyping;
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
+import japsa.bio.np.RealtimeResistanceGene;
 import japsa.util.CommandLine;
-import japsa.util.IntArray;
 import japsa.util.deploy.Deployable;
-
 
 /**
  * @author minhduc
  *
  */
 @Deployable(
-	scriptName = "jsa.np.speciesTyping", 
-	scriptDesc = "Species typing using Nanopore Sequencing"
+	scriptName = "jsa.np.rtResistGenes", 
+	scriptDesc = "Realtime identification of antibiotic resistance genes from Nanopore sequencing"
 	)
-public class SpeciesMixtureTypingCmd extends CommandLine {
-
-	public SpeciesMixtureTypingCmd(){
+public class RealtimeResistanceGeneCmd extends CommandLine{	
+	public RealtimeResistanceGeneCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
-		addString("output", "output.dat",  "Output file");		
-		addString("bamFile", null,  "The bam file");		
-		addString("indexFile", null,  "indexFile ");
-		addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-		addBoolean("GUI", false,  "Run on GUI");
-		addInt("number", 50,  "Number of reads");
-		addInt("timestamp", 0,  "Timestamp to check, if <=0 then use read number instead");
-		addInt("sim", 0,  "Scale for simulation");
-		addDouble("qual", 0,  "Minimum alignment quality");
-
-		addStdHelp();		
+		addString("output", "output.dat",  "Output file");
+		addString("bamFile", null,  "The bam file");
+		
+		addInt("read", 500,  "Minimum number of reads between analyses");		
+		addInt("time", 30,   "Minimum number of seconds between analyses");
+					
+		addDouble("scoreThreshold", 1.5,  "The alignment score threshold");
+		addString("msa", "kalign",
+			"Name of the msa method, support poa, kalign, muscle and clustalo");
+		
+		addString("tmp", "tmp/t",  "Temporary folder");
+		
+		
+		addBoolean("twodonly", false,  "Use only two dimentional reads");
+		addStdHelp();
 	} 
-	/**
-	 * @param args
-	 * @throws IOException 
-	 * @throws InterruptedException 
-	 */
-	public static void main(String[] args) throws IOException, InterruptedException {
-		CommandLine cmdLine = new SpeciesMixtureTypingCmd();		
+
+	public static void main(String[] args) throws IOException, InterruptedException{
+		CommandLine cmdLine = new RealtimeResistanceGeneCmd();
 		args = cmdLine.stdParseLine(args);		
+
+		String output = cmdLine.getStringVal("output");
+		String bamFile = cmdLine.getStringVal("bam");		
+		String msa = cmdLine.getStringVal("msa");
 		
-		/**********************************************************************/
-
-		String output    = cmdLine.getStringVal("output");
-		String bamFile   = cmdLine.getStringVal("bamFile");			
-		String indexFile = cmdLine.getStringVal("indexFile");
-		String hours     = cmdLine.getStringVal("hours");
-		boolean GUI      = cmdLine.getBooleanVal("GUI");
-		int number       = cmdLine.getIntVal("number");
-		double qual      = cmdLine.getDoubleVal("qual");
 		
-		SpeciesMixtureTyping paTyping = new SpeciesMixtureTyping(GUI);
+		String tmp = cmdLine.getStringVal("tmp");
+		
+		double scoreThreshold = cmdLine.getDoubleVal("scoreThreshold");
+		
+		int readPeriod = cmdLine.getIntVal("reads");
+		int minutePeriod = cmdLine.getIntVal("time");
+		
+		boolean twodonly = cmdLine.getBooleanVal("twodonly");
 
-		paTyping.simulation = cmdLine.getIntVal("sim");
-		paTyping.qual = qual;
+		RealtimeResistanceGene paTyping = new RealtimeResistanceGene(output);		
+		
+		paTyping.msa = msa;
+		//paTyping.global = global;
 
-		if (hours !=null){
-			BufferedReader bf = SequenceReader.openFile(hours);
-			String line = bf.readLine();//first line -> ignore
-			paTyping.hoursArray = new IntArray();
-			paTyping.readCountArray = new IntArray();
-
-			while ((line = bf.readLine())!= null){
-				String [] tokens = line.split("\\s+");
-				int hrs = Integer.parseInt(tokens[0]);
-				int readCount = Integer.parseInt(tokens[2]);
-
-				paTyping.hoursArray.add(hrs);
-				paTyping.readCountArray.add(readCount);	
-			}
-			bf.close();
-		}
-
-		//	paTyping.prefix = prefix;
-		paTyping.countsOS = SequenceOutputStream.makeOutputStream(output);
-		paTyping.preTyping(indexFile);
-		paTyping.typing(bamFile, number);
-		paTyping.countsOS.close();
-		paTyping.close();		
-
+		paTyping.prefix = tmp;
+		paTyping.scoreThreshold = scoreThreshold;
+		paTyping.twoDOnly = twodonly;
+				
+		paTyping.typing(bamFile);		
 	}
-
 }

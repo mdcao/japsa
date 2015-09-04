@@ -36,9 +36,11 @@
 package japsa.util.deploy;
 
 import japsa.bio.hts.HTSAlignmentParam;
+import japsa.tools.bio.bac.MLSTCmd;
 import japsa.tools.bio.hts.BreakBamCmd;
 import japsa.tools.bio.hts.CountReadInRegionCmd;
 import japsa.tools.bio.hts.FastQTrimCmd;
+import japsa.tools.bio.hts.GetN50Cmd;
 import japsa.tools.bio.hts.HTSErrorAnalysisCmd;
 import japsa.tools.bio.hts.SelectReadIntersectCmd;
 import japsa.tools.bio.hts.SelectReadSpanCmd;
@@ -48,7 +50,7 @@ import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.np.ResistanceGeneCmd;
-import japsa.tools.bio.np.ResistanceGeneCmd2;
+import japsa.tools.bio.np.RealtimeResistanceGeneCmd;
 import japsa.tools.bio.np.SpeciesMixtureTypingCmd;
 import japsa.tools.bio.phylo.NormaliseTreeCmd;
 import japsa.tools.bio.phylo.XMasCmd;
@@ -132,19 +134,21 @@ public class Deploy {
 		//TODO: Fix the below
 		//tools.add(new HTSAlignmentParam());
 		tools.add(new HTSErrorAnalysisCmd());
+		tools.add(new GetN50Cmd());
 
-
+		tools.add("Bacterial analysis:");
+		tools.add(new MLSTCmd());
+		
 		//jsa.np.
 		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(new NanoporeReaderCmd());
 		tools.add(new NanoporeReadFilterCmd());		
-		tools.add(new SpeciesMixtureTypingCmd());
-		
+		tools.add(new SpeciesMixtureTypingCmd());		
 		tools.add(new GeneStrainTypingCmd());
 		tools.add(new MLSTStrainTypingCmd());
 		tools.add(new ResistanceGeneCmd());		
-		tools.add(new ResistanceGeneCmd2());
+		tools.add(new RealtimeResistanceGeneCmd());
 
 		//jsa.trv.*
 		tools.add("Tandem repeat variation analysis tools:");

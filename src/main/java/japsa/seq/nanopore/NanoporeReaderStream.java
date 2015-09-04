@@ -81,12 +81,14 @@ public class NanoporeReaderStream{
 
 
 	public void close() throws IOException{
+		Logging.info("npReader closing");
 		sos.close();
 		if (networkOS != null){
 			for (SequenceOutputStream out:networkOS)
 				out.close();
 		}
-		done = true;
+		Logging.info("npReader closed");
+		done = true;		
 	}
 
 	double tempLength = 0, compLength = 0, twoDLength = 0;
@@ -114,7 +116,7 @@ public class NanoporeReaderStream{
 
 	public String format = "fastq";
 	public boolean ready = true;
-	static byte MIN_QUAL = '!';
+	private static final byte MIN_QUAL = '!';//The minimum quality
 
 	/**
 	 * Compute average quality of a read
@@ -141,7 +143,8 @@ public class NanoporeReaderStream{
 		}
 	}
 
-	public void flush() throws IOException{
+	@SuppressWarnings("unused")
+	private void flush() throws IOException{
 		sos.flush();
 		if (networkOS != null){
 			for (SequenceOutputStream out:networkOS)
@@ -150,15 +153,10 @@ public class NanoporeReaderStream{
 	}
 
 	public boolean readFastq2(String fileName) throws JapsaException, IOException{
-		Logging.info("Open " + fileName);
+		//Logging.info("Open " + fileName);
 		try{					
 			NanoporeReader npReader = new NanoporeReader(fileName);
-			if (getTime){
-				//need to read events as well
-				npReader.readData();				
-			}else			
-				npReader.readFastq();
-
+			npReader.readFastq(getTime);						
 			npReader.close();
 
 			//Get time & date
@@ -173,7 +171,7 @@ public class NanoporeReaderStream{
 				log = "";
 
 			if (getTime){
-				log = "ExpStart=" + npReader.expStart + " timestamp=" + npReader.bcTempEvents.start[npReader.bcTempEvents.start.length - 1] + " " + log;				
+				log = "ExpStart=" + npReader.expStart + " timestamp=" + npReader.seqTime + " "  + log;				
 			}
 
 			FastqSequence fq;

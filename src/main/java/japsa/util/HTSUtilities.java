@@ -33,6 +33,9 @@
  ****************************************************************************/
 package japsa.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import japsa.seq.Alphabet;
@@ -255,4 +258,29 @@ public class HTSUtilities {
 		public int match, mismatch, baseIns, baseDel, numIns, numDel, refClipped, readClipped, refBase, readBase;
 		
 	}
+	
+	/**
+	 * Compute the N50 statistics of an assembly
+	 * @param seqs: List of sequences
+	 * @return
+	 */
+	public static double n50(ArrayList<Sequence> seqs){
+		int [] lengths = new int[seqs.size()];
+		double sum = 0;
+		for (int i = 0;i < lengths.length;i++){
+			int l = seqs.get(i).length();
+			lengths[i] = l;
+			sum += l;
+		}		
+		Arrays.sort(lengths);
+		
+		int index = lengths.length;
+		double contains = 0;
+		while (contains < sum/2){
+			index --;
+			contains += lengths[index];
+		}
+		
+		return lengths[index];		
+	}	
 }

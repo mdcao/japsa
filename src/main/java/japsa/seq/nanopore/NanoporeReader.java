@@ -338,7 +338,7 @@ public class NanoporeReader// implements Closeable
 				Logging.info("Open " + fileName);
 				try{					
 					NanoporeReader reader = new NanoporeReader(fileName);
-					reader.readFastq();
+					reader.readFastq(false);
 					reader.close();
 
 
@@ -442,6 +442,7 @@ public class NanoporeReader// implements Closeable
 	BaseCallEvents bcCompEvents = null, bcTempEvents = null;
 
 	FastqSequence seqTemplate = null, seqComplement = null, seq2D = null;
+	double seqTime = 0;
 
 
 	private FileFormat f5File;
@@ -475,15 +476,22 @@ public class NanoporeReader// implements Closeable
 		f5File.close();
 	}
 
-	public void readFastq() throws OutOfMemoryError, Exception{
+	//public void readFastq() throws OutOfMemoryError, Exception{
+	//	Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();	
+	//	readData(root, false);
+	//}
+
+	public void readFastq(boolean withTime) throws OutOfMemoryError, Exception{
 		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();	
-		readData(root, false);
+		readFastqAndTime(root, withTime);		
 	}
 
 	public void readData() throws OutOfMemoryError, Exception{
 		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
 		readData(root, true);
 	}
+
+
 	public void readKeys() throws OutOfMemoryError, Exception{
 		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
 		readMembers(root);
@@ -607,7 +615,71 @@ public class NanoporeReader// implements Closeable
 		}
 	}
 
-	String expStart = null;
+	String expStart = "";
+
+
+	private void readFastqAndTime(Group g, boolean withTime) throws OutOfMemoryError, Exception{
+
+		if (g == null) return;
+		java.util.List<HObject> members = g.getMemberList();		
+
+		for (HObject member:members) {
+			String f = member.getFullName();
+			if (withTime && f.contains("tracking_id")){				
+				@SuppressWarnings("unchecked")
+				List<ncsa.hdf.object.Attribute> aL =  (List<ncsa.hdf.object.Attribute>) member.getMetadata();
+				for (ncsa.hdf.object.Attribute att:aL){
+					if (att.getName().equals("exp_start_time")){
+						expStart = ((String[]) att.getValue())[0];
+						break;//for att
+					}
+				}
+				continue;//for memmer				
+			}
+
+			if (member instanceof Group) {
+				readFastqAndTime((Group) member, withTime);
+			}else if (withTime && member instanceof H5CompoundDS ){ 
+				String fullName = member.getFullName();
+				if ((fullName.startsWith("/Analyses/EventDetection_000/Reads/") && fullName.endsWith("Events") )){
+					@SuppressWarnings("unchecked")
+					List<Object> dat = (List<Object>)  (((H5CompoundDS) member).getData());
+					long [] eventsStatTime = (long[]) dat.get(2);
+					seqTime = eventsStatTime[eventsStatTime.length -1] / 5000.0;
+				}
+			}else if (member instanceof H5ScalarDS){
+				String fullName = member.getFullName(); 
+				if (fullName.endsWith("Fastq")){
+					Object  data = ((H5ScalarDS) member).getData();
+					if (data != null){
+						//Logging.info("Read " + fullName);
+						String [] toks = ((String[]) data)[0].split("\n");						
+						if  (fullName.contains("BaseCalled_2D")){
+							//toks[0] = toks[0].substring(1) + "_twodimentional#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							 
+							toks[0] = toks[0].substring(1) + "_twodimentional" + " length=" + toks[1].length() ;
+							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);                		
+						}else if (fullName.contains("BaseCalled_complement")){
+							//toks[0] = toks[0].substring(1) + "_complement#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;							
+							toks[0] = toks[0].substring(1) + "_complement" + " length=" + toks[1].length() ;
+							this.seqComplement =  new FastqSequence(DNA.DNA16(), toks);							
+						}else if (fullName.contains("BaseCalled_template")){
+							//toks[0] = toks[0].substring(1) + "_template#" + f5File.getName().replace("imb13_010577_lt", "imb13-010577-lt") + " length=" + toks[1].length() ;
+							toks[0] = toks[0].substring(1) + "_template" + " length=" + toks[1].length() ;
+							this.seqTemplate =  new FastqSequence(DNA.DNA16(), toks);
+						}
+					}
+				}else if (fullName.endsWith("Log")){
+					//	Logging.info("Read " + fullName);
+					Object  data = ((H5ScalarDS) member).getData();
+					if (data != null){
+						log =  ((String[]) data)[0];
+						//System.out.println("\n\n" + log + "\n\n");
+					}					
+				}
+			}
+		}
+	}
+
 	/**
 	 * Recursively print a group and its members. Fastq data are read.If all 
 	 * flag is turned on, this method will also reads all events and model data.
@@ -629,7 +701,7 @@ public class NanoporeReader// implements Closeable
 				List<ncsa.hdf.object.Attribute> aL =  (List<ncsa.hdf.object.Attribute>) member.getMetadata();
 				for (ncsa.hdf.object.Attribute att:aL){
 					if (att.getName().equals("exp_start_time")){
-						expStart = ((String[])att.getValue())[0];		
+						expStart = ((String[]) att.getValue())[0];					
 					}
 				}
 			}			
@@ -645,13 +717,13 @@ public class NanoporeReader// implements Closeable
 				if (dat != null){
 					/********************************************************/
 					if (fullName.endsWith("BaseCalled_2D/Alignment")){
-						Logging.info("Read " + fullName);
+						//Logging.info("Read " + fullName);
 						bcAlignment2D = new BaseCallAlignment2D();
 						bcAlignment2D.template = (long[]) dat.get(0);
 						bcAlignment2D.complement = (long[]) dat.get(1);
 						bcAlignment2D.kmer = (String[]) dat.get(2);
 					}else if (fullName.endsWith("BaseCalled_complement/Events")){
-						Logging.info("Read " + fullName);
+						//Logging.info("Read " + fullName);
 						bcCompEvents = new BaseCallEvents();
 						bcCompEvents.mean  =  (double[]) dat.get(0);
 						bcCompEvents.start =  (double[]) dat.get(1);
@@ -670,7 +742,7 @@ public class NanoporeReader// implements Closeable
 						bcCompEvents.pT = (double[]) dat.get(13);
 						//bcCompEvents.rawIndex = (long[]) dat.get(14);
 					}else if (fullName.endsWith("BaseCalled_template/Events")){
-						Logging.info("Read " + fullName);
+						//Logging.info("Read " + fullName);
 						bcTempEvents = new BaseCallEvents();
 						bcTempEvents.mean  =  (double[]) dat.get(0);
 						bcTempEvents.start =  (double[]) dat.get(1);
@@ -769,6 +841,23 @@ public class NanoporeReader// implements Closeable
 		double [] mean, start, stdv, length, modelLevel, pModelState, pMpState, pA, pC, pG, pT;
 		long []move;//, rawIndex;
 		String [] modelState, mpState;
+
+		public long [] getMove(){
+			return move;
+		}
+
+		public double [] length(){
+			return length;
+		}
+
+		public double [] mean(){
+			return mean;
+		}
+
+		public double [] stdv(){
+			return stdv;
+		}		
+
 	}
 
 	public static class BaseCallAlignment2D{

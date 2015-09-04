@@ -37,7 +37,6 @@ package japsa.bio.np;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
-import japsa.util.IntArray;
 import japsa.util.Logging;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -46,26 +45,12 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 
-import java.awt.BorderLayout;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.XYErrorRenderer;
-import org.jfree.data.xy.YIntervalSeries;
-import org.jfree.data.xy.YIntervalSeriesCollection;
 import org.rosuda.JRI.REXP;
 import org.rosuda.JRI.Rengine;
 
@@ -74,14 +59,10 @@ import org.rosuda.JRI.Rengine;
  * @author minhduc
  *
  */
-public class SpeciesMixtureTyping {
-	boolean withGUI = false;
+public class RealtimeSpeciesTyping {
+
 	public double qual = 0;
-
 	Rengine rengine;
-
-	public IntArray hoursArray = null;
-	public IntArray readCountArray = null;
 
 	int currentReadCount = 0;
 	int currentReadAligned = 0;
@@ -89,17 +70,14 @@ public class SpeciesMixtureTyping {
 
 	int arrayIndex = 0;
 	String prefix;
-	public SequenceOutputStream countsOS;
-	YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
-
+	public SequenceOutputStream countsOS;	
 	long firstReadTime = 0;
-	JLabel timeLabel;
+
 
 	/////////////////////////////////////////////////////////////////////////////
 
 	long startTime;
-	public SpeciesMixtureTyping(boolean withGUI){
-		this.withGUI = withGUI;
+	public RealtimeSpeciesTyping(){	
 		rengine = new Rengine (new String [] {"--no-save"}, false, null);
 		if (!rengine.waitForR()){
 			Logging.exit("Cannot load R",1);            
@@ -108,50 +86,6 @@ public class SpeciesMixtureTyping {
 		rengine.eval("alpha<-0.05");
 
 		Logging.info("REngine ready");
-
-		if (withGUI){ 
-			System.setProperty("java.awt.headless", "false");
-
-			GUITyping myGen = new GUITyping(this);
-			new Thread(myGen).start();
-			//dataset.addSeries(s1);
-			//dataset.addSeries(s2);
-			JFreeChart chart = ChartFactory.createTimeSeriesChart(
-				"Species Typing",
-				"Time",
-				"Value",
-				dataset,
-				true,
-				true,
-				false
-				);
-			final XYPlot plot = chart.getXYPlot();
-			plot.setRenderer(new XYErrorRenderer());
-
-			//System.out.println(chart.getXYPlot().getRenderer().getClass().getCanonicalName());
-
-			ValueAxis axis = plot.getDomainAxis();
-			axis.setAutoRange(true);
-			axis.setAutoRangeMinimumSize(6000);
-
-			ValueAxis yAxis = plot.getRangeAxis();
-			yAxis.setRange(0.0, 1.0);
-			//axis.set
-
-			//axis.setFixedAutoRange(6000.0);
-
-			JFrame frame = new JFrame("Species Typing");
-			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			ChartPanel label = new ChartPanel(chart);
-			frame.getContentPane().add(label,BorderLayout.CENTER);
-			//Suppose I add combo boxes and buttons here later
-
-			timeLabel = new JLabel("Time lapsed : waiting  Total reads: " + currentReadCount + "  Aligned reads: " + currentReadAligned);
-			frame.getContentPane().add(timeLabel, BorderLayout.SOUTH);
-			frame.pack();
-			frame.setVisible(true);  	
-		}
-
 		startTime = System.currentTimeMillis();
 	}
 
@@ -211,17 +145,11 @@ public class SpeciesMixtureTyping {
 		speciesList.addAll(species2Count.keySet());
 
 		//Write header
-		countsOS.print("step\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
-		//for (String species:speciesList){
-		//	countsOS.print("\t" + species);
-		//}	
-		//countsOS.println();
+		countsOS.print("step\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");		
 	}
 
 	private void simpleAnalysisCurrent(int currentRead) throws IOException{		
 		int step = currentRead;
-		if (hoursArray != null) 
-			step = hoursArray.get(arrayIndex);
 
 		int sum = 0;
 		double [] count = new double[speciesList.size()];
@@ -233,7 +161,7 @@ public class SpeciesMixtureTyping {
 		ArrayList<String> speciesArray = new ArrayList<String> ();
 
 		int minCount = Math.max(1,sum/50);
-		
+
 		for (int i = 0; i < count.length;i++){			
 			if (count[i] >= minCount){
 				countArray.add(count[i]);
@@ -250,21 +178,6 @@ public class SpeciesMixtureTyping {
 		REXP tab  = rengine.eval("tab",true);  
 		double [][] results = tab.asDoubleMatrix();
 
-		//countsOS.print(step);
-		if (simulation > 0){
-			long delay = step * 60 * 1000 / simulation - (System.currentTimeMillis() - startTime);
-			Logging.info("Step " + step + " delay " + delay/1000);
-			if(delay > 0){
-				Logging.info("Step " + step + " delay " + delay/1000);			
-				try {
-					Thread.sleep(delay);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-
 		for (int i = 0; i < results.length;i++){
 			if (results[i][0] <= 0.00001)
 				continue;
@@ -280,59 +193,7 @@ public class SpeciesMixtureTyping {
 		Logging.info(step+"  " + countArray.size());
 	}
 
-	public int simulation = 0;
-	private void guiAnalysisCurrent( HashMap<String, YIntervalSeries> speciesSeries){		
 
-		int sum = 0;
-		double [] count = new double[speciesList.size()];
-		for (int i = 0; i < count.length;i++){			
-			count[i] = species2Count.get(speciesList.get(i)).count;			
-			sum += count[i];
-		}
-		DoubleArray countArray = new DoubleArray();
-		ArrayList<String> speciesArray = new ArrayList<String> ();
-
-		for (int i = 0; i < count.length;i++){			
-			if (count[i] >= sum/50){
-				countArray.add(count[i]);
-				speciesArray.add(speciesList.get(i));
-			}
-		}		
-
-		Calendar cal = Calendar.getInstance();    	
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");    	
-		Logging.info(sdf.format(cal.getTime()) + " Found " + countArray.size() + " counts");
-		if (countArray.size() > 20) return;
-
-		countArray.add(1);
-		speciesArray.add("others");
-
-		rengine.assign("count", countArray.toArray());
-		rengine.eval("tab = multinomialCI(count,alpha)");        
-		REXP tab  = rengine.eval("tab",true);  
-		double [][] results = tab.asDoubleMatrix();
-
-		//countsOS.print(step);
-		long x = System.currentTimeMillis(); 
-		for (int i = 0; i < results.length;i++){
-			String species = speciesArray.get(i);
-			if (species.equals("others"))
-				continue;
-
-			double mid = (results[i][0] + results[i][1])/2;
-			YIntervalSeries series = speciesSeries.get(species);
-			if (series == null){
-				series = new YIntervalSeries(species);
-				speciesSeries.put(species, series);
-				dataset.addSeries(series);
-			}
-			series.add(x, mid, results[i][0], results[i][1]);        	
-			//countsOS.print("\t" + mid +"\t" + err);
-		}
-		//countsOS.println();
-		//countsOS.flush();
-		//Logging.info(step+"  " + countArray.size());
-	}
 
 	public void typing(String bamFile, int readNumber) throws IOException, InterruptedException{
 		if (readNumber <= 0)
@@ -361,16 +222,11 @@ public class SpeciesMixtureTyping {
 				currentReadCount ++;
 				currentBaseCount += sam.getReadLength();
 
-				if (hoursArray != null){
-					if (arrayIndex < hoursArray.size() && currentReadCount >= this.readCountArray.get(arrayIndex)){
-						simpleAnalysisCurrent(currentReadCount);
-						arrayIndex ++;
-					}
-				}else{				
-					if (currentReadCount % readNumber == 0){
-						simpleAnalysisCurrent(currentReadCount);
-					}
+
+				if (currentReadCount % readNumber == 0){
+					simpleAnalysisCurrent(currentReadCount);
 				}
+
 			}
 
 			if (sam.getReadUnmappedFlag()){				
@@ -403,43 +259,6 @@ public class SpeciesMixtureTyping {
 
 		samIter.close();
 		samReader.close();
-	}
+	}	
 
-	static class GUITyping implements Runnable {
-		SpeciesMixtureTyping typing;
-		public GUITyping (SpeciesMixtureTyping typ){
-			this.typing = typ;
-		}	
-		HashMap<String, YIntervalSeries> speciesSeries = new HashMap<String, YIntervalSeries>();
-
-
-		public void run() {
-			long lastRun = 0;
-			while(true) {	
-				long delay = System.currentTimeMillis() - lastRun;
-				if (delay < 5000){
-					try {
-						Thread.sleep((5000 - delay));
-					} catch (InterruptedException ex) {
-						System.out.println(ex);
-					}					
-				}
-				System.out.println("TICK @ Species " + delay);
-				synchronized(this.typing) {//avoid concurrent update
-					lastRun = System.currentTimeMillis();
-					typing.guiAnalysisCurrent(speciesSeries);
-					if (typing.firstReadTime > 0){
-						long lapsedTime = (System.currentTimeMillis() - typing.firstReadTime) / 1000;
-						long hours = lapsedTime / 3600;
-						lapsedTime = lapsedTime % 3600;
-						long mins  = lapsedTime / 60;
-						lapsedTime = lapsedTime % 60;						
-						typing.timeLabel.setText("Time lapsed : " + hours + ":" + (mins < 10?"0":"") + mins + ":" + (lapsedTime < 10?"0":"") + lapsedTime 
-							+ "   Total reads: " + typing.currentReadCount + "  Aligned reads: " + typing.currentReadAligned);
-					}
-				}  
-
-			}
-		}
-	}
 }

@@ -66,7 +66,7 @@ import java.util.HashSet;
  * @author minhduc
  *
  */
-public class MLSTStrainTyping {
+public class MLSTRealtime{
 
 	/**
 	 * @param args
@@ -97,7 +97,7 @@ public class MLSTStrainTyping {
 	public IntArray readCountArray = null;
 	int arrayIndex = 0;
 	
-	public MLSTStrainTyping(){
+	public MLSTRealtime(){
 	
 	}
 

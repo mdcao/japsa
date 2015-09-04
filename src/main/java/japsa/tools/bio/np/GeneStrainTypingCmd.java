@@ -42,7 +42,6 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.IntArray;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 /**
@@ -61,22 +60,16 @@ public class GeneStrainTypingCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 		
 		addString("output", "output.dat",  "Output file");
-		addString("profile", null,  "Output file containing gene profile of all strains");
-		addString("bamFile", null,  "The bam file");
-		addString("geneFile", null,  "The gene file");
+		addString("profile", null,  "Output file containing gene profile of all strains",true);		
+		addString("bamFile", null,  "The bam file",true);
+		addString("geneFile", null,  "The gene file",true);
 
 		addInt("top", 10,  "The number of top strains");
-		addInt("scoreThreshold", 0,  "The alignment score threshold");
-		addString("tmp", "tmp/t",  "Temporary folder");
 		addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-
 		addInt("timestamp", 0,  "Timestamp to check, if <=0 then use read number instead");
 		addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
 
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
-		addInt("sim", 0,  "Scale for simulation");
-		addBoolean("GUI", false,  "Run on GUI");
-	
 		
 		addStdHelp();		
 	} 
@@ -91,20 +84,15 @@ public class GeneStrainTypingCmd extends CommandLine{
 		/**********************************************************************/
 
 		String output = cmdLine.getStringVal("output");
-		String profile = cmdLine.getStringVal("profile");
-		String bamFile = cmdLine.getStringVal("bam");
-		String geneFile = cmdLine.getStringVal("geneFile");		
-		String tmp = cmdLine.getStringVal("tmp");
+		String profile = cmdLine.getStringVal("profile");				
+		String bamFile = cmdLine.getStringVal("bamFile");
+		String geneFile = cmdLine.getStringVal("geneFile");
 		String hours = cmdLine.getStringVal("hours");
 		int top = cmdLine.getIntVal("top");		
-		int read = cmdLine.getIntVal("read");
-		boolean GUI = cmdLine.getBooleanVal("GUI");
+		int read = cmdLine.getIntVal("read");		
 		int timestamp = cmdLine.getIntVal("timestamp");
-
 		{
-			GeneStrainTyping paTyping = new GeneStrainTyping(GUI);	
-			paTyping.simulation = cmdLine.getIntVal("sim");
-			paTyping.prefix = tmp;
+			GeneStrainTyping paTyping = new GeneStrainTyping();	
 			paTyping.readNumber = read;
 			if (hours !=null){
 				BufferedReader bf = SequenceReader.openFile(hours);
@@ -130,13 +118,7 @@ public class GeneStrainTypingCmd extends CommandLine{
 			paTyping.datOS.print("step\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
 			paTyping.readGenes(geneFile);
 			paTyping.readKnowProfiles(profile);
-			Logging.info("Read in " + paTyping.profileList.size() + " gene profiles");
-
-			paTyping.timestamp = timestamp;
-
-			if (GUI)
-				paTyping.startGUI();
-
+			paTyping.timestamp = timestamp;			
 			paTyping.typing(bamFile,  top);
 			paTyping.datOS.close();
 		}

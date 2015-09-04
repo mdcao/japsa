@@ -695,6 +695,7 @@ public class JapsaAnnotation {
 			//out.flush();			
 		}
 	}
+	
 
 	/**
 	 * Read annotation from a gff file and store in a hash table index by sequence ID
@@ -705,10 +706,11 @@ public class JapsaAnnotation {
 	 * @return
 	 * @throws IOException
 	 */
-	public static HashMap<String, JapsaAnnotation> readMGFF(InputStream in, int upStr, int downStr, String list) throws IOException{
+	public static ArrayList<JapsaAnnotation> readMGFF(InputStream in, int upStr, int downStr, String list) throws IOException{
 		boolean notAll = !list.equals("all");
 		
 		
+		ArrayList<JapsaAnnotation> annoList = new ArrayList<JapsaAnnotation>();		
 		HashMap<String, JapsaAnnotation> annoMap = new  HashMap<String, JapsaAnnotation>();
 		
 		String line;		
@@ -722,8 +724,10 @@ public class JapsaAnnotation {
 			//line = line.trim();
 			if (line.startsWith("##sequence-region")){
 				JapsaAnnotation anno =  new JapsaAnnotation();
-				anno.setAnnotationID(line.split(" ")[1]);
-				annoMap.put(anno.annotationID, anno);
+				anno.setAnnotationID(line.split(" ")[1]);				
+				annoMap.put(anno.annotationID, anno);				
+				annoList.add(anno);
+				
 				if (currentAnno == null)
 					currentAnno = anno;
 				continue;
@@ -766,8 +770,8 @@ public class JapsaAnnotation {
 
 			String [] featureChars = toks[8].split(";");
 			for (String fch:featureChars){
-				if (fch.startsWith("gene="))
-					ID = fch.substring(5);
+				if (fch.startsWith("ID="))
+					ID = fch.substring(3);
 
 				if (fch.startsWith("Parent="))
 					parent = fch.substring(7);				
@@ -812,10 +816,21 @@ public class JapsaAnnotation {
 		}
 		reader.close();
 		
-		return annoMap;
+		return annoList;
 	}	
 
 
+	/**
+	 * This function can only read annotation for 1 sequences, and hence
+	 * has been @Deprecated for readMGFF
+	 * @param in
+	 * @param upStr
+	 * @param downStr
+	 * @param list
+	 * @return
+	 * @throws IOException
+	 */
+	@Deprecated
 	public static JapsaAnnotation readGFF(BufferedReader in, int upStr, int downStr, String list) throws IOException{
 		boolean notAll = !list.equals("all");		
 

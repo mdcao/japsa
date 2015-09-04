@@ -39,7 +39,7 @@ public class PresenceAbsence {
 	}
 	
 	public double[] calcPosterior() {
-		this.calcPosterior(this.sumLogL, this.posterior);
+		calcPosterior(this.sumLogL, this.posterior);
 		return this.posterior;
 	}
 

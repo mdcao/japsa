@@ -27,58 +27,54 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*****************************************************************************
- *                           Revision History                                
- * 21 Jun 2015 - Minh Duc Cao: Created based on code written by Lloyd Allison                                      
- * 
+/*                           Revision History                                
+ * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
-package japsa.util;
+
+package japsa.tools.bio.hts;
 
 
-//Mon 6 April 2009
-public class JapsaTimer { // A Timer object can 'mark' an event by printing the given
-					// message,
-	// the time since the last event, and the total time the Timer has existed.
-	private final long milliSecs0;
-	long last;
 
-	public JapsaTimer() {
-		milliSecs0 = System.currentTimeMillis(); // msecs since Jan. 1 1970
-		last = milliSecs0;
-	}// constructor
+import java.io.IOException;
+import java.util.ArrayList;
 
-	public void mark(String msg) {
-		final long now = System.currentTimeMillis();
-		Logging.info(msg + ":" + " increment=" + (now - last) / 1000.0
-				+ " sec" + " (total=" + (now - milliSecs0) / 1000.0 + ")");
-		last = now;
-	}// mark()
-	
-	static public void systemInfo(){
-		Runtime runtime = Runtime.getRuntime();		
-		Logging.info(" CPU="     + runtime.availableProcessors()
-			    +  ", maxMem="   + runtime.maxMemory() / 1000000.0 + " MB" 
-			    +  ", freeMem="  + runtime.freeMemory() / 1000000.0 + " MB"
-			    +  ", totalMem=" + runtime.totalMemory() / 1000000.0 + " MB"
-			    +  ", usedMem="  + (runtime.totalMemory() -runtime.freeMemory()) / 1000000.0 + " MB"			    
-				    );
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceReader;
+import japsa.util.CommandLine;
+import japsa.util.HTSUtilities;
+import japsa.util.deploy.Deployable;
+
+/**
+ * @author minhduc
+ *
+ */
+@Deployable(
+	scriptName = "jsa.hts.n50", 
+	scriptDesc = "Compute N50 of an assembly"
+	)
+public class GetN50Cmd extends CommandLine{
+	//CommandLine cmdLine;
+	public GetN50Cmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+		addString("input", null, "Name of the file",true);
+
+		addStdHelp();
 	}
+	public static void main(String [] args) throws IOException, InterruptedException{
+		GetN50Cmd cmdTool = new GetN50Cmd ();
+		args = cmdTool.stdParseLine(args);
 
-	// -------------------------------------------------------------------------
-	public static void main(String[] args) {
-		System.out.println("-- test Timer.java --");
-		JapsaTimer t = new JapsaTimer();
-		t.mark("tick");
-		final int n = 10000;
-		int[][] a = new int[n][n];
-		int sum = 0;
-		for (int i = 0; i < n; i++)
-			for (int j = 0; j < n; j++)
-				sum += a[i][j];
-		t.mark("tock");
-		System.out.println("-- done --");
-	}// main()
-}// class Timer
-
-//LA, 4/2009
-
+		/**********************************************************************/
+		String input = cmdTool.getStringVal("input");
+		
+	
+		ArrayList<Sequence> seqs = SequenceReader.readAll(input, Alphabet.DNA());			
+		double n50 = HTSUtilities.n50(seqs);
+		System.out.println(n50 + "\t" + seqs.size());
+	}	
+}
