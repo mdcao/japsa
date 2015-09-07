@@ -35,7 +35,7 @@
 
 package japsa.util.deploy;
 
-import japsa.bio.hts.HTSAlignmentParam;
+//import japsa.bio.hts.HTSAlignmentParam;
 import japsa.tools.bio.bac.MLSTCmd;
 import japsa.tools.bio.hts.BreakBamCmd;
 import japsa.tools.bio.hts.CountReadInRegionCmd;
@@ -49,6 +49,8 @@ import japsa.tools.bio.np.GeneStrainTypingCmd;
 import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
+import japsa.tools.bio.np.RealtimeSpeciesTypingCmd;
+import japsa.tools.bio.np.RegulateTimeCmd;
 import japsa.tools.bio.np.ResistanceGeneCmd;
 import japsa.tools.bio.np.RealtimeResistanceGeneCmd;
 import japsa.tools.bio.np.SpeciesMixtureTypingCmd;
@@ -148,8 +150,14 @@ public class Deploy {
 		tools.add(new GeneStrainTypingCmd());
 		tools.add(new MLSTStrainTypingCmd());
 		tools.add(new ResistanceGeneCmd());		
+		
 		tools.add(new RealtimeResistanceGeneCmd());
-
+		tools.add(new RealtimeSpeciesTypingCmd());
+		tools.add(new RegulateTimeCmd());
+		
+		//tools.add(new RegulateTimeCmd());
+		
+		
 		//jsa.trv.*
 		tools.add("Tandem repeat variation analysis tools:");
 		tools.add(new ParseTRFCmd());		
@@ -562,7 +570,7 @@ public class Deploy {
 		cmdLine.addString("xmx", null, "Set default maximum memory");
 		cmdLine.addString("compiler", null, "Compiler version");
 		cmdLine.addBoolean("version", false, "Get version and exit");
-		cmdLine.addString("server", "na", "Run on server: yes/true for yes; no/false for no");
+		cmdLine.addString("server", "na", "Run on server mode: yes/true for yes; no/false for no");
 
 		cmdLine.addStdHelp();		
 		args = cmdLine.stdParseLine(args);

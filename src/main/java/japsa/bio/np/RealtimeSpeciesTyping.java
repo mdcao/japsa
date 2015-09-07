@@ -49,6 +49,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 import org.rosuda.JRI.REXP;
@@ -61,36 +62,44 @@ import org.rosuda.JRI.Rengine;
  */
 public class RealtimeSpeciesTyping {
 
-	public double qual = 0;
-	Rengine rengine;
+	/**
+	 * Minimum quality of alignment
+	 */
+	private double minQual = 0;
+	RealtimeSpeciesTyper typer;
 
 	int currentReadCount = 0;
 	int currentReadAligned = 0;
-	long currentBaseCount = 0;
-
-	int arrayIndex = 0;
-	String prefix;
+	long currentBaseCount = 0;	
 	public SequenceOutputStream countsOS;	
 	long firstReadTime = 0;
-
-
-	/////////////////////////////////////////////////////////////////////////////
-
 	long startTime;
-	public RealtimeSpeciesTyping(){	
-		rengine = new Rengine (new String [] {"--no-save"}, false, null);
-		if (!rengine.waitForR()){
-			Logging.exit("Cannot load R",1);            
-		}    
-		rengine.eval("library(MultinomialCI)");
-		rengine.eval("alpha<-0.05");
 
-		Logging.info("REngine ready");
+	HashMap<String, String> seq2Species = new HashMap<String, String>();
+	HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
+	ArrayList<String> speciesList = new ArrayList<String>(); 
+
+
+	public RealtimeSpeciesTyping(String indexFile, String output)throws IOException{
+		typer = new RealtimeSpeciesTyper(this);
 		startTime = System.currentTimeMillis();
+
+		//Set up output
+		countsOS = SequenceOutputStream.makeOutputStream(output);		
+		//Load index file
+		preTyping(indexFile);
 	}
 
-	public void close(){
-		rengine.end();
+	/**
+	 * @param minQual the minQual to set
+	 */
+	public void setMinQual(double minQual) {
+		this.minQual = minQual;
+	}
+
+	public void close() throws IOException{
+		countsOS.close();
+		typer.close();
 	}
 	/**
 	 * @param bamFile
@@ -117,12 +126,7 @@ public class RealtimeSpeciesTyping {
 	}
 
 
-	HashMap<String, String> seq2Species = new HashMap<String, String>();
-	HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
-	ArrayList<String> speciesList = new ArrayList<String>(); 
-
-
-	public void preTyping(String indexFile)throws IOException{
+	private void preTyping(String indexFile)throws IOException{
 		BufferedReader bf = SequenceReader.openFile(indexFile);
 		String line = "";
 		while ( (line = bf.readLine())!=null){
@@ -148,57 +152,11 @@ public class RealtimeSpeciesTyping {
 		countsOS.print("step\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");		
 	}
 
-	private void simpleAnalysisCurrent(int currentRead) throws IOException{		
-		int step = currentRead;
-
-		int sum = 0;
-		double [] count = new double[speciesList.size()];
-		for (int i = 0; i < count.length;i++){			
-			count[i] = species2Count.get(speciesList.get(i)).count;			
-			sum += count[i];
-		}
-		DoubleArray countArray = new DoubleArray();
-		ArrayList<String> speciesArray = new ArrayList<String> ();
-
-		int minCount = Math.max(1,sum/50);
-
-		for (int i = 0; i < count.length;i++){			
-			if (count[i] >= minCount){
-				countArray.add(count[i]);
-				speciesArray.add(speciesList.get(i));
-				Logging.info(step+" : " + speciesList.get(i) + " == " + count[i]);
-			}
-		}		
-		//if (countArray.size() > 10) return;
-		countArray.add(1);
-		speciesArray.add("others");		
-
-		rengine.assign("count", countArray.toArray());
-		rengine.eval("tab = multinomialCI(count,alpha)");        
-		REXP tab  = rengine.eval("tab",true);  
-		double [][] results = tab.asDoubleMatrix();
-
-		for (int i = 0; i < results.length;i++){
-			if (results[i][0] <= 0.00001)
-				continue;
-
-			double mid = (results[i][0] + results[i][1])/2;
-			double err = mid - results[i][0];
-
-			countsOS.print(step + "\t" + currentReadCount + "\t" + currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + this.currentReadAligned + "\t" + count[i]);
-			countsOS.println();
-		}
-
-		countsOS.flush();
-		Logging.info(step+"  " + countArray.size());
-	}
 
 
-
-	public void typing(String bamFile, int readNumber) throws IOException, InterruptedException{
+	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException{
 		if (readNumber <= 0)
 			readNumber = 1;
-
 
 		String readName = "";
 		//Read the bam file		
@@ -209,7 +167,14 @@ public class RealtimeSpeciesTyping {
 		else
 			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
-		SAMRecordIterator samIter = samReader.iterator();			
+		SAMRecordIterator samIter = samReader.iterator();
+
+
+		typer.setReadPeriod(readNumber);
+		typer.setTimePeriod(timeNumber * 1000);
+
+		Thread thread = new Thread(typer);
+		thread.start();		
 
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
@@ -219,46 +184,134 @@ public class RealtimeSpeciesTyping {
 			if (!sam.getReadName().equals(readName)){
 				readName = sam.getReadName();
 
-				currentReadCount ++;
-				currentBaseCount += sam.getReadLength();
-
-
-				if (currentReadCount % readNumber == 0){
-					simpleAnalysisCurrent(currentReadCount);
+				synchronized(this){
+					currentReadCount ++;
+					currentBaseCount += sam.getReadLength();
 				}
-
 			}
 
 			if (sam.getReadUnmappedFlag()){				
 				continue;			
 			}
 
-			if (sam.getMappingQuality() < this.qual)
+			if (sam.getMappingQuality() < this.minQual)
 				continue;
-
-			currentReadAligned ++;
 
 			String refSequence = sam.getReferenceName();
 			String species = seq2Species.get(refSequence);
 			if (species == null){
 				throw new RuntimeException(" Can find species with ref " + refSequence + " line " + currentReadCount );
 			}
+
 			SpeciesCount sCount = species2Count.get(species);
 			if (sCount == null){
 				throw new RuntimeException(" Can find record with species " + species + " line " + currentReadCount );
 			}
 
 			synchronized(this) {
+				currentReadAligned ++;
 				sCount.count ++;
 			}			
 
 		}//while
 
 		//final run
-		simpleAnalysisCurrent(currentReadCount);
+		//typer.simpleAnalysisCurrent();
+		typer.working = false;
 
 		samIter.close();
 		samReader.close();
 	}	
+
+	public static class RealtimeSpeciesTyper extends RealtimeAnalysis{
+		Rengine rengine;
+		RealtimeSpeciesTyping typing;
+
+		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t){
+			typing = t;
+			//Set up Rengine
+			rengine = new Rengine (new String [] {"--no-save"}, false, null);
+			if (!rengine.waitForR()){
+				Logging.exit("Cannot load R",1);            
+			}    
+			rengine.eval("library(MultinomialCI)");
+			rengine.eval("alpha<-0.05");
+
+			Logging.info("REngine ready");
+		}
+
+		private void simpleAnalysisCurrent() throws IOException{	
+			//long step = lastTime;
+			
+			Date date = new Date(lastTime);
+			String step = date.toString();			
+			
+			int sum = 0;
+			double [] count = new double[typing.speciesList.size()];
+			for (int i = 0; i < count.length;i++){			
+				count[i] = typing.species2Count.get(typing.speciesList.get(i)).count;			
+				sum += count[i];
+			}
+			DoubleArray countArray = new DoubleArray();
+			ArrayList<String> speciesArray = new ArrayList<String> ();
+
+			int minCount = Math.max(1,sum/50);
+
+			for (int i = 0; i < count.length;i++){			
+				if (count[i] >= minCount){
+					countArray.add(count[i]);
+					speciesArray.add(typing.speciesList.get(i));
+					Logging.info(step+" : " + typing.speciesList.get(i) + " == " + count[i]);
+				}
+			}		
+			//if (countArray.size() > 10) return;
+			countArray.add(1);
+			speciesArray.add("others");		
+
+			rengine.assign("count", countArray.toArray());
+			rengine.eval("tab = multinomialCI(count,alpha)");        
+			REXP tab  = rengine.eval("tab",true);  
+			double [][] results = tab.asDoubleMatrix();
+
+			for (int i = 0; i < results.length;i++){
+				if (results[i][0] <= 0.00001)
+					continue;
+
+				double mid = (results[i][0] + results[i][1])/2;
+				double err = mid - results[i][0];
+
+				typing.countsOS.print(step + "\t" + typing.currentReadCount + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + count[i]);
+				typing.countsOS.println();
+			}
+
+			typing.countsOS.flush();
+			Logging.info(step+"  " + countArray.size());
+		}
+
+		void close(){
+			rengine.end();
+		}
+
+
+		/* (non-Javadoc)
+		 * @see japsa.bio.np.RealtimeAnalysis#analysis()
+		 */
+		@Override
+		protected void analysis(){
+			try{
+				simpleAnalysisCurrent();
+			}catch (IOException e){
+				Logging.warn(e.getMessage());
+			}
+		}
+
+		/* (non-Javadoc)
+		 * @see japsa.bio.np.RealtimeAnalysis#getCurrentRead()
+		 */
+		@Override
+		protected int getCurrentRead() {
+			return typing.currentReadCount;
+		}
+	}
 
 }

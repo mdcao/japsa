@@ -42,12 +42,12 @@ import java.io.PrintStream;
  */
 public class Logging {
 	private static String prefix = "#";
-	
+
 	private static PrintStream infoStr = System.err;
 	private static PrintStream errorStr = System.err;
 	private static PrintStream warnStr = System.err;
-	
-	
+
+
 	/**
 	 * A simple logging system
 	 */
@@ -57,23 +57,28 @@ public class Logging {
 	/**
 	 * @param args
 	 */
-	
+
 	public static void info(String msg) {
-		infoStr.println(prefix+msg);
+		synchronized(infoStr){
+			infoStr.println(prefix+msg);
+		}
 
 	}
-	
+
 	public static void warn(String msg) {
-		warnStr.println(prefix+msg);
+		synchronized(warnStr){
+			warnStr.println(prefix+msg);
+		}
 	}
-	
+
 	public static void error(String msg) {
-		errorStr.println(prefix+msg);
+		synchronized(errorStr){
+			errorStr.println(prefix+msg);
+		}
 	}
-	
+
 	public static void exit(String msg, int status) {
 		error(msg);		
 		System.exit(status);
-		
 	}
 }

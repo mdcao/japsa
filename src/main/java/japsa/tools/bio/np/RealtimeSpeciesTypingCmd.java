@@ -58,8 +58,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		setDesc(annotation.scriptDesc());
 
 		addString("output", "output.dat",  "Output file");		
-		addString("bamFile", null,  "The bam file");		
-		addString("indexFile", null,  "indexFile ");
+		addString("bamFile", null,  "The bam file",true);		
+		addString("indexFile", null,  "indexFile ",true);
 
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 30,   "Minimum number of seconds between analyses");
@@ -81,17 +81,15 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String output    = cmdLine.getStringVal("output");
 		String bamFile   = cmdLine.getStringVal("bamFile");			
 		String indexFile = cmdLine.getStringVal("indexFile");
+		
 		int number       = cmdLine.getIntVal("read");
+		int time       = cmdLine.getIntVal("time");
+		
 		double qual      = cmdLine.getDoubleVal("qual");
 
-		RealtimeSpeciesTyping paTyping = new RealtimeSpeciesTyping();		
-		paTyping.qual = qual;		
-		paTyping.countsOS = SequenceOutputStream.makeOutputStream(output);
-		paTyping.preTyping(indexFile);
-		paTyping.typing(bamFile, number);
-		paTyping.countsOS.close();
-		paTyping.close();		
-
+		RealtimeSpeciesTyping paTyping = new RealtimeSpeciesTyping(indexFile, output);		
+		paTyping.setMinQual(qual);				
+		paTyping.typing(bamFile, number, time);		
+		paTyping.close();
 	}
-
 }

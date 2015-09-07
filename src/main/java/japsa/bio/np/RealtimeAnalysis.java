@@ -27,84 +27,92 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/**************************     REVISION HISTORY    **************************
- * 5 Mar 2015 - Minh Duc Cao: Created                                        
- *  
+/*****************************************************************************
+ *                           Revision History                                
+ * 5 Sep 2015 - Minh Duc Cao: Created                                        
+ * 
  ****************************************************************************/
-package japsa.tools.util;
+package japsa.bio.np;
 
-import japsa.util.CommandLine;
 import japsa.util.Logging;
-import japsa.util.deploy.Deployable;
-import japsa.util.net.StreamClient;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-import java.net.Socket;
 
 /**
+ * Real time analysis in a thread that runs in parallel with the thread conecting
+ * data.
+ *  
  * @author minhduc
  *
  */
-@Deployable(
-	scriptName = "jsa.util.streamClient",
-	scriptDesc = "Listen for input from the standard input and output to a stream",
-	seeAlso = "jsa.util.streamServer, jsa.np.filter, jsa.np.f5reader"
-	)
+public abstract class RealtimeAnalysis implements Runnable {
 
-public class StreamClientCmd extends CommandLine{	
-	public StreamClientCmd(){
-		super();
-		Deployable annotation = getClass().getAnnotation(Deployable.class);		
-		setUsage(annotation.scriptName() + " [options]");
-		setDesc(annotation.scriptDesc());
+	private int readPeriod = 0;//Min number of reads before a new analysis
+	private int timePeriod = 0;//Min number of mini-seconds before a new analysis	
+	private int powerNap = 1000;//sleep time in miniseconds (1 second by default)
 
-		addStdInputFile();
-		addString("server",null, "Stream output to one or more servers, format IP:port,IP:port",true);
-		
-		addStdHelp();
-	} 
+	boolean working = true;
+	
+	long lastTime;//The last time an analysis is done
+	int lastReadNumber;
 
+	/* (non-Javadoc)
+	 * @see java.lang.Runnable#run()
+	 */
+	@Override
+	public void run() {
+		Logging.info("Real time analysis ready");
+		while (working){
+			//Need to wait if timing is not right
+			long timeSleep = timePeriod - (System.currentTimeMillis() - lastTime);
+			if (timeSleep > 0){
+				try {
+					Logging.info("Not due time, sleep for " + timeSleep/1000.0 + " seconds");
+					Thread.sleep(timeSleep);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			//assert: time satisfied
+			int currentRead = getCurrentRead();
+			if (currentRead - lastReadNumber < readPeriod){
+				try {
+					//Logging.info("Not due read (" + currentRead + "), sleep for " + powerNap/1000.0 + " minutes");
+					Thread.sleep(powerNap);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				continue;
+			}
+			lastReadNumber = currentRead;
+			lastTime = System.currentTimeMillis();
+			//assert: read number satisfied
+			analysis();
+		}//while
+
+		//perform the final analysis
+		lastTime = System.currentTimeMillis();
+		analysis();
+		Logging.info("Real time analysis done");
+	}
+
+	abstract protected void analysis();
+	abstract protected int getCurrentRead();	
 
 	/**
-	 * @param args
-	 * @throws InterruptedException 
-	 * @throws Exception 
-	 * @throws OutOfMemoryError 
+	 * Set the minimum number of reads before a new analysis 
+	 * @param readNumber
 	 */
-	public static void main(String[] args) throws IOException, InterruptedException{		 		
-		CommandLine cmdLine = new StreamClientCmd();				
-		args = cmdLine.stdParseLine(args);						
-		/**********************************************************************/
-		String input = cmdLine.getStringVal("input");
-		StreamClient client = new StreamClient(cmdLine.getStringVal("server"));
-		Logging.info("Connection established");
-
-		InputStream ins = input.equals("-")? System.in : new FileInputStream(input);
-		byte[] buffer = new byte[8192];
-
-		while (true){
-			int ret = ins.read(buffer);
-			if (ret < 0)
-				break;
-			for (Socket socket:client.getSockets()){
-				socket.getOutputStream().write(buffer,0, ret);
-			}
-		}
-		client.close();		
-
+	public void setReadPeriod(int readNumber){
+		readPeriod = readNumber;
 	}
-}
-/*RST*
-----------------------------------------------------
-*jsa.util.streamClient*: Streams data over a network
-----------------------------------------------------
+	/**
+	 * Set the minimum time before a new analysis
+	 * @param timePeriod: number of miniseconds
+	 */
+	public void setTimePeriod(int timePeriod){
+		this.timePeriod = timePeriod;
+	}
 
-*jsa.util.streamClient* streams data over the network to a listening server
-(*jsa.util.streamServer*).
- 
- <usage>
- 
-*RST*/
+	void setPowerNap(int powerNap){
+		this.powerNap = powerNap;
+	}	
+}

@@ -27,84 +27,114 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/**************************     REVISION HISTORY    **************************
- * 5 Mar 2015 - Minh Duc Cao: Created                                        
- *  
+/*****************************************************************************
+ *                           Revision History                                
+ * 14 Aug 2015 - Minh Duc Cao: Created                                        
+ * 
  ****************************************************************************/
-package japsa.tools.util;
+package japsa.tools.bio.np;
 
+import java.io.IOException;
+
+import japsa.seq.Alphabet;
+import japsa.seq.FastqReader;
+import japsa.seq.FastqSequence;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
-import japsa.util.net.StreamClient;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-import java.net.Socket;
 
 /**
  * @author minhduc
  *
  */
 @Deployable(
-	scriptName = "jsa.util.streamClient",
-	scriptDesc = "Listen for input from the standard input and output to a stream",
-	seeAlso = "jsa.util.streamServer, jsa.np.filter, jsa.np.f5reader"
+	scriptName = "jsa.np.timeEmulate", 
+	scriptDesc = "Regulate time"
 	)
-
-public class StreamClientCmd extends CommandLine{	
-	public StreamClientCmd(){
+public class RegulateTimeCmd extends CommandLine {
+	public RegulateTimeCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
 		addStdInputFile();
-		addString("server",null, "Stream output to one or more servers, format IP:port,IP:port",true);
-		
-		addStdHelp();
-	} 
+		addStdOutputFile();
 
+		addDouble("scale",1.0, "Scale");
+
+		addStdHelp();
+	}
 
 	/**
 	 * @param args
-	 * @throws InterruptedException 
-	 * @throws Exception 
-	 * @throws OutOfMemoryError 
+	 * @throws IOException 
 	 */
-	public static void main(String[] args) throws IOException, InterruptedException{		 		
-		CommandLine cmdLine = new StreamClientCmd();				
-		args = cmdLine.stdParseLine(args);						
-		/**********************************************************************/
-		String input = cmdLine.getStringVal("input");
-		StreamClient client = new StreamClient(cmdLine.getStringVal("server"));
-		Logging.info("Connection established");
+	public static void main(String[] args) throws IOException {
+		RegulateTimeCmd cmdTool = new RegulateTimeCmd();
+		args = cmdTool.stdParseLine(args);
 
-		InputStream ins = input.equals("-")? System.in : new FileInputStream(input);
-		byte[] buffer = new byte[8192];
+		String input = cmdTool.getStringVal("input");
+		String output = cmdTool.getStringVal("output");		
+		double scale = cmdTool.getDoubleVal("scale");
 
-		while (true){
-			int ret = ins.read(buffer);
-			if (ret < 0)
-				break;
-			for (Socket socket:client.getSockets()){
-				socket.getOutputStream().write(buffer,0, ret);
+		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
+
+		SequenceReader reader = SequenceReader.getReader(input);
+		
+		boolean isFastq = (reader instanceof FastqReader); 
+
+		Sequence seq;
+
+		long timeStart = System.currentTimeMillis();
+		String sortKeyOptionPrefix = "cTime=";
+		int sortKeyOptionIndex = sortKeyOptionPrefix.length(); 
+		long firstReadTime = 0; 
+		
+		while ((seq = reader.nextSequence(Alphabet.DNA()))!= null){			
+			double cTime = 0;
+			String [] toks = seq.getName().split(" ");
+			try{
+				for (int i = 0; i < toks.length;i++){
+					if (toks[i].startsWith(sortKeyOptionPrefix)){
+						cTime = Double.parseDouble(toks[i].substring(sortKeyOptionIndex));
+						break;
+					}	
+				}
+			}catch (Exception e){
+				Logging.error(e.getMessage());
+			}			
+			if (cTime == 0){
+				Logging.info("Not found timing for sequence " + seq.getName());
+				continue;
 			}
-		}
-		client.close();		
-
+			if (firstReadTime == 0){
+				firstReadTime = (long) cTime;
+			}
+			
+			cTime = 1000* (cTime - firstReadTime) / scale;//scale and convert to milisecond
+			
+			long timeNow = ((long) cTime)  - (System.currentTimeMillis() - timeStart);
+			if (timeNow > 0){
+				sos.flush();
+				try {
+					Thread.sleep(timeNow);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			//time is up
+			
+			if (isFastq){
+				FastqSequence fq = ((FastqSequence) seq);
+				fq.print(sos);				
+			}else				
+				seq.writeFasta(sos);
+		}//while
+		sos.close();
 	}
 }
-/*RST*
-----------------------------------------------------
-*jsa.util.streamClient*: Streams data over a network
-----------------------------------------------------
-
-*jsa.util.streamClient* streams data over the network to a listening server
-(*jsa.util.streamServer*).
- 
- <usage>
- 
-*RST*/

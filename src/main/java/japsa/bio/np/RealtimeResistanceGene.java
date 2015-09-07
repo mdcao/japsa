@@ -79,7 +79,7 @@ public class RealtimeResistanceGene {
 	private HashMap<String, ArrayList<Sequence>> alignmentMap;
 	int currentReadCount = 0;
 	long currentBaseCount = 0;
-	
+
 	public String prefix = "tmp";	
 	public String msa = "kalign";
 	public String global = "hmm";
@@ -87,7 +87,7 @@ public class RealtimeResistanceGene {
 	public double scoreThreshold = 2;
 	public boolean twoDOnly = false;
 	public RealtimeResistanceGene(String output) throws IOException{
-		
+
 	}
 	private double checkNeedle(String consensusFile, Sequence gene) throws IOException, InterruptedException{
 		//Needle the gene
@@ -126,7 +126,7 @@ public class RealtimeResistanceGene {
 	public void typing(String bamFile) throws IOException, InterruptedException{
 		DateFormat df = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
 		Logging.info("START : " + df.format(Calendar.getInstance().getTime()));
-		
+
 		ResistanceGeneFinder resistFinder = new ResistanceGeneFinder(this);		
 
 		Thread t = new Thread(resistFinder, "SSS");
@@ -219,13 +219,10 @@ public class RealtimeResistanceGene {
 
 		RealtimeResistanceGene resistGene;
 
-
 		HashMap<String, String> gene2ProteinID;
 		HashMap<String, String> gene2Group;			
 		HashMap<String, Sequence> geneMap;
 		ArrayList<String> geneList = new ArrayList<String>();
-		
-		
 
 		//Set of genes confirmed to have found
 		HashSet<String> predictedGenes = new HashSet<String>();
@@ -303,7 +300,7 @@ public class RealtimeResistanceGene {
 			for (String geneID: geneList){				
 				if (predictedGenes.contains(geneID))
 					continue;
-				
+
 
 				ArrayList<Sequence> alignmentList =  alignmentMapSnap.get(geneID);
 
@@ -314,7 +311,7 @@ public class RealtimeResistanceGene {
 					//Not consider this gene at all
 					continue;//gene
 				}
-				
+
 				Sequence gene = geneMap.get(geneID);
 
 				if (resistGene.global.equals("hmm")){
@@ -353,7 +350,7 @@ public class RealtimeResistanceGene {
 					{	
 						double score = resistGene.checkNeedle(consensusFile, gene);
 						Logging.info("SGF: " + score + " " + geneID + " " + alignmentList.size() + " " + gene2ProteinID.get(geneID) + " " + gene2Group.get(geneID));
-						
+
 						if (score >= resistGene.scoreThreshold){
 							addPreditedGene(geneID);
 							Logging.info("ADDF " + geneID);							
@@ -390,7 +387,7 @@ public class RealtimeResistanceGene {
 			//resistGene.datOS.println();
 			//resistGene.datOS.flush();
 		}
-		
+
 		private void addPreditedGene(String geneID){
 			predictedGenes.add(geneID);		
 		}
@@ -424,12 +421,12 @@ public class RealtimeResistanceGene {
 			geneMap    = new HashMap<String, Sequence>();
 			gene2Group = new HashMap<String, String>();
 			gene2ProteinID = new HashMap<String, String>();
-			
-			
+
+
 			for (Sequence seq:drGeneList){
 				geneMap.put(seq.getName(), seq);
 				geneList.add(seq.getName());
-				
+
 				String desc = seq.getDesc();
 				String [] toks = desc.split(";");
 				for (String tok:toks){
@@ -475,7 +472,7 @@ public class RealtimeResistanceGene {
 			}
 			bf.close();
 			/************************************************************/
-			
+
 
 			Logging.info("geneList = " + drGeneList.size());
 			Logging.info("geneMap = " + geneMap.size());
