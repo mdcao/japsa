@@ -261,7 +261,7 @@ public class NanoporeReaderStream{
 	/**
 	 * Read read sequence from a list of fast5 files.
 	 * @param fileList
-	 * @param sos : output stream
+	 * @param gSos : output stream
 	 * @param stats: print out statistics
 	 * @throws IOException 
 	 */

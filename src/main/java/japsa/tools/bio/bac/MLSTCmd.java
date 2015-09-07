@@ -49,7 +49,7 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(
-	scriptName = "jsa.bio.mlst", 
+	scriptName = "jsa.bac.mlst", 
 	scriptDesc = "Multi-locus strain typing"
 	)
 public class MLSTCmd extends CommandLine{

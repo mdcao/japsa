@@ -34,6 +34,13 @@
  ****************************************************************************/
 package japsa.bio.bac;
 
+import japsa.seq.SequenceReader;
+import japsa.util.Logging;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.HashMap;
+
 /**
  * Database for resistance gene identification
  * @author minhduc
@@ -41,4 +48,43 @@ package japsa.bio.bac;
  */
 public class ResistanceGeneDB {
 
+	public static final String SEPARATOR = "\t"; 
+	public static final String COMMENT = "#";
+
+	String dbPath;//Act line the ID of the database	
+	String fasPath;
+
+	HashMap<String, String> gene2Res;
+
+	public ResistanceGeneDB(String path) throws IOException {
+		dbPath = path;
+		fasPath = path + ".fas";
+
+		//Read 		
+		gene2Res = new HashMap<String, String>();
+
+		BufferedReader br = SequenceReader.openFile(dbPath + ".map");
+		String line;
+		//int lineNo = 0;
+		while ((line =  br.readLine()) != null){
+			//lineNo ++;
+			if (line.startsWith(COMMENT))
+				continue;
+			String [] toks = line.split(SEPARATOR);
+			if (toks.length >= 2){
+				gene2Res.put(toks[0], toks[1]);	
+			}			
+
+		}
+		Logging.info("Read in " + gene2Res.size() + " genes");
+		br.close();		
+	}	
+
+	public String getRes(String geneID){
+		return gene2Res.get(geneID);
+	}
+
+	public String getSequenceFile(){
+		return fasPath;
+	}
 }

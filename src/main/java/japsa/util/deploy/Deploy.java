@@ -36,6 +36,7 @@
 package japsa.util.deploy;
 
 //import japsa.bio.hts.HTSAlignmentParam;
+import japsa.tools.bio.bac.Genomes2ResistanceGeneCmd;
 import japsa.tools.bio.bac.MLSTCmd;
 import japsa.tools.bio.hts.BreakBamCmd;
 import japsa.tools.bio.hts.CountReadInRegionCmd;
@@ -140,6 +141,7 @@ public class Deploy {
 
 		tools.add("Bacterial analysis:");
 		tools.add(new MLSTCmd());
+		tools.add(new Genomes2ResistanceGeneCmd());
 		
 		//jsa.np.
 		//tools.add(NanoporeReader());
@@ -155,7 +157,7 @@ public class Deploy {
 		tools.add(new RealtimeSpeciesTypingCmd());
 		tools.add(new RegulateTimeCmd());
 		
-		//tools.add(new RegulateTimeCmd());
+		//tools.add(new Genomes2ResistanceGeneCmd());
 		
 		
 		//jsa.trv.*
