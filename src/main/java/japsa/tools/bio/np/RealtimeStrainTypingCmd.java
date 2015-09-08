@@ -34,14 +34,11 @@
  ****************************************************************************/
 package japsa.tools.bio.np;
 
-import java.io.BufferedReader;
+
 import java.io.IOException;
 
-import japsa.bio.np.GeneStrainTyping;
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
+import japsa.bio.np.RealtimeStrainTyping;
 import japsa.util.CommandLine;
-import japsa.util.IntArray;
 import japsa.util.deploy.Deployable;
 
 /**
@@ -58,7 +55,7 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		
+
 		addString("output", "output.dat",  "Output file");
 		addString("profile", null,  "Output file containing gene profile of all strains",true);		
 		addString("bamFile", null,  "The bam file",true);
@@ -70,7 +67,7 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 		addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
 
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
-		
+
 		addStdHelp();		
 	} 
 
@@ -80,48 +77,20 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 	public static void main(String[] args) throws IOException, InterruptedException{
 		CommandLine cmdLine = new RealtimeStrainTypingCmd();		
 		args = cmdLine.stdParseLine(args);
-		
+
 		/**********************************************************************/
 
 		String output = cmdLine.getStringVal("output");
 		String profile = cmdLine.getStringVal("profile");				
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String geneFile = cmdLine.getStringVal("geneFile");
-		String hours = cmdLine.getStringVal("hours");
+		
 		int top = cmdLine.getIntVal("top");		
-		int read = cmdLine.getIntVal("read");		
-		int timestamp = cmdLine.getIntVal("timestamp");
-		{
-			GeneStrainTyping paTyping = new GeneStrainTyping();	
-			paTyping.readNumber = read;
-			if (hours !=null){
-				BufferedReader bf = SequenceReader.openFile(hours);
-				String line = bf.readLine();//first line
-				paTyping.hoursArray = new IntArray();
-				paTyping.readCountArray = new IntArray();
 
-				while ((line = bf.readLine())!= null){
-					String [] tokens = line.split("\\s");
-					int hrs = Integer.parseInt(tokens[0]);
-					int readCount = Integer.parseInt(tokens[2]);
-
-					paTyping.hoursArray.add(hrs);
-					paTyping.readCountArray.add(readCount);	
-				}
-			}
-
-
-			if (paTyping.readNumber < 1)
-				paTyping.readNumber = 1;
-
-			paTyping.datOS = SequenceOutputStream.makeOutputStream(output);
-			paTyping.datOS.print("step\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
-			paTyping.readGenes(geneFile);
-			paTyping.readKnowProfiles(profile);
-			paTyping.timestamp = timestamp;			
-			paTyping.typing(bamFile,  top);
-			paTyping.datOS.close();
-		}
+		RealtimeStrainTyping paTyping = new RealtimeStrainTyping(geneFile, profile, output);
+		paTyping.typing(bamFile,  top);
+		paTyping.close();
+		
 	}
 
 

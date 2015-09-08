@@ -71,8 +71,8 @@ public class RealtimeSpeciesTyping {
 	int currentReadCount = 0;
 	int currentReadAligned = 0;
 	long currentBaseCount = 0;	
-	public SequenceOutputStream countsOS;	
-	long firstReadTime = 0;
+	public SequenceOutputStream countsOS;
+
 	long startTime;
 
 	HashMap<String, String> seq2Species = new HashMap<String, String>();
@@ -158,6 +158,7 @@ public class RealtimeSpeciesTyping {
 		if (readNumber <= 0)
 			readNumber = 1;
 
+		Thread thread = new Thread(typer);		
 		String readName = "";
 		//Read the bam file		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -168,18 +169,15 @@ public class RealtimeSpeciesTyping {
 			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
 		SAMRecordIterator samIter = samReader.iterator();
-
+		thread.start();
 
 		typer.setReadPeriod(readNumber);
 		typer.setTimePeriod(timeNumber * 1000);
 
-		Thread thread = new Thread(typer);
-		thread.start();		
-
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
-			if (firstReadTime <=0)
-				firstReadTime = System.currentTimeMillis();
+			//if (firstReadTime <=0)
+			//	firstReadTime = System.currentTimeMillis();
 
 			if (!sam.getReadName().equals(readName)){
 				readName = sam.getReadName();
@@ -242,10 +240,10 @@ public class RealtimeSpeciesTyping {
 
 		private void simpleAnalysisCurrent() throws IOException{	
 			//long step = lastTime;
-			
+
 			Date date = new Date(lastTime);
 			String step = date.toString();			
-			
+
 			int sum = 0;
 			double [] count = new double[typing.speciesList.size()];
 			for (int i = 0; i < count.length;i++){			

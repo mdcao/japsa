@@ -37,7 +37,6 @@ package japsa.tools.bio.np;
 import java.io.IOException;
 
 import japsa.bio.np.RealtimeSpeciesTyping;
-import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 

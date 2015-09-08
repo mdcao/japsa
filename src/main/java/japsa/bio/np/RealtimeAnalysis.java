@@ -48,6 +48,9 @@ public abstract class RealtimeAnalysis implements Runnable {
 	private int readPeriod = 0;//Min number of reads before a new analysis
 	private int timePeriod = 0;//Min number of mini-seconds before a new analysis	
 	private int powerNap = 1000;//sleep time in miniseconds (1 second by default)
+	
+	RealtimeAnalysis(){
+	}
 
 	boolean working = true;
 	

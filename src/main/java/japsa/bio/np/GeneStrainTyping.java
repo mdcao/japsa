@@ -94,15 +94,6 @@ public class GeneStrainTyping {
 		startTime = System.currentTimeMillis();		
 	}
 
-
-
-	/**
-	 * Analysis of drug resistance profile
-	 * @param mcoordFile
-	 * @throws IOException
-	 */
-
-
 	/**
 	 * Read genes from gene file to a list + map: for random access
 	 * TODO: make private
@@ -128,10 +119,10 @@ public class GeneStrainTyping {
 	public void readKnowProfiles(String profileFile) throws IOException{
 		String line;
 		BufferedReader reader = new BufferedReader (new FileReader(profileFile));		
-		ArrayList<GeneProfile> myProfileList = new ArrayList<GeneProfile>(); 
+		ArrayList<RealtimeStrainTyping.GeneProfile> myProfileList = new ArrayList<RealtimeStrainTyping.GeneProfile>(); 
 
 		String currentStrainID = "";
-		GeneProfile profile = null;
+		RealtimeStrainTyping.GeneProfile profile = null;
 
 		while ((line = reader.readLine()) != null){
 			if (line.startsWith("#"))
@@ -139,12 +130,12 @@ public class GeneStrainTyping {
 			String [] toks = line.trim().split("\t");
 			String strainID = toks[0];
 			String geneFamID = toks[1];
-			
+
 
 			if (strainID.equals(currentStrainID)){
 				profile.addGene(geneFamID);
 			}else{
-				profile = new GeneProfile(strainID);
+				profile = new RealtimeStrainTyping.GeneProfile(strainID);
 				currentStrainID = strainID;
 				profile.addGene(geneFamID);
 				myProfileList.add(profile);				
@@ -158,12 +149,12 @@ public class GeneStrainTyping {
 			if (removeList.contains(i))
 				continue;
 
-			GeneProfile aProfile = myProfileList.get(i);
+			RealtimeStrainTyping.GeneProfile aProfile = myProfileList.get(i);
 			for (int j = i + 1; j < myProfileList.size();j++){
 				if (removeList.contains(j))
 					continue;
 
-				GeneProfile bProfile = myProfileList.get(j);		
+				RealtimeStrainTyping.GeneProfile bProfile = myProfileList.get(j);		
 				double distance = distance(aProfile.genes, bProfile.genes);
 
 				if (distance > threshold){
@@ -171,22 +162,10 @@ public class GeneStrainTyping {
 					removeList.add(j);
 					continue;
 				}
-
-				//if (aProfile.genes.equals(bProfile.genes)){
-				//	Logging.warn("CHECK  " + aProfile.strainID + " equals " + bProfile.strainID);
-				//	removeList.add(j);
-				//	continue;
-				//}				
-				//if (aProfile.genes.containsAll(bProfile.genes)){
-				//	Logging.warn("CHECK1 " + aProfile.strainID + "(" + aProfile.genes.size() + ") contains all of " + bProfile.strainID + " (" + bProfile.genes.size() + ")");
-				//}
-				//if (bProfile.genes.containsAll(aProfile.genes)){
-				//	Logging.warn("CHECK2 " + bProfile.strainID + "(" + bProfile.genes.size() + ") contains all of " + aProfile.strainID + " (" + aProfile.genes.size() + ")");
-				//}
 			}
 		}
 
-		ArrayList<GeneProfile> profileList = new ArrayList<GeneProfile>();
+		ArrayList<RealtimeStrainTyping.GeneProfile> profileList = new ArrayList<RealtimeStrainTyping.GeneProfile>();
 		for (int i = 0; i< myProfileList.size();i++){
 			if (!removeList.contains(i))
 				profileList.add(myProfileList.get(i));
@@ -218,7 +197,6 @@ public class GeneStrainTyping {
 	 * @throws InterruptedException 
 	 */
 
-
 	private double alignmentScore2(Sequence gene, ArrayList<Sequence> readList){
 		double score = 0;
 		if (readList != null){
@@ -231,7 +209,7 @@ public class GeneStrainTyping {
 	HashSet<String> mentionedStrain = new HashSet<String>(); 
 	double threshold = 0;
 
-	private ArrayList<LCTypingResult> makePresenceTyping(int top) throws IOException, InterruptedException{
+	private ArrayList<RealtimeStrainTyping.LCTypingResult> makePresenceTyping(int top) throws IOException, InterruptedException{
 
 		int step = currentReadCount;
 		if (hoursArray != null) 
@@ -259,9 +237,9 @@ public class GeneStrainTyping {
 			samp =lcTyping.calcPosterior(1000);
 			ranges = lcTyping.getRanges(samp, 0.99);
 		}
-		ArrayList<LCTypingResult> lcT = new ArrayList<LCTypingResult>(); 
+		ArrayList<RealtimeStrainTyping.LCTypingResult> lcT = new ArrayList<RealtimeStrainTyping.LCTypingResult>(); 
 		for(int i=0; i<posterior.length; i++){
-			LCTypingResult lts = new LCTypingResult();
+			RealtimeStrainTyping.LCTypingResult lts = new RealtimeStrainTyping.LCTypingResult();
 			lts.strainID = lcTyping.spl[i].species;
 			lts.postProb = posterior[i];
 			lts.l = ranges[i][0];
@@ -271,7 +249,7 @@ public class GeneStrainTyping {
 		Collections.sort(lcT);
 
 		for (int i = 0; i < top && i < lcT.size();i++){
-			LCTypingResult lr  = lcT.get(i);
+			RealtimeStrainTyping.LCTypingResult lr  = lcT.get(i);
 
 			if (lr.postProb < 0.010)
 				break;
@@ -377,72 +355,16 @@ public class GeneStrainTyping {
 	}
 
 
-	public static class LCTypingResult implements Comparable<LCTypingResult>{
-		String strainID;
-		double postProb, l, h;
-		/* (non-Javadoc)
-		 * @see java.lang.Comparable#compareTo(java.lang.Object)
-		 */
-		@Override
-		public int compareTo(LCTypingResult o) {
-			return Double.compare(o.postProb, postProb);
-		}
-	}
-
-
-	/**
-	 * Set up: -- read gff files, extract gene sequences, generate profile for each strain
-	 * 
-	 * @param file
-	 * @param out
-	 * @param profile
-	 * @throws IOException
-	 */
-
-	public static class GeneProfile implements Comparable<GeneProfile>{
-		String strainID;
-		double score = 0.0;
-		double f1 = 0, precision, recall;
-		HashSet<String> genes;
-
-		public GeneProfile(String id){
-			strainID = id;
-			genes = new HashSet<String>();
-		}
-
-		public void addGene(String geneID){
-			genes.add(geneID);
-		}
-
-		public HashSet<String>  getGeneList(){
-			return genes;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Comparable#compareTo(java.lang.Object)
-		 */
-		@Override
-		public int compareTo(GeneProfile o) {
-			return Double.compare(o.score, score);
-		}
-
-		public String strainID(){
-			return strainID;
-		}
-	}
-
-
 	private static double distance (HashSet<String> s1,HashSet<String> s2){		
 		int count= 0;
-				
+
 		for (String st:s1){
 			if (s2.contains(st))
 				count ++;
 		}
 		return count *2.0 / (s1.size() + s2.size());
 	}
-
-
-
-
+	
+	
+	
 }

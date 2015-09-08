@@ -51,6 +51,7 @@ import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.np.RealtimeSpeciesTypingCmd;
+import japsa.tools.bio.np.RealtimeStrainTypingCmd;
 import japsa.tools.bio.np.RegulateTimeCmd;
 import japsa.tools.bio.np.ResistanceGeneCmd;
 import japsa.tools.bio.np.RealtimeResistanceGeneCmd;
@@ -147,17 +148,19 @@ public class Deploy {
 		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(new NanoporeReaderCmd());
-		tools.add(new NanoporeReadFilterCmd());		
+		tools.add(new NanoporeReadFilterCmd());
+		
 		tools.add(new SpeciesMixtureTypingCmd());		
 		tools.add(new GeneStrainTypingCmd());
 		tools.add(new MLSTStrainTypingCmd());
 		tools.add(new ResistanceGeneCmd());		
 		
-		tools.add(new RealtimeResistanceGeneCmd());
-		tools.add(new RealtimeSpeciesTypingCmd());
-		tools.add(new RegulateTimeCmd());
 		
-		//tools.add(new Genomes2ResistanceGeneCmd());
+		tools.add(new RealtimeSpeciesTypingCmd());
+		tools.add(new RealtimeStrainTypingCmd());
+		tools.add(new RealtimeResistanceGeneCmd());
+		tools.add(new RegulateTimeCmd());		
+		//tools.add(new RealtimeResistanceGeneCmd());
 		
 		
 		//jsa.trv.*
