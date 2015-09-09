@@ -48,14 +48,18 @@ public abstract class RealtimeAnalysis implements Runnable {
 	private int readPeriod = 0;//Min number of reads before a new analysis
 	private int timePeriod = 0;//Min number of mini-seconds before a new analysis	
 	private int powerNap = 1000;//sleep time in miniseconds (1 second by default)
-	
+
 	RealtimeAnalysis(){
 	}
 
-	boolean working = true;
-	
+	private boolean waiting = true;
+
 	long lastTime;//The last time an analysis is done
 	int lastReadNumber;
+
+	public void stopWaiting(){
+		waiting = false;
+	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
@@ -63,7 +67,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 	@Override
 	public void run() {
 		Logging.info("Real time analysis ready");
-		while (working){
+		while (waiting){
 			//Need to wait if timing is not right
 			long timeSleep = timePeriod - (System.currentTimeMillis() - lastTime);
 			if (timeSleep > 0){
@@ -93,10 +97,14 @@ public abstract class RealtimeAnalysis implements Runnable {
 
 		//perform the final analysis
 		lastTime = System.currentTimeMillis();
+		lastReadNumber =  getCurrentRead();
 		analysis();
+		//.. and close it
+		close();
 		Logging.info("Real time analysis done");
 	}
 
+	abstract protected void close();
 	abstract protected void analysis();
 	abstract protected int getCurrentRead();	
 

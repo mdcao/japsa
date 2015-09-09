@@ -71,8 +71,7 @@ public class RealtimeSpeciesTyping {
 	int currentReadCount = 0;
 	int currentReadAligned = 0;
 	long currentBaseCount = 0;	
-	public SequenceOutputStream countsOS;
-
+	
 	long startTime;
 
 	HashMap<String, String> seq2Species = new HashMap<String, String>();
@@ -81,12 +80,8 @@ public class RealtimeSpeciesTyping {
 
 
 	public RealtimeSpeciesTyping(String indexFile, String output)throws IOException{
-		typer = new RealtimeSpeciesTyper(this);
+		typer = new RealtimeSpeciesTyper(this, output);
 		startTime = System.currentTimeMillis();
-
-		//Set up output
-		countsOS = SequenceOutputStream.makeOutputStream(output);		
-		//Load index file
 		preTyping(indexFile);
 	}
 
@@ -96,11 +91,7 @@ public class RealtimeSpeciesTyping {
 	public void setMinQual(double minQual) {
 		this.minQual = minQual;
 	}
-
-	public void close() throws IOException{
-		countsOS.close();
-		typer.close();
-	}
+	
 	/**
 	 * @param bamFile
 	 * @param geneFile
@@ -148,8 +139,7 @@ public class RealtimeSpeciesTyping {
 		Logging.info(seq2Species.size() + "   " + species2Count.size());
 		speciesList.addAll(species2Count.keySet());
 
-		//Write header
-		countsOS.print("step\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");		
+		//Write header				
 	}
 
 
@@ -215,8 +205,8 @@ public class RealtimeSpeciesTyping {
 
 		//final run
 		//typer.simpleAnalysisCurrent();
-		typer.working = false;
-
+		
+		typer.stopWaiting();//Tell typer to stop
 		samIter.close();
 		samReader.close();
 	}	
@@ -224,8 +214,9 @@ public class RealtimeSpeciesTyping {
 	public static class RealtimeSpeciesTyper extends RealtimeAnalysis{
 		Rengine rengine;
 		RealtimeSpeciesTyping typing;
+		public SequenceOutputStream countsOS;
 
-		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t){
+		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, String output) throws IOException{
 			typing = t;
 			//Set up Rengine
 			rengine = new Rengine (new String [] {"--no-save"}, false, null);
@@ -236,6 +227,9 @@ public class RealtimeSpeciesTyping {
 			rengine.eval("alpha<-0.05");
 
 			Logging.info("REngine ready");
+			countsOS = SequenceOutputStream.makeOutputStream(output);
+			countsOS.print("step\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
+			
 		}
 
 		private void simpleAnalysisCurrent() throws IOException{	
@@ -278,18 +272,22 @@ public class RealtimeSpeciesTyping {
 				double mid = (results[i][0] + results[i][1])/2;
 				double err = mid - results[i][0];
 
-				typing.countsOS.print(step + "\t" + typing.currentReadCount + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + count[i]);
-				typing.countsOS.println();
+				countsOS.print(step + "\t" + typing.currentReadCount + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + count[i]);
+				countsOS.println();
 			}
 
-			typing.countsOS.flush();
+			countsOS.flush();
 			Logging.info(step+"  " + countArray.size());
 		}
 
-		void close(){
+		protected void close(){
+			try{
 			rengine.end();
+			countsOS.close();
+			}catch (Exception e){
+				e.printStackTrace();
+			}
 		}
-
 
 		/* (non-Javadoc)
 		 * @see japsa.bio.np.RealtimeAnalysis#analysis()

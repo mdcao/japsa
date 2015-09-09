@@ -82,13 +82,11 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String indexFile = cmdLine.getStringVal("indexFile");
 		
 		int number       = cmdLine.getIntVal("read");
-		int time       = cmdLine.getIntVal("time");
-		
+		int time       = cmdLine.getIntVal("time");		
 		double qual      = cmdLine.getDoubleVal("qual");
 
 		RealtimeSpeciesTyping paTyping = new RealtimeSpeciesTyping(indexFile, output);		
 		paTyping.setMinQual(qual);				
 		paTyping.typing(bamFile, number, time);		
-		paTyping.close();
 	}
 }

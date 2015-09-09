@@ -1,7 +1,7 @@
+/**
+ * LICENCE?
+ */
 package japsa.bio.np;
-
-
-import japsa.bio.np.RealtimeStrainTyping.GeneProfile;
 
 import java.io.File;
 import java.io.FilenameFilter;

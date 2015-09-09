@@ -161,11 +161,9 @@ public class HTSUtilities {
 	 */
 	public static IdentityProfile identity(Sequence refSeq, Sequence readSeq,  SAMRecord sam){
 		IdentityProfile profile = new IdentityProfile();
-		
-		
-		int readPos = 0;//start from 0					
-		int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index
 				
+		int readPos = 0;//start from 0					
+		int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index				
 		
 		profile.readClipped = 0;
 		profile.refClipped = sam.getAlignmentStart() + refSeq.length() - sam.getAlignmentEnd();

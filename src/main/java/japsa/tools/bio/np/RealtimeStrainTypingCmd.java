@@ -60,13 +60,12 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 		addString("profile", null,  "Output file containing gene profile of all strains",true);		
 		addString("bamFile", null,  "The bam file",true);
 		addString("geneFile", null,  "The gene file",true);
-
-		addInt("top", 10,  "The number of top strains");
-		addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-		addInt("timestamp", 0,  "Timestamp to check, if <=0 then use read number instead");
-		addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
-
+		addDouble("qual", 0,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
+		
+		addInt("top", 10,  "The number of top strains");		
+		addInt("read", 50,  "Minimum number of reads between analyses");		
+		addInt("time", 30,   "Minimum number of seconds between analyses");
 
 		addStdHelp();		
 	} 
@@ -85,11 +84,14 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String geneFile = cmdLine.getStringVal("geneFile");
 		
-		int top = cmdLine.getIntVal("top");		
+		int top = cmdLine.getIntVal("top");
+		
+		int read       = cmdLine.getIntVal("read");
+		int time       = cmdLine.getIntVal("time");		
+		double qual      = cmdLine.getDoubleVal("qual");		
 
-		RealtimeStrainTyping paTyping = new RealtimeStrainTyping(geneFile, profile, output);
-		paTyping.typing(bamFile,  top);
-		paTyping.close();
+		RealtimeStrainTyping paTyping = new RealtimeStrainTyping(read, time, geneFile, profile, output);
+		paTyping.typing(bamFile);		
 		
 	}
 
