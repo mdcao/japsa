@@ -58,17 +58,17 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");
 		
-		addInt("read", 500,  "Minimum number of reads between analyses");		
-		addInt("time", 30,   "Minimum number of seconds between analyses");
-					
 		addDouble("scoreThreshold", 1.5,  "The alignment score threshold");
 		addString("msa", "kalign",
 			"Name of the msa method, support poa, kalign, muscle and clustalo");
 		
-		addString("tmp", "tmp/t",  "Temporary folder");
+		addString("tmp", "tmp/t",  "Temporary folder");				
 		
-		
-		addBoolean("twodonly", false,  "Use only two dimentional reads");
+		addDouble("qual", 0,  "Minimum alignment quality");
+		addBoolean("twodonly", false,  "Use only two dimentional reads");				
+		addInt("read", 50,  "Minimum number of reads between analyses");		
+		addInt("time", 1800,   "Minimum number of seconds between analyses");
+						
 		addStdHelp();
 	} 
 
@@ -83,19 +83,15 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		
 		String tmp = cmdLine.getStringVal("tmp");
 		
-		double scoreThreshold = cmdLine.getDoubleVal("scoreThreshold");
-		
-		int readPeriod = cmdLine.getIntVal("reads");
-		int minutePeriod = cmdLine.getIntVal("time");
+		double scoreThreshold = cmdLine.getDoubleVal("scoreThreshold");		
+		int readPeriod = cmdLine.getIntVal("read");
+		int time = cmdLine.getIntVal("time");
 		
 		boolean twodonly = cmdLine.getBooleanVal("twodonly");
 
-		RealtimeResistanceGene paTyping = new RealtimeResistanceGene(output);		
+		RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, output, tmp);		
 		
-		paTyping.msa = msa;
-		//paTyping.global = global;
-
-		paTyping.prefix = tmp;
+		paTyping.msa = msa;		
 		paTyping.scoreThreshold = scoreThreshold;
 		paTyping.twoDOnly = twodonly;
 				

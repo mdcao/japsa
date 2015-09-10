@@ -1,0 +1,41 @@
+-------------------------------------------------------------
+*jsa.phylo.normalise*: Normalise branch length of a phylogeny 
+-------------------------------------------------------------
+
+*jsa.phylo.normalise* scales the branches of a phylogeny so that their sum
+equates to a value.
+ 
+*jsa.phylo.normalise* is included in the `Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+~~~~~~~~
+Synopsis
+~~~~~~~~
+
+*jsa.phylo.normalise*:Normalise the length branch of a tree so that 
+
+~~~~~
+Usage
+~~~~~
+::
+
+   jsa.phylo.normalise [options]
+
+~~~~~~~
+Options
+~~~~~~~
+  --input=s       Name of the input file, - for standard input
+                  (REQUIRED)
+  --sum=d         Sum of branches after normalising
+                  (default='1.0')
+  --output=s      Name of the file for output, - for stdout
+                  (default='-')
+  --help          Display this usage and exit
+                  (default='false')
+
+
+
+
+

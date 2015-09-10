@@ -70,11 +70,12 @@ public class StreamClientCmd extends CommandLine{
 
 	/**
 	 * @param args
+	 * @throws IOException 
 	 * @throws InterruptedException 
 	 * @throws Exception 
 	 * @throws OutOfMemoryError 
 	 */
-	public static void main(String[] args) throws IOException, InterruptedException{		 		
+	public static void main(String[] args) throws IOException{		 		
 		CommandLine cmdLine = new StreamClientCmd();				
 		args = cmdLine.stdParseLine(args);						
 		/**********************************************************************/
@@ -89,12 +90,23 @@ public class StreamClientCmd extends CommandLine{
 			int ret = ins.read(buffer);
 			if (ret < 0)
 				break;
+			int count = 0;
+			
 			for (Socket socket:client.getSockets()){
-				socket.getOutputStream().write(buffer,0, ret);
+				if (!socket.isClosed()){
+					try {
+						socket.getOutputStream().write(buffer,0, ret);
+						count ++;
+					} catch (IOException e) {
+						Logging.info("Connection to " + socket.getRemoteSocketAddress() + " closed");
+						socket.close();
+					}					
+				}				
 			}
+			if (count <= 0)
+				break;
 		}
-		client.close();		
-
+		client.close();
 	}
 }
 /*RST*

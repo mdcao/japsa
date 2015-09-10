@@ -147,8 +147,11 @@ public class RealtimeSpeciesTyping {
 	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException{
 		if (readNumber <= 0)
 			readNumber = 1;
+		
+		typer.setReadPeriod(readNumber);
+		typer.setTimePeriod(timeNumber * 1000);
 
-		Thread thread = new Thread(typer);		
+				
 		String readName = "";
 		//Read the bam file		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -159,10 +162,9 @@ public class RealtimeSpeciesTyping {
 			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
 		SAMRecordIterator samIter = samReader.iterator();
-		thread.start();
-
-		typer.setReadPeriod(readNumber);
-		typer.setTimePeriod(timeNumber * 1000);
+		
+		Thread thread = new Thread(typer);
+		thread.start();		
 
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();

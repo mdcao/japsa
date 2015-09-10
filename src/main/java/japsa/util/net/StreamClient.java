@@ -49,8 +49,8 @@ import java.util.ArrayList;
  */
 public class StreamClient implements Closeable{
 	private ArrayList<Socket> sockets;
-	
-	public StreamClient(String serverList) throws UnknownHostException, IOException{
+
+	public StreamClient(String serverList){
 		sockets = new ArrayList<Socket> ();
 		String [] servers = serverList.split(",");
 		for (String server:servers){
@@ -58,10 +58,20 @@ public class StreamClient implements Closeable{
 			int portNumber = StreamServerCmd.DEFAULT_PORT;
 			if (toks.length > 1)
 				portNumber = Integer.parseInt(toks[1]);			
-			Logging.info("Trying to connect " + toks[0] + ":" + portNumber);
-			Socket socket = new Socket(toks[0], portNumber);
-			Logging.info("Connection to " + toks[0] + ":" + portNumber + " established");
-			sockets.add(socket);
+			Logging.info("Trying to connect " + toks[0] + ":" + portNumber);			
+			try {
+				Socket socket = new Socket(toks[0], portNumber);
+				sockets.add(socket);
+				Logging.info("Connection to " + toks[0] + ":" + portNumber + " established");
+			} catch (UnknownHostException e) {
+				//e.printStackTrace();
+				Logging.warn("Could not connect to " + toks[0] + ":" + portNumber);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+
 		}		
 	}
 	public ArrayList<Socket>  getSockets(){

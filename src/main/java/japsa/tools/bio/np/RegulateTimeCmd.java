@@ -35,6 +35,7 @@
 package japsa.tools.bio.np;
 
 import java.io.IOException;
+import java.util.Date;
 
 import japsa.seq.Alphabet;
 import japsa.seq.FastqReader;
@@ -64,9 +65,9 @@ public class RegulateTimeCmd extends CommandLine {
 
 		addStdInputFile();
 		addStdOutputFile();
-
+		
 		addDouble("scale",1.0, "Scale");
-
+		
 		addStdHelp();
 	}
 
@@ -91,9 +92,13 @@ public class RegulateTimeCmd extends CommandLine {
 		Sequence seq;
 
 		long timeStart = System.currentTimeMillis();
+		long reportTime = timeStart;
+		
 		String sortKeyOptionPrefix = "cTime=";
 		int sortKeyOptionIndex = sortKeyOptionPrefix.length(); 
 		long firstReadTime = 0; 
+		int numRead = 0;
+		long numBase = 0;
 		
 		while ((seq = reader.nextSequence(Alphabet.DNA()))!= null){			
 			double cTime = 0;
@@ -116,9 +121,15 @@ public class RegulateTimeCmd extends CommandLine {
 				firstReadTime = (long) cTime;
 			}
 			
-			cTime = 1000* (cTime - firstReadTime) / scale;//scale and convert to milisecond
+			long reportTimeNow = System.currentTimeMillis();
+			if (reportTimeNow - reportTime >= 60000){
+				reportTime = reportTimeNow; 
+				Logging.info(new Date(reportTime) + " : " + numRead + " reads " + numBase + " bases");
+			}			
 			
-			long timeNow = ((long) cTime)  - (System.currentTimeMillis() - timeStart);
+			cTime = 1000* (cTime - firstReadTime) / scale;//scale and convert to milisecond
+						
+			long timeNow = ((long) cTime)  - (System.currentTimeMillis() - timeStart);			
 			if (timeNow > 0){
 				sos.flush();
 				try {
@@ -134,6 +145,10 @@ public class RegulateTimeCmd extends CommandLine {
 				fq.print(sos);				
 			}else				
 				seq.writeFasta(sos);
+			
+			numRead ++;
+			numBase += seq.length();			
+			
 		}//while
 		sos.close();
 	}

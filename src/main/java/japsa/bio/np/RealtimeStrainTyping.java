@@ -125,10 +125,10 @@ public class RealtimeStrainTyping {
 		else
 			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
+		SAMRecordIterator samIter = samReader.iterator();
+		
 		Thread typerThread = new Thread(typer);
 		typerThread.start();
-
-		SAMRecordIterator samIter = samReader.iterator();				
 
 		String readName = "";
 		//A dummy sequence
