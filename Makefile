@@ -127,7 +127,7 @@ O_JLP=
 endif
 
 ifdef MXMEM
-O_MXMEM=-xmx=${O_MXMEM}
+O_MXMEM=-xmx=${MXMEM}
 else
 O_MXMEM=
 endif
