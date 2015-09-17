@@ -34,6 +34,8 @@
  ****************************************************************************/
 package japsa.bio.np;
 
+import java.util.Date;
+
 import japsa.util.Logging;
 
 /**
@@ -55,6 +57,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 	private boolean waiting = true;
 
 	long lastTime;//The last time an analysis is done
+	long startTime;
 	int lastReadNumber;
 
 	public void stopWaiting(){
@@ -66,7 +69,15 @@ public abstract class RealtimeAnalysis implements Runnable {
 	 */
 	@Override
 	public void run() {
-		Logging.info("Real time analysis ready");
+		startTime = System.currentTimeMillis();
+		Logging.info("Start analysing data at " + new Date(startTime));
+		
+		try {
+			Thread.sleep(timePeriod);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		
 		while (waiting){
 			//Need to wait if timing is not right
 			long timeSleep = timePeriod - (System.currentTimeMillis() - lastTime);

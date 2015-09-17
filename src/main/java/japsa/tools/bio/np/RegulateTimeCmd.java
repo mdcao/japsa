@@ -87,18 +87,18 @@ public class RegulateTimeCmd extends CommandLine {
 
 		SequenceReader reader = SequenceReader.getReader(input);
 		
-		boolean isFastq = (reader instanceof FastqReader); 
-
-		Sequence seq;
-
-		long timeStart = System.currentTimeMillis();
-		long reportTime = timeStart;
+		boolean isFastq = (reader instanceof FastqReader);
+		Sequence seq;		
 		
 		String sortKeyOptionPrefix = "cTime=";
-		int sortKeyOptionIndex = sortKeyOptionPrefix.length(); 
-		long firstReadTime = 0; 
-		int numRead = 0;
-		long numBase = 0;
+		int   sortKeyOptionIndex = sortKeyOptionPrefix.length(); 
+		long  firstReadTime = 0; 
+		int   numRead = 0;
+		long  numBase = 0;
+		
+		long timeStart = System.currentTimeMillis();		
+		Logging.info("Time start " + new Date(timeStart));
+		long reportTime = timeStart;
 		
 		while ((seq = reader.nextSequence(Alphabet.DNA()))!= null){			
 			double cTime = 0;

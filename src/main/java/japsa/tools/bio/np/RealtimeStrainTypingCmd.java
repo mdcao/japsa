@@ -63,7 +63,7 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 		addDouble("qual", 0,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
 		
-		addInt("top", 10,  "The number of top strains");		
+		//addInt("top", 10,  "The number of top strains");		
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 30,   "Minimum number of seconds between analyses");
 
@@ -84,13 +84,16 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String geneFile = cmdLine.getStringVal("geneFile");
 		
-		int top = cmdLine.getIntVal("top");
+		//int top = cmdLine.getIntVal("top");
 		
 		int read       = cmdLine.getIntVal("read");
 		int time       = cmdLine.getIntVal("time");		
 		double qual      = cmdLine.getDoubleVal("qual");		
+		boolean twoOnly      = cmdLine.getBooleanVal("twodonly");
 
 		RealtimeStrainTyping paTyping = new RealtimeStrainTyping(read, time, geneFile, profile, output);
+		paTyping.setMinQual(qual);	
+		paTyping.setTwoOnly(twoOnly);
 		paTyping.typing(bamFile);		
 		
 	}

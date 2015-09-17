@@ -63,14 +63,13 @@ import java.util.HashSet;
  */
 public class RealtimeStrainTyping {
 	RealtimeStrainTyper typer;
-	double minQual = 0;
-	boolean twoOnly = false;
+	private double minQual = 0;
+	private boolean twoDOnly = false;
 
 	//TODO: make the below private
 	ArrayList<Sequence> geneList;
 	HashMap<String, Sequence> geneMap;
 	HashMap<String, ArrayList<Sequence>> alignmentMap;
-
 
 	int  currentReadCount = 0;
 	long currentBaseCount = 0;
@@ -108,6 +107,17 @@ public class RealtimeStrainTyping {
 			geneMap.put(gene.getName(), gene);		
 		}
 	}
+	
+	public void setMinQual(double qual) {
+		minQual = qual;
+	}
+
+	/**
+	 * @param twoOnly the twoOnly to set
+	 */
+	public void setTwoOnly(boolean twoOnly) {
+		this.twoDOnly = twoOnly;
+	}
 
 	/**
 	 * @param bamFile
@@ -115,7 +125,9 @@ public class RealtimeStrainTyping {
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
-	public void typing(String bamFile) throws IOException, InterruptedException{		
+	public void typing(String bamFile) throws IOException, InterruptedException{
+		Logging.info("Species typing ready at " + new Date());
+		
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
 
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -135,9 +147,10 @@ public class RealtimeStrainTyping {
 		Sequence readSequence = new Sequence(Alphabet.DNA(),1,"");
 		while (samIter.hasNext()){
 			SAMRecord record = samIter.next();
-			//if (this.twoDOnly && !record.getReadName().contains("twodim")){
-			//	continue;
-			//}
+			
+			if (this.twoDOnly && !record.getReadName().contains("twodim")){
+				continue;
+			}
 
 			if (!record.getReadName().equals(readName)){
 				readName = record.getReadName();
@@ -157,6 +170,9 @@ public class RealtimeStrainTyping {
 
 			if (record.getReadUnmappedFlag())
 				continue;			
+			
+			if(record.getMappingQuality() < minQual)
+				continue;
 			//assert: the read sequence is stored in readSequence with the right direction
 
 			currentReadAligned ++;
@@ -237,15 +253,14 @@ public class RealtimeStrainTyping {
 		}
 	}
 
-	private static double distance (HashSet<String> s1,HashSet<String> s2){		
-		int count= 0;
-
-		for (String st:s1){
-			if (s2.contains(st))
-				count ++;
-		}
-		return count *2.0 / (s1.size() + s2.size());
-	}
+//private static double distance (HashSet<String> s1,HashSet<String> s2){		
+//	int count= 0;
+//		for (String st:s1){
+//			if (s2.contains(st))
+//				count ++;
+//		}
+//		return count *2.0 / (s1.size() + s2.size());
+//	}
 
 	public static class RealtimeStrainTyper extends RealtimeAnalysis{
 		//Set of genes that seen from the sample

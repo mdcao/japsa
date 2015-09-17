@@ -61,18 +61,20 @@ import org.rosuda.JRI.Rengine;
  *
  */
 public class RealtimeSpeciesTyping {
-
+	RealtimeSpeciesTyper typer;
+	
 	/**
 	 * Minimum quality of alignment
 	 */
 	private double minQual = 0;
-	RealtimeSpeciesTyper typer;
+	private boolean twoDOnly = false;
+	
 
 	int currentReadCount = 0;
 	int currentReadAligned = 0;
 	long currentBaseCount = 0;	
 	
-	long startTime;
+	//long startTime;
 
 	HashMap<String, String> seq2Species = new HashMap<String, String>();
 	HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
@@ -81,16 +83,11 @@ public class RealtimeSpeciesTyping {
 
 	public RealtimeSpeciesTyping(String indexFile, String output)throws IOException{
 		typer = new RealtimeSpeciesTyper(this, output);
-		startTime = System.currentTimeMillis();
+		//startTime = System.currentTimeMillis();
 		preTyping(indexFile);
 	}
 
-	/**
-	 * @param minQual the minQual to set
-	 */
-	public void setMinQual(double minQual) {
-		this.minQual = minQual;
-	}
+	
 	
 	/**
 	 * @param bamFile
@@ -143,10 +140,25 @@ public class RealtimeSpeciesTyping {
 	}
 
 
+	/**
+	 * @param minQual the minQual to set
+	 */
+	public void setMinQual(double minQual) {
+		this.minQual = minQual;
+	}
+
+	/**
+	 * @param twoOnly the twoOnly to set
+	 */
+	public void setTwoOnly(boolean twoOnly) {
+		this.twoDOnly = twoOnly;
+	}
 
 	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException{
 		if (readNumber <= 0)
 			readNumber = 1;
+		
+		Logging.info("Species typing ready at " + new Date());
 		
 		typer.setReadPeriod(readNumber);
 		typer.setTimePeriod(timeNumber * 1000);
@@ -170,6 +182,10 @@ public class RealtimeSpeciesTyping {
 			SAMRecord sam = samIter.next();
 			//if (firstReadTime <=0)
 			//	firstReadTime = System.currentTimeMillis();
+			
+			if (this.twoDOnly && !sam.getReadName().contains("twodim")){
+				continue;
+			}
 
 			if (!sam.getReadName().equals(readName)){
 				readName = sam.getReadName();
@@ -230,15 +246,15 @@ public class RealtimeSpeciesTyping {
 
 			Logging.info("REngine ready");
 			countsOS = SequenceOutputStream.makeOutputStream(output);
-			countsOS.print("step\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
+			countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
 			
 		}
 
 		private void simpleAnalysisCurrent() throws IOException{	
 			//long step = lastTime;
-
+			
 			Date date = new Date(lastTime);
-			String step = date.toString();			
+			long step = lastTime - startTime;			
 
 			int sum = 0;
 			double [] count = new double[typing.speciesList.size()];
@@ -274,7 +290,7 @@ public class RealtimeSpeciesTyping {
 				double mid = (results[i][0] + results[i][1])/2;
 				double err = mid - results[i][0];
 
-				countsOS.print(step + "\t" + typing.currentReadCount + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + count[i]);
+				countsOS.print(date + "\t" + step + "\t" + typing.currentReadCount + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + countArray.get(i));
 				countsOS.println();
 			}
 
