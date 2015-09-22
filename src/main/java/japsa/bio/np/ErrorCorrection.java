@@ -43,6 +43,7 @@ import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,10 +57,37 @@ import java.util.Arrays;
  *
  */
 public class ErrorCorrection {
-	
+
 	public static String prefix = "tmp";
 	public static String msa = "kalign";
-	
+
+	public static double needle(Sequence seq1, Sequence seq2, String prefix) throws IOException, InterruptedException{
+		String seq1File = prefix + seq1.getName() + ".fasta";
+		String seq2File = prefix + seq2.getName() + ".fasta";
+		seq1.writeFasta(seq1File);
+		seq2.writeFasta(seq2File);
+		String needleOut = prefix + "_alignment.needle";
+		String cmd = "needle -gapopen 10 -gapextend 0.5 -asequence " 
+			+ seq1File + " -bsequence " + seq2File + " -outfile " + needleOut;
+		Logging.info("Running " + cmd);
+		Process process = Runtime.getRuntime().exec(cmd);
+		process.waitFor();					
+		Logging.info("Run'ed " + cmd );
+
+		BufferedReader scoreBf = new BufferedReader(new FileReader(needleOut));
+		String scoreLine = null;					
+		double score = 0;
+		while ((scoreLine = scoreBf.readLine())!=null){
+			String [] scoreToks = scoreLine.split(" ");					
+			if (scoreToks.length == 3 && scoreToks[1].equals("Score:")){
+				score = Double.parseDouble(scoreToks[2]);
+				break;//while
+			}					
+		}//while
+		scoreBf.close();
+		return score;		
+	}
+
 	public static Sequence consensusSequence(ArrayList<Sequence> readList, String prefix, String msa) throws IOException, InterruptedException{
 		//String faiFile = prefix + "_" + this.currentReadCount;
 		Sequence consensus = null;
@@ -99,14 +127,14 @@ public class ErrorCorrection {
 					}else{
 						Logging.exit("Unknown msa function " + msa, 1);
 					}
-					
+
 					Logging.info("Running " + cmd);
 					Process process = Runtime.getRuntime().exec(cmd);
 					process.waitFor();
 					Logging.info("Done " + cmd);
 				}
-				
-				
+
+
 				if ("poa".equals(msa)){
 					SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), readList.get(0).length());
 					BufferedReader bf =  FastaReader.openFile(faoFile);
@@ -177,6 +205,6 @@ public class ErrorCorrection {
 		}
 		return consensus;
 	}
-	
+
 
 }

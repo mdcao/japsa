@@ -142,7 +142,11 @@ public class VNTRDepthCmd extends CommandLine{
 			if (startSeq <1)
 				startSeq = 1;
 
-			sos.print(xafReader.getField("ID"));
+			String ID = xafReader.getField("ID");
+			if (ID == null){
+				ID = chrom + ":" + startSeq + "-" + endRep;
+			}
+			sos.print(ID);
 			sos.print('\t');
 			sos.print(chrom);
 			sos.print('\t');

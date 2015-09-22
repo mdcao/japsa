@@ -27,86 +27,89 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/**************************     REVISION HISTORY    **************************
- * 5 Mar 2015 - Minh Duc Cao: Created                                        
- *  
+/*****************************************************************************
+ *                           Revision History                                
+ * 7 Aug 2015 - Minh Duc Cao: Created                                        
+ * 
  ****************************************************************************/
-package japsa.tools.util;
-
-import japsa.util.CommandLine;
-import japsa.util.Logging;
-import japsa.util.deploy.Deployable;
+package japsa.tools.bio.np;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 
-import com.google.common.io.ByteStreams;
-
+import japsa.bio.np.RealtimeMLST;
+import japsa.util.CommandLine;
+import japsa.util.deploy.Deployable;
 
 /**
  * @author minhduc
  *
  */
 @Deployable(
-		scriptName = "jsa.util.streamServer",
-		scriptDesc = "Listen for input from a stream and output to the standard output",
-		seeAlso = "jsa.util.streamClient, jsa.np.filter.jsa.np.f5reader"
-		//scriptDocs = "jsa.util.streamServer implements a server that listen at "
-		//		+ "a specified port. Upon receiving data from a client, it forwards the stream "
-		//		+ "data to standard output"
-		)
-public class StreamServerCmd extends CommandLine{
-	public static int DEFAULT_PORT = 3456;
-	public StreamServerCmd(){
+	scriptName = "jsa.np.rtMLST", 
+	scriptDesc = "Realtime Multi-Locus Strain Typing using Nanopore Sequencing data"
+	)
+public class RealtimeMLSTCmd extends CommandLine{	
+	public RealtimeMLSTCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
+
 		
-		addInt("port", DEFAULT_PORT,  "Port to listen to");	
+		
+		addString("mlstScheme", null, "Path to mlst scheme",true);
+		addString("bamFile", null,  "The bam file");
+		addInt("top", 10,  "The number of top strains");		
+		addString("msa", "kalign",
+				"Name of the msa method, support poa, kalign, muscle and clustalo");
+		addString("tmp", "tmp/t",  "Temporary folder");
+		addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
+
+		//////////////////////////////////////////////////////////////////////////
+		
+		addDouble("qual", 0,  "Minimum alignment quality");
+		addBoolean("twodonly", false,  "Use only two dimentional reads");		
+		addInt("read", 50,  "Minimum number of reads between analyses");		
+		addInt("time", 30,   "Minimum number of seconds between analyses");
 		
 		addStdHelp();		
 	} 
-	
-	
-/**
- * @param args
- * @throws InterruptedException 
- * @throws Exception 
- * @throws OutOfMemoryError 
- */
-	public static void main(String[] args) throws IOException, InterruptedException{		 		
-		CommandLine cmdLine = new StreamServerCmd();				
+
+	public static void main(String[] args) throws IOException, InterruptedException{
+		CommandLine cmdLine = new RealtimeMLSTCmd();
 		args = cmdLine.stdParseLine(args);			
 		/**********************************************************************/
-				
-		int port = cmdLine.getIntVal("port");
+
 		
-		ServerSocket serverSocket = new ServerSocket(port);
-		Logging.info("Listen on " +  serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort());		
-	    Socket clientSocket = serverSocket.accept();
-	    Logging.info("Connection establised");
-	    ByteStreams.copy(clientSocket.getInputStream(), System.out);
-	    serverSocket.close();
-	    Logging.info("Connection closed");	    
+		String mlstDir = cmdLine.getStringVal("mlstScheme");
+		String bamFile = cmdLine.getStringVal("bamFile");		
+		String msa = cmdLine.getStringVal("msa");
+		String tmp = cmdLine.getStringVal("tmp");		
+		
+				
+		int read       = cmdLine.getIntVal("read");
+		int time       = cmdLine.getIntVal("time");		
+		double qual      = cmdLine.getDoubleVal("qual");		
+		boolean twodonly = cmdLine.getBooleanVal("twodonly");
+				
+		
+		int top = 10;
+		
+		
+		RealtimeMLST paTyping = new RealtimeMLST(mlstDir);
+		paTyping.setTwoDOnly(twodonly);
+		paTyping.setMinQual(qual);
+		
+		paTyping.msa = msa;
+		paTyping.prefix = tmp;		
+		
+		paTyping.readNumber = read;		
+
+
+		if (paTyping.readNumber < 1)
+			paTyping.readNumber = 1;
+		
+		paTyping.typing(bamFile,  top);
+
 	}
 }
-
-/*RST*
-----------------------------------------------------------------
-*jsa.util.streamServer*: Receiving streaming data over a network
-----------------------------------------------------------------
-
-*jsa.util.streamServer* implements a server that listen at a specified port. 
-Upon receiving data from a client, it forwards the stream data to standard 
-output. *jsa.util.streamServer* and *jsa.util.streamClient* can be used to
-set up streaming applications such as real-time analyses. By default, 
-the server listens on port 3456, unless specified otherwise.
-
-<usage>
-
-
-
-*RST*/
-

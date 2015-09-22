@@ -50,6 +50,7 @@ import japsa.tools.bio.np.GeneStrainTypingCmd;
 import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
+import japsa.tools.bio.np.RealtimeMLSTCmd;
 import japsa.tools.bio.np.RealtimeSpeciesTypingCmd;
 import japsa.tools.bio.np.RealtimeStrainTypingCmd;
 import japsa.tools.bio.np.RegulateTimeCmd;
@@ -157,10 +158,11 @@ public class Deploy {
 		
 		
 		tools.add(new RealtimeSpeciesTypingCmd());
+		tools.add(new RealtimeMLSTCmd());
 		tools.add(new RealtimeStrainTypingCmd());
 		tools.add(new RealtimeResistanceGeneCmd());
 		tools.add(new RegulateTimeCmd());		
-		//tools.add(new RealtimeResistanceGeneCmd());
+		//tools.add(new RealtimeMLSTCmd());
 		
 		
 		//jsa.trv.*

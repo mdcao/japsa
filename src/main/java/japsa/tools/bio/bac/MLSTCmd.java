@@ -61,9 +61,7 @@ public class MLSTCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addString("input", null, "Name of the genome file",true);
-		addString("allelesDir", null, "Folder contianing the allele files",true);
-		addString("table", null, "Table (tab separated file)");
-		addString("blastn", "blastn", "Path to blastn");
+		addString("mlstScheme", null, "Folder contianing the allele files",true);			
 
 		addStdHelp();
 	}
@@ -73,12 +71,24 @@ public class MLSTCmd extends CommandLine{
 		args = cmdLine.stdParseLine(args);
 
 		String input = cmdLine.getStringVal("input");
-		String allelesDir = cmdLine.getStringVal("allelesDir");
-		String table = cmdLine.getStringVal("table");
-		String blastn = cmdLine.getStringVal("blastn");
-		
-		ArrayList<Sequence> seqs = FastaReader.readAll(input, Alphabet.DNA());	
+		String mlstDir = cmdLine.getStringVal("mlstScheme");
 
-		System.out.println(MLSTyping.bestMlst(seqs, allelesDir, table, blastn));
+		//String blastn = cmdLine.getStringVal("blastn");		
+		ArrayList<Sequence> seqs = FastaReader.readAll(input, Alphabet.DNA());
+		System.out.println(MLSTyping.bestMlst(seqs, mlstDir));
+
+		/********************************************************************
+		JapsaTimer timer = new JapsaTimer();		
+		timer.mark("1");
+
+		timer.mark("2");
+		MLSTyping t = MLSTyping.topMlst(seqs, mlstDir);
+		timer.mark("3");
+		for (int i = 0; i < 10; i++){
+			MLSType p = t.getProfiles().get(i);
+			System.out.println(p.getST() + " " + p.getScore());
+		}		
+		timer.mark("4");		
+		/********************************************************************/
 	}
 }

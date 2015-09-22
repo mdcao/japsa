@@ -69,7 +69,7 @@ public class SequenceBuilder extends AbstractSequence {
 		super(alphabet, name);
 		byteSeq = new byte[maxLength];
 	}
-	
+
 	/**
 	 * Construct a sequence from a ByteArray object.
 	 * @param alphabet
@@ -110,7 +110,7 @@ public class SequenceBuilder extends AbstractSequence {
 	public SequenceBuilder(Alphabet alphabet, byte[] byteArray, String name) {
 		this(alphabet, byteArray, byteArray.length, name);
 	}
-	
+
 	/**
 	 * Construct a sequence with an dna from the string represent the 
 	 * sequence and the name
@@ -118,15 +118,15 @@ public class SequenceBuilder extends AbstractSequence {
 	 * @param seqStr
 	 * @param name
 	 */
-	
+
 	public SequenceBuilder(Alphabet alphabet, String seqString, String name) {
 		this(alphabet,seqString.length(),name);	
-		
+
 		for (int i = 0; i < byteSeq.length; i++) {
 			append((byte) alphabet.char2int(seqString.charAt(i)));
 		}
 	}
-	
+
 	/**
 	 * Append a base to the end of the sequence
 	 * @param base
@@ -142,7 +142,7 @@ public class SequenceBuilder extends AbstractSequence {
 			if (newLength <= length) {
 				// in.close();
 				throw new RuntimeException(
-						"Sequence is too long to handle");
+					"Sequence is too long to handle");
 			}
 			// create new array of byte
 			byteSeq = Arrays.copyOf(byteSeq, newLength);
@@ -150,7 +150,7 @@ public class SequenceBuilder extends AbstractSequence {
 		byteSeq[length] = base;
 		length ++;
 	}
-	
+
 	/**
 	 * append another sequence from start (inclusive) to end (exclusive)
 	 * @param seq
@@ -159,28 +159,37 @@ public class SequenceBuilder extends AbstractSequence {
 	 */
 	public void append(AbstractSequence seq, int start, int end){
 		if (length + end - start > byteSeq.length){
-			//extend
+			//extend			
 			int newLength = byteSeq.length * 2;
-			if (newLength < 0) {
-				newLength = Integer.MAX_VALUE;
+			while (true){
+				newLength = newLength * 2;
+				if (newLength < 0) {
+					newLength = Integer.MAX_VALUE;
+					byteSeq = Arrays.copyOf(byteSeq, newLength);
+					break;
+				}
+				
+				//TODO: if the array is extended
+				//if (newLength < length + end - start) {
+				//	// in.close();
+				//	throw new RuntimeException(
+				//		"Sequence is too long to handle");
+				//}
+				// create new array of byte
+				if (length + end - start <= newLength){
+					byteSeq = Arrays.copyOf(byteSeq, newLength);
+					break;
+				}
 			}
-			// if the array is extended
-			if (newLength < length + end - start) {
-				// in.close();
-				throw new RuntimeException(
-						"Sequence is too long to handle");
-			}
-			// create new array of byte
-			byteSeq = Arrays.copyOf(byteSeq, newLength);			
 		}
 		for (int i = start; i < end; i++)
 			byteSeq[length++] = (byte) seq.symbolAt(i);		
 	}
-	
+
 	public void append(AbstractSequence seq){
 		append(seq,0,seq.length());		
 	}
-	
+
 	/**
 	 * Return the length of the sequence
 	 * 
@@ -190,11 +199,11 @@ public class SequenceBuilder extends AbstractSequence {
 	public int length() {
 		return length;
 	}
-	
+
 	public Sequence toSequence(){
 		return new Sequence(alphabet(), byteSeq, length, getName());
 	}
-	
+
 	public void reset(){
 		length = 0;
 	}
@@ -206,17 +215,17 @@ public class SequenceBuilder extends AbstractSequence {
 	public int symbolAt(int loc) {
 		if (loc < 0 || loc >= length())
 			return -1;
-		
+
 		return byteSeq[loc];// This should convert into an int
 	}
 
 	public byte getBase(int loc){
 		if (loc < 0 || loc >= length())
 			return -1;
-		
+
 		return byteSeq[loc];
 	}
-	
+
 	/**
 	 * @param loc
 	 * @param base
@@ -227,14 +236,14 @@ public class SequenceBuilder extends AbstractSequence {
 		}
 		byteSeq[loc] = base;
 	}
-	
+
 	public void setSymbol(int loc, int symbol){
 		if (loc < 0 || loc >= length())
 			throw new RuntimeException("Wrong location (max " + length + "):" + loc);
-			
+
 		byteSeq[loc] = (byte) symbol;
 	}
-			
+
 	/* (non-Javadoc)
 	 * @see java.lang.CharSequence#subSequence(int, int)
 	 */

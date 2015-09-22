@@ -40,80 +40,103 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 
+import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
 
 /**
  * @author minhduc
  *
  */
 public class MLSTyping{
-	
+
 	int numGenes = 7;	
-	ArrayList<MLSTProfile> profiles;
-	String [] genes;
-		
+	public ArrayList<MLSType> profiles;
+	String [] geneNames;
+	public ArrayList<Sequence> [] geneSeqs;
+	
+	String baseDir = ".";
+
+
 	/**
 	 * A redesign
-	 * @param table
+	 * @param mlstBase: path to mlst scheme, containing profile.dat file
 	 * @throws IOException
 	 */
-	public MLSTyping(String table) throws IOException{
-		BufferedReader br = new BufferedReader(new FileReader(table));
+
+	@SuppressWarnings("unchecked")
+	public MLSTyping(String mlstBase) throws IOException{
+		baseDir = mlstBase;
+		BufferedReader br = new BufferedReader(new FileReader(mlstBase + "/profile.dat"));
 		String line = br.readLine();
 		String [] toks = line.trim().split("\t");		
-		
-		genes = new String[numGenes];
-		profiles = new ArrayList<MLSTProfile>();
 
-		for (int i =0; i < genes.length;i ++)
-			genes[i] = toks[i+1];
-		
+		geneNames = new String[numGenes];
+		profiles = new ArrayList<MLSType>();
+
+		for (int i =0; i < numGenes;i ++)
+			geneNames[i] = toks[i+1];
+
 		while ((line = br.readLine()) != null) {			
 			toks = line.trim().split("\t");
-			MLSTProfile profile = new MLSTProfile(toks[0], numGenes);
-			
-			for (int i = 0; i < genes.length; i++){
-				profile.indivisialScore[i]  = Integer.parseInt(toks[i+1]);
-			}
-			
+			MLSType profile = new MLSType("ST" + toks[0], numGenes);
+
+			for (int i = 0; i < geneNames.length; i++){
+				profile.setGeneAllele(i,Integer.parseInt(toks[i+1]));
+			}			
 			profiles.add(profile);
 		}
 		br.close();
+
+		geneSeqs = new ArrayList [numGenes];
+		for (int i = 0; i < numGenes; i++)
+			geneSeqs[i] = SequenceReader.readAll(mlstBase + "/" + geneNames[i] + ".fas", Alphabet.DNA());
+
 	}
 
-	public static String bestMlst(ArrayList<Sequence> seqs, String allelesDir, String table, String blastn) throws InterruptedException, IOException{
-		BufferedReader br = new BufferedReader(new FileReader(table));
-		String line = br.readLine();
-		String [] toks = line.trim().split("\t");		
-		String [] genes = new String[7];		 
+	public String getBase(){
+		return baseDir;
+	}
+	public ArrayList<MLSType> getProfiles(){
+		return profiles;
+	}
 
-		for (int i =0; i < genes.length;i ++)
-			genes[i] = toks[i+1];		
-
+	/**
+	 * Return the best ST
+	 * @param seqs
+	 * @param allelesDir
+	 * @param table
+	 * @param blastn
+	 * @return
+	 * @throws InterruptedException
+	 * @throws IOException
+	 */
+	public static String bestMlst(ArrayList<Sequence> seqs, String mlstDir) throws InterruptedException, IOException{
+		MLSTyping mlstScheme = new MLSTyping(mlstDir);
+		String line;		
 		HashMap<String, String> stMap = new HashMap<String, String>();
+		for (MLSType profile:mlstScheme.profiles){
+			String ST = profile.getST();
 
-		while ((line = br.readLine()) != null) {
-			toks = line.trim().split("\t");
-
-			String ST = "ST_" + toks[0];
 			String stKey = "";
-			for (int i = 0; i < genes.length; i++){
-				stKey += genes[i] + "_" + toks[i+1] + "_";
+			for (int i = 0; i < mlstScheme.numGenes; i++){
+				stKey += mlstScheme.geneNames[i] + "_" + profile.geneAlleles[i] + "_";
 			}
-			stMap.put(stKey, ST);			
-		}
-		br.close();
+			stMap.put(stKey, ST);
+		}		
 
 		//Read in alleles
 		String key = "";
 		int typeScore = 0;
 
-		for (String gene:genes){			
-			ProcessBuilder pb = new ProcessBuilder(blastn, "-subject", "-",
-				"-query", allelesDir + "/" + gene + ".fas", "-outfmt", "6 qseqid qlen nident gaps mismatch");
+		for (String gene:mlstScheme.geneNames){			
+			ProcessBuilder pb = new ProcessBuilder("blastn", "-subject", "-",
+				"-query", mlstDir + "/" + gene + ".fas", "-outfmt", "6 qseqid qlen nident gaps mismatch");
 
 			String allele = "";
 			int score = 1000000;//less is more
@@ -126,10 +149,10 @@ public class MLSTyping{
 			}
 			out.close();
 
-			br = new BufferedReader(new InputStreamReader(process.getInputStream()));			
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));			
 
 			while ((line = br.readLine()) != null) {
-				toks = line.trim().split("\t");
+				String [] toks = line.trim().split("\t");
 				int myScore = Integer.parseInt(toks[1]) - Integer.parseInt(toks[2]) + 2 *  Integer.parseInt(toks[3]);
 				if (myScore < score){
 					allele = toks[0];
@@ -150,23 +173,81 @@ public class MLSTyping{
 		return (key + "\t" + st + "\t" + typeScore);
 	}
 
-	public static class MLSTProfile implements Comparable<MLSTProfile>{		
-		int typeScore;		
-		String type;
-		int [] indivisialScore;
 
-		MLSTProfile(String st, int numGenes){
-			type = st;
-			typeScore = 0;
-			indivisialScore = new int[numGenes];
-			for (int i =0; i < indivisialScore.length; i++){
-				indivisialScore[i] = 1000000;	
-				typeScore += indivisialScore[i]; 
+	public static MLSTyping topMlst(ArrayList<Sequence> seqs, String mlstDir) throws InterruptedException, IOException{
+		MLSTyping mlstScheme = new MLSTyping(mlstDir);
+		int [][] scoreMatrix = new int[mlstScheme.numGenes][];
+		//can run in parallele with i
+		for (int i = 0; i < mlstScheme.numGenes; i++){
+			String gene = mlstScheme.geneNames[i];
+			scoreMatrix[i] = new int[mlstScheme.geneSeqs[i].size()];
+			Arrays.fill(scoreMatrix[i], 100000);			
+			ProcessBuilder pb = new ProcessBuilder("blastn", "-subject", "-",
+				"-query", mlstDir + "/" + gene + ".fas", "-outfmt", "6 qseqid qlen nident gaps mismatch");
+
+			Process process = pb.start();
+			SequenceOutputStream out = new SequenceOutputStream(process.getOutputStream());
+			for (Sequence seq:seqs){
+				seq.writeFasta(out);
+			}
+			out.close();
+
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));			
+
+			String line;
+			while ((line = br.readLine()) != null) {
+				String [] toks = line.trim().split("\t");
+				//This is the magic line to compute score, need to make it modular later
+				int myScore = Integer.parseInt(toks[1]) - Integer.parseInt(toks[2]) + 2 *  Integer.parseInt(toks[3]);
+				int allele = Integer.parseInt(toks[0].split("_")[1]) - 1;
+				if (scoreMatrix[i][allele] > myScore)
+					scoreMatrix[i][allele] = myScore;
+			}
+			br.close();
+			process.waitFor();
+		}
+
+		for (MLSType type:mlstScheme.profiles){
+			type.typeScore = 0;
+			for (int i = 0; i < mlstScheme.numGenes;i++){
+				type.typeScore += scoreMatrix[i][type.geneAlleles[i]-1];
 			}			
 		}
+		Collections.sort(mlstScheme.profiles);
+
+		return mlstScheme;
+
+	}
+
+	public static class MLSType implements Comparable<MLSType>{		
+		public double typeScore;		
+		private String st;
+		//int [] indivisialScore;
+		int [] geneAlleles;
+
+		MLSType(String st, int numGenes){
+			this.st = st;
+			typeScore = 100000;			
+			geneAlleles = new int[numGenes];
+		}
 		@Override
-		public int compareTo(MLSTProfile o) {
-			return Integer.compare(typeScore, o.typeScore);
+		public int compareTo(MLSType o) {
+			return Double.compare(typeScore, o.typeScore);
+		}
+
+		public String getST(){
+			return st;
+		}
+		public double getScore(){
+			return typeScore;
+		}
+
+		public void setGeneAllele(int geneIndex, int allele){
+			geneAlleles[geneIndex] = allele;
+		}
+		
+		public int getAllele(int geneIndex){
+			return geneAlleles[geneIndex];
 		}
 	}
 }

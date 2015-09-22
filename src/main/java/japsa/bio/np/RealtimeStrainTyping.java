@@ -126,7 +126,7 @@ public class RealtimeStrainTyping {
 	 * @throws InterruptedException 
 	 */
 	public void typing(String bamFile) throws IOException, InterruptedException{
-		Logging.info("Species typing ready at " + new Date());
+		Logging.info("Strain typing ready at " + new Date());
 		
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
 
@@ -252,7 +252,6 @@ public class RealtimeStrainTyping {
 			return strainID;
 		}
 	}
-
 //private static double distance (HashSet<String> s1,HashSet<String> s2){		
 //	int count= 0;
 //		for (String st:s1){
@@ -279,14 +278,12 @@ public class RealtimeStrainTyping {
 			this.typing = typing;
 
 			datOS = SequenceOutputStream.makeOutputStream(output);			
-			datOS.print("step\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
+			datOS.print("time\tstep\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
 			readKnowProfiles(profileFile);
 
 		}
 		
-
-
-		public void readKnowProfiles(String profileFile) throws IOException{
+		private void readKnowProfiles(String profileFile) throws IOException{
 			String line;
 			BufferedReader reader = new BufferedReader (new FileReader(profileFile));		
 			ArrayList<RealtimeStrainTyping.GeneProfile> myProfileList = new ArrayList<RealtimeStrainTyping.GeneProfile>(); 
@@ -372,6 +369,9 @@ public class RealtimeStrainTyping {
 		}
 
 		private ArrayList<LCTypingResult> makePresenceTyping(int top) throws IOException, InterruptedException{
+			Logging.info("Perform an analysis at " + new Date());
+			Date date = new Date(lastTime);
+			long step = (lastTime - startTime)/1000;//convert to second
 
 			//int step = typing.currentReadCount;
 			//HashSet<String> myGenes = new HashSet<String>();	
@@ -391,7 +391,7 @@ public class RealtimeStrainTyping {
 					}
 				}
 			}
-			Logging.info(new Date(lastTime) + ": Found " + seenGenes.size() + "  " + compute);
+			Logging.info(date + ": Found " + seenGenes.size() + "  " + compute);
 
 			if (compute){
 				posterior = lcTyping.calcPosterior();
@@ -414,11 +414,12 @@ public class RealtimeStrainTyping {
 
 				if (lr.postProb < 0.010)
 					break;
-				datOS.print(new Date(lastTime) + "\t" + typing.currentReadCount + "\t" + typing.currentBaseCount + "\t" + lr.strainID + "\t" + lr.postProb +"\t" + (lr.postProb - lr.l) + "\t" + (lr.h -lr.postProb)  +"\t"+seenGenes.size());
+				datOS.print(date + "\t" + step  + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + lr.strainID + "\t" + lr.postProb +"\t" + (lr.postProb - lr.l) + "\t" + (lr.h -lr.postProb)  +"\t"+seenGenes.size());
 				datOS.println();			
 			}
 			datOS.flush();
-
+			
+			Logging.info("End an analysis at " + new Date());
 			return lcT;
 		}
 		/**

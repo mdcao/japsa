@@ -155,14 +155,13 @@ public class RealtimeSpeciesTyping {
 	}
 
 	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException{
-		if (readNumber <= 0)
-			readNumber = 1;
-		
-		Logging.info("Species typing ready at " + new Date());
+		//if (readNumber <= 0)
+		//	readNumber = 1;			
 		
 		typer.setReadPeriod(readNumber);
 		typer.setTimePeriod(timeNumber * 1000);
 
+		Logging.info("Species typing ready at " + new Date());
 				
 		String readName = "";
 		//Read the bam file		
@@ -254,7 +253,7 @@ public class RealtimeSpeciesTyping {
 			//long step = lastTime;
 			
 			Date date = new Date(lastTime);
-			long step = lastTime - startTime;			
+			long step = (lastTime - startTime)/1000;//convert to second			
 
 			int sum = 0;
 			double [] count = new double[typing.speciesList.size()];
@@ -290,7 +289,7 @@ public class RealtimeSpeciesTyping {
 				double mid = (results[i][0] + results[i][1])/2;
 				double err = mid - results[i][0];
 
-				countsOS.print(date + "\t" + step + "\t" + typing.currentReadCount + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + countArray.get(i));
+				countsOS.print(date + "\t" + step + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + countArray.get(i));
 				countsOS.println();
 			}
 
