@@ -91,7 +91,7 @@ public class ErrorCorrection {
 	public static Sequence consensusSequence(ArrayList<Sequence> readList, String prefix, String msa) throws IOException, InterruptedException{
 		//String faiFile = prefix + "_" + this.currentReadCount;
 		Sequence consensus = null;
-		if (readList != null){
+		if (readList != null && readList.size() > 0){
 			String faiFile = prefix + "_ai.fasta";//name of fasta files of reads mapped to the gene				
 			String faoFile = prefix + "_ao.fasta";//name of fasta files of reads mapped to the gene
 

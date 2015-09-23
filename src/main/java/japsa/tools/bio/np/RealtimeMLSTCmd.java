@@ -54,19 +54,11 @@ public class RealtimeMLSTCmd extends CommandLine{
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-
 		
-		
+		addString("output", "output.dat",  "Output file");
 		addString("mlstScheme", null, "Path to mlst scheme",true);
-		addString("bamFile", null,  "The bam file");
-		addInt("top", 10,  "The number of top strains");		
-		addString("msa", "kalign",
-				"Name of the msa method, support poa, kalign, muscle and clustalo");
-		addString("tmp", "tmp/t",  "Temporary folder");
-		addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-
-		//////////////////////////////////////////////////////////////////////////
-		
+		addString("bamFile", null,  "The bam file");		
+		//////////////////////////////////////////////////////////////////////////		
 		addDouble("qual", 0,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");		
 		addInt("read", 50,  "Minimum number of reads between analyses");		
@@ -81,11 +73,9 @@ public class RealtimeMLSTCmd extends CommandLine{
 		/**********************************************************************/
 
 		
+		String output = cmdLine.getStringVal("output");
 		String mlstDir = cmdLine.getStringVal("mlstScheme");
 		String bamFile = cmdLine.getStringVal("bamFile");		
-		String msa = cmdLine.getStringVal("msa");
-		String tmp = cmdLine.getStringVal("tmp");		
-		
 				
 		int read       = cmdLine.getIntVal("read");
 		int time       = cmdLine.getIntVal("time");		
@@ -96,19 +86,9 @@ public class RealtimeMLSTCmd extends CommandLine{
 		int top = 10;
 		
 		
-		RealtimeMLST paTyping = new RealtimeMLST(mlstDir);
+		RealtimeMLST paTyping = new RealtimeMLST(mlstDir, output, read, time);
 		paTyping.setTwoDOnly(twodonly);
 		paTyping.setMinQual(qual);
-		
-		paTyping.msa = msa;
-		paTyping.prefix = tmp;		
-		
-		paTyping.readNumber = read;		
-
-
-		if (paTyping.readNumber < 1)
-			paTyping.readNumber = 1;
-		
 		paTyping.typing(bamFile,  top);
 
 	}

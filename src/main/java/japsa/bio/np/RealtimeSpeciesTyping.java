@@ -82,8 +82,7 @@ public class RealtimeSpeciesTyping {
 
 
 	public RealtimeSpeciesTyping(String indexFile, String output)throws IOException{
-		typer = new RealtimeSpeciesTyper(this, output);
-		//startTime = System.currentTimeMillis();
+		typer = new RealtimeSpeciesTyper(this, output);		
 		preTyping(indexFile);
 	}
 

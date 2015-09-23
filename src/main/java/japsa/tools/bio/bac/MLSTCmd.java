@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import japsa.bio.bac.MLSTyping;
+import japsa.bio.bac.MLSTyping.MLSType;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
@@ -61,7 +62,8 @@ public class MLSTCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addString("input", null, "Name of the genome file",true);
-		addString("mlstScheme", null, "Folder contianing the allele files",true);			
+		addString("mlstScheme", null, "Folder contianing the allele files",true);
+		addInt("top", 0, "If > 0, will provide top closest profile");
 
 		addStdHelp();
 	}
@@ -72,23 +74,20 @@ public class MLSTCmd extends CommandLine{
 
 		String input = cmdLine.getStringVal("input");
 		String mlstDir = cmdLine.getStringVal("mlstScheme");
+		int top = cmdLine.getIntVal("top");
 
 		//String blastn = cmdLine.getStringVal("blastn");		
 		ArrayList<Sequence> seqs = FastaReader.readAll(input, Alphabet.DNA());
-		System.out.println(MLSTyping.bestMlst(seqs, mlstDir));
+		if (top <= 0)
+			System.out.println(MLSTyping.bestMlst(seqs, mlstDir));
+		else{
+			MLSTyping t = MLSTyping.topMlst(seqs, mlstDir);
+			for (int i = 0; i < 10; i++){
+				MLSType p = t.getProfiles().get(i);
+				System.out.println(p.getST() + " " + p.getScore());
+			}
 
-		/********************************************************************
-		JapsaTimer timer = new JapsaTimer();		
-		timer.mark("1");
+		}
 
-		timer.mark("2");
-		MLSTyping t = MLSTyping.topMlst(seqs, mlstDir);
-		timer.mark("3");
-		for (int i = 0; i < 10; i++){
-			MLSType p = t.getProfiles().get(i);
-			System.out.println(p.getST() + " " + p.getScore());
-		}		
-		timer.mark("4");		
-		/********************************************************************/
 	}
 }

@@ -60,8 +60,9 @@ public abstract class RealtimeAnalysis implements Runnable {
 	long startTime;
 	int lastReadNumber;
 
-	public void stopWaiting(){
+	public void stopWaiting(){		
 		waiting = false;
+		//TODO: implement notifies if I am sleeping
 	}
 
 	/* (non-Javadoc)
@@ -71,13 +72,13 @@ public abstract class RealtimeAnalysis implements Runnable {
 	public void run() {
 		startTime = System.currentTimeMillis();
 		Logging.info("Start analysing data at " + new Date(startTime));
-		
+
 		try {
 			Thread.sleep(timePeriod);
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
-		
+
 		while (waiting){
 			//Need to wait if timing is not right
 			long timeSleep = timePeriod - (System.currentTimeMillis() - lastTime);
@@ -88,6 +89,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
+				continue;//the next round I wont be here again
 			}
 			//assert: time satisfied
 			int currentRead = getCurrentRead();
@@ -98,7 +100,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				continue;
+				continue;//the next round I wont be here again
 			}
 			lastReadNumber = currentRead;
 			lastTime = System.currentTimeMillis();

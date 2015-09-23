@@ -34,8 +34,10 @@
 
 package japsa.bio.np;
 
+import japsa.bio.alignment.ProbFSM;
 import japsa.bio.alignment.ProbFSM.Emission;
 import japsa.bio.alignment.ProbFSM.ProbOneSM;
+import japsa.bio.alignment.ProbFSM.ProbThreeSM;
 import japsa.bio.bac.MLSTyping;
 import japsa.bio.bac.MLSTyping.MLSType;
 import japsa.seq.Alphabet;
@@ -57,6 +59,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author minhduc
@@ -66,32 +71,32 @@ public class RealtimeMLST{
 	/////////////////////////////////////////////////////////////////////////////	
 	private double minQual = 0;
 	private boolean twoDOnly = false;
+	private int numThread = 16;
+
+	ArrayList<Sequence> [] alignmentLists;
 
 	ArrayList<Sequence> geneList;
-	HashMap<String, Sequence> geneMap;
-	HashMap<String, ArrayList<Sequence>> alignmentMap;
+	HashMap<String, Sequence> geneMap;	
 
 	int currentReadCount = 0;
 	long currentBaseCount = 0;
 
-	public String prefix = "tmp";	
-	public String msa = "kalign";	
+	RealtimeMLSTyper typer;	
 
-	public int readNumber = 100;
-	SequenceOutputStream datOS = null;
+	public RealtimeMLST(String mlstDir, String output, int minRead, int minTime) throws IOException{
+		typer = new RealtimeMLSTyper(this, mlstDir, output);		
+		typer.setReadPeriod(minRead);
+		typer.setTimePeriod(minTime * 1000);
 
 
-
-	MLSTyping mlstScheme;
-	int numGenes = 7;
-	public RealtimeMLST(String mlstDir) throws IOException{
-		mlstScheme = new MLSTyping(mlstDir);
-		geneList = SequenceReader.readAll(mlstDir + "/bwaIndex/genes.fas", Alphabet.DNA());		 
+		geneList = SequenceReader.readAll(mlstDir + "/bwaIndex/genes.fasta", Alphabet.DNA());		 
 		geneMap = new HashMap<String, Sequence>();
-
 		for (Sequence gene:geneList){
-			geneMap.put(gene.getName(), gene);		
+			geneMap.put(gene.getName(), gene);
 		}		
+		alignmentLists = new ArrayList[geneList.size()];
+		for (int i = 0; i < geneList.size(); i++)
+			alignmentLists[i] = new ArrayList<Sequence>();
 	}
 
 
@@ -108,152 +113,25 @@ public class RealtimeMLST{
 	public void setTwoDOnly(boolean twoDOnly) {
 		this.twoDOnly = twoDOnly;
 	}
-
-
-
-	private void makeMLSTTyping(int top) throws IOException, InterruptedException{
-		makeMLSTTyping0(top);
-	}
-	/**
-	 * Compute the alignment score between a gene and a list of (errornous) reads
-	 * that were aligned to the gene. The algorithm is:
-	 *  - Get all read sequences (which were previously trimmed)
-	 *  - Call a MSA method to alignment them
-	 *  - Make a consensus sequence of those reads
-	 *  - Align the consensus sequence to the gene sequence using needle
-	 *  - Return the needle alignment score
-	 * @param gene : the gene sequence
-	 * @param readList: an array list of read sequences aligned to this gene
-
-	 * @throws IOException 
-	 * @throws InterruptedException 
-	 */
-
-
-	private void makeMLSTTyping0(int top) throws IOException, InterruptedException{		
-		//Get consensus read sequence of reads mapped to each gene
-		HashMap<String, Sequence> consensusMap = new HashMap<String, Sequence>();
-
-		for (int i = 0; i < geneList.size();i++){	
-			String geneID = geneList.get(i).getName();
-			ArrayList<Sequence> alignmentList =  alignmentMap.get(geneID);
-			Sequence consensus = ErrorCorrection.consensusSequence(alignmentList, prefix + "_" + geneID + "_" + this.currentReadCount, msa);			
-			if (consensus != null){				
-				consensusMap.put(geneID, consensus);
-			}
-		}
-
-		double [][] scoreMatrix = new double[numGenes][];
-		for (int i = 0; i < numGenes; i++){
-			String geneID = geneList.get(i).getName();
-			scoreMatrix[i] = new double[mlstScheme.geneSeqs[i].size()];
-			Arrays.fill(scoreMatrix[i], 0);
-			Sequence consensus = consensusMap.get(geneID);
-			if (consensus == null)
-				continue;
-
-			/************************** HMM ML *******************************/			
-			for (int x = 0; x < mlstScheme.geneSeqs[i].size(); x ++){
-				Sequence seq = mlstScheme.geneSeqs[i].get(x);
-				ArrayList<Sequence> alignmentList =  alignmentMap.get(geneID);
-				if (alignmentList != null){
-					double thisScore = 0;
-					for (Sequence readSeq:alignmentList){
-						ProbOneSM tsm = new ProbOneSM(seq);
-						double cost = 1000000000;
-
-						for (int c = 0; c < 10; c++){
-							tsm.resetCount();
-							Emission retState = tsm.alignGenerative(readSeq);
-							if (cost  <= retState.myCost)
-								break;
-
-							//if (cost - retState.myCost < 0.5){
-							//	cost = retState.myCost;
-							//	break;
-							//}
-							cost = retState.myCost;
-							int emitCount = tsm.updateCount(retState);
-							Logging.info("Iter " + c + " : " + emitCount + " states and " + cost + " bits " + readSeq.length() + "bp " + readSeq.getName() + " by " + seq.getName());
-							tsm.reEstimate();	
-						}//for (iteration)
-						Logging.info(" Saving " + (readSeq.length() * 2 - cost) + " on " + readSeq.getName() + " by " + seq.getName());						
-						if (cost < readSeq.length() * 2){
-							thisScore += (readSeq.length() * 2 - cost);
-						}						
-					}//for read sequence
-					scoreMatrix[i][x] = thisScore;					
-				}//if
-			}
-			/****************************************************************/
-
-			/************************ Needle *******************************
-			for (int x = 0; x < mlstScheme.geneSeqs[i].size(); x ++){
-				Sequence seq = mlstScheme.geneSeqs[i].get(x);
-				scoreMatrix[i][x] = ErrorCorrection.needle(consensus, seq, prefix + "_" + geneID + "_" + this.currentReadCount);
-			}			
-			/****************************************************************/
-
-			/************************** HMM ********************************			
-			for (int x = 0; x < mlstScheme.geneSeqs[i].size(); x ++){
-				Sequence seq = mlstScheme.geneSeqs[i].get(x);
-				ProbOneSM tsm = new ProbOneSM(seq);
-				double cost = 100000000;						
-				for (int c = 0; c < 10; c++){
-					tsm.resetCount();
-					Emission retState = tsm.alignGenerative(consensus);
-					if (cost  <= retState.myCost)
-						break;
-
-					cost = retState.myCost;
-					int emitCount = tsm.updateCount(retState);
-					Logging.info("Iter " + c + " : " + emitCount + " states and " + cost + " bits " + consensus.length() + "bp " + consensus.getName() + " by " + seq.getName());
-					tsm.reEstimate();
-				}				 
-				scoreMatrix[i][x] = consensus.length() * 2 - cost;
-			}
-			/****************************************************************/
-		}
-		///////////////////////////////////////////////////////////
-
-		for (MLSType type:mlstScheme.profiles){
-			type.typeScore = 0;
-			for (int i = 0; i < numGenes;i++){
-				type.typeScore += scoreMatrix[i][type.getAllele(i) - 1];
-			}
-		}
-		Collections.sort(mlstScheme.profiles);
-		Collections.reverse(mlstScheme.profiles);
-
-		if (top > mlstScheme.profiles.size())
-			top = mlstScheme.profiles.size();
-
-		System.out.println("============================================== " + currentReadCount);
-		for (int i = 0; i < top;i++){
-			MLSType profile = mlstScheme.profiles.get(i);
-			System.out.println(profile.getST() + "\t" + profile.getScore());						
-		}
-	}
-
-
 	/**
 	 * @param bamFile
 	 * @param geneFile
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
-	public void typing(String bamFile, int top) throws IOException, InterruptedException{		
-		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
-
+	public void typing(String bamFile, int top) throws IOException, InterruptedException{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader;
 		if ("-".equals(bamFile))
 			samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
 		else
 			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
+		SAMRecordIterator samIter = samReader.iterator();
 
-		SAMRecordIterator samIter = samReader.iterator();	
+		//ExecutorService executor = Executors.newFixedThreadPool((numThread>2) ? (numThread - 2) : 1);
 
+		Thread typerThread = new Thread(typer);
+		typerThread.start();
 
 		String readName = "";
 		//A dummy sequence
@@ -269,11 +147,6 @@ public class RealtimeMLST{
 
 				currentReadCount ++;	
 				currentBaseCount += record.getReadLength();
-
-
-				if (currentReadCount % readNumber == 0){
-					makeMLSTTyping(top);
-				}
 
 				//Get the read
 				if (!record.getReadUnmappedFlag()){
@@ -297,25 +170,187 @@ public class RealtimeMLST{
 				continue;
 
 			int refLength =  geneMap.get(geneID).length();
-
-
-			ArrayList<Sequence> alignmentList = alignmentMap.get(geneID);
-			if (alignmentList == null){
-				alignmentList = new ArrayList<Sequence>();
-				alignmentMap.put(geneID, alignmentList);
-			}
-			//put the sequence into alignment list
-
-			Sequence readSeq = HTSUtilities.spanningSequence(record, readSequence, refLength,0);
+			Sequence readSeq = HTSUtilities.spanningSequence(record, readSequence, refLength, 0);
 
 			if (readSeq == null){
 				Logging.warn("Read sequence is NULL sequence ");
 			}else{
-				alignmentList.add(readSeq);
+				//MLFSMThread mlFSM = new MLFSMThread(this.typer, record.getReferenceIndex(), readSeq);
+				//executor.execute(mlFSM);
+
+				synchronized(alignmentLists){
+					alignmentLists[record.getReferenceIndex()].add(readSeq);					
+				}
 			}
-		}//while	
+		}//while
 		samIter.close();
 		samReader.close();
-		makeMLSTTyping(top);
+
+		//executor.shutdown(); 
+		//executor.awaitTermination(3, TimeUnit.DAYS);
+		typer.stopWaiting();//Tell typer to stop		
+		//typer.makeMLSTTyping0(top);		
 	}	
+
+	public static class RealtimeMLSTyper extends RealtimeAnalysis{
+		RealtimeMLST typing;
+		public SequenceOutputStream countsOS;
+		MLSTyping mlstScheme;
+		int numGenes = 7;
+		int top = 10;
+		double [][] typerScoreMatrix; 		
+		String prefix = "_tmp_" + System.currentTimeMillis() + "_";
+
+		RealtimeMLSTyper(RealtimeMLST typing, String mlstDir, String output) throws IOException{
+			this.typing = typing;
+			countsOS = SequenceOutputStream.makeOutputStream(output);
+			mlstScheme = new MLSTyping(mlstDir);			
+
+			typerScoreMatrix = new double[numGenes][];
+			for (int i = 0; i < numGenes; i++){				
+				typerScoreMatrix[i] = new double[mlstScheme.alleles(i).size()];
+				Arrays.fill(typerScoreMatrix[i], 0);
+			}
+		}
+
+
+		/* (non-Javadoc)
+		 * @see japsa.bio.np.RealtimeAnalysis#close()
+		 */
+		@Override
+		protected void close() {
+			try{				
+				countsOS.close();
+			}catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+
+		/* (non-Javadoc)
+		 * @see japsa.bio.np.RealtimeAnalysis#analysis()
+		 */
+		@Override
+		protected void analysis() {
+			try {
+				makeTypingConsensus();
+				makeTypingMLwithFSM(top);
+			} catch (Exception e) {				 
+				e.printStackTrace();
+			}
+		}
+
+		/* (non-Javadoc)
+		 * @see japsa.bio.np.RealtimeAnalysis#getCurrentRead()
+		 */
+		@Override
+		protected int getCurrentRead() {
+			return typing.currentReadCount;
+		}
+
+
+		private void makeTypingConsensus() throws IOException, InterruptedException{
+			int count = typing.currentReadCount;
+
+			ExecutorService executor = Executors.newFixedThreadPool(7);
+			synchronized(typing.alignmentLists){
+				for (int i = 0; i < typing.alignmentLists.length;i++){
+					Sequence consensus = ErrorCorrection.consensusSequence(typing.alignmentLists[i], prefix + mlstScheme.getGeneName(i) + "kalign" + count, "kalign");
+					if (consensus == null){
+						Logging.warn("No read found for " + mlstScheme.getGeneName(i));
+						continue;
+					}
+
+					MLFSMThread mlFSM = new MLFSMThread(this, i, consensus);
+					executor.execute(mlFSM);
+				}//for i
+			}//synchronized
+			executor.shutdown(); 
+			executor.awaitTermination(3, TimeUnit.DAYS);
+		}
+
+		private void makeTypingMLwithFSM(int top) throws IOException{
+			synchronized(typerScoreMatrix){
+				for (MLSType type:mlstScheme.profiles){
+					type.typeScore = 0;
+					for (int i = 0; i < numGenes;i++){
+						type.typeScore += typerScoreMatrix[i][mlstScheme.alleleIndex(type, i)];
+					}
+				}
+			}
+
+			Collections.sort(mlstScheme.profiles);
+			Collections.reverse(mlstScheme.profiles);
+
+			if (top > mlstScheme.profiles.size())
+				top = mlstScheme.profiles.size();
+
+			countsOS.print("============================================== " + typing.currentReadCount);
+			countsOS.println();
+			for (int i = 0; i < top;i++){
+				MLSType profile = mlstScheme.profiles.get(i);
+				countsOS.print(profile.getST() + "\t" + profile.getScore());
+				countsOS.println();
+			}
+		}
+	}
+
+	static class MLFSMThread implements Runnable{
+		RealtimeMLSTyper typer;
+		int geneIndex;
+		Sequence readSeq;
+
+		MLFSMThread(RealtimeMLSTyper typer, int index, Sequence read){
+			this.typer = typer;
+			this.geneIndex = index;
+			this.readSeq = read;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Runnable#run()
+		 */
+		@Override
+		public void run() {
+			Logging.info("Running thread " + geneIndex + " on " + readSeq.getName());
+			ArrayList<Sequence> alleles = typer.mlstScheme.alleles(geneIndex);
+			int numAlleles = alleles.size();
+			double [] myScore = new double[numAlleles];
+			for (int x = 0; x < numAlleles; x ++){
+				Sequence seq = alleles.get(x);
+				int alleleNo = Integer.parseInt(seq.getName().split("_")[1]);
+				if (!typer.mlstScheme.useAlleleNo(geneIndex, alleleNo))
+					continue;
+				
+				ProbFSM tsm = new ProbThreeSM(seq);
+				double cost = 1000000;
+
+				for (int c = 0; c < 10; c++){
+					tsm.resetCount();
+					Emission retState = tsm.alignGenerative(readSeq);
+					if (cost  <= retState.myCost)
+						break;
+
+					//if (cost - retState.myCost < 0.5){
+					//	cost = retState.myCost;
+					//	break;
+					//}
+					cost = retState.myCost;					
+					int emitCount = tsm.updateCount(retState);
+					Logging.info("Iter " + c + " : " + emitCount + " states and " + cost + " bits " + readSeq.length() + "bp " + readSeq.getName() + " by " + seq.getName());
+					tsm.reEstimate();	
+				}//for (iteration)
+				//Logging.info(" Saving " + (readSeq.length() * 2 - cost) + " on " + readSeq.getName() + " by " + seq.getName());						
+				//if (cost < readSeq.length() * 2){
+				myScore[x] = (readSeq.length() * 2 - cost);
+				Logging.info("Score for " + seq.getName() + " " + myScore[x]);
+				//}else
+				//	myScore[x] = 0;
+			}//for
+			synchronized (typer.typerScoreMatrix){
+				for (int x = 0; x < numAlleles; x ++){
+					typer.typerScoreMatrix[geneIndex][x] = myScore[x];
+				}
+			}
+			Logging.info("Done thread " + geneIndex + " on " + readSeq.getName());
+		}//run		
+	}
 }

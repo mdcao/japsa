@@ -510,7 +510,7 @@ public class MLSTStrainTyping {
 			}
 			//put the sequence into alignment list
 
-			Sequence readSeq = HTSUtilities.spanningSequence(record, readSequence, refLength,0);
+			Sequence readSeq = HTSUtilities.spanningSequence(record, readSequence, refLength, 0);
 
 			if (readSeq == null){
 				Logging.warn("Read sequence is NULL sequence ");
