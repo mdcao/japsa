@@ -75,7 +75,9 @@ import japsa.tools.seq.AlignmentEMCmd;
 import japsa.tools.seq.AnnotateRegionsCmd;
 import japsa.tools.seq.AnnotateVCFCmd;
 import japsa.tools.seq.Bed2JapsaCmd;
+import japsa.tools.seq.BuildGeneDatabaseCmd;
 import japsa.tools.seq.ExtractGeneSequenceCmd;
+import japsa.tools.seq.ExtractRefSeqGenes;
 import japsa.tools.seq.FileFormatConvertCmd;
 import japsa.tools.seq.JoinSequenceCmd;
 import japsa.tools.seq.SequenceExtractCmd;
@@ -125,6 +127,8 @@ public class Deploy {
 		tools.add(new AnnotateRegionsCmd());
 		tools.add(new AnnotateVCFCmd());
 		tools.add(new ExtractGeneSequenceCmd());
+		tools.add(new BuildGeneDatabaseCmd());
+		tools.add(new ExtractRefSeqGenes());		
 		tools.add(new AlignmentEMCmd());
 
 		//tools.add(MarkovCompress.class);

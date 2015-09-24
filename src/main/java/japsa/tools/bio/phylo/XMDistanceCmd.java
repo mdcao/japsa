@@ -93,7 +93,7 @@ public class XMDistanceCmd  extends CommandLine{
 	public static void main(String[] args) throws Exception {		 		
 		CommandLine cmdLine = new XMDistanceCmd();
 		args = cmdLine.stdParseLine(args);
-		
+
 
 		String input = cmdLine.getStringVal("input");
 		int thread = cmdLine.getIntVal("thread");
@@ -149,12 +149,9 @@ public class XMDistanceCmd  extends CommandLine{
 			}
 		}
 		executor.shutdown();
-
 		boolean finished = executor.awaitTermination(3, TimeUnit.DAYS);
 
-
 		double [][] mtx = new double[seqs.size()] [seqs.size()];
-
 		Logging.info("ALL DONE " + finished);
 		for (int i = 0; i < seqs.size();i++){
 			mtx[i][i] = 0;

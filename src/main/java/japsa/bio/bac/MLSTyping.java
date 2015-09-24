@@ -49,7 +49,6 @@ import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-import japsa.util.Logging;
 
 /**
  * @author minhduc
@@ -62,13 +61,11 @@ public class MLSTyping{
 	private String [] geneNames;
 	private ArrayList<Sequence> [] geneSeqs;
 	private int alleleNo2AlleleIndex[][];
-	//Link the profile Number to the geneIndex.
+	//Link the profile Number to the geneIndex. This is to make indexing transparant
 	//e.g., inernalLink[3][4] point to the index in geneSeqs[3] of allele 4
 
 	String baseDir = ".";
 	BitSet[] bitSets;
-
-
 	/**
 	 * A redesign
 	 * @param mlstBase: path to mlst scheme, containing profile.dat file
@@ -238,6 +235,8 @@ public class MLSTyping{
 	public static MLSTyping topMlst(ArrayList<Sequence> seqs, String mlstDir) throws InterruptedException, IOException{
 		MLSTyping mlstScheme = new MLSTyping(mlstDir);
 		int [][] scoreMatrix = new int[mlstScheme.numGenes][];
+		
+		
 		//can run in parallele with i
 		for (int i = 0; i < mlstScheme.numGenes; i++){
 			String gene = mlstScheme.geneNames[i];
