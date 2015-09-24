@@ -59,10 +59,9 @@ public class ResistanceGeneDB {
 	public ResistanceGeneDB(String path) throws IOException {
 		dbPath = path;
 		fasPath = path + ".fas";
-
+		
 		//Read 		
 		gene2Res = new HashMap<String, String>();
-
 		BufferedReader br = SequenceReader.openFile(dbPath + ".map");
 		String line;
 		//int lineNo = 0;
