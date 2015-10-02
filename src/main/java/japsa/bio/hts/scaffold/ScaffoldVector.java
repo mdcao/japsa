@@ -40,8 +40,8 @@ package japsa.bio.hts.scaffold;
  *
  */
 public class ScaffoldVector{
-	int magnitude = 0;
-	int direction = 1;
+	int magnitude = 0; //distance of two contigs' starting points *---> <---* (with sign follows the first contig's direction)
+	int direction = 1; //relative direction of those two (+/- for same/opposite directions)
 	
 	public ScaffoldVector(){
 		//magnitude = 0
@@ -51,7 +51,7 @@ public class ScaffoldVector{
 		magnitude = p;
 		direction = d;
 	}
-		
+	// reverse vector a -> b to b -> a	(a and b are contigs)
 	public static ScaffoldVector reverse(ScaffoldVector v){
 		ScaffoldVector rev = new ScaffoldVector();
 		if (v.direction > 0){
@@ -65,8 +65,8 @@ public class ScaffoldVector{
 	}
 	
 	/**
-	 * Return the distance between two closest tips of two contigs. 
-	 * 
+	 * Return the distance between two closest tips of two contigs
+	 * that relative position of fContig to tContig (tContig->fContig) is represented by *this*
 	 * A negative value indicate the overlap of two contigs.
 	 * @param fContig
 	 * @param tContig
@@ -91,7 +91,8 @@ public class ScaffoldVector{
 		return Math.max(fS - tE, tS - fE);
 	}
 	/**
-	 * Compose two vectors: a to b is v1, b to c is v2. a to c is v1 * v2
+	 * Compose two vectors: a to b is v2, b to c is v1. a to c is v1 * v2
+	 * Warning: the parameters' order doesn't follow normal intuition. USE WITH CARE!!!
 	 * @param v1
 	 * @param v2
 	 * @return
@@ -106,7 +107,7 @@ public class ScaffoldVector{
 	}
 	
 	public String toString(){
-		return magnitude + "," + direction;
+		return "<" + magnitude + ", " + direction + ">";
 	}
 	/**
 	 * @return the magnitude

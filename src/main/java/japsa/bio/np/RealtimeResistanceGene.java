@@ -42,6 +42,7 @@ import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
 import japsa.util.HTSUtilities;
 import japsa.util.Logging;
 import htsjdk.samtools.SAMRecord;
@@ -59,13 +60,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-//
-// Design:
-//Requires:
-// - a File containing a list of gene, say gene.fasta
-// - a file containing list of gene allele, say alleles.fasta, linked to gene.fasta
-// - a file containg gene information
 
 /**
  * 
@@ -73,9 +71,7 @@ import java.util.HashSet;
  *
  */
 
-
 public class RealtimeResistanceGene {
-
 	ResistanceGeneFinder resistFinder;		
 
 	private HashMap<String, ArrayList<Sequence>> alignmentMap;
@@ -83,19 +79,18 @@ public class RealtimeResistanceGene {
 	long currentBaseCount = 0;
 
 	public String msa = "kalign";
-	public String global = "hmm";
+	private String global = "hmm";
 
 	public double scoreThreshold = 2;
 	public boolean twoDOnly = false;
-	public RealtimeResistanceGene(int read, int time, String output, String tmp) throws IOException{
-		resistFinder = new ResistanceGeneFinder(this, output);
+
+	public int numThead = 4;
+
+	public RealtimeResistanceGene(int read, int time, String output, String resDB, String tmp) throws IOException{
+		resistFinder = new ResistanceGeneFinder(this, output, resDB, tmp);
 		resistFinder.setReadPeriod(read);
 		resistFinder.setTimePeriod(time * 1000);
-
 	}
-
-
-
 
 	/**
 	 * @param bamFile
@@ -107,8 +102,8 @@ public class RealtimeResistanceGene {
 		//DateFormat df = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
 		//Logging.info("START : " + df.format(Calendar.getInstance().getTime()));		
 
+		Logging.info("Resistance identification ready at " + new Date());
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
-
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader;
 		if ("-".equals(bamFile))
@@ -156,20 +151,21 @@ public class RealtimeResistanceGene {
 
 			int refLength =  resistFinder.geneMap.get(geneID).length();
 
+			int refStart = record.getAlignmentStart();
+			int refEnd   = record.getAlignmentEnd();
+
+			if(refStart > 99 || refEnd < refLength - 99)
+				continue;			
+
 			synchronized(this){
 				ArrayList<Sequence> alignmentList = alignmentMap.get(geneID);
 				if (alignmentList == null){
 					alignmentList = new ArrayList<Sequence>();
 					alignmentMap.put(geneID, alignmentList);				
 				}
-
 				//put the sequence into alignment list
-				Sequence readSeq = HTSUtilities.spanningSequence(record, readSequence, refLength, 20);
-				if (readSeq == null){
-					Logging.warn("Read sequence is NULL sequence ");
-				}else{
-					alignmentList.add(readSeq);
-				}
+				Sequence readSeq = HTSUtilities.readSequence(record, readSequence, 99, refLength-99);
+				alignmentList.add(readSeq);
 			}//synchronized(this)
 		}//while
 		resistFinder.stopWaiting();
@@ -190,7 +186,7 @@ public class RealtimeResistanceGene {
 		RealtimeResistanceGene resistGene;
 
 		HashMap<String, ArrayList<Sequence>> alignmentMapSnap = new HashMap<String, ArrayList<Sequence> >();
-		HashMap<String, String> gene2ProteinID;
+		HashMap<String, String> gene2GeneName;
 		HashMap<String, String> gene2Group;			
 		HashMap<String, Sequence> geneMap;
 		ArrayList<String> geneList = new ArrayList<String>();
@@ -199,31 +195,50 @@ public class RealtimeResistanceGene {
 
 		SequenceOutputStream sos;
 
-		public ResistanceGeneFinder(RealtimeResistanceGene resistGene, String output) throws IOException{
+		public ResistanceGeneFinder(RealtimeResistanceGene resistGene, String output, String resDB, String tmp) throws IOException{
 			this.resistGene = resistGene;			
-			getGeneClassInformation();
+			getGeneClassInformation(resDB + "/DB.fasta");
+
+			File file = new File(resDB + "/geneList");
+			if (file.exists()){
+				readGeneInformation(resDB + "/geneList");
+			}			
+
+			Logging.info("geneList = " + geneList.size());
+			Logging.info("geneMap = " + geneMap.size());
+			Logging.info("gene2Group = " + gene2Group.size());
+			Logging.info("gene2GeneName = " + gene2GeneName.size());
+
 			sos = SequenceOutputStream.makeOutputStream(output);
+			prefix = tmp;
 		}	
 
 		private void antiBioticAnalysis(){
-			//1. Make a snapshot of the current alignment
-			synchronized(resistGene){
-				lastTime = System.currentTimeMillis();
-				lastReadNumber = resistGene.currentReadCount;
-				for (String gene:resistGene.alignmentMap.keySet()){
-					ArrayList<Sequence> readMap = resistGene.alignmentMap.get(gene);					 
-					alignmentMapSnap.put(gene, (ArrayList<Sequence>) readMap.clone());
-				}
-				try {
-					antiBioticsProfile();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+
+			try {
+				sos.print("##" + timeNow  + "\t" + (this.lastTime - this.startTime) + "\t" + this.lastReadNumber + "\n");
+
+				//1. Make a snapshot of the current alignment
+				synchronized(resistGene){
+					//lastTime = System.currentTimeMillis();
+					//lastReadNumber = resistGene.currentReadCount;
+					for (String gene:resistGene.alignmentMap.keySet()){
+						ArrayList<Sequence> readMap = resistGene.alignmentMap.get(gene);					 
+						alignmentMapSnap.put(gene, (ArrayList<Sequence>) readMap.clone());
+					}
+				}//synchronized(resistGene)
+
+				runIndex ++;
+				//Now can make the call
+				antiBioticsProfile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
+
 		}
 		/****
 		 * 
@@ -231,36 +246,40 @@ public class RealtimeResistanceGene {
 		 * @throws InterruptedException
 		 */
 
-		int runIndex;
-		private void antiBioticsProfile() throws IOException, InterruptedException{
+		int runIndex = 0;		
+		private void antiBioticsProfile() throws IOException, InterruptedException{						 
+			int jobNo = 0;			
 			//Get list of genes from my
+			ExecutorService executor = Executors.newFixedThreadPool((resistGene.numThead > 2)?resistGene.numThead-2:1);
+
 			for (String geneID: geneList){				
 				if (predictedGenes.contains(geneID))
 					continue;
 
 				ArrayList<Sequence> alignmentList =  alignmentMapSnap.get(geneID);
-				if (alignmentList == null)
-					continue;
-				
-				if (alignmentList.size() < 3){
-					Logging.info("Too small for " + geneID + " " + alignmentList.size()); 
-					continue;
-				}
-
-
 				Sequence consensus = 
 					ErrorCorrection.consensusSequence(alignmentList, prefix + "_" + geneID + "_" + runIndex, resistGene.msa);
 
 				if (consensus == null){
-					//Not consider this gene at all
 					continue;//gene
 				}
 
 				Sequence gene = geneMap.get(geneID);
-				
+				gene = gene.subSequence(99, gene.length() - 100);
+
+				FSMThread thread = new FSMThread();		
+				thread.resGeneFinder = this;
+				thread.consensus =consensus;
+				thread.gene = gene;
+				thread.geneID = geneID;
+
+				executor.execute(thread);
+				jobNo ++;
+
+				/*****************************************************************
 				if (resistGene.global.equals("hmm")){
-					double score = checkHMM(consensus, gene);
-					Logging.info("SGF: " + score + " " + geneID + " " + alignmentList.size() + " " + gene2ProteinID.get(geneID) + " " + gene2Group.get(geneID));
+					double score = fsmAlignment(consensus, gene);
+					Logging.info("SGF: " + score + " " + geneID + " " + alignmentList.size() + " " + (geneID) + " " + gene2Group.get(geneID));
 
 					if (score >= resistGene.scoreThreshold){
 						addPreditedGene(geneID);
@@ -269,12 +288,12 @@ public class RealtimeResistanceGene {
 						continue;//for gene
 					}					
 				}else{
-					/*****************************************************************/
-					String consensusFile = prefix + "consensus" + geneID + "_" + resistGene.currentReadCount + ".fasta"; 
+					/*****************************************************************
+					String consensusFile = prefix + "consensus" + geneID + "_" + runIndex + ".fasta"; 
 					consensus.writeFasta(consensusFile);				
 					{	
 						double score = checkNeedle(consensusFile, gene);
-						Logging.info("SGF: " + score + " " + geneID + " " + alignmentList.size() + " " + gene2ProteinID.get(geneID) + " " + gene2Group.get(geneID));
+						Logging.info("SGF: " + score + " " + geneID + " " + alignmentList.size() + " " + (geneID) + " " + gene2Group.get(geneID));
 
 						if (score >= resistGene.scoreThreshold){
 							addPreditedGene(geneID);
@@ -283,25 +302,25 @@ public class RealtimeResistanceGene {
 						}
 					}					
 				}
+				/*****************************************************************/
 			}
-
-			Logging.info("===Found " + predictedGenes.size() + " vs " + geneMap.size() + "  " + alignmentMapSnap.size());
-
+			executor.shutdown(); 
+			executor.awaitTermination(3, TimeUnit.DAYS);			
+			Logging.info("===Found " + predictedGenes.size() + " vs " + geneMap.size() + "  " + alignmentMapSnap.size() + " with " + jobNo);
 		}
 
 		private void addPreditedGene(String geneID) throws IOException{
-			predictedGenes.add(geneID);		
-			sos.print(new Date(this.lastTime) + "\t" + this.lastTime +"\t" + geneID + "\t" + gene2Group.get(geneID) + "\n");			
+			predictedGenes.add(geneID);			
+			sos.print(timeNow + "\t" + (this.lastTime - this.startTime)/1000 + "\t" + lastReadNumber + "\t" + resistGene.currentBaseCount + "\t" + geneID + "\t" + gene2GeneName.get(geneID) + "\t" + gene2Group.get(geneID) + "\n");			
 			sos.flush();
 		}
 
 
-		private static double checkHMM(Sequence consensus, Sequence gene){
-			if (gene.length() > 2700 || consensus.length() > 4000 || gene.length() * consensus.length() > 6000000){
-				Logging.info("SKIP " + gene.getName() + " " + gene.length() + " vs " + consensus.length());			
-				return 0;
-			}
-
+		private static double fsmAlignment(Sequence consensus, Sequence gene){
+			//if (gene.length() > 2700 || consensus.length() > 4000 || gene.length() * consensus.length() > 6000000){
+			//	Logging.info("SKIP " + gene.getName() + " " + gene.length() + " vs " + consensus.length());			
+			//	return 0;
+			//}
 			//ProbThreeSM tsmF = new ProbThreeSM(gene);
 			ProbOneSM tsmF = new ProbOneSM(gene);
 			double cost = 100000000;						
@@ -346,13 +365,38 @@ public class RealtimeResistanceGene {
 			return score / gene.length();
 		}
 
-		private void getGeneClassInformation() throws IOException{
-			ArrayList<Sequence> drGeneList = FastaReader.readAll("F.fasta", Alphabet.DNA());
+		private void addGeneInfo(HashMap<String, String> map, String key, String info){
+			String s = map.get(key);
+			if (s == null)
+				map.put(key, info);
+			else{
+				if (!s.contains(info)){
+					s = s + ", " + info;
+					map.put(key, s);
+				}
+			}			
+		}
+
+		private void readGeneInformation(String geneInfoFile) throws IOException{
+			BufferedReader bf = SequenceReader.openFile(geneInfoFile);
+			String line = "";
+			while((line = bf.readLine())!=null){
+				String [] toks = line.trim().split(" ");
+				if(toks.length <3)
+					continue;
+
+				addGeneInfo(gene2Group, toks[0], toks[2]);
+				addGeneInfo(gene2GeneName, toks[0], toks[1]);
+
+			}
+			bf.close();
+		}
+		private void getGeneClassInformation(String geneFile) throws IOException{
+			ArrayList<Sequence> drGeneList = FastaReader.readAll(geneFile, Alphabet.DNA());
 
 			geneMap    = new HashMap<String, Sequence>();
 			gene2Group = new HashMap<String, String>();
-			gene2ProteinID = new HashMap<String, String>();
-
+			gene2GeneName = new HashMap<String, String>();
 
 			for (Sequence seq:drGeneList){
 				geneMap.put(seq.getName(), seq);
@@ -362,21 +406,14 @@ public class RealtimeResistanceGene {
 				String [] toks = desc.split(";");
 				for (String tok:toks){
 					if (tok.startsWith("dg=")){
-						gene2Group.put(seq.getName(), tok.substring(3));
+						addGeneInfo(gene2Group, seq.getName(), tok.substring(3));						
 					}
 					if (tok.startsWith("geneID=")){
 						String proteinID = tok.substring(7);
-						int iEnd = proteinID.indexOf('_');
-						if (iEnd > 0)
-							proteinID = proteinID.substring(0, iEnd);
-						gene2ProteinID.put(seq.getName(), proteinID);
+						addGeneInfo(gene2GeneName, seq.getName(), proteinID);
 					}
 				}				
-			}
-
-			Logging.info("geneList = " + drGeneList.size());
-			Logging.info("geneMap = " + geneMap.size());
-			Logging.info("gene2Group = " + gene2Group.size());		
+			}					
 		}
 
 		/* (non-Javadoc)
@@ -409,5 +446,32 @@ public class RealtimeResistanceGene {
 			return resistGene.currentReadCount;
 
 		}
+	}
+
+	static class FSMThread implements Runnable{
+		ResistanceGeneFinder resGeneFinder;
+		Sequence consensus, gene;
+		String geneID;
+
+		/* (non-Javadoc)
+		 * @see java.lang.Runnable#run()
+		 */
+		@Override
+		public void run() {
+			double score = ResistanceGeneFinder.fsmAlignment(consensus, gene);
+			Logging.info("SGF: " + score + " " + geneID + " " + " " + (geneID) + " " + resGeneFinder.gene2Group.get(geneID));
+
+			if (score >= resGeneFinder.resistGene.scoreThreshold){
+				synchronized(resGeneFinder){
+					try {
+						resGeneFinder.addPreditedGene(geneID);
+						Logging.info("ADDF " + geneID);//
+					} catch (IOException e) {						
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+
 	}
 }

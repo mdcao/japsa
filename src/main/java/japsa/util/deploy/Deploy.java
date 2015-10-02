@@ -38,6 +38,7 @@ package japsa.util.deploy;
 //import japsa.bio.hts.HTSAlignmentParam;
 import japsa.tools.bio.bac.Genomes2ResistanceGeneCmd;
 import japsa.tools.bio.bac.MLSTCmd;
+import japsa.tools.bio.hts.AlignmentParamOptCmd;
 import japsa.tools.bio.hts.BreakBamCmd;
 import japsa.tools.bio.hts.CountReadInRegionCmd;
 import japsa.tools.bio.hts.FastQTrimCmd;
@@ -46,6 +47,7 @@ import japsa.tools.bio.hts.HTSErrorAnalysisCmd;
 import japsa.tools.bio.hts.SelectReadIntersectCmd;
 import japsa.tools.bio.hts.SelectReadSpanCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
+import japsa.tools.bio.np.GapCloserCmd;
 import japsa.tools.bio.np.GeneStrainTypingCmd;
 import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
@@ -108,7 +110,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.5-8a";
+	public static String VERSION = "1.5-10a";
 	public static final String FIELD_SEP = "\t";
 
 	//private static String AUTHORS = "Minh Duc Cao";
@@ -140,8 +142,7 @@ public class Deploy {
 		tools.add(new SelectReadIntersectCmd());
 		tools.add(new SelectReadSpanCmd());				
 		tools.add(new CountReadInRegionCmd());
-		//TODO: Fix the below
-		//tools.add(new HTSAlignmentParam());
+		tools.add(new AlignmentParamOptCmd());
 		tools.add(new HTSErrorAnalysisCmd());
 		tools.add(new GetN50Cmd());
 
@@ -166,6 +167,7 @@ public class Deploy {
 		tools.add(new RealtimeStrainTypingCmd());
 		tools.add(new RealtimeResistanceGeneCmd());
 		tools.add(new RegulateTimeCmd());		
+		tools.add(new GapCloserCmd());
 		//tools.add(new RealtimeMLSTCmd());
 		
 		

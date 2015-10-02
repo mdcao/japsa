@@ -48,7 +48,92 @@ import japsa.seq.Sequence;
  */
 public class HTSUtilities {
 
-	
+	/**
+	 * Extract read between start and end (on ref)
+	 * @param record
+	 * @param readSequence
+	 * @param start
+	 * @param end
+	 * @return
+	 */
+	public static Sequence readSequence(SAMRecord record, Sequence readSequence, int fromPos, int toPos){
+		int refStart = record.getAlignmentStart();
+		int refEnd   = record.getAlignmentEnd();
+
+		if(refStart > fromPos || refEnd < toPos)
+			return null;
+
+		int refPos = refStart;
+		int readPos = 0;
+		int readFrom = 0, readTo = 0;
+
+		for (final CigarElement e : record.getCigar().getCigarElements()){
+			if (readTo > 0)
+				break;
+
+			final int  length = e.getLength();
+			switch (e.getOperator()) {
+			case H :
+				break; // ignore hard clips
+			case P :				 					
+				break; // ignore pads	                
+			case S :
+				readPos += length;
+				break; // soft clip read bases	                	
+			case N : 
+				refPos += length;				
+				break;  // reference skip
+			case D ://deletion 
+				refPos += length;
+
+				if (refPos >=fromPos && readFrom == 0){					
+					readFrom = readPos;
+				}
+
+				if (refPos >=toPos && readTo == 0){					
+					readTo = readPos + 1;
+				}
+
+				break;
+			case I :	                	
+				readPos += length;
+				break;
+			case M :
+			case EQ :				
+			case X :				
+				readPos += length;
+				refPos  += length;
+
+				if (refPos >=fromPos && readFrom == 0){					
+					readFrom = readPos - refPos + fromPos;
+				}
+
+				if (refPos >=toPos && readTo == 0){			
+					readTo = readPos - refPos + toPos;					
+				}
+
+				break;
+			default : throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
+			}//case
+		}//for	
+
+		if (readFrom ==0 || readTo ==0){
+			Logging.exit("Error at HTSUtilities.readSequence " + readFrom + " " + readTo, 1);
+		}
+		if (record.getReadNegativeStrandFlag()){
+			//Need to complement the read sequence before calling subsequence = calling sub l-e, l-s then complementing
+			//return Alphabet.DNA.complement(readSequence.subSequence(readSequence.length() - end,  readSequence.length() - start + 1));
+			Sequence seq = Alphabet.DNA.complement(readSequence).subSequence(readFrom - 1, readTo);
+			seq.setName(readSequence.getName()+"_r_"+readFrom+"_"+readTo);
+
+			return seq;
+		}else{
+			Sequence seq = readSequence.subSequence(readFrom - 1, readTo);
+			seq.setName(readSequence.getName()+"_"+readFrom+"_"+readTo);
+			return seq;
+		}
+	}
+
 	/**
 	 * Get the read subsequence that spans the gene. The method look at an alignment,
 	 * estimated the position on reads that might have mapped to the start and the end
@@ -69,8 +154,9 @@ public class HTSUtilities {
 			int left = (int) (refStart * 1.05) + flank;
 			int right = (int) ((refLength - refEnd) * 1.05 + flank);
 
-			int readLength = 0,	readStart = 0, readEnd = 0;	
-
+			int readLength = 0,	readStart = 0, readEnd = 0;
+			//readStart = position of alignment start of read
+			//readEnd = position of alignment end of read
 			boolean enterAlignment = false;		
 			for (final CigarElement e : record.getCigar().getCigarElements()) {				
 				final int  length = e.getLength();
@@ -152,7 +238,7 @@ public class HTSUtilities {
 		}
 
 	}
-	
+
 	/**
 	 * Get the identity between a read sequence from a sam and a reference sequence
 	 * @param refSeq
@@ -161,10 +247,10 @@ public class HTSUtilities {
 	 */
 	public static IdentityProfile identity(Sequence refSeq, Sequence readSeq,  SAMRecord sam){
 		IdentityProfile profile = new IdentityProfile();
-				
+
 		int readPos = 0;//start from 0					
 		int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index				
-		
+
 		profile.readClipped = 0;
 		profile.refClipped = sam.getAlignmentStart() + refSeq.length() - sam.getAlignmentEnd();
 		profile.baseDel = 0;
@@ -249,14 +335,14 @@ public class HTSUtilities {
 		}//for			
 
 		return profile;
-				
+
 	}
-	
+
 	public static class IdentityProfile{
 		public int match, mismatch, baseIns, baseDel, numIns, numDel, refClipped, readClipped, refBase, readBase;
-		
+
 	}
-	
+
 	/**
 	 * Compute the N50 statistics of an assembly
 	 * @param seqs: List of sequences
@@ -271,14 +357,14 @@ public class HTSUtilities {
 			sum += l;
 		}		
 		Arrays.sort(lengths);
-		
+
 		int index = lengths.length;
 		double contains = 0;
 		while (contains < sum/2){
 			index --;
 			contains += lengths[index];
 		}
-		
+
 		return lengths[index];		
 	}	
 }

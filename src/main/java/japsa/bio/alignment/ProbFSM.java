@@ -62,7 +62,7 @@ import japsa.util.Logging;
  */
 public abstract class ProbFSM {	
 	/**
-	 * List of states: 
+	 * List of states:  
 	 */
 	MachineState [] states;
 
@@ -76,7 +76,8 @@ public abstract class ProbFSM {
 	 */
 	public void resetCount(){
 		for (int i = 0; i < states.length;i++){
-			states[i].countCopy	= states[i].countMutate = states[i].countIns = states[i].countDel = 0;  
+			states[i].countCopy	
+			= states[i].countMutate = states[i].countIns = states[i].countDel = 0;  
 		}
 	}
 

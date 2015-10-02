@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.bio.hts;
+package japsa.tools.bio.hts;
 
 
 import java.io.File;
@@ -61,25 +61,30 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(scriptName = "jsa.hts.alignOpt", 
 scriptDesc = "Parameter estimation for alignment of erronenous read data")
-public class HTSAlignmentParam {
-	public static void main(String [] args) throws IOException, InterruptedException{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = HTSAlignmentParam.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options] + 1.fq + [2.fq]" , annotation.scriptDesc());		
-		/**********************************************************************/	
-		//cmdLine.addString("bamFile", null,  "Name of bam file", true);
-		cmdLine.addString("reference", null, "Name of reference genome",true);
+public class AlignmentParamOptCmd extends CommandLine{
+	//static Alphabet alphabet = Alphabet.DNA();
 
-		cmdLine.addString("aligner", "bwa", "Alignment program, currently support bwa (bwa mem) and blasr");
-		cmdLine.addString("index", null, "Index of the aligner",true);
-		cmdLine.addString("prefix", "tmp", "Prefix");
+	public AlignmentParamOptCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options] 1.fq [2.fq]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("reference", null, "Name of reference genome",true);
+		addString("aligner", "bwa", "Alignment program, currently support bwa (bwa mem) and blasr");
+		addString("index", null, "Index of the aligner",true);
+		addString("prefix", "tmp", "Prefix");
+		addInt("seedLength", 14, "Seed length");
+		addInt("thread", 8, "Number of thread");
+		addInt("qual", 0, "Minimum quality required");
 
-		cmdLine.addInt("seedLength", 14, "Seed length");
-		cmdLine.addInt("thread", 8, "Number of thread");
-
-		cmdLine.addInt("qual", 0, "Minimum quality required");
-
-		args = cmdLine.stdParseLine_old(args);			
+		addStdHelp();
+	}
+	
+	public static void main(String [] args) throws IOException, InterruptedException{		
+		CommandLine cmdLine = new AlignmentParamOptCmd();		
+		args = cmdLine.stdParseLine(args);
+		
 		/**********************************************************************/
 		//String bamFile = cmdLine.getStringVal("bamFile");
 		reference = cmdLine.getStringVal("reference");		

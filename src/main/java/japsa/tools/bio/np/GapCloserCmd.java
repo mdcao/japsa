@@ -32,9 +32,10 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.hts.scaffold;
+package japsa.tools.bio.np;
 
-import japsa.seq.Alphabet;
+import japsa.bio.hts.scaffold.ScaffoldGraph;
+import japsa.bio.hts.scaffold.ScaffoldGraphDFS;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -45,55 +46,69 @@ import java.io.IOException;
  * @author minhduc
  * 
  */
-@Deployable(scriptName = "jsa.dev.gapcloser", scriptDesc = "Gap closer")
-public class GapCloser {
-	static Alphabet alphabet = Alphabet.DNA();
+@Deployable(scriptName = "jsa.np.gapcloser",
+scriptDesc = "Scaffold and finish assemblies using Oxford Nanopore sequencing reads")
+public class GapCloserCmd extends CommandLine{
+	//static Alphabet alphabet = Alphabet.DNA();
+
+	public GapCloserCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+		addString("bamFile", null, "Name of the bam file", true);
+		addString("sequenceFile", null, "Name of the assembly file (sorted by length)",true);
+		addString("output", "-", "Name of the output file, -  for stdout");		
+		addInt("threshold", 0, "Threshold"); 
+		addDouble("cov", 0, "Expected average coverage of Illumina, <=0 to estimate");
+		addInt("qual", 1, "Minimum quality");
+		addString("connect", null, "Name of the connection file");
+		addString("stat", null, "Name of the stastistic file for Nanopore read alignment");
+		addBoolean("fast", false, "Scaffolding mechanism. Set to false (default) for careful mode, true for fast mode");
+
+		addStdHelp();		
+	} 	
 	//static boolean hardClip = false;
 
-	public static void main(String[] args) throws IOException,
-	InterruptedException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = GapCloser.class.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options]",
-				annotation.scriptDesc());
+	public static void main(String[] args) throws 
+	IOException, InterruptedException {
+		CommandLine cmdLine = new GapCloserCmd();		
+		args = cmdLine.stdParseLine(args);
 
-		cmdLine.addString("bamFile", null, "Name of the bam file", true);
-		cmdLine.addString("sequenceFile", null, "Name of the assembly file (sorted by length)",true);
-		cmdLine.addString("output", "-",
-				"Name of the output file, -  for stdout");		
-		cmdLine.addInt("threshold", 500, "Threshold");
-		cmdLine.addDouble("cov", 0, "Expected average coverage of Illumina, <=0 to estimate");
-		cmdLine.addInt("qual", 1, "Minimum quality");
-		cmdLine.addString("connect", null, "Name of the connection file");
-		
-
-		//String [] processArgs = 
-				cmdLine.stdParseLine_old(args);		
 		/**********************************************************************/
 		String output = cmdLine.getStringVal("output");
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String sequenceFile = cmdLine.getStringVal("sequenceFile");
 		int threshold = cmdLine.getIntVal("threshold");
+		//thresholdScore = threshold;
+		if(threshold != 0)
+			ScaffoldGraph.marginThres = threshold;
 		double cov = cmdLine.getDoubleVal("cov");
 		int qual = cmdLine.getIntVal("qual");
+		boolean mode = cmdLine.getBooleanVal("fast");
 		/**********************************************************************/
 
-		SequenceOutputStream outOS = null;
+		SequenceOutputStream outOS = null, connectOS = null, statOS = null;
 		if (cmdLine.getStringVal("connect") != null){
-			outOS = SequenceOutputStream.makeOutputStream(cmdLine.getStringVal("connect"));			
+			connectOS = SequenceOutputStream.makeOutputStream(cmdLine.getStringVal("connect"));			
 		}
-		
+		if (cmdLine.getStringVal("stat") != null){
+			statOS = SequenceOutputStream.makeOutputStream(cmdLine.getStringVal("stat"));			
+		}
 		ScaffoldGraph graph = new ScaffoldGraphDFS(sequenceFile);
 		if (cov <=0)
 			cov = graph.estimatedCov;
 
-		graph.makeConnections(bamFile, cov / 1.6,  cov * 1.46, threshold, qual,outOS);
-		if (outOS != null)
-			outOS.close();
-		
-		graph.connectBridges();
-		
+		//TODO make the bam file from fastq sequences by running BWA
+		graph.makeConnections(bamFile, cov / 1.6, qual, connectOS, statOS);
+		if (connectOS != null)
+			connectOS.close();
+		if(statOS != null)
+			statOS.close();
+
+		graph.connectBridges(mode);
+
 		outOS = SequenceOutputStream.makeOutputStream(output);
 		graph.printSequences(outOS);
 		//graph.printScaffoldSequence(outOS);

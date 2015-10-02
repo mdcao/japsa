@@ -92,14 +92,13 @@ public class ErrorCorrection {
 		//String faiFile = prefix + "_" + this.currentReadCount;
 		Sequence consensus = null;
 		if (readList != null && readList.size() > 0){
-			String faiFile = prefix + "_ai.fasta";//name of fasta files of reads mapped to the gene				
-			String faoFile = prefix + "_ao.fasta";//name of fasta files of reads mapped to the gene
-
 			//1.0 write alignment to faiFile
 			if (readList.size() == 1){
 				readList.get(0).setName("consensus");
 				consensus = readList.get(0);
 			}else{
+				String faiFile = prefix + "_ai.fasta";//name of fasta files of reads mapped to the gene				
+				String faoFile = prefix + "_ao.fasta";//name of fasta files of reads mapped to the gene
 				{
 					SequenceOutputStream faiSt = SequenceOutputStream.makeOutputStream(faiFile);
 					for (Sequence seq:readList){

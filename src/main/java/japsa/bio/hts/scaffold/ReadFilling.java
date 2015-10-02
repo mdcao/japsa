@@ -65,30 +65,13 @@ public class ReadFilling{
 
 	
 	public ReadFilling reverse(){
-		//return an (concentually the same) read filling with the a reverse read
+		//return an (conceptually the same) read filling with the a reverse read
 		Sequence revRead = Alphabet.DNA.complement(readSequence);
 		revRead.setName("REV"+readSequence.getName());
 		ArrayList<AlignmentRecord> revAlignments = new ArrayList<AlignmentRecord>(); 
 		
-		for (AlignmentRecord alignment:alignments){
-			AlignmentRecord revAlign = new AlignmentRecord();
-			revAlign.readID = alignment.readID;
-			revAlign.contig = alignment.contig;
-			revAlign.refStart = alignment.refStart;
-			revAlign.refEnd = alignment.refEnd;
-			
-			revAlign.readLength = alignment.readLength;
-			revAlign.readStart = alignment.readLength - alignment.readStart + 1;//1-index
-			revAlign.readEnd = alignment.readLength - alignment.readEnd + 1;//1-index
-			revAlign.strand = !alignment.strand;
-			revAlign.useful = alignment.useful;			
-			revAlign.alignmentCigars = alignment.alignmentCigars;
-			revAlign.contig = alignment.contig;
-			revAlign.score = alignment.score;
-			//System.out.println("      switch " + alignment.readStart + " and " + alignment.readEnd
-			//		+ " to " + revAlign.readStart + " and " + revAlign.readEnd);
-			revAlignments.add(revAlign);
-		}
+		for (AlignmentRecord alignment:alignments)
+			revAlignments.add(alignment.reverseRead());
 		
 		ReadFilling revFilling = new ReadFilling(revRead, revAlignments);		
 		return revFilling;

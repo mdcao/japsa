@@ -82,20 +82,20 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	 * @return
 	 */
 	public int isEnd(Contig ctg){
-		if (ctg == this.peekFirst())
+		if (ctg.getIndex() == this.peekFirst().getIndex())
 			return 1;
-		if (ctg == this.peekLast())
+		if (ctg.getIndex() == this.peekLast().getIndex())
 			return -1;
 
 		return 0;			
 	}
 
 	public boolean isFirst(Contig ctg){
-		return ctg == this.peekFirst();
+		return ctg.getIndex() == this.peekFirst().getIndex();
 	}
 
 	public boolean isLast(Contig ctg){
-		return ctg == this.peekLast();
+		return ctg.getIndex() == this.peekLast().getIndex();
 	}
 
 	/**
@@ -161,7 +161,6 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	}
 
 	public void viewSequence(SequenceOutputStream out) throws IOException{		
-		
 
 
 		System.out.println("========================== START =============================");
@@ -175,11 +174,7 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 			}else
 				System.out.println();
 		}
-		if (size()<=1){
-			System.out.println("Size = " + size() + " not sequence");
-			return;
-			
-		}
+
 		System.out.println("Size = " + size() + " sequence");
 		
 		SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024,  "Scaffold" + scaffoldIndex);
@@ -188,20 +183,31 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 
 		ContigBridge.Connection bestCloseConnection = null;				
 		Contig leftContig, rightContig;		
-
+/*
+ * Nanopore reads:
+ * 	====================================                ==========================================
+ *                           |      |                     |       |                |       |
+ *                           |      |                     |       |                |       |
+ *        <fillFrom>         |      |     leftContig      |       |   <fillFrom>   |       |    rightContig
+ * Contigs:   ...		~~~~~*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*~~~	...		~~~*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
+ * 				          startLeft                            endLeft
+ * 
+ *                                that's what happens below!
+ * 
+ */
+		
 		rightContig = getFirst();		
 
 		//startLeft: the leftPoint of leftContig, endLeft: rightPoint of left Contig
-		int startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length();
+		int startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length(); //starting point after the last fillFrom
 		int endLeft   = (rightContig.getRelDir() < 0)?1:rightContig.length();
 
 		if (closeBridge != null){			
 			bestCloseConnection = closeBridge.fewestGapConnection();
-			startLeft = (rightContig.getRelDir() > 0)?
-					(bestCloseConnection.getAlignment(rightContig).refStart)
-					:(bestCloseConnection.getAlignment(rightContig).refEnd);
+			leftContig = (rightContig==closeBridge.secondContig? closeBridge.firstContig:closeBridge.secondContig);
+			startLeft = bestCloseConnection.fillFrom(leftContig, null, null); //adjust the starting point
 
-					anno.addDescription("Circular");
+			anno.addDescription("Circular");
 
 		}else
 			anno.addDescription("Linear");
@@ -215,17 +221,10 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 			//System.out.println("------------------------------------ START ------------------------------------");
 			rightContig = ctgIter.next();
 
-			//bridge.fillGap(leftContig, rightContig);
-
-
 			ContigBridge.Connection connection = bridge.fewestGapConnection();
 
-			//start from previous
-			//end estimate now
 			endLeft = (leftContig.getRelDir()>0)?(connection.getAlignment(leftContig).refEnd):
 				(connection.getAlignment(leftContig).refStart);
-
-			System.out.printf("Append contig %d (%d) %d-%d (%d)\n",leftContig.index, leftContig.length(),startLeft, endLeft, Math.abs(startLeft - endLeft));
 
 			if (startLeft<endLeft){
 				JapsaFeature feature = 
@@ -248,22 +247,18 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 				leftContig.portionUsed += (1.0 - endLeft + startLeft + 1) / leftContig.length();
 			}			
 			//Fill in the connection
-			System.out.printf("Append bridge %d -- %d\n",bridge.firstContig.index,  bridge.secondContig.index);
-			connection.fillFrom(leftContig, seq, anno);			
-
-			startLeft = (rightContig.getRelDir() > 0)?
-					(connection.getAlignment(rightContig).refStart)
-					:(connection.getAlignment(rightContig).refEnd);	
-
-					leftContig = rightContig;			
-					//System.out.println("------------------------------------ END ------------------------------------");
+			startLeft = connection.fillFrom(leftContig, seq, anno);
+					
+			leftContig = rightContig;			
+					
 		}//for
 
 		//leftContig = lastContig in the queue
-		if (bestCloseConnection != null){			 
+		if (bestCloseConnection != null)		 
 			endLeft = (leftContig.getRelDir()>0)?(bestCloseConnection.getAlignment(leftContig).refEnd):
-				(bestCloseConnection.getAlignment(leftContig).refStart);								
-		}	
+				(bestCloseConnection.getAlignment(leftContig).refStart);									
+		else
+			endLeft = (rightContig.getRelDir() < 0)?1:rightContig.length();
 		if (startLeft<endLeft){
 			JapsaFeature feature = 
 					new JapsaFeature(seq.length() + 1, seq.length() + endLeft - startLeft,
@@ -289,6 +284,7 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 		}
 
 		System.out.println("============================ END ===========================");
-		JapsaAnnotation.write(seq.toSequence(), anno, out);
+		//JapsaAnnotation.write(seq.toSequence(), anno, out); //uncomment this line and comment next line for debug
+		seq.writeFasta(out);
 	}
 }

@@ -35,6 +35,7 @@
 package japsa.bio.hts.scaffold;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import japsa.seq.Sequence;
 
@@ -44,7 +45,8 @@ public class Contig{
 	Sequence contigSequence;//the sequence of the contig	
 	double   coverage = 1.0;
 	double   portionUsed = 0.0;
-	
+	int used = 0;
+	boolean isCircular = false;
 	//for depth first search
 	ArrayList<ContigBridge> bridges;	
 		
@@ -53,6 +55,32 @@ public class Contig{
 		contigSequence = seq;
 		myVector = new ScaffoldVector(0,1);
 		bridges = new ArrayList<ContigBridge>();
+		usedRanges = new ArrayList<Range>();
+	}
+	//used to clone the repetitive contigs. Not necessary to deep clone??
+	public Contig clone(ContigBridge bridge){
+		Contig ctg = new Contig(this.index, this.contigSequence);
+		ctg.used = used++;
+		ctg.coverage = coverage;
+		ctg.portionUsed = portionUsed;
+		//deep clone bridges to remove used one		
+		for(ContigBridge brg:this.bridges){
+			if(!brg.hashKey.equals(bridge.hashKey))
+				ctg.bridges.add(brg);
+		}
+		
+		ctg.usedRanges = this.usedRanges;
+		return ctg;
+	}
+	public Contig clone(){
+		Contig ctg = new Contig(this.index, this.contigSequence);
+		ctg.used = used++; //TODO: replace by static array usage[nContigs] in ScaffoldGraphDFS??
+		ctg.coverage = coverage;
+		ctg.portionUsed = portionUsed;
+		ctg.bridges = this.bridges;
+		
+		ctg.usedRanges = this.usedRanges;
+		return ctg;
 	}
 	
 	public String getName(){
@@ -126,6 +154,53 @@ public class Contig{
 		coverage =  cov;
 	}
 	
-	
-	
+	////////////////for tracing the used part////////////////////
+	ArrayList<Range> usedRanges;
+	class Range implements Comparable<Range> {
+		int start, end, score;
+		Range(){
+			start = end = score = 0;
+		}
+		Range(int start, int end, int score){
+			this.start = start<end?start:end;
+			this.end = start+end-this.start;
+			this.score = score;
+		}
+		public int getLen(){
+			return Math.abs(end-start)+1;
+		}
+		public String toString(){
+			return new String(start + " --> " + end + ": " + score);
+		}
+		@Override
+		public int compareTo(Range rg) {
+			// TODO Auto-generated method stub
+			if(this.start!=rg.start)
+				return (this.start-rg.start);
+			else if(this.end != rg.end)
+				return (this.end-rg.end);
+			else
+				return (this.score-rg.score);
+		}
+	}
+	public void addRange(int start, int end, int score){
+		usedRanges.add(new Range(start,end,score));
+	}
+	public void display(){
+		Collections.sort(usedRanges);
+		System.out.println("Contig " + this.getName());
+		for(Range rg:usedRanges)
+			System.out.println("used " + rg);
+		
+		int prevEnd = 0, minLen = 100;
+		for (Range rg:usedRanges){
+			if(rg.start > prevEnd + minLen){
+				System.out.println("\tuncovered: " + prevEnd + " --> " + rg.start + " ( " + (rg.start-prevEnd+1) +" )");
+			}
+			if(prevEnd < rg.end)
+				prevEnd = rg.end;
+		}
+		if (prevEnd + minLen < length()-1)
+			System.out.println("\tuncovered: " + prevEnd + " --> " + (length()-1) + " ( " + (length()-prevEnd) +" )");
+	}
 }

@@ -369,8 +369,7 @@ public class RealtimeStrainTyping {
 		}
 
 		private ArrayList<LCTypingResult> makePresenceTyping(int top) throws IOException, InterruptedException{
-			Logging.info("Perform an analysis at " + new Date());
-			Date date = new Date(lastTime);
+			Logging.info("Perform an analysis at " + new Date());			
 			long step = (lastTime - startTime)/1000;//convert to second
 
 			//int step = typing.currentReadCount;
@@ -391,12 +390,12 @@ public class RealtimeStrainTyping {
 					}
 				}
 			}
-			Logging.info(date + ": Found " + seenGenes.size() + "  " + compute);
+			Logging.info(timeNow + ": Found " + seenGenes.size() + "  " + compute);
 
 			if (compute){
 				posterior = lcTyping.calcPosterior();
 				samp =lcTyping.calcPosterior(1000);
-				ranges = lcTyping.getRanges(samp, 0.99);
+				ranges = lcTyping.getRanges(samp, 0.95);
 			}
 			ArrayList<LCTypingResult> lcT = new ArrayList<LCTypingResult>(); 
 			for(int i=0; i<posterior.length; i++){
@@ -414,7 +413,7 @@ public class RealtimeStrainTyping {
 
 				if (lr.postProb < 0.010)
 					break;
-				datOS.print(date + "\t" + step  + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + lr.strainID + "\t" + lr.postProb +"\t" + (lr.postProb - lr.l) + "\t" + (lr.h -lr.postProb)  +"\t"+seenGenes.size());
+				datOS.print(timeNow + "\t" + step  + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + lr.strainID + "\t" + lr.postProb +"\t" + (lr.postProb - lr.l) + "\t" + (lr.h -lr.postProb)  +"\t"+seenGenes.size());
 				datOS.println();			
 			}
 			datOS.flush();

@@ -44,7 +44,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	static final double matchCost = 0;
 	int score;
 
-	public int readID;
+	public String readID;
 	Contig contig;
 
 	public int refStart, refEnd;  //position on ref of the start and end of the alignment
@@ -72,7 +72,9 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		
 	}
 	public AlignmentRecord(SAMRecord sam, Contig ctg) {
-		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
+//		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
+		readID = sam.getReadName();
+
 		contig = ctg;
 
 		//mySam = sam;
@@ -112,48 +114,38 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 				}
 				break;				
 			default : throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
-			}//casse
+			}//case
 		}//for
 		if (readEnd == 0)
 			readEnd = readLength;
-
 		//these temporary variable to determine usefulness
 		int readLeft = readStart -1;
 		int readRight = readLength - readEnd;
 
 		int refLeft = refStart - 1;
 		int refRight = contig.length() - refEnd;
-
-
 		score = refEnd + 1 - refStart;
 		if (sam.getReadNegativeStrandFlag()){			
 			strand = false;
-			//need to convert the aligment position on read the correct direction
+			//need to convert the alignment position on read the correct direction 
 			readStart = 1 + readLength - readStart;
 			readEnd = 1 + readLength - readEnd;
 		}
 
-		int gaps = 400;
-		int extend = 700;
-		
-		
-		//only useful if
-		if ((readLeft > refLeft + gaps || readRight > gaps + refRight)
-				&& (readLeft < extend || refLeft < extend)
-				&& (readRight  < extend || refRight < extend)
-				)
+		if (
+				(readLeft < ScaffoldGraph.marginThres || refLeft < ScaffoldGraph.marginThres) &&
+				(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) &&
+				contig.length() > ScaffoldGraph.minContigLength
+			)
 			useful = true;
-		
-		if (readID == 9774){
-			System.out.println("XXXX " +readID + " " + contig.index + " " + readLeft + " " + readRight + " " + refLeft + " " + refRight + " " + contig.coverage + " " + useful);
-		}
+
+		contig.addRange(refStart,refEnd,score);
 	}
 	
 	
 	public int readAlignmentStart(){
 		return Math.min(readStart,readEnd);
-				//strand?readStart:readEnd;
-		
+	
 	}
 	
 	public int readAlignmentEnd(){
@@ -183,7 +175,56 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 				+ " " + strand
 				;
 	}
-
+	// return same alignment but with reversed read
+	public AlignmentRecord reverseRead(){
+		AlignmentRecord revAlign = new AlignmentRecord();
+		revAlign.readID = readID;
+		revAlign.contig = contig;
+		revAlign.refStart = refStart;
+		revAlign.refEnd = refEnd;
+		
+		revAlign.readLength = readLength;
+		revAlign.readStart = readLength - readStart + 1;//1-index
+		revAlign.readEnd = readLength - readEnd + 1;//1-index
+		revAlign.strand = !strand;
+		revAlign.useful = useful;			
+		revAlign.alignmentCigars = alignmentCigars;
+		revAlign.contig = contig;
+		revAlign.score = score;
+		return revAlign;
+	}
+	public AlignmentRecord clones(){
+		AlignmentRecord align = new AlignmentRecord();
+		align.readID = readID;
+		align.contig = contig;
+		align.refStart = refStart;
+		align.refEnd = refEnd;
+		
+		align.readLength = readLength;
+		align.readStart = readStart;//1-index
+		align.readEnd = readEnd;//1-index
+		align.strand = strand;
+		align.useful = useful;			
+		align.alignmentCigars = alignmentCigars;
+		align.contig = contig;
+		align.score = score;
+		return align;
+	}
+	public void copy(AlignmentRecord rec){
+		readID = rec.readID;
+		contig = rec.contig;
+		refStart = rec.refStart;
+		refEnd = rec.refEnd;
+		
+		readLength = rec.readLength;
+		readStart = rec.readStart;//1-index
+		readEnd = rec.readEnd;//1-index
+		strand = rec.strand;
+		useful = rec.useful;			
+		alignmentCigars = rec.alignmentCigars;
+		contig = rec.contig;
+		score = rec.score;
+	}
 	/* (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
