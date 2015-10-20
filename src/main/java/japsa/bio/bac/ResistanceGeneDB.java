@@ -55,13 +55,15 @@ public class ResistanceGeneDB {
 	String fasPath;
 
 	HashMap<String, String> gene2Res;
+	HashMap<String, String> gene2Class;
 
 	public ResistanceGeneDB(String path) throws IOException {
-		dbPath = path;
-		fasPath = path + ".fas";
+		dbPath =  path;
+		fasPath = path + ".fasta";
 		
 		//Read 		
 		gene2Res = new HashMap<String, String>();
+		gene2Class = new HashMap<String, String>();
 		BufferedReader br = SequenceReader.openFile(dbPath + ".map");
 		String line;
 		//int lineNo = 0;
@@ -70,8 +72,9 @@ public class ResistanceGeneDB {
 			if (line.startsWith(COMMENT))
 				continue;
 			String [] toks = line.split(SEPARATOR);
-			if (toks.length >= 2){
+			if (toks.length >= 3){
 				gene2Res.put(toks[0], toks[1]);	
+				gene2Class.put(toks[0], toks[2]);
 			}			
 
 		}
@@ -83,6 +86,10 @@ public class ResistanceGeneDB {
 		return gene2Res.get(geneID);
 	}
 
+	public String getClass(String geneID){
+		return gene2Class.get(geneID);
+	}
+	
 	public String getSequenceFile(){
 		return fasPath;
 	}

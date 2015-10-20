@@ -48,15 +48,12 @@ import japsa.tools.bio.hts.SelectReadIntersectCmd;
 import japsa.tools.bio.hts.SelectReadSpanCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.np.GapCloserCmd;
-import japsa.tools.bio.np.GeneStrainTypingCmd;
-import japsa.tools.bio.np.MLSTStrainTypingCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.np.RealtimeMLSTCmd;
 import japsa.tools.bio.np.RealtimeSpeciesTypingCmd;
 import japsa.tools.bio.np.RealtimeStrainTypingCmd;
 import japsa.tools.bio.np.RegulateTimeCmd;
-import japsa.tools.bio.np.ResistanceGeneCmd;
 import japsa.tools.bio.np.RealtimeResistanceGeneCmd;
 import japsa.tools.bio.np.SpeciesMixtureTypingCmd;
 import japsa.tools.bio.phylo.NormaliseTreeCmd;
@@ -154,14 +151,8 @@ public class Deploy {
 		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(new NanoporeReaderCmd());
-		tools.add(new NanoporeReadFilterCmd());
-		
+		tools.add(new NanoporeReadFilterCmd());		
 		tools.add(new SpeciesMixtureTypingCmd());		
-		tools.add(new GeneStrainTypingCmd());
-		tools.add(new MLSTStrainTypingCmd());
-		tools.add(new ResistanceGeneCmd());		
-		
-		
 		tools.add(new RealtimeSpeciesTypingCmd());
 		tools.add(new RealtimeMLSTCmd());
 		tools.add(new RealtimeStrainTypingCmd());

@@ -32,7 +32,7 @@
  * 7 Aug 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsa.tools.bio.np;
+package obsolete;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -47,6 +47,7 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
+@Deprecated
 @Deployable(
 	scriptName = "jsa.np.mlstStrainTyping", 
 	scriptDesc = "Strain typing using MLST system"

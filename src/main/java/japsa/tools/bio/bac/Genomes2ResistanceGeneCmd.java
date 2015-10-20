@@ -66,11 +66,11 @@ public class Genomes2ResistanceGeneCmd extends CommandLine {
 		setDesc(annotation.scriptDesc());
 
 		addString("input", null, "Name of the genome file",true);
-		addString("output", null, "Name of the output bam file",true);		
+		addString("output", null, "Name of the output file",true);		
 		addString("resDB", null, "Name of the resistance gene database",true);
 
-		addDouble("identity", 0.9, "Minimum identity");
-		addDouble("coverage", 0.8, "Minimum coverage of gene");
+		addDouble("identity", 0.85, "Minimum identity");
+		addDouble("coverage", 0.85, "Minimum coverage of gene");
 
 		addStdHelp();
 	}
@@ -91,6 +91,8 @@ public class Genomes2ResistanceGeneCmd extends CommandLine {
 
 		double identity = cmdLine.getDoubleVal("identity");
 		double coverage = cmdLine.getDoubleVal("coverage");
+		
+		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output); 
 
 		//Note: The database would contain files 
 		//  resDB.fas -- gene sequences 
@@ -99,8 +101,17 @@ public class Genomes2ResistanceGeneCmd extends CommandLine {
 		ArrayList<Sequence> seqs = SequenceReader.readAll(input, Alphabet.DNA());			
 		HashSet<String> res = blastn(seqs, resDB, coverage, identity);		
 		for (String s:res){
-			System.out.println(s);
-		}		
+			//System.out.println(s);
+			String geneRes = resDB.getRes(s);
+			if (geneRes != null && geneRes.length() > 0){
+				//Logging.info(line + " : " + geneRes);
+				String [] toks = geneRes.split(",");
+				for (String tok:toks){
+					sos.print(tok + "\t" + resDB.getClass(s) + "\n");
+				}					
+			}
+		}	
+		sos.close();
 	}
 
 	public static HashSet<String> blastn(ArrayList<Sequence> seqs, ResistanceGeneDB resDB, double minCov, double minID) throws IOException, InterruptedException{
@@ -108,9 +119,17 @@ public class Genomes2ResistanceGeneCmd extends CommandLine {
 
 		HashSet<String> res = new HashSet<String>();
 
-		ProcessBuilder pb = new ProcessBuilder(blastn, "-subject", "-",
-			"-query", resDB.getSequenceFile(), "-outfmt", "6 qseqid qlen length pident nident gaps mismatch");
-
+		ProcessBuilder pb = new ProcessBuilder(blastn, 
+			"-subject", 
+			"-",
+			"-query", 
+			resDB.getSequenceFile(), 
+			"-outfmt", 
+			"7 qseqid qlen qstart qend sseqid slen sstart send length frames pident nident gaps mismatch score bitscore");
+		/////    0      1     2     3    4     5     6     7     8      9      10     11    12    13       14     15
+		
+		//6 qseqid qlen length pident nident gaps mismatch
+		//    0      1    2      3      4      5    6
 		Process process = pb.start();
 
 		//Pass on the genome to blastn
@@ -125,24 +144,20 @@ public class Genomes2ResistanceGeneCmd extends CommandLine {
 		String line;
 
 		while ((line = br.readLine()) != null) {
+			if (line.startsWith("#"))
+				continue;
 
 			String [] toks = line.trim().split("\t");
-			int length = Integer.parseInt(toks[2]);
+			int length = Integer.parseInt(toks[8]);
 			int qlen   = Integer.parseInt(toks[1]);
 			if (minCov * qlen > length)
 				continue;
 
-			if (Double.parseDouble(toks[3]) < minID * 100)
+			if (Double.parseDouble(toks[10]) < minID * 100)
 				continue;
 			//pass			
 
-			String geneRes = resDB.getRes(toks[0]);
-			if (geneRes != null && geneRes.length() > 0){
-				Logging.info(line + " : " + geneRes);
-				toks = geneRes.split(",");
-				for (String tok:toks)
-					res.add(tok);
-			}
+			res.add(toks[0]);			
 		}
 		br.close();
 		process.waitFor();//Do i need this???

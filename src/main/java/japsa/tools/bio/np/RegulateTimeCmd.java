@@ -66,6 +66,7 @@ public class RegulateTimeCmd extends CommandLine {
 		addStdInputFile();
 		addStdOutputFile();
 		
+		addString("key","timestamp", "Key to extract timing");		
 		addDouble("scale",1.0, "Scale");
 		
 		addStdHelp();
@@ -82,6 +83,8 @@ public class RegulateTimeCmd extends CommandLine {
 		String input = cmdTool.getStringVal("input");
 		String output = cmdTool.getStringVal("output");		
 		double scale = cmdTool.getDoubleVal("scale");
+		String key = cmdTool.getStringVal("key");
+		
 
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
 
@@ -90,11 +93,11 @@ public class RegulateTimeCmd extends CommandLine {
 		boolean isFastq = (reader instanceof FastqReader);
 		Sequence seq;		
 		
-		String sortKeyOptionPrefix = "cTime=";
-		int   sortKeyOptionIndex = sortKeyOptionPrefix.length(); 
-		long  firstReadTime = 0; 
-		int   numRead = 0;
-		long  numBase = 0;
+		String sortKeyOptionPrefix = key + "=";
+		int    sortKeyOptionIndex = sortKeyOptionPrefix.length(); 
+		long   firstReadTime = 0; 
+		int    numRead = 0;
+		long   numBase = 0;
 		
 		long timeStart = System.currentTimeMillis();		
 		Logging.info("Time start " + new Date(timeStart));

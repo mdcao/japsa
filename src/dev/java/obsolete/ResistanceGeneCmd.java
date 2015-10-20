@@ -32,97 +32,117 @@
  * 7 Aug 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsa.tools.bio.np;
+package obsolete;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
-import japsa.bio.np.GeneStrainTyping;
+import japsa.bio.np.ResistanceGene;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.IntArray;
+import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 /**
  * @author minhduc
  *
  */
-
+@Deprecated
 @Deployable(
-	scriptName = "jsa.np.geneStrainTyping", 
-	scriptDesc = "Strain typing using present/absence of gene")
-public class GeneStrainTypingCmd extends CommandLine{	
-	public GeneStrainTypingCmd(){
+	scriptName = "jsa.np.resistGenes", 
+	scriptDesc = "Antibiotic resistance genes identification")
+public class ResistanceGeneCmd extends CommandLine{	
+	public ResistanceGeneCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		
 		addString("output", "output.dat",  "Output file");
-		addString("profile", null,  "Output file containing gene profile of all strains",true);		
-		addString("bamFile", null,  "The bam file",true);
-		addString("geneFile", null,  "The gene file",true);
+		addString("bamFile", null,  "The bam file");
+		//addString("geneFile", null,  "The gene file");
+		//addString("figure", null,  "Figure file");
+		addString("mcoordFile", null,  "Alignment with dnadiff between the genome (illumina) and genes database");
 
-		addInt("top", 10,  "The number of top strains");
-		addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-		addInt("timestamp", 0,  "Timestamp to check, if <=0 then use read number instead");
-		addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");
-
+		addDouble("scoreThreshold", 1.5,  "The alignment score threshold");
+		addString("msa", "kalign",
+				"Name of the msa method, support poa, kalign, muscle and clustalo");
+		addString("global", "needle",
+				"Name of the global method, support needle and hmm");
+		addString("tmp", "tmp/t",  "Temporary folder");
+		addString("hours", null,  "The file containging hours against yields, if set will output acording to time");
+		addInt("read", 500,  "Number of reads before a typing, NA if timestamp is set");		
+		addInt("timestamp", 0,  "Number of seconds between internval");
+		addDouble("il", 0.9,   "Threshold for Illumina");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
+
 		
 		addStdHelp();		
 	} 
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) throws IOException, InterruptedException{
-		CommandLine cmdLine = new GeneStrainTypingCmd();		
-		args = cmdLine.stdParseLine(args);
-		
-		/**********************************************************************/
+		CommandLine cmdLine = new ResistanceGeneCmd();
+		args = cmdLine.stdParseLine(args);		
 
 		String output = cmdLine.getStringVal("output");
-		String profile = cmdLine.getStringVal("profile");				
-		String bamFile = cmdLine.getStringVal("bamFile");
-		String geneFile = cmdLine.getStringVal("geneFile");
+		String bamFile = cmdLine.getStringVal("bam");
+		String mcoordFile = cmdLine.getStringVal("mcoordFile");
+		String msa = cmdLine.getStringVal("msa");
+		String global = cmdLine.getStringVal("global");
+
+		//String figure = cmdLine.getStringVal("figure");
+		String tmp = cmdLine.getStringVal("tmp");
 		String hours = cmdLine.getStringVal("hours");
-		int top = cmdLine.getIntVal("top");		
-		int read = cmdLine.getIntVal("read");		
+
+		double scoreThreshold = cmdLine.getDoubleVal("scoreThreshold");				
+		int read = cmdLine.getIntVal("read");
 		int timestamp = cmdLine.getIntVal("timestamp");
-		{
-			GeneStrainTyping paTyping = new GeneStrainTyping();	
-			paTyping.readNumber = read;
-			if (hours !=null){
-				BufferedReader bf = SequenceReader.openFile(hours);
-				String line = bf.readLine();//first line
-				paTyping.hoursArray = new IntArray();
-				paTyping.readCountArray = new IntArray();
 
-				while ((line = bf.readLine())!= null){
-					String [] tokens = line.split("\\s");
-					int hrs = Integer.parseInt(tokens[0]);
-					int readCount = Integer.parseInt(tokens[2]);
+		//double np = cmdLine.getDoubleVal("np");
+		double il = cmdLine.getDoubleVal("il");
 
-					paTyping.hoursArray.add(hrs);
-					paTyping.readCountArray.add(readCount);	
-				}
+		boolean twodonly = cmdLine.getBooleanVal("twodonly");
+
+		ResistanceGene paTyping = new ResistanceGene();		
+		paTyping.msa = msa;
+		paTyping.global = global;
+
+		paTyping.prefix = tmp;
+		paTyping.scoreThreshold = scoreThreshold;
+		paTyping.twoDOnly = twodonly;
+		paTyping.readNumber = read;
+		DateFormat df = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
+		Logging.info("START : " + df.format(Calendar.getInstance().getTime()));
+
+		if (paTyping.readNumber < 1)
+			paTyping.readNumber = 1;
+
+		paTyping.datOS = SequenceOutputStream.makeOutputStream(output);
+
+		paTyping.getGeneClassInformation(mcoordFile);
+		if (hours !=null){
+			BufferedReader bf = SequenceReader.openFile(hours);
+			String line = bf.readLine();//first line
+			paTyping.hoursArray = new IntArray();
+			paTyping.readCountArray = new IntArray();
+
+			while ((line = bf.readLine())!= null){
+				String [] tokens = line.split("\\s");
+				int hrs = Integer.parseInt(tokens[0]);
+				int readCount = Integer.parseInt(tokens[2]);
+
+				paTyping.hoursArray.add(hrs);
+				paTyping.readCountArray.add(readCount);	
 			}
-
-
-			if (paTyping.readNumber < 1)
-				paTyping.readNumber = 1;
-
-			paTyping.datOS = SequenceOutputStream.makeOutputStream(output);
-			paTyping.datOS.print("step\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
-			paTyping.readGenes(geneFile);
-			paTyping.readKnowProfiles(profile);
-			paTyping.timestamp = timestamp;			
-			paTyping.typing(bamFile,  top);
-			paTyping.datOS.close();
 		}
+
+		paTyping.ilThreshold = il;
+		paTyping.typing(bamFile);
+		paTyping.datOS.close();
 	}
-
-
 }
