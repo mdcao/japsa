@@ -56,6 +56,7 @@ public class NormaliseTreeCmd  extends CommandLine{
 		
 		addStdInputFile();
 		addDouble("sum",1.0,"Sum of branches after normalising");
+		addDouble("scale",-1.0,"Scale factor, if set will override the sum parameter");
 		addString("output", "-", "Name of the file for output, - for stdout");
 				
 		addStdHelp();		
@@ -69,6 +70,8 @@ public class NormaliseTreeCmd  extends CommandLine{
 				
 		String output = cmdLine.getStringVal("output");		
 		double nSum   = cmdLine.getDoubleVal("sum");
+		double scale   = cmdLine.getDoubleVal("scale");
+		
 		
 		BufferedReader bf = SequenceReader.openFile(cmdLine.getStringVal("input"));	
 		
@@ -80,10 +83,12 @@ public class NormaliseTreeCmd  extends CommandLine{
 		bf.close();
 
 		PhylogenyTree tree = PhylogenyTree.parseTree(str);
-		double sum = tree.sumHops();
-		double num = tree.numHops();
-
-		tree.scale(nSum * num / sum);
+		if (scale < 0){
+			double sum = tree.sumHops();
+			double num = tree.numHops();
+			scale = nSum * num / sum;
+		}
+		tree.scale(scale);
 
 		PrintStream ps = System.out;
 		if(!"-".equals(output))

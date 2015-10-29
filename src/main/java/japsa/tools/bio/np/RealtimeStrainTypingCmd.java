@@ -56,16 +56,17 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
-		addString("output", "output.dat",  "Output file");
-		addString("profile", null,  "Output file containing gene profile of all strains",true);		
+		addString("geneDB", null,  " Path to the gene database",true);		
 		addString("bamFile", null,  "The bam file",true);
-		addString("geneFile", null,  "The gene file",true);
+
 		addDouble("qual", 0,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
-		
+
 		//addInt("top", 10,  "The number of top strains");		
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 30,   "Minimum number of seconds between analyses");
+
+		addString("output", "output.dat",  "Output file");
 
 		addStdHelp();		
 	} 
@@ -79,24 +80,17 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 
 		/**********************************************************************/
 
-		String output = cmdLine.getStringVal("output");
-		String profile = cmdLine.getStringVal("profile");				
+		String output = cmdLine.getStringVal("output");					
 		String bamFile = cmdLine.getStringVal("bamFile");
-		String geneFile = cmdLine.getStringVal("geneFile");
-		
-		//int top = cmdLine.getIntVal("top");
-		
+		String geneDB = cmdLine.getStringVal("geneDB");
 		int read       = cmdLine.getIntVal("read");
 		int time       = cmdLine.getIntVal("time");		
 		double qual      = cmdLine.getDoubleVal("qual");		
 		boolean twoOnly      = cmdLine.getBooleanVal("twodonly");
 
-		RealtimeStrainTyping paTyping = new RealtimeStrainTyping(read, time, geneFile, profile, output);
+		RealtimeStrainTyping paTyping = new RealtimeStrainTyping(read, time, geneDB,  output);
 		paTyping.setMinQual(qual);	
 		paTyping.setTwoOnly(twoOnly);
-		paTyping.typing(bamFile);		
-		
+		paTyping.typing(bamFile);
 	}
-
-
 }

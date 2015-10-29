@@ -37,7 +37,7 @@ package japsa.bio.np;
 
 import japsa.bio.alignment.ProbFSM.Emission;
 import japsa.bio.alignment.ProbFSM.ProbOneSM;
-import japsa.bio.alignment.ProbFSM.ProbThreeSM;
+//import japsa.bio.alignment.ProbFSM.ProbThreeSM;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
@@ -54,7 +54,6 @@ import htsjdk.samtools.ValidationStringency;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -78,8 +77,7 @@ public class RealtimeResistanceGene {
 	int currentReadCount = 0;
 	long currentBaseCount = 0;
 
-	public String msa = "kalign";
-	private String global = "hmm";
+	public String msa = "kalign";	
 
 	public double scoreThreshold = 2;
 	public boolean twoDOnly = false;
@@ -213,6 +211,7 @@ public class RealtimeResistanceGene {
 			prefix = tmp;
 		}	
 
+		@SuppressWarnings("unchecked")
 		private void antiBioticAnalysis(){
 
 			try {
@@ -338,6 +337,7 @@ public class RealtimeResistanceGene {
 			return (consensus.length() * 2 - cost) / gene.length();
 		}
 
+		/********************************************************************
 		private double checkNeedle(String consensusFile, Sequence gene) throws IOException, InterruptedException{
 			//Needle the gene
 			String geneID = gene.getName();
@@ -364,6 +364,7 @@ public class RealtimeResistanceGene {
 			scoreBf.close();
 			return score / gene.length();
 		}
+		/********************************************************************/
 
 		private void addGeneInfo(HashMap<String, String> map, String key, String info){
 			String s = map.get(key);

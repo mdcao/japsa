@@ -62,7 +62,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addString("msa", "kalign",
 			"Name of the msa method, support poa, kalign, muscle and clustalo");
 
-		addString("tmp", "tmp/t",  "Temporary folder");				
+		addString("tmp", "_tmpt",  "Temporary folder");				
 		addString("resDB", null,  "Path to resistance database", true);
 
 		addDouble("qual", 0,  "Minimum alignment quality");

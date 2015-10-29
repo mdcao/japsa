@@ -85,12 +85,12 @@ public class RealtimeStrainTyping {
 	 * @throws IOException
 	 */
 
-	public RealtimeStrainTyping(int minRead, int minTime, String geneFile, String profileFile, String output) throws IOException{
-		typer = new RealtimeStrainTyper(this, profileFile, output);
+	public RealtimeStrainTyping(int minRead, int minTime, String geneDB, String output) throws IOException{
+		typer = new RealtimeStrainTyper(this, geneDB, output);
 		typer.setReadPeriod(minRead);
 		typer.setTimePeriod(minTime * 1000);
 		
-		readGenes(geneFile);
+		readGenes(geneDB + File.separatorChar + "geneFam.fasta" );
 	}
 
 	/**
@@ -273,14 +273,13 @@ public class RealtimeStrainTyping {
 		double[][] samp = null;// =lcTyping.calcPosterior(1000);
 		double[][] ranges = null;// = lcTyping.getRanges(samp, 0.99);
 
-		RealtimeStrainTyper(RealtimeStrainTyping typing, String profileFile, String output) throws IOException{
+		RealtimeStrainTyper(RealtimeStrainTyping typing, String geneDB, String output) throws IOException{
 			super();
 			this.typing = typing;
 
 			datOS = SequenceOutputStream.makeOutputStream(output);			
 			datOS.print("time\tstep\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
-			readKnowProfiles(profileFile);
-
+			readKnowProfiles(geneDB + File.separatorChar + "profileFam.dat");
 		}
 		
 		private void readKnowProfiles(String profileFile) throws IOException{
