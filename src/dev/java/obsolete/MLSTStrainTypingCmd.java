@@ -37,7 +37,6 @@ package obsolete;
 import java.io.BufferedReader;
 import java.io.IOException;
 
-import japsa.bio.np.MLSTStrainTyping;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.IntArray;

@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.np;
+package obsolete;
 
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;

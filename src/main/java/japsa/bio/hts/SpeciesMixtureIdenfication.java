@@ -144,7 +144,7 @@ public class SpeciesMixtureIdenfication {
 		speciesList.addAll(species2Count.keySet());
 
 		//Write header
-		countsOS.print("step\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
+		countsOS.print("Species\tProportion\tError\tRead Count\tTotal Reads Aligned\tTotal Reads\n");
 		//for (String species:speciesList){
 		//	countsOS.print("\t" + species);
 		//}	
@@ -187,7 +187,7 @@ public class SpeciesMixtureIdenfication {
 			double err = mid - results[i][0];
 
 			//Species 
-			countsOS.print(speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + count[i] + "\t" + currentReadAligned  + "\t" + this.currentReadAligned);
+			countsOS.print(speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + count[i] + "\t" + currentReadAligned  + "\t" + currentReadCount);
 			countsOS.println();
 		}
 		countsOS.flush();

@@ -32,12 +32,11 @@
  * 7 Aug 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsa.tools.bio.np;
+package obsolete;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 
-import japsa.bio.np.SpeciesMixtureTyping;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;

@@ -32,11 +32,12 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.np;
+package obsolete;
 
 
 import japsa.bio.alignment.ProbFSM.Emission;
 import japsa.bio.alignment.ProbFSM.ProbThreeSM;
+import japsa.bio.np.ErrorCorrection;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
