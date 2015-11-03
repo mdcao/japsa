@@ -32,11 +32,12 @@
  * 7 Aug 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsa.tools.bio.np;
+package japsa.tools.bio.hts;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 
+import japsa.bio.hts.SpeciesMixtureIdenfication;
 import japsa.bio.np.SpeciesMixtureTyping;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
@@ -50,13 +51,12 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(
-	scriptName = "jsa.np.speciesTyping", 
-	scriptDesc = "Species typing using Nanopore Sequencing"
+	scriptName = "jsa.hts.", 
+	scriptDesc = ""
 	)
-@Deprecated
-public class SpeciesMixtureTypingCmd extends CommandLine {
+public class SpeciesMixtureCmd extends CommandLine {
 
-	public SpeciesMixtureTypingCmd(){
+	public SpeciesMixtureCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -65,11 +65,6 @@ public class SpeciesMixtureTypingCmd extends CommandLine {
 		addString("output", "output.dat",  "Output file");		
 		addString("bamFile", null,  "The bam file");		
 		addString("indexFile", null,  "indexFile ");
-		addString("hours", null,  "The file containging hours against yields, if set will output acording to tiime");
-		addBoolean("GUI", false,  "Run on GUI");
-		addInt("number", 50,  "Number of reads");
-		addInt("timestamp", 0,  "Timestamp to check, if <=0 then use read number instead");
-		addInt("sim", 0,  "Scale for simulation");
 		addDouble("qual", 0,  "Minimum alignment quality");
 
 		addStdHelp();		
@@ -80,46 +75,19 @@ public class SpeciesMixtureTypingCmd extends CommandLine {
 	 * @throws InterruptedException 
 	 */
 	public static void main(String[] args) throws IOException, InterruptedException {
-		CommandLine cmdLine = new SpeciesMixtureTypingCmd();		
+		CommandLine cmdLine = new SpeciesMixtureCmd();		
 		args = cmdLine.stdParseLine(args);		
 		
 		/**********************************************************************/
 
 		String output    = cmdLine.getStringVal("output");
 		String bamFile   = cmdLine.getStringVal("bamFile");			
-		String indexFile = cmdLine.getStringVal("indexFile");
-		String hours     = cmdLine.getStringVal("hours");
-		boolean GUI      = cmdLine.getBooleanVal("GUI");
-		int number       = cmdLine.getIntVal("number");
+		String indexFile = cmdLine.getStringVal("indexFile");		
 		double qual      = cmdLine.getDoubleVal("qual");
 		
-		SpeciesMixtureTyping paTyping = new SpeciesMixtureTyping(GUI);
-
-		paTyping.simulation = cmdLine.getIntVal("sim");
-		paTyping.qual = qual;
-
-		if (hours !=null){
-			BufferedReader bf = SequenceReader.openFile(hours);
-			String line = bf.readLine();//first line -> ignore
-			paTyping.hoursArray = new IntArray();
-			paTyping.readCountArray = new IntArray();
-
-			while ((line = bf.readLine())!= null){
-				String [] tokens = line.split("\\s+");
-				int hrs = Integer.parseInt(tokens[0]);
-				int readCount = Integer.parseInt(tokens[2]);
-
-				paTyping.hoursArray.add(hrs);
-				paTyping.readCountArray.add(readCount);	
-			}
-			bf.close();
-		}
-
-		//	paTyping.prefix = prefix;
-		paTyping.countsOS = SequenceOutputStream.makeOutputStream(output);
+		SpeciesMixtureIdenfication paTyping = new SpeciesMixtureIdenfication(output, qual);		
 		paTyping.preTyping(indexFile);
-		paTyping.typing(bamFile, number);
-		paTyping.countsOS.close();
+		paTyping.typing(bamFile);		
 		paTyping.close();		
 
 	}

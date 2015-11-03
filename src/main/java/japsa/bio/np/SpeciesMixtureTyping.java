@@ -74,6 +74,7 @@ import org.rosuda.JRI.Rengine;
  * @author minhduc
  *
  */
+@Deprecated
 public class SpeciesMixtureTyping {
 	boolean withGUI = false;
 	public double qual = 0;

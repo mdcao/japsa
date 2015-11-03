@@ -81,8 +81,11 @@ public class MLSTCmd extends CommandLine{
 		if (top <= 0)
 			System.out.println(MLSTyping.bestMlst(seqs, mlstDir));
 		else{
+			
 			MLSTyping t = MLSTyping.topMlst(seqs, mlstDir);
-			for (int i = 0; i < 10; i++){
+			if (top > t.getProfiles().size())
+				top = t.getProfiles().size();
+			for (int i = 0; i < top; i++){
 				MLSType p = t.getProfiles().get(i);
 				System.out.println(p.getST() + " " + p.getScore());
 			}
