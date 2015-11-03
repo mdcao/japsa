@@ -34,15 +34,10 @@
  ****************************************************************************/
 package japsa.tools.bio.hts;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 
 import japsa.bio.hts.SpeciesMixtureIdenfication;
-import japsa.bio.np.SpeciesMixtureTyping;
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.IntArray;
 import japsa.util.deploy.Deployable;
 
 
@@ -51,8 +46,8 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(
-	scriptName = "jsa.hts.", 
-	scriptDesc = ""
+	scriptName = "jsa.hts.mgst", 
+	scriptDesc = "Metagenomics species typing from HTS sequencing"
 	)
 public class SpeciesMixtureCmd extends CommandLine {
 

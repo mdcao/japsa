@@ -46,6 +46,7 @@ import japsa.tools.bio.hts.GetN50Cmd;
 import japsa.tools.bio.hts.HTSErrorAnalysisCmd;
 import japsa.tools.bio.hts.SelectReadIntersectCmd;
 import japsa.tools.bio.hts.SelectReadSpanCmd;
+import japsa.tools.bio.hts.SpeciesMixtureCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.np.GapCloserCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
@@ -55,7 +56,6 @@ import japsa.tools.bio.np.RealtimeSpeciesTypingCmd;
 import japsa.tools.bio.np.RealtimeStrainTypingCmd;
 import japsa.tools.bio.np.RegulateTimeCmd;
 import japsa.tools.bio.np.RealtimeResistanceGeneCmd;
-import japsa.tools.bio.np.SpeciesMixtureTypingCmd;
 import japsa.tools.bio.phylo.NormaliseTreeCmd;
 import japsa.tools.bio.phylo.XMasCmd;
 import japsa.tools.bio.phylo.XMDistanceCmd;
@@ -107,7 +107,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.5-10a";
+	public static String VERSION = "1.5-11a";
 	public static final String FIELD_SEP = "\t";
 
 	//private static String AUTHORS = "Minh Duc Cao";
@@ -142,6 +142,7 @@ public class Deploy {
 		tools.add(new AlignmentParamOptCmd());
 		tools.add(new HTSErrorAnalysisCmd());
 		tools.add(new GetN50Cmd());
+		tools.add(new SpeciesMixtureCmd());
 
 		tools.add("Bacterial analysis:");
 		tools.add(new MLSTCmd());
@@ -152,14 +153,14 @@ public class Deploy {
 		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(new NanoporeReaderCmd());
 		tools.add(new NanoporeReadFilterCmd());		
-		tools.add(new SpeciesMixtureTypingCmd());		
+		//tools.add(new SpeciesMixtureTypingCmd());		
 		tools.add(new RealtimeSpeciesTypingCmd());
 		tools.add(new RealtimeMLSTCmd());
 		tools.add(new RealtimeStrainTypingCmd());
 		tools.add(new RealtimeResistanceGeneCmd());
 		tools.add(new RegulateTimeCmd());		
 		tools.add(new GapCloserCmd());
-		//tools.add(new RealtimeMLSTCmd());
+		//tools.add(new SpeciesMixtureCmd());
 		
 		
 		//jsa.trv.*

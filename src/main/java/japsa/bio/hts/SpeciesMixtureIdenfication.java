@@ -187,7 +187,7 @@ public class SpeciesMixtureIdenfication {
 			double err = mid - results[i][0];
 
 			//Species 
-			countsOS.print(speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + count[i] + currentReadAligned  + "\t" + this.currentReadAligned);
+			countsOS.print(speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + count[i] + "\t" + currentReadAligned  + "\t" + this.currentReadAligned);
 			countsOS.println();
 		}
 		countsOS.flush();
