@@ -34,10 +34,8 @@
 
 package japsa.bio.hts;
 
-import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
-
 import japsa.util.Logging;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -48,7 +46,9 @@ import htsjdk.samtools.ValidationStringency;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -72,7 +72,8 @@ public class SpeciesMixtureIdenfication {
 	//int arrayIndex = 0;	
 	//String prefix;
 	
-	public SequenceOutputStream countsOS;
+	//public SequenceOutputStream countsOS;
+	private PrintStream outOS;
 
 	public SpeciesMixtureIdenfication(String outputFile, double minQual) throws IOException{		
 		rengine = new Rengine (new String [] {"--no-save"}, false, null);
@@ -83,12 +84,17 @@ public class SpeciesMixtureIdenfication {
 		rengine.eval("alpha<-0.05");
 
 		Logging.info("REngine ready");
-		countsOS = SequenceOutputStream.makeOutputStream(outputFile);
+		//countsOS = SequenceOutputStream.makeOutputStream(outputFile);
+		if (outputFile.equals("-"))
+			outOS = System.out;
+		else
+			outOS = new PrintStream (new FileOutputStream(outputFile));
+		
 		this.qual = minQual;
 	}
 
 	public void close() throws IOException{
-		countsOS.close();
+		outOS.close();
 		rengine.end();
 	}
 	/**
@@ -144,7 +150,7 @@ public class SpeciesMixtureIdenfication {
 		speciesList.addAll(species2Count.keySet());
 
 		//Write header
-		countsOS.print("Species\tProportion\tError\tRead Count\tTotal Reads Aligned\tTotal Reads\n");
+		outOS.println("Species\tProportion\tError\tRead Count\tTotal Reads Aligned\tTotal Reads");
 		//for (String species:speciesList){
 		//	countsOS.print("\t" + species);
 		//}	
@@ -187,10 +193,10 @@ public class SpeciesMixtureIdenfication {
 			double err = mid - results[i][0];
 
 			//Species 
-			countsOS.print(speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + count[i] + "\t" + currentReadAligned  + "\t" + currentReadCount);
-			countsOS.println();
+			outOS.printf("%s\t%.4f\t%.4f\t%d\t%d\t%d\n", speciesArray.get(i).replaceAll("_"," "), mid, err, countArray.get(i),currentReadAligned, currentReadCount);
+			
 		}
-		countsOS.flush();
+		outOS.flush();
 		//Logging.info(step+"  " + countArray.size());
 	}
 

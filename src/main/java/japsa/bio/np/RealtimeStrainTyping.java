@@ -49,8 +49,10 @@ import htsjdk.samtools.ValidationStringency;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -89,7 +91,7 @@ public class RealtimeStrainTyping {
 		typer = new RealtimeStrainTyper(this, geneDB, output);
 		typer.setReadPeriod(minRead);
 		typer.setTimePeriod(minTime * 1000);
-		
+
 		readGenes(geneDB + File.separatorChar + "geneFam.fasta" );
 	}
 
@@ -107,7 +109,7 @@ public class RealtimeStrainTyping {
 			geneMap.put(gene.getName(), gene);		
 		}
 	}
-	
+
 	public void setMinQual(double qual) {
 		minQual = qual;
 	}
@@ -127,7 +129,7 @@ public class RealtimeStrainTyping {
 	 */
 	public void typing(String bamFile) throws IOException, InterruptedException{
 		Logging.info("Strain typing ready at " + new Date());
-		
+
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
 
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -138,7 +140,7 @@ public class RealtimeStrainTyping {
 			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
 		SAMRecordIterator samIter = samReader.iterator();
-		
+
 		Thread typerThread = new Thread(typer);
 		typerThread.start();
 
@@ -147,7 +149,7 @@ public class RealtimeStrainTyping {
 		Sequence readSequence = new Sequence(Alphabet.DNA(),1,"");
 		while (samIter.hasNext()){
 			SAMRecord record = samIter.next();
-			
+
 			if (this.twoDOnly && !record.getReadName().contains("twodim")){
 				continue;
 			}
@@ -170,7 +172,7 @@ public class RealtimeStrainTyping {
 
 			if (record.getReadUnmappedFlag())
 				continue;			
-			
+
 			if(record.getMappingQuality() < minQual)
 				continue;
 			//assert: the read sequence is stored in readSequence with the right direction
@@ -252,14 +254,18 @@ public class RealtimeStrainTyping {
 			return strainID;
 		}
 	}
-//private static double distance (HashSet<String> s1,HashSet<String> s2){		
-//	int count= 0;
-//		for (String st:s1){
-//			if (s2.contains(st))
-//				count ++;
-//		}
-//		return count *2.0 / (s1.size() + s2.size());
-//	}
+
+	private static double distance (HashSet<String> s1,HashSet<String> s2){		
+		int notIn = 0;
+		int intersect = 0;
+
+		for (String st:s1){
+			if (s2.contains(st))
+				intersect ++;
+			else notIn ++;
+		}
+		return (intersect + 0.0) / (notIn + s2.size());
+	}
 
 	public static class RealtimeStrainTyper extends RealtimeAnalysis{
 		//Set of genes that seen from the sample
@@ -281,7 +287,7 @@ public class RealtimeStrainTyping {
 			datOS.print("time\tstep\treads\tbases\tstrain\tprob\tlow\thigh\tgenes\n");
 			readKnowProfiles(geneDB + File.separatorChar + "profileFam.dat");
 		}
-		
+
 		private void readKnowProfiles(String profileFile) throws IOException{
 			String line;
 			BufferedReader reader = new BufferedReader (new FileReader(profileFile));		
@@ -310,38 +316,39 @@ public class RealtimeStrainTyping {
 			reader.close();
 
 			/*****************************************************************
-			double profileClosenessThreshold = 0.999;
-			//Checking
-			HashSet<Integer> removeList = new HashSet<Integer>();   
+			//Checking			
+			double [][] mtx = new double[myProfileList.size()][myProfileList.size()];
+
 			for (int i = 0; i < myProfileList.size();i++){
-				if (removeList.contains(i))
-					continue;
-
+				mtx[i][i] = 0;
 				RealtimeStrainTyping.GeneProfile aProfile = myProfileList.get(i);
-				for (int j = i + 1; j < myProfileList.size();j++){
-					if (removeList.contains(j))
-						continue;
-
-					RealtimeStrainTyping.GeneProfile bProfile = myProfileList.get(j);		
-					double distance = distance(aProfile.genes, bProfile.genes);
-
-					if (distance > profileClosenessThreshold){
-						Logging.warn("CHECK  " + aProfile.strainID + " similar to " + bProfile.strainID + " " + distance);
-						removeList.add(j);
-						continue;
-					}
+				for (int j = i + 1; j < myProfileList.size();j++){					
+					RealtimeStrainTyping.GeneProfile bProfile = myProfileList.get(j);					 
+					mtx[i][j] = mtx[j][i] = 1 - distance(aProfile.genes, bProfile.genes);
 				}
-			}			
-
-			ArrayList<RealtimeStrainTyping.GeneProfile> profileList = new ArrayList<RealtimeStrainTyping.GeneProfile>();
-			for (int i = 0; i< myProfileList.size();i++){
-				if (!removeList.contains(i))
-					profileList.add(myProfileList.get(i));
 			}
+
+			PrintStream out = new PrintStream(new FileOutputStream("infile"));
+			out.println(" " + myProfileList.size());
+			for (int s = 0; s < myProfileList.size(); s++) {
+				String name = myProfileList.get(s).strainID;
+				int start = name.length() - 10;
+				if (start < 0) 
+					start = 0;
+				
+				out.printf("%-12s ", name.substring(start));
+				for (int x = 0; x < myProfileList.size(); x++) {
+					out.printf(" %10f ", mtx[s][x]);
+				}
+				out.println();
+			}
+			out.close();
+
 			/*****************************************************************/
 			Logging.info("There are " + myProfileList.size() +" strains");
 			lcTyping = new PresenceAbsence(myProfileList);
 		}
+
 		/* (non-Javadoc)
 		 * @see japsa.bio.np.RealtimeAnalysis#analysis()
 		 */
@@ -416,7 +423,7 @@ public class RealtimeStrainTyping {
 				datOS.println();			
 			}
 			datOS.flush();
-			
+
 			Logging.info("End an analysis at " + new Date());
 			return lcT;
 		}

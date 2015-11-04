@@ -94,3 +94,20 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 		paTyping.typing(bamFile);
 	}
 }
+
+
+/*RST*
+----------------------------------------------------------------------
+*jsa.np.rtStrainTyping*: Bacterial strain typing with Oxford Nanopore sequencing
+----------------------------------------------------------------------
+
+*jsa.np.rtStrainTyping* strain types a bacterial sample from Oxford Nanopore
+sequencing in real-time. It is included in the 
+`Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+<usage> 
+
+*RST*/
