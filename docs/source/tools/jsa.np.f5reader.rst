@@ -112,7 +112,7 @@ and/or on high performance clusters and computing clouds.
 Start several analysis pipelines on some remote machines. Such a pipeline can
 be to count how many reads aligned to chromosomes A and B::
 
-   jsa.util.streamServer --port 3456 \
+   jsa.util.streamServer --port 3456 | \
    bwa mem -t 8 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -Y -K 10000 index - | \
    awk -F "\t" 'BEGIN{A=0;B=0;N++} NF>4 \
        {if ($3=="chrA") A++; if ($3=="chrB") B++; \

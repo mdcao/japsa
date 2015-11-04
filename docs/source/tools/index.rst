@@ -18,6 +18,7 @@ This chapter presents the list of tools provided by Japsa.
    jsa.seq.emalign.rst
    jsa.np.f5reader.rst
    jsa.np.filter.rst
+   jsa.np.rtStrainTyping.rst
    jsa.util.streamServer.rst
    jsa.util.streamClient.rst
    jsa.phylo.xmas.rst
