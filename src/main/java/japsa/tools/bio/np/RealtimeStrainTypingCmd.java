@@ -48,7 +48,8 @@ import japsa.util.deploy.Deployable;
 
 @Deployable(
 	scriptName = "jsa.np.rtStrainTyping", 
-	scriptDesc = "Realtime strain typing using Nanopore sequencing data")
+	scriptDesc = "Realtime strain typing using Nanopore sequencing data",
+	seeAlso = "jsa.np.f5reader, jsa.np.rtSpeciesTyping, jsa.np.rtResistGenes, jsa.util.streamServer, jsa.util.streamClient")
 public class RealtimeStrainTypingCmd extends CommandLine{	
 	public RealtimeStrainTypingCmd(){
 		super();
@@ -102,12 +103,40 @@ public class RealtimeStrainTypingCmd extends CommandLine{
 ----------------------------------------------------------------------
 
 *jsa.np.rtStrainTyping* strain types a bacterial sample from Oxford Nanopore
-sequencing in real-time. It is included in the 
-`Japsa package <http://mdcao.github.io/japsa/>`_. 
-Please see check the installation_ page for instructions.  
+sequencing in real-time. It reads data in SAM/BAM format from a file or from
+a stream and identifies the genes in the samples. Based on the patterns of 
+gene presence, it makes an inference of the strain, together with an confidence
+interval of 95%.
 
-.. _installation: ../install.html
+We provide the gene databases for three bacterial species  K. pneumoniae, 
+E. coli and S. aureus on  http://genomicsresearch.org/public/researcher/npAnalysis/StrainTyping.tar.gz 
+(or https://swift.rc.nectar.org.au:8888/v1/AUTH_15574c7fb24c44b3b34069185efba190/npAnalysis/StrainTyping.tar.gz).
+Obtain them by::
+   wget https://swift.rc.nectar.org.au:8888/v1/AUTH_15574c7fb24c44b3b34069185efba190/npAnalysis/StrainTyping.tar.gz
+   tar zxvf StrainTyping.tar.gz
+
+which will generate three folders for the three species.
 
 <usage> 
+
+~~~~~~~~~~~~~~
+Usage examples
+~~~~~~~~~~~~~~
+If there is a sam/bam file of aligning the Nanopore sequencing to the gene 
+database (ie, geneFam.fasta in one of the previous databases), the program
+can read from this file (note, this is not real-time analysis):
+::
+   jsa.np.rtStrainTyping -geneDB StrainTyping/Escherichia_coli/ -bamFile ecoli.bam -read 100000 -time 1000 -output output.dat
+   
+This program can read data from the output stream of an alignment program to
+perform analysis in real-time. For example, one can create such a pipeline:
+::
+  jsa.util.streamServer -port 3457 \
+  | bwa mem -t 2 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -Y -K 10000 -a StrainTyping/Escherichia_coli/geneFam.fasta - 2> /dev/null \
+  | jsa.np.rtStrainTyping -bam - -geneDB StrainTyping/Escherichia_coli/ -read 0 -time 20 --out EcStrainTyping.dat 2>  kPStrainTyping.log
+and streams data to this pipeline:
+::
+  jsa.np.f5reader -GUI -realtime -folder <DownloadFolder> -fail -output data.fastq -stream serverAddress:3457
+
 
 *RST*/
