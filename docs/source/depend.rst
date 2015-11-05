@@ -8,7 +8,6 @@ Japsa has the following dependencies, which are included in the package.
 * colloquial.jar, now java-arithcode (https://github.com/bob-carpenter/java-arithcode)
 * common-math.jar >=3.3.0 (http://commons.apache.org/proper/commons-math/)
 * htsjdk >=1.126
-* sam >=1.84 This will be replaced by htsjdk above
 * guava >=16.0
 * jhdf5 >= 18
 * JRI -- Dependency on JRI will be removed in the future

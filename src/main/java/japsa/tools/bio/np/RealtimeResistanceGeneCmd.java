@@ -114,5 +114,11 @@ with Nanopore MinION.
 
 <usage> 
 
+~~~~~~~~~~
+Setting up
+~~~~~~~~~~
+
+Refer to real-time analyais page at https://github.com/mdcao/npAnalysis/
+
 
 *RST*/

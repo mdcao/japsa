@@ -19,6 +19,7 @@ This chapter presents the list of tools provided by Japsa.
    jsa.np.f5reader.rst
    jsa.np.filter.rst
    jsa.np.rtSpeciesTyping.rst
+   jsa.np.rtMLST.rst
    jsa.np.rtStrainTyping.rst
    jsa.np.rtResistGenes.rst
    jsa.util.streamServer.rst
