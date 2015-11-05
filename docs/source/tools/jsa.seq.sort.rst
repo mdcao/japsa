@@ -1,11 +1,11 @@
 --------------------------------------------
- *jsa.seq.sort*: Sort the sequences in a file
+*jsa.seq.sort*: Sort the sequences in a file
 --------------------------------------------
 
- *jsa.seq.sort* sort the sequences from a file or from a standard input into
+*jsa.seq.sort* sort the sequences from a file or from a standard input into
 some order.
 
- *jsa.seq.sort* is included in the 
+*jsa.seq.sort* is included in the 
 `Japsa package <http://mdcao.github.io/japsa/>`_. 
 Please see check the installation_ page for instructions.  
 

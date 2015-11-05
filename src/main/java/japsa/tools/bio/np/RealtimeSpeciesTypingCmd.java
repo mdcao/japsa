@@ -139,6 +139,7 @@ to listen on port 3456
   
 and streams data to this pipeline using npReader:
 ::
+
   jsa.np.f5reader -GUI -realtime -folder <DownloadFolder> -fail -output data.fastq -stream serverAddress:3456
 
 

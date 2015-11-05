@@ -12,6 +12,7 @@ We provide the gene databases for three bacterial species  K. pneumoniae,
 E. coli and S. aureus on  http://genomicsresearch.org/public/researcher/npAnalysis/StrainTyping.tar.gz 
 (or https://swift.rc.nectar.org.au:8888/v1/AUTH_15574c7fb24c44b3b34069185efba190/npAnalysis/StrainTyping.tar.gz).
 Obtain them by::
+
    wget https://swift.rc.nectar.org.au:8888/v1/AUTH_15574c7fb24c44b3b34069185efba190/npAnalysis/StrainTyping.tar.gz
    tar zxvf StrainTyping.tar.gz
 
