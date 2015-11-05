@@ -9,7 +9,7 @@
 Synopsis
 ~~~~~~~~
 
-*jsa.util.streamClient*:Listen for input from the standard input and output to a stream
+*jsa.util.streamClient*:Forward data from a stream input or a file over the network to a jsa.util.streamServer
 
 ~~~~~
 Usage

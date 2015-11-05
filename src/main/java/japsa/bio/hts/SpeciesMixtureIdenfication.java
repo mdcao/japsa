@@ -193,7 +193,7 @@ public class SpeciesMixtureIdenfication {
 			double err = mid - results[i][0];
 
 			//Species 
-			outOS.printf("%s\t%.4f\t%.4f\t%d\t%d\t%d\n", speciesArray.get(i).replaceAll("_"," "), mid, err, countArray.get(i),currentReadAligned, currentReadCount);
+			outOS.printf("%s\t%.4f\t%.4f\t%d\t%d\t%d\n", speciesArray.get(i).replaceAll("_"," "), mid, err, (int) countArray.get(i),currentReadAligned, currentReadCount);
 			
 		}
 		outOS.flush();
