@@ -55,9 +55,10 @@ Options
 See also
 ~~~~~~~~
 
-jsa.np.f5reader_, jsa.np.rtSpeciesTyping, jsa.np.rtResistGenes, jsa.util.streamServer_, jsa.util.streamClient_
+jsa.np.f5reader_, jsa.np.rtSpeciesTyping_, jsa.np.rtResistGenes, jsa.util.streamServer_, jsa.util.streamClient_
 
 .. _jsa.np.f5reader: jsa.np.f5reader.html
+.. _jsa.np.rtSpeciesTyping: jsa.np.rtSpeciesTyping.html
 .. _jsa.util.streamServer: jsa.util.streamServer.html
 .. _jsa.util.streamClient: jsa.util.streamClient.html
 
