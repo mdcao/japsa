@@ -12,7 +12,7 @@ the server listens on port 3456, unless specified otherwise.
 Synopsis
 ~~~~~~~~
 
-*jsa.util.streamServer*: Listen for input from a stream and output to the standard output
+*jsa.util.streamServer*: Listen for input from a stream and forward the streamed data to the standard output
 
 ~~~~~
 Usage
@@ -34,9 +34,11 @@ Options
 See also
 ~~~~~~~~
 
-jsa.util.streamClient_, jsa.np.filter.jsa.np.f5reader
+jsa.util.streamClient_, jsa.np.filter_, jsa.np.f5reader_
 
 .. _jsa.util.streamClient: jsa.util.streamClient.html
+.. _jsa.np.filter: jsa.np.filter.html
+.. _jsa.np.f5reader: jsa.np.f5reader.html
 
 
 
