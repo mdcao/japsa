@@ -80,13 +80,14 @@ Options
 See also
 ~~~~~~~~
 
-jsa.np.filter_, jsa.util.streamServer_, jsa.util.streamClient_, jsa.np.rtSpeciesTyping_, jsa.np.rtStrainTyping_, jsa.np.rtResistGenes
+jsa.np.filter_, jsa.util.streamServer_, jsa.util.streamClient_, jsa.np.rtSpeciesTyping_, jsa.np.rtStrainTyping_, jsa.np.rtResistGenes_
 
 .. _jsa.np.filter: jsa.np.filter.html
 .. _jsa.util.streamServer: jsa.util.streamServer.html
 .. _jsa.util.streamClient: jsa.util.streamClient.html
 .. _jsa.np.rtSpeciesTyping: jsa.np.rtSpeciesTyping.html
 .. _jsa.np.rtStrainTyping: jsa.np.rtStrainTyping.html
+.. _jsa.np.rtResistGenes: jsa.np.rtResistGenes.html
 
 
 

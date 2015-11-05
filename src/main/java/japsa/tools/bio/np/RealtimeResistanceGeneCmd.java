@@ -46,7 +46,8 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(
 	scriptName = "jsa.np.rtResistGenes", 
-	scriptDesc = "Realtime identification of antibiotic resistance genes from Nanopore sequencing"
+	scriptDesc = "Realtime identification of antibiotic resistance genes from Nanopore sequencing",
+	seeAlso = "jsa.np.f5reader, jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.util.streamServer, jsa.util.streamClient"
 	)
 public class RealtimeResistanceGeneCmd extends CommandLine{	
 	public RealtimeResistanceGeneCmd(){
@@ -58,7 +59,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");
 
-		addDouble("scoreThreshold", 1.5,  "The alignment score threshold");
+		addDouble("score", 0.0001,  "The alignment score threshold");
 		addString("msa", "kalign",
 			"Name of the msa method, support poa, kalign, muscle and clustalo");
 
@@ -102,3 +103,16 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		paTyping.typing(bamFile);		
 	}
 }
+
+/*RST*
+-------------------------------------------------------------------------------------------------------
+*jsa.np.rtResistGenes*: Antibiotic resistance gene identification in real-time with Nanopore sequencing 
+-------------------------------------------------------------------------------------------------------
+
+*jsa.np.rtResistGenes* identifies antibiotic resistance genes from real-time sequencing
+with Nanopore MinION. 
+
+<usage> 
+
+
+*RST*/
