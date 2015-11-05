@@ -136,7 +136,7 @@ public class GenDocs {
 			for (String doc:docs){
 				if (doc.trim().equals("<usage>")){
 					outOS.print("~~~~~~~~\nSynopsis\n~~~~~~~~\n\n");
-					outOS.print("*" + scriptName + "*:" + annotation.scriptDesc()+"\n\n");
+					outOS.print("*" + scriptName + "*: " + annotation.scriptDesc()+"\n\n");
 					outOS.print("~~~~~\nUsage\n~~~~~\n::\n\n   "+cmd.usage() + "\n\n");
 					outOS.print("~~~~~~~\nOptions\n~~~~~~~\n"+cmd.options().replace("_","\\_")+"\n\n");						
 

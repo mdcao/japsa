@@ -15,7 +15,7 @@ Please see check the installation_ page for instructions.
 Synopsis
 ~~~~~~~~
 
-*jsa.seq.annovcf*:Annotate variation in a vcf file using annotation from gff file
+*jsa.seq.annovcf*: Annotate variation in a vcf file using annotation from gff file
 
 ~~~~~
 Usage

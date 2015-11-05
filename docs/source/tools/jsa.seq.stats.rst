@@ -13,7 +13,7 @@ Please see check the installation_ page for instructions.
 Synopsis
 ~~~~~~~~
 
-*jsa.seq.stats*:Show statistical composition of sequences)
+*jsa.seq.stats*: Show statistical composition of sequences)
 
 ~~~~~
 Usage

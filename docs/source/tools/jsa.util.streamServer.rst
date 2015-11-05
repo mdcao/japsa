@@ -12,7 +12,7 @@ the server listens on port 3456, unless specified otherwise.
 Synopsis
 ~~~~~~~~
 
-*jsa.util.streamServer*:Listen for input from a stream and output to the standard output
+*jsa.util.streamServer*: Listen for input from a stream and output to the standard output
 
 ~~~~~
 Usage

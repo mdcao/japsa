@@ -9,7 +9,7 @@
 Synopsis
 ~~~~~~~~
 
-*jsa.util.streamClient*:Forward data from a stream input or a file over the network to a jsa.util.streamServer
+*jsa.util.streamClient*: Forward data from a stream input or a file over the network to a jsa.util.streamServer
 
 ~~~~~
 Usage

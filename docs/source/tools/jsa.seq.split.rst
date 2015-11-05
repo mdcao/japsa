@@ -13,7 +13,7 @@ Please see check the installation_ page for instructions.
 Synopsis
 ~~~~~~~~
 
-*jsa.seq.split*:Break a multiple sequence files to each sequence per file
+*jsa.seq.split*: Break a multiple sequence files to each sequence per file
 
 ~~~~~
 Usage

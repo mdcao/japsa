@@ -7,7 +7,7 @@
 Synopsis
 ~~~~~~~~
 
-*jsa.seq.emalign*:Get the best alignment of 2 sequences using Expectation-Maximisation on Finite State Machine
+*jsa.seq.emalign*: Get the best alignment of 2 sequences using Expectation-Maximisation on Finite State Machine
 
 ~~~~~
 Usage

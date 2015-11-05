@@ -16,7 +16,7 @@ Please see check the installation_ page for instructions.
 Synopsis
 ~~~~~~~~
 
-*jsa.phylo.xmas*:Generate a distance matrix from aligned sequences
+*jsa.phylo.xmas*: Generate a distance matrix from aligned sequences
 
 ~~~~~
 Usage

@@ -13,7 +13,7 @@ Please see check the installation_ page for instructions.
 Synopsis
 ~~~~~~~~
 
-*jsa.seq.extract*:Extract subsequences
+*jsa.seq.extract*: Extract subsequences
 
 ~~~~~
 Usage

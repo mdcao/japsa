@@ -21,7 +21,7 @@ which will generate three folders for the three species.
 Synopsis
 ~~~~~~~~
 
-*jsa.np.rtStrainTyping*:Realtime strain typing using Nanopore sequencing data
+*jsa.np.rtStrainTyping*: Realtime strain typing using Nanopore sequencing data
 
 ~~~~~
 Usage

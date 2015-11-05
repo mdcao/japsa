@@ -14,7 +14,7 @@ Please see check the installation_ page for instructions.
 Synopsis
 ~~~~~~~~
 
-*jsa.phylo.normalise*:Scale branches of a tree so that the sum of branch lengths is equal to a value
+*jsa.phylo.normalise*: Scale branches of a tree so that the sum of branch lengths is equal to a value
 
 ~~~~~
 Usage

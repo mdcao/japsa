@@ -15,7 +15,7 @@ Please see check the installation_ page for instructions.
 Synopsis
 ~~~~~~~~
 
-*jsa.seq.sort*:Sort sequences based on their lengths
+*jsa.seq.sort*: Sort sequences based on their lengths
 
 ~~~~~
 Usage

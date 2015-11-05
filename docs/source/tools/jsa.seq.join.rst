@@ -7,7 +7,7 @@
 Synopsis
 ~~~~~~~~
 
-*jsa.seq.join*:Join multiple sequences into one
+*jsa.seq.join*: Join multiple sequences into one
 
 ~~~~~
 Usage

@@ -9,7 +9,7 @@ a gff file and a sequence file.
 Synopsis
 ~~~~~~~~
 
-*jsa.seq.gff2fasta*:Extract sequences from a gff annotation
+*jsa.seq.gff2fasta*: Extract sequences from a gff annotation
 
 ~~~~~
 Usage

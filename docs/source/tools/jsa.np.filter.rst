@@ -9,7 +9,7 @@ quality. Examples of its usage can be found on jsa.np.f5reader_.
 Synopsis
 ~~~~~~~~
 
-*jsa.np.filter*:Filter nanopore reads data from fastq file
+*jsa.np.filter*: Filter nanopore reads data from fastq file
 
 ~~~~~
 Usage
