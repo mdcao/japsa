@@ -108,6 +108,6 @@ public class RealtimeMLSTCmd extends CommandLine{
 Setting up
 ~~~~~~~~~~
 
-Refer to real-time analyais page at https://github.com/mdcao/npAnalysis/
+Refer to real-time analysis page at https://github.com/mdcao/npAnalysis/
 
 *RST*/
