@@ -57,6 +57,9 @@ import org.rosuda.JRI.Rengine;
 
 
 /**
+ * This is to identify any species (bacterial/virus) may present in the sample.
+ * This analysis requires that the species need to be covered by at least 
+ * some proportion of their genome 
  * @author minhduc
  *
  */

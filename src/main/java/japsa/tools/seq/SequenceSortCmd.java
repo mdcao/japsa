@@ -153,7 +153,7 @@ public class SequenceSortCmd extends CommandLine{
 		@Override
 		public int compareTo(SequenceLength o) {
 			// TODO Auto-generated method stub
-			return (int) (keyCompare - o.keyCompare);
+			return Double.compare(keyCompare, o.keyCompare);
 		}
 	}
 }

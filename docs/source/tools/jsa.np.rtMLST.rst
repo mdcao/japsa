@@ -57,5 +57,5 @@ jsa.np.f5reader_, jsa.np.rtSpeciesTyping_, jsa.np.rtStrainTyping_, jsa.np.rtResi
 Setting up
 ~~~~~~~~~~
 
-Refer to real-time analyais page at https://github.com/mdcao/npAnalysis/
+Refer to real-time analysis page at https://github.com/mdcao/npAnalysis/
 
