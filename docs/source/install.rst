@@ -61,11 +61,12 @@ First, download the latest source code::
    git clone https://github.com/mdcao/japsa
    cd japsa
 
-or download from a release::
+or download from a release (Check out https://github.com/mdcao/japsa/releases
+for the latest releases)::
 
-   wget https://github.com/mdcao/japsa/archive/v15.8a.tar.gz   
-   tar zxvf v15.8a.tar.gz
-   cd japsa-v15.8a
+   wget https://github.com/mdcao/japsa/releases/download/v1.5-11a/JapsaRelease.tar.gz   
+   tar zxvf JapsaRelease.tar.gz
+   cd JapsaRelease
    
 and run `make' to compile and install japsa::      
 
