@@ -45,7 +45,9 @@ public class Contig{
 	Sequence contigSequence;//the sequence of the contig	
 	double   coverage = 1.0;
 	double   portionUsed = 0.0;
-	int used = 0;
+	//int used = 0;
+	int head = -1; //point to the index of its head contig in the scaffold 
+	double prevScore=0, nextScore=0;
 	boolean isCircular = false;
 	//for depth first search
 	ArrayList<ContigBridge> bridges;	
@@ -57,28 +59,15 @@ public class Contig{
 		bridges = new ArrayList<ContigBridge>();
 		usedRanges = new ArrayList<Range>();
 	}
-	//used to clone the repetitive contigs. Not necessary to deep clone??
-	public Contig clone(ContigBridge bridge){
-		Contig ctg = new Contig(this.index, this.contigSequence);
-		ctg.used = used++;
-		ctg.coverage = coverage;
-		ctg.portionUsed = portionUsed;
-		//deep clone bridges to remove used one		
-		for(ContigBridge brg:this.bridges){
-			if(!brg.hashKey.equals(bridge.hashKey))
-				ctg.bridges.add(brg);
-		}
-		
-		ctg.usedRanges = this.usedRanges;
-		return ctg;
-	}
+
 	public Contig clone(){
 		Contig ctg = new Contig(this.index, this.contigSequence);
-		ctg.used = used++; //TODO: replace by static array usage[nContigs] in ScaffoldGraphDFS??
+		//ctg.used = used++; //TODO: replace by static array usage[nContigs] in ScaffoldGraphDFS??
 		ctg.coverage = coverage;
 		ctg.portionUsed = portionUsed;
 		ctg.bridges = this.bridges;
-		
+		ctg.head = this.head; //update later
+		ctg.isCircular = this.isCircular;
 		ctg.usedRanges = this.usedRanges;
 		return ctg;
 	}
@@ -90,7 +79,7 @@ public class Contig{
 	public int getIndex(){
 		return index;
 	}
-	
+	//actually a backward composite
 	public void composite(ScaffoldVector aVector){
 		myVector = ScaffoldVector.composition(myVector, aVector);		
 	}	
@@ -153,7 +142,9 @@ public class Contig{
 	public void setCoverage(double cov){
 		coverage =  cov;
 	}
-	
+	public String toString(){
+		return new String(" contig" + getIndex());
+	}
 	////////////////for tracing the used part////////////////////
 	ArrayList<Range> usedRanges;
 	class Range implements Comparable<Range> {

@@ -93,6 +93,7 @@ public class RegulateTimeCmd extends CommandLine {
 		boolean isFastq = (reader instanceof FastqReader);
 		Sequence seq;		
 		
+
 		String sortKeyOptionPrefix = key + "=";
 		int    sortKeyOptionIndex = sortKeyOptionPrefix.length(); 
 		long   firstReadTime = 0; 

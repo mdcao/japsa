@@ -64,7 +64,9 @@ public class SequenceSortCmd extends CommandLine{
 		addStdOutputFile();		
 		addStdAlphabet();
 		addBoolean("number",false,"Add the order number to the beginning of contig name");
-		addBoolean("reverse",false,"Reverse sort order");
+		addBoolean("pad",false,"Pad -- this only applied for number");		
+		addBoolean("reverse",false,"Reverse sort order");		
+		
 		addString("sortKey","length","Sort key");
 
 		addStdHelp();		
@@ -80,6 +82,7 @@ public class SequenceSortCmd extends CommandLine{
 		String sortKeyOption = cmdLine.getStringVal("sortKey");
 		String outputOption = cmdLine.getStringVal("output");
 		boolean numberOption =  cmdLine.getBooleanVal("number");
+		boolean padOption =  cmdLine.getBooleanVal("pad");
 		boolean reverseOption =  cmdLine.getBooleanVal("reverse");
 
 
@@ -128,7 +131,15 @@ public class SequenceSortCmd extends CommandLine{
 		for (int i = 0; i < seqList.size();  i++){
 			seq = seqList.get(i).seq;
 			if (numberOption){
-				seq.setName(i + "-" + seq.getName());
+				String s = ""+(i+1);
+				if (padOption){
+					int length = String.valueOf(seqList.size()).length();					
+					while (s.length() < length){
+						s = "0" + s;
+					}									
+				}
+				
+				seq.setName(s + "-" + seq.getName());
 			}
 			if (seq instanceof FastqSequence){
 				FastqSequence fq = ((FastqSequence) seq);

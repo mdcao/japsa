@@ -50,7 +50,7 @@ import java.util.ArrayList;
  */
 @Deployable(
 	scriptName = "jsa.str.strvcompare",
-	scriptDesc = "Compare TR variation to an answer file, use to evaluate"
+	scriptDesc = "Compare TR variation to an answer file, use to evaluate strv"
 	)
 public class CompareTRVCmd  extends CommandLine{	
 	public CompareTRVCmd(){

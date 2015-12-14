@@ -492,7 +492,7 @@ public class PhylogenyTree {
 	 * @param aTree
 	 * @return
 	 */
-	protected PhylogenyTree commonAncestor(PhylogenyTree aTree) {
+	public PhylogenyTree commonAncestor(PhylogenyTree aTree) {
 		StringBuffer routA = new StringBuffer(), routB = new StringBuffer();
 		PhylogenyTree treePtr = this;
 
@@ -571,9 +571,15 @@ public class PhylogenyTree {
 	}
 
 	public Iterator<PhylogenyTree> getLeafIterator() {
+		//ArrayList<PhylogenyTree> v = new ArrayList<PhylogenyTree>();
+		//this.addLeafTrees(v);
+		return getLeaves().iterator();
+	}
+	
+	public ArrayList<PhylogenyTree> getLeaves() {
 		ArrayList<PhylogenyTree> v = new ArrayList<PhylogenyTree>();
 		this.addLeafTrees(v);
-		return v.iterator();
+		return v;
 	}
 
 	private void addInternalTrees(ArrayList<PhylogenyTree> v) {

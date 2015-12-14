@@ -135,7 +135,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		if (
 				(readLeft < ScaffoldGraph.marginThres || refLeft < ScaffoldGraph.marginThres) &&
 				(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) &&
-				contig.length() > ScaffoldGraph.minContigLength
+				score > ScaffoldGraph.minContigLength
 			)
 			useful = true;
 

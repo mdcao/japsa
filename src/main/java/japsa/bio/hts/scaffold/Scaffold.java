@@ -41,8 +41,9 @@ import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
+import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.ListIterator;
 
 /**
  * Implement scaffold as an array deque, that is a linear array that can be 
@@ -50,42 +51,53 @@ import java.util.Iterator;
  * 
  * @author minhduc
  */
-public final class ScaffoldDeque extends ArrayDeque<Contig>{
+public final class Scaffold extends LinkedList<Contig>{
 	ContigBridge closeBridge = null;//if not null, will bridge the last and the first contig
-
+	ScaffoldVector circle = null;
 	private static final long serialVersionUID = -4310125261868862931L;	
-	ArrayDeque<ContigBridge> bridges;
+	LinkedList<ContigBridge> bridges;
 	int scaffoldIndex;
 	//boolean closed = false;
 	/**
 	 * invariant: the direction of the decque is the same as the main (the longest one)
 	 * @param myFContig
 	 */
-
-	public ScaffoldDeque(Contig myFContig){
+	public Scaffold(int index){
+		super();
+		scaffoldIndex = index;
+		bridges = new LinkedList<ContigBridge>(); 
+	}
+	public Scaffold(Contig myFContig){
 		super();
 		scaffoldIndex = myFContig.index;
 		add(myFContig);//the first one		
-		bridges = new ArrayDeque<ContigBridge>(); 
+		bridges = new LinkedList<ContigBridge>(); 
 	}	
 
 
 	public void setCloseBridge(ContigBridge bridge){
+		assert bridge.firstContig.getIndex() == this.getLast().getIndex():"Closed bridge: " + bridge.hashKey + " <-> " +this.getLast().getIndex();
 		closeBridge = bridge;
+		circle = ScaffoldVector.composition(this.getLast().getVector(), ScaffoldVector.reverse(this.getFirst().getVector())); //first->last
+		ScaffoldVector last2first = bridge.getTransVector();
+		if(this.peekFirst().getIndex() == bridge.firstContig.getIndex())
+			last2first = ScaffoldVector.reverse(last2first);
+		circle = ScaffoldVector.composition(last2first, circle);
+		//bridge.setContigScores();
 		//closed = true;
 	}
 
 	/**
-	 * Return 1 or -1 if the contig is at the first or last of the deque. 
+	 * Return 1 or -1 if the contig is at the first or last of the list. 
 	 * Otherwise, return 0
 	 * @param ctg
 	 * @return
 	 */
 	public int isEnd(Contig ctg){
-		if (ctg.getIndex() == this.peekFirst().getIndex())
-			return 1;
 		if (ctg.getIndex() == this.peekLast().getIndex())
 			return -1;
+		if (ctg.getIndex() == this.peekFirst().getIndex())
+			return 1;
 
 		return 0;			
 	}
@@ -105,7 +117,11 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	 */
 	public void addFront(Contig contig, ContigBridge bridge){
 		this.addFirst(contig);
+		assert bridge.firstContig.getIndex() == contig.getIndex(): "Front: "+ bridge.hashKey + " " + contig.getIndex();
 		bridges.addFirst(bridge);
+		if(ScaffoldGraph.verbose)
+			System.out.printf("...adding contig %d to scaffold %d backward!\n", contig.getIndex(), scaffoldIndex);
+			
 	}
 
 	/**
@@ -115,29 +131,129 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	 */
 	public void addRear(Contig contig, ContigBridge bridge){
 		this.addLast(contig);
+		assert bridge.secondContig.getIndex() == contig.getIndex():"Rear: "+ bridge.hashKey + " " + contig.getIndex();
 		bridges.addLast(bridge);
+		if(ScaffoldGraph.verbose)
+			System.out.printf("...adding contig %d to scaffold %d forward!\n", contig.getIndex(), scaffoldIndex);
+		
 	}
+	
+	public Contig nearestMarker(Contig ctg, boolean forward){
 
-	public void combineScaffold(ScaffoldDeque scaffold, ContigBridge bridge, int myPos, int itsPos){
-		//my pos == 1: add to front, else to rear
-		//itsPos == 1: taken from front, else from rear
+		if(ScaffoldGraph.isRepeat(ctg)){
+			if(ScaffoldGraph.verbose)
+				System.out.println("Cannot determine nearest marker of a repeat!");
+			return null;
+		}
+		int index = this.indexOf(ctg);
+		if(index < 0) return null;
+		ListIterator<Contig> iterator = this.listIterator(index);
 
-		Contig ctg = (itsPos==1) ? scaffold.removeFirst():scaffold.removeLast();			
-		while(true){
-			if (myPos == 1){ 
-				addFront(ctg,bridge);
-			}else{
-				addRear(ctg,bridge);
-			}				
-			if (scaffold.isEmpty())
+		if(ScaffoldGraph.verbose){
+			System.out.printf("Tracing scaffold %d from contig %d with index %d\n", scaffoldIndex, ctg.getIndex(), index);
+			//this.view();
+			System.out.printf("Finding nearest %s marker of contig %d:", forward?"next":"previous", ctg.getIndex());
+		}
+		Contig 	marker = null; 
+		while((forward?iterator.hasNext():iterator.hasPrevious())){
+			marker = (forward?iterator.next():iterator.previous());
+			if(ScaffoldGraph.verbose)
+				System.out.print("..."+marker.getIndex());
+			if(marker != null && !ScaffoldGraph.isRepeat(marker) && marker.getIndex() != ctg.getIndex())
 				break;
+		}
+		if(closeBridge!=null && (marker == null || ScaffoldGraph.isRepeat(marker))){
+			marker = forward?this.getFirst():this.getLast();
+			while((forward?iterator.hasNext():iterator.hasPrevious())){
+				if(ScaffoldGraph.verbose)
+					System.out.print("......"+marker.getIndex());
+				if(marker != null && !ScaffoldGraph.isRepeat(marker) && marker.getIndex() != ctg.getIndex())
+					break;
+				else
+					marker = (forward?iterator.next():iterator.previous());
+			}
+		}
+		if(ScaffoldGraph.verbose)
+			System.out.println();
+		return marker;
 
-			ctg = (itsPos==1) ? scaffold.removeFirst():scaffold.removeLast();
-			bridge = (itsPos==1) ? scaffold.bridges.removeFirst():scaffold.bridges.removeLast();				
-		}		
-	}		
+	}
+		
+	public void trim(){
+		if(ScaffoldGraph.verbose)
+			System.out.println("Trimming scaffold: " + scaffoldIndex);
+		if(closeBridge != null || this.isEmpty())
+			return;
+		//from right
+		Contig rightmost = this.peekLast();
+		while(ScaffoldGraph.isRepeat(rightmost) && this.size()>=1){
+			if(ScaffoldGraph.verbose)
+				System.out.println("...removing contig " + rightmost.getIndex());	
+			this.removeLast();
+			//bridges.removeLast();
+			rightmost=this.peekLast();
 
-	public ArrayDeque<ContigBridge> getBridges(){
+		}
+		if(this.size() <=1){
+			bridges= new LinkedList<ContigBridge>();
+			return;
+		}
+		
+		while(!bridges.isEmpty()){
+			if(bridges.peekLast().isContaining(rightmost))
+				break;
+			else{
+				if(ScaffoldGraph.verbose)
+					System.out.println("...removing bridge " + bridges.peekLast().hashKey);	
+				bridges.removeLast();
+			}
+		}
+		if(bridges.size() > 1){
+			if(bridges.get(bridges.size() - 2).isContaining(rightmost)){
+				if(ScaffoldGraph.verbose)
+					System.out.println("...removing bridge " + bridges.peekLast().hashKey);	
+				this.bridges.removeLast();
+			}
+		}
+		
+		//from left
+		Contig leftmost = this.peekFirst();
+		while(ScaffoldGraph.isRepeat(leftmost) && this.size()>=1){
+			if(ScaffoldGraph.verbose)
+				System.out.println("...removing contig " + leftmost.getIndex());			
+			this.removeFirst();
+			//bridges.removeFirst();
+			leftmost=this.peekFirst();
+		}
+		if(this.size() <=1){
+			bridges= new LinkedList<ContigBridge>();
+			return;
+		}
+		
+		while(!bridges.isEmpty()){
+			if(bridges.peekFirst().isContaining(leftmost))
+				break;
+			else{
+				if(ScaffoldGraph.verbose)
+					System.out.println("...removing bridge " + bridges.peekFirst().hashKey);	
+				bridges.removeFirst();
+			}
+		}
+		if(bridges.size() > 1){
+			if(bridges.get(1).isContaining(leftmost)){
+				if(ScaffoldGraph.verbose)
+					System.out.println("...removing bridge " + bridges.peekFirst().hashKey);	
+				this.bridges.removeFirst();
+			}
+		}
+
+	}
+	public void setHead(int head){
+		scaffoldIndex = head;
+		for (Contig ctg:this)
+			ctg.head = head;
+	}
+	public LinkedList<ContigBridge> getBridges(){
 		return bridges;
 	}
 
@@ -148,12 +264,14 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 	public void view(){
 		System.out.println("========================== START =============================");
 		Iterator<ContigBridge> bridIter = bridges.iterator();
-
+		if(closeBridge!=null){
+			System.out.println("Close bridge: " + closeBridge.hashKey + " Circularized vector: " + circle);
+		}
 		for (Contig ctg:this){				
 			System.out.printf("  contig %3d  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s ",ctg.getIndex(), ctg.leftMost(),ctg.rightMost(), ctg.getName());
 			if (bridIter.hasNext()){
 				ContigBridge bridge = bridIter.next();
-				System.out.printf("    %d\n", bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));					
+				System.out.printf("    %d: %s\n", bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig), bridge.hashKey);					
 			}else
 				System.out.println();			
 		}
@@ -164,6 +282,9 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 
 
 		System.out.println("========================== START =============================");
+		if(closeBridge!=null){
+			System.out.println("Close bridge: " + closeBridge.hashKey + " Circularized vector: " + circle);
+		}
 		Iterator<ContigBridge> bridIter = bridges.iterator();
 		for (Contig ctg:this){				
 			System.out.printf("  contig %3d  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s ",ctg.getIndex(), ctg.leftMost(),ctg.rightMost(), ctg.getName());
@@ -201,11 +322,11 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 		//startLeft: the leftPoint of leftContig, endLeft: rightPoint of left Contig
 		int startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length(); //starting point after the last fillFrom
 		int endLeft   = (rightContig.getRelDir() < 0)?1:rightContig.length();
-
-		if (closeBridge != null){			
+		
+		if (closeBridge != null){
 			bestCloseConnection = closeBridge.fewestGapConnection();
-			leftContig = (rightContig==closeBridge.secondContig? closeBridge.firstContig:closeBridge.secondContig);
-			startLeft = bestCloseConnection.fillFrom(leftContig, null, null); //adjust the starting point
+			leftContig = closeBridge.firstContig;
+			startLeft = bestCloseConnection.filling(null, null); //adjust the starting point
 
 			anno.addDescription("Circular");
 
@@ -223,8 +344,8 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 
 			ContigBridge.Connection connection = bridge.fewestGapConnection();
 
-			endLeft = (leftContig.getRelDir()>0)?(connection.getAlignment(leftContig).refEnd):
-				(connection.getAlignment(leftContig).refStart);
+			endLeft = (leftContig.getRelDir()>0)?(connection.firstAlignment.refEnd):
+				(connection.firstAlignment.refStart);
 
 			if (startLeft<endLeft){
 				JapsaFeature feature = 
@@ -247,18 +368,19 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 				leftContig.portionUsed += (1.0 - endLeft + startLeft + 1) / leftContig.length();
 			}			
 			//Fill in the connection
-			startLeft = connection.fillFrom(leftContig, seq, anno);
-					
+			startLeft = connection.filling(seq, anno);					
 			leftContig = rightContig;			
 					
 		}//for
 
 		//leftContig = lastContig in the queue
-		if (bestCloseConnection != null)		 
-			endLeft = (leftContig.getRelDir()>0)?(bestCloseConnection.getAlignment(leftContig).refEnd):
-				(bestCloseConnection.getAlignment(leftContig).refStart);									
+		if (bestCloseConnection != null){
+			endLeft = (leftContig.getRelDir()>0)?(bestCloseConnection.firstAlignment.refEnd):
+				(bestCloseConnection.firstAlignment.refStart);	
+		}
 		else
 			endLeft = (rightContig.getRelDir() < 0)?1:rightContig.length();
+		
 		if (startLeft<endLeft){
 			JapsaFeature feature = 
 					new JapsaFeature(seq.length() + 1, seq.length() + endLeft - startLeft,
@@ -280,7 +402,7 @@ public final class ScaffoldDeque extends ArrayDeque<Contig>{
 		}
 		if (bestCloseConnection != null){	
 			System.out.printf("Append bridge %d -- %d\n",closeBridge.firstContig.index,  closeBridge.secondContig.index);
-			bestCloseConnection.fillFrom(leftContig, seq, anno);	
+			bestCloseConnection.filling(seq, anno);	
 		}
 
 		System.out.println("============================ END ===========================");

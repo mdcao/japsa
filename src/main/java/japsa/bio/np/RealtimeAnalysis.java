@@ -48,18 +48,18 @@ import japsa.util.Logging;
 public abstract class RealtimeAnalysis implements Runnable {
 
 	private int readPeriod = 0;//Min number of reads before a new analysis
-	private int timePeriod = 0;//Min number of mini-seconds before a new analysis	
-	private int powerNap = 1000;//sleep time in miniseconds (1 second by default)
+	private int timePeriod = 0;//Min number of miliseconds before a new analysis	
+	private int powerNap = 1000;//sleep time in miliseconds (1 second by default)
 
-	RealtimeAnalysis(){
+	protected RealtimeAnalysis(){
 	}
 
 	private boolean waiting = true;
 
-	long lastTime;//The last time an analysis is done
-	long startTime;
-	int lastReadNumber;
-	String timeNow;
+	protected long lastTime;//The last time an analysis is done
+	protected long startTime;
+	protected int lastReadNumber;
+	protected String timeNow;
 
 	public void stopWaiting(){	
 		Logging.info("All reads received at " + new Date());
@@ -86,7 +86,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 			long timeSleep = timePeriod - (System.currentTimeMillis() - lastTime);
 			if (timeSleep > 0){
 				try {
-					Logging.info("Not due time, sleep for " + timeSleep/1000.0 + " seconds");
+					//Logging.info("Not due time, sleep for " + timeSleep/1000.0 + " seconds");
 					Thread.sleep(timeSleep);
 				} catch (InterruptedException e) {
 					e.printStackTrace();

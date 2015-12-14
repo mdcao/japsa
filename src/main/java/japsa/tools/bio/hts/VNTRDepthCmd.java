@@ -44,11 +44,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.List;
+
 
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.XAFReader;
 import japsa.util.CommandLine;
+import japsa.util.IntArray;
 import japsa.util.deploy.Deployable;
 
 /**
@@ -71,12 +74,21 @@ public class VNTRDepthCmd extends CommandLine{
 		addInt("filterBits", 0, "Filter reads based on flag. Common values:\n 0    no filter\n 256  exclude secondary alignment \n 1024 exclude PCR/optical duplicates\n 2048 exclude supplementary alignments");
 		addString("output", "-", "Name of output file, - for standard out");
 
+		addInt("maxFragment", 0, "Fragment size, 0 if single end");
+		addInt("readLength", 250, "Read length");
+
 		addStdHelp();		
 	} 
 
 	public static void main(String [] args) throws IOException, InterruptedException{		 		
 		CommandLine cmdLine = new VNTRDepthCmd();		
-		String[] bamFiles = cmdLine.stdParseLine(args);			
+		String[] bamFiles = cmdLine.stdParseLine(args);
+		
+		if (bamFiles.length == 0){		
+			System.err.println("Please enter one or more bam file \n" + cmdLine.usageString());
+			System.exit(1);
+		}
+		
 
 		/**********************************************************************/
 		String xafFile     =  cmdLine.getStringVal("xafFile");	
@@ -84,6 +96,8 @@ public class VNTRDepthCmd extends CommandLine{
 		int qual           =  cmdLine.getIntVal("qual");
 		int filter = cmdLine.getIntVal("filterBits");
 		boolean depth      =  cmdLine.getBooleanVal("depth");		
+		int maxFragment           =  cmdLine.getIntVal("maxFragment");
+		int readLength           =  cmdLine.getIntVal("readLength");
 
 		if (bamFiles.length == 0)		
 			return;		
@@ -123,9 +137,9 @@ public class VNTRDepthCmd extends CommandLine{
 			if (depth){
 				sos.print("\t"+ sampleID[i] + "_R3\t" + sampleID[i] + "_S3");
 			}
-			
+
 			sos.print("\t"+ sampleID[i] + "_B1\t"+ sampleID[i] + "_B2\t"+ sampleID[i] + "_B3\t"+ sampleID[i] + "_B4\t"+ sampleID[i] + "_B5");
-			
+
 		}		
 		sos.print('\n');
 
@@ -182,7 +196,6 @@ public class VNTRDepthCmd extends CommandLine{
 					countSeqContained = 0; //S2: reads contained within repeat + flank
 
 				///////////////////////////////////////////////////////////////
-				int readLength = 250;
 				int leftBound = startRep - 2 * readLength;			
 				int countBin1 = 0;
 				int rightBound1 = startRep - readLength;
@@ -206,20 +219,71 @@ public class VNTRDepthCmd extends CommandLine{
 				///////////////////////////////////////////////////////////////
 
 
-				SAMRecordIterator iter = samReaders[i].query(chrom, startSeq, endSeq, false);				
+
+				SAMRecordIterator iter;
+				HashMap<String, IntArray> pairs = null;				
+
+				if (maxFragment > 0){
+					pairs =  new HashMap<String, IntArray>();
+					iter = samReaders[i].query(chrom, startSeq - maxFragment, endSeq + maxFragment, false);					 
+					while (iter.hasNext()){
+						SAMRecord record = iter.next();
+						String readName = record.getReadName();
+
+						if (record.getFirstOfPairFlag())
+							readName = readName + "_1";							
+						else
+							readName = readName + "_2";
+
+						IntArray array = pairs.get(readName);
+						if (array == null){
+							array = new IntArray(16);
+							pairs.put(readName,array);
+						}
+
+						array.add(record.getAlignmentStart());
+					}
+					iter.close();
+				}
+
+				//Reopen				
+				iter = samReaders[i].query(chrom, startSeq, endSeq, false);
+
 				while (iter.hasNext()){
 					SAMRecord record = iter.next();
-
 					if (record.getMappingQuality() < qual)
 						continue;
 
 					if ((filter & record.getFlags()) != 0){						
 						continue;
-					}	
-
-					countSeqInt ++;
-
+					}
+					
 					int alignmentStart = record.getAlignmentStart();
+
+					if (maxFragment > 0){
+						boolean pass = false;
+						String mateName = record.getReadName();
+						if (record.getFirstOfPairFlag())
+							mateName = mateName + "_2";
+						else
+							mateName = mateName + "_1";
+						
+						IntArray array = pairs.get(mateName);
+						if (array !=null){
+							for (int x =0; x < array.size();x++){
+								int fragment = array.get(x) - alignmentStart;
+								if (fragment < maxFragment && fragment > -maxFragment){
+									pass = true;
+									break;//for
+								}								
+							}							
+						}//if		
+						
+						if (!pass)
+							continue;//while
+					}
+
+					countSeqInt ++;					
 					int alignmentEnd   = record.getAlignmentEnd();
 
 					if (alignmentStart >= startSeq && alignmentEnd <= endSeq)
@@ -245,7 +309,7 @@ public class VNTRDepthCmd extends CommandLine{
 					else if (alignmentStart < rightBound5)
 						countBin5 ++;
 
-				}
+				}				
 				iter.close();
 
 				sos.print('\t');
@@ -297,7 +361,7 @@ public class VNTRDepthCmd extends CommandLine{
 				sos.print(countBin4);
 				sos.print('\t');
 				sos.print(countBin5);
-				
+
 			}//for i
 
 

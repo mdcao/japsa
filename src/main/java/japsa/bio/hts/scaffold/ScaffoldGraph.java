@@ -36,6 +36,7 @@ package japsa.bio.hts.scaffold;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
@@ -49,23 +50,22 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.HashMap;
 
 public class ScaffoldGraph{
-	final static int maxRepeatLength=8000; //Koren S et al 2013
-	//will need to fix this later -- MDC
+	final static int maxRepeatLength=7500; //Koren S et al 2013
 	public static int marginThres = 1000;
-	public static int minContigLength = 200;
+	public static int minContigLength = 300;
+	public static int minSupportReads = 2;
+	public static boolean verbose = false;
 	
-	
-	ScaffoldDeque [] scaffolds;
-	int [] head;
+	Scaffold [] scaffolds;
+	//int [] head;
 	ArrayList<Contig> contigs;				
-	int nScaffolds;
-	public double estimatedCov = 0;
+	int nScaffolds=0;
+	public static double estimatedCov = 0;
 	double estimatedLength = 0;
-	ArrayList<ContigBridge> bridgeList = new ArrayList<ContigBridge>();
+	//ArrayList<ContigBridge> bridgeList = new ArrayList<ContigBridge>();
 	HashMap<String, ContigBridge> bridgeMap= new HashMap<String, ContigBridge>();
 
 
@@ -80,7 +80,7 @@ public class ScaffoldGraph{
 			Contig ctg = new Contig(index, seq);		
 
 			String name = seq.getName();
-			double mycov = 100;
+			double mycov = 1.0;
 			String [] toks = name.split("_");
 			for (int i = 0; i < toks.length - 1;i++){
 				if ("cov".equals(toks[i])){
@@ -98,17 +98,19 @@ public class ScaffoldGraph{
 		reader.close();
 		
 		estimatedCov /= estimatedLength;
-		System.out.println("Cov " + estimatedCov + " Length " + estimatedLength);
+		if(verbose) 
+			System.out.println("Cov " + estimatedCov + " Length " + estimatedLength);
 
 		//2. Initialise scaffold graph
-		scaffolds = new ScaffoldDeque[contigs.size()];
-		nScaffolds = contigs.size();
-		head = new int[contigs.size()];			
+		scaffolds = new Scaffold[contigs.size()];
+		//nScaffolds = contigs.size();
+		//head = new int[contigs.size()];			
 
 		for (int i = 0; i < contigs.size();i++){				
-			scaffolds[i] = new ScaffoldDeque(contigs.get(i));
-			head[i] = i;//pointer contig -> scaffold
+			scaffolds[i] = new Scaffold(contigs.get(i));
+			//head[i] = i;//pointer contig -> scaffold
 			//point to the head of the scaffold
+			contigs.get(i).head = i;
 		}//for
 	}//constructor
 
@@ -125,7 +127,12 @@ public class ScaffoldGraph{
 	 */
 	public void makeConnections(String bamFile, double minCov, int qual, SequenceOutputStream connectStr, SequenceOutputStream statStr) throws IOException{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));	
+		
+		SamReader reader;
+		if ("-".equals(bamFile))
+			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+		else
+			reader = SamReaderFactory.makeDefault().open(new File(bamFile));	
 
 		SAMRecordIterator iter = reader.iterator();
 
@@ -163,8 +170,11 @@ public class ScaffoldGraph{
 			if (readID.equals(myRec.readID)) {				
 				if (myRec.useful){				
 					for (AlignmentRecord s : samList) {
-						if (s.useful)
+						if (s.useful){
 							this.addBridge(readFilling, s, myRec, minCov);
+							//...update with synchronized
+							
+						}
 					}
 				}
 			} else {
@@ -194,13 +204,13 @@ public class ScaffoldGraph{
 		reader.close();		
 
 		Logging.info("Sort list of bridges");		
-		Collections.sort(bridgeList);		
+		//Collections.sort(bridgeList);		
 	}
 
 
 
 	/*********************************************************************************/
-	private void addBridge(ReadFilling readSequence, AlignmentRecord a, AlignmentRecord b, double minCov){
+	protected void addBridge(ReadFilling readSequence, AlignmentRecord a, AlignmentRecord b, double minCov){
 		if (a.contig.index > b.contig.index){
 			AlignmentRecord t = a;a=b;b=t;
 		}
@@ -226,7 +236,8 @@ public class ScaffoldGraph{
 				&& a.readLength < 1.1* a.contig.length()
 			)
 		{
-			System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d)\n"
+			if(verbose) 
+				System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d)\n"
 							, a.contig.getName(), a.readID, a.readLength, gP, alignD);
 			a.contig.isCircular = true;							
 		}		
@@ -244,22 +255,45 @@ public class ScaffoldGraph{
 		ScaffoldVector trans = new ScaffoldVector(gP, alignD);		
 
 		int bridgeID = 0;
-		ContigBridge bridge;
+		ContigBridge bridge, bridge_rev;
 		while (true){
-			String hash = ContigBridge.makeHash(a.contig.index, b.contig.index, bridgeID);
+			String 	hash = ContigBridge.makeHash(a.contig.index, b.contig.index, bridgeID),
+					hash_rev = ContigBridge.makeHash(b.contig.index, a.contig.index, bridgeID);
+			if(a.contig.getIndex()==b.contig.getIndex())
+				hash_rev = ContigBridge.makeHash(b.contig.index, a.contig.index, ++bridgeID);
 			bridge = bridgeMap.get(hash);
+			bridge_rev = bridgeMap.get(hash_rev);
 			if (bridge == null){
+				assert bridge_rev==null:hash_rev + " not null!";
 				bridge = new ContigBridge(a.contig, b.contig, bridgeID);
 				bridge.addConnection(readSequence, a, b, trans, score);
-				//add				
-				bridgeList.add(bridge);
-				bridgeMap.put(hash, bridge);
 
+				bridge_rev = new ContigBridge(b.contig, a.contig, bridgeID);
+				bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
+
+				a.contig.bridges.add(bridge);
+				b.contig.bridges.add(bridge_rev);
+				
+				bridgeMap.put(hash, bridge);
+				bridgeMap.put(hash_rev, bridge_rev);
+	
 				break;
-			}else if (bridge.consistentWith(trans)){
-				//add
+			}else if ((a.contig.getIndex() != b.contig.getIndex()) && bridge.consistentWith(trans)){
+				assert bridge_rev!=null:hash_rev + "is null!";
 				bridge.addConnection(readSequence, a, b, trans, score);
+				bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
 				break;
+			}else if(a.contig.getIndex() == b.contig.getIndex()){
+				assert bridge_rev!=null:hash_rev + "is null";
+				if(bridge.consistentWith(trans)){
+					bridge.addConnection(readSequence, a, b, trans, score);
+					bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
+				}
+				if(bridge.consistentWith(ScaffoldVector.reverse(trans))){
+					bridge_rev.addConnection(readSequence, b, a, trans, score);
+					bridge.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
+				}
+				break;	
 			}else{
 				bridgeID ++;
 				//continue;
@@ -267,131 +301,382 @@ public class ScaffoldGraph{
 		}
 
 	}
+	/**********************************************************************************************/
+	public ContigBridge getReversedBridge(ContigBridge bridge){
+		String hash = ContigBridge.makeHash(bridge.secondContig.index, bridge.firstContig.index, bridge.orderIndex);
+		return bridgeMap.get(hash);
+	}
+	/**********************************************************************************************/
+	// check if it's possible to extend from *contig* with *bridge* to another extended-already contig (contigF)
+	// use for markers and unique bridge only
+	protected int extendDirection(Contig contig, ContigBridge bridge){
+		Contig contigF = bridge.secondContig;
+		ScaffoldVector trans = bridge.getTransVector(); //contigF -> contig
+//		if(contig.getIndex() == bridge.secondContig.getIndex()){
+//			contigF = bridge.firstContig;
+//			trans = ScaffoldVector.reverse(trans);
+//		}
+		assert scaffolds[contigF.head].size() > 1 : contigF.head;
+		
+		int headF = contigF.head;
+		int direction = 0; //direction of extension on scaffoldT (we need to return direction on scaffoldF)
+		ScaffoldVector headT2contigF = ScaffoldVector.composition(trans, contig.getVector());
+		int rEnd = contig.rightMost(), rEndF = contigF.rightMost(headT2contigF),
+			lEnd =  contig.leftMost(), lEndF = contigF.leftMost(headT2contigF);
+		if(rEndF > rEnd){
+			direction = 1;
+		}
+		else if(lEndF < lEnd){
+			direction = -1;
+		}
+		else 
+			return 0;
+		if(verbose)
+			System.out.println("Examining extending direction from contig " + contig.getIndex() + " to " + bridge.hashKey);
+		Scaffold scaffoldF = scaffolds[headF];
+		Contig 	prevMarker = scaffoldF.nearestMarker(contigF, false), // previous marker of contigF on corresponding scaffold
+				nextMarker = scaffoldF.nearestMarker(contigF, true); // next marker of contigF on corresponding scaffold		
+		
+		ScaffoldVector rev = ScaffoldVector.reverse(contigF.getVector()); //rev = contigF->headF	
+		if(prevMarker != null){
+			ScaffoldVector toPrev = ScaffoldVector.composition(prevMarker.getVector(),rev); //contigF->prevMarker
+			if(scaffoldF.indexOf(prevMarker) > scaffoldF.indexOf(contigF) && scaffoldF.closeBridge != null)
+				toPrev = ScaffoldVector.composition(ScaffoldVector.reverse(scaffoldF.circle), toPrev);
+			ScaffoldVector headT2Prev = ScaffoldVector.composition(toPrev, headT2contigF);
+			int rEndPrev = prevMarker.rightMost(headT2Prev),
+				lEndPrev = prevMarker.leftMost(headT2Prev);
+			if(verbose){
+				System.out.printf("Extending from contigT %d to targeted contig (contigF) %d with previous contig (prevMarker) %d \n", contig.getIndex(), contigF.getIndex(), prevMarker.getIndex());
+				System.out.println("...headT->contig, contigF and prevMarker: " + contig.getVector() + headT2contigF + headT2Prev);
+			}
+			if ((direction > 0?rEndPrev > rEndF: lEndPrev < lEndF)){
+				if((rev.direction>=0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
+					if(verbose)
+						System.out.printf("=> go from %d to %d to %d \n", contig.getIndex(), contigF.getIndex(), prevMarker.getIndex());
+					return -1;
+				}
+				else 
+					return 0;
+			}
+		}
+		if(nextMarker != null){
+			ScaffoldVector toNext = ScaffoldVector.composition(nextMarker.getVector(),rev); //contigF->nextMarker
+			if(scaffoldF.indexOf(nextMarker) < scaffoldF.indexOf(contigF) && scaffoldF.closeBridge != null)
+				toNext = ScaffoldVector.composition(scaffoldF.circle, toNext);
+			ScaffoldVector headT2Next = ScaffoldVector.composition(toNext, headT2contigF);
+			int rEndNext = nextMarker.rightMost(headT2Next),
+				lEndNext = nextMarker.leftMost(headT2Next);
+			if(verbose){
+				System.out.printf("Extending from contigT %d to targeted contig (contigF) %d with next contig (nextMarker) %d \n", contig.getIndex(), contigF.getIndex(), nextMarker.getIndex());
+				System.out.println("...headT->contig, contigF and nextMarker: " + contig.getVector() + headT2contigF + headT2Next);
+			}
+			
+			if ((direction > 0? rEndNext > rEndF : lEndNext < lEndF)){
+				if((rev.direction<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
+					if(verbose)
+						System.out.printf("=> go from %d to %d to %d \n", contig.getIndex(), contigF.getIndex(), nextMarker.getIndex());
+					return 1;
+				}
+				else 
+					return 0;
+			}
+		}
+		return 0;
+	}
 	/*********************************************************************************/
-	// use override method in ScaffoldGraphDFS instead
-	public void connectBridges(boolean mode){		
-		if(!mode){
-			System.err.println("Not applicable yet!");
+	public synchronized boolean joinScaffold(Contig contig, ContigBridge bridge, int extendDir){		
+		if(verbose) {
+			System.out.println("PROCEED TO CONNECT " + bridge.hashKey + " with score " + bridge.getScore() + 
+					", size " + bridge.getConnections().size() + 
+					", vector (" + bridge.getTransVector().toString() + 
+					"), distance " + bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));
+			bridge.display();
+		}
+
+		
+		Contig contigF = bridge.secondContig, contigT = contig;
+		ScaffoldVector trans = bridge.getTransVector();
+//		if(contig.getIndex() == bridge.secondContig.getIndex()){
+//			contigF = bridge.firstContig;
+//			trans = ScaffoldVector.reverse(trans);
+//		}
+					
+		int headF = contigF.head,
+			headT = contigT.head;
+		Scaffold 	scaffoldF = scaffolds[headF],
+					scaffoldT = scaffolds[headT];
+		int	posT = scaffoldT.isEnd(contigT);
+		if (posT == 0){
+			if(verbose) 
+				System.out.println("Impossible to jump from the middle of a scaffold " + headT + ": contig " + contigT.index);
+			return false;
+		}
+
+		if(verbose) 
+			System.out.println("Before joining " + contigF.index + " (" + headF +") to " + contigT.index 
+				+ " (" + headT +") " 
+				+ (scaffoldT.getLast().rightMost() - scaffoldT.getFirst().leftMost()) 
+				+ " " + (scaffoldF.getLast().rightMost() - scaffoldF.getFirst().leftMost()) 
+				+ " " + (scaffoldT.getLast().rightMost() - scaffoldT.getFirst().leftMost() + scaffoldF.getLast().rightMost() - scaffoldF.getFirst().leftMost()));
+		//===================================================================================================
+		int index = scaffoldF.indexOf(contigF),
+			count = index;
+
+		ScaffoldVector rev = ScaffoldVector.reverse(contigF.getVector()); //rev = contigF->headF	
+		//int extendDir = extendDirection(contigT, bridge);
+		int addScf=-1; 
+
+		if(extendDir == -1){
+			if(headF==headT){
+				if(posT!=1)
+					return false;
+				else{
+					Contig nextMarker = scaffoldF.nearestMarker(contigF, true);
+					if(nextMarker!=null){
+						Contig ctg = scaffoldF.remove(index+1);
+						Scaffold newScf = new Scaffold(ctg);
+						ContigBridge brg = scaffoldF.bridges.remove(index);
+						while(true){
+							if(scaffoldF.size()==index+1) break;
+							ctg= scaffoldF.remove(index+1);
+							brg = scaffoldF.bridges.remove(index);
+							newScf.addRear(ctg,brg);
+						}
+						newScf.trim();
+						changeHead(newScf, nextMarker);
+						addScf=nextMarker.getIndex();
+					}
+					scaffoldF.setCloseBridge(getReversedBridge(bridge));
+					changeHead(scaffoldF, contigF);
+					//TODO shoud we separate scaffolds in scaffolds[] and others to avoid ambiguity
+				}
+			}else{
+				Contig 	ctg = scaffoldF.remove(index);
+				ContigBridge brg = getReversedBridge(bridge);
+				//extend and connect
+				while(true){
+					ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
+					ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
+					ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
+	
+					ctg.head = headT;
+					if (posT == 1){ 
+						scaffoldT.addFront(ctg,brg);
+					}else{
+						scaffoldT.addRear(ctg,getReversedBridge(brg));
+					}	
+					if(count==0) break;
+					ctg = scaffoldF.remove(--count);
+					brg = scaffoldF.bridges.remove(count);
+					
+				}
+				if(scaffoldF.closeBridge!=null && !scaffoldF.isEmpty()){
+					ctg = scaffoldF.removeLast();
+					brg = scaffoldF.closeBridge;
+					count = scaffoldF.size()-1;
+					while(true){
+						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
+						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
+						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
+						ctg.composite(ScaffoldVector.reverse(scaffoldF.circle));
+						ctg.head = headT;
+						if (posT == 1){ 
+							scaffoldT.addFront(ctg,brg);
+						}else{
+							scaffoldT.addRear(ctg,getReversedBridge(brg));
+						}	
+						if(count==0) break;
+						brg = scaffoldF.bridges.remove(count--);
+						ctg = scaffoldF.remove(count);		
+						
+					}
+				}
+			
+				//set the remaining
+				scaffoldT.trim();
+				if(scaffoldF.size() > 0){
+					scaffoldF.trim();
+					addScf=scaffoldF.getFirst().getIndex();
+					changeHead(scaffoldF, scaffoldF.getFirst());
+				}
+				
+			}
+			scaffoldF = new Scaffold(contigs.get(headF));
+		}
+		else if(extendDir == 1){
+			if(headF==headT){
+					if(posT!=-1)
+						return false;
+					else{
+						Contig prevMarker = scaffoldF.nearestMarker(contigF, false);
+						if(prevMarker!=null){
+							Contig ctg = scaffoldF.remove(--count);
+							Scaffold newScf = new Scaffold(ctg);
+							ContigBridge brg = scaffoldF.bridges.remove(count);
+							while(true){
+								if(count<1) break;
+								ctg= scaffoldF.remove(--count);
+								brg = scaffoldF.bridges.remove(count);
+								newScf.addFront(ctg,brg);
+							}
+							newScf.trim();
+							changeHead(newScf, prevMarker);
+							addScf=prevMarker.getIndex();
+						}
+						scaffoldF.setCloseBridge(bridge);
+						changeHead(scaffoldF, contigF);
+						
+					}
+			}else{
+				Contig 	ctg = scaffoldF.remove(index);
+				ContigBridge brg = bridge;
+				//extend and connect
+				while(true){
+					ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
+					ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
+					ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
+	
+					ctg.head = headT;
+					if (posT == 1){ 
+						scaffoldT.addFront(ctg,getReversedBridge(brg));
+					}else{
+						scaffoldT.addRear(ctg,brg);
+					}				
+					if(scaffoldF.size()==index) break;
+					ctg = scaffoldF.remove(index);
+					brg = scaffoldF.bridges.remove(index);
+				}
+				if(scaffoldF.closeBridge!=null && !scaffoldF.isEmpty()){
+					ctg = scaffoldF.removeFirst();
+					brg = scaffoldF.closeBridge;
+					while(true){
+						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
+						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
+						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
+						ctg.composite(scaffoldF.circle);
+						ctg.head = headT;
+						if (posT == 1){ 
+							scaffoldT.addFront(ctg,getReversedBridge(brg));
+						}else{
+							scaffoldT.addRear(ctg,brg);
+						}	
+						if(scaffoldF.size()<1) break;
+						brg = scaffoldF.bridges.removeFirst();
+						ctg = scaffoldF.removeFirst();		
+					}	
+				}
+				//set the remaining
+				scaffoldT.trim();
+				if(scaffoldF.size() > 0){
+					scaffoldF.trim();
+					addScf=scaffoldF.getLast().getIndex();
+					changeHead(scaffoldF, scaffoldF.getLast());
+				}
+				//scaffoldF = new Scaffold(contigs.get(headF)); here?
+			}
+			scaffoldF = new Scaffold(contigs.get(headF));
+		}	
+		else
+			return false;
+		
+		//===================================================================================================
+		if(verbose){ 
+			System.out.println("After Joining: " + (addScf<0?1:2) + " scaffolds!");
+			scaffolds[contigF.head].view();
+			if(addScf >=0)
+				scaffolds[addScf].view();
+		}
+		return true;
+	}
+	//change head of scaffold scf to newHead
+	public void changeHead(Scaffold scf, Contig newHead){	
+		if(isRepeat(newHead)){
+			if(verbose)
+				System.out.println("Cannot use repeat as a head! " + newHead.getName());
 			return;
 		}
-			
-		System.out.println(bridgeList.size());
-		for (ContigBridge bridge:bridgeList){
-			System.out.println("CONNECT " + bridge.hashKey + " " + bridge.getScore() + 
-					" " + bridge.getConnections().size() + 
-					" (" + bridge.getTransVector().toString() + 
-					") " + bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));
-			bridge.display();
-
-			Contig contigF = bridge.secondContig;
-			Contig contigT = bridge.firstContig;
-
-			int headF = head[contigF.index];
-			int headT = head[contigT.index];			
-
-			ScaffoldVector trans = bridge.getTransVector();
-
-			//not sure if this is neccesary (yes, it is)
-			if (headF < headT){
-				//swap
-				trans = ScaffoldVector.reverse(trans);
-				Contig tmp = contigF;
-				contigF = contigT;
-				contigT = tmp;
-
-				headF = head[contigF.index];
-				headT = head[contigT.index];
-			}
-
-			if (headT == headF){				
-				ScaffoldVector v = ScaffoldVector.composition(trans,contigT.getVector());
-				int t_dis = Math.abs(contigF.getRelPos() -  v.getMagnitute());
-				int t_len = (scaffolds[headT].getLast().rightMost() - scaffolds[headT].getFirst().leftMost());
-
-				System.out.println("NOT Connect " + contigF.index + " (" + headF +") and " + contigT.index + " (" + headT +") ==== " + contigF.getRelPos() + " - " + v.getMagnitute() + "(" + t_dis + ") vs " + (t_len) + "  " + (t_dis * 1.0/t_len) );
-				continue;
-				//TODO: This is to close the circular chromosome/plasmid				
-			}
-
-
-			int posF = scaffolds[headF].isEnd(contigF);
-			int posT = scaffolds[headT].isEnd(contigT);
-
-			if (posT == 0 ){
-				System.out.println("Opps " + contigF.index + " vs " + contigT.index);
-				continue;
-			}
-			//assert: posT != 0, but note that posF may be equal to 0
-			//checking if 
-
-			System.out.println("Before Connect " + contigF.index + " (" + headF +") and " + contigT.index 
-					+ " (" + headT +") " 
-					+ (scaffolds[headT].getLast().rightMost() - scaffolds[headT].getFirst().leftMost()) 
-					+ " " + (scaffolds[headF].getLast().rightMost() - scaffolds[headF].getFirst().leftMost()) 
-					+ " " + (scaffolds[headT].getLast().rightMost() - scaffolds[headT].getFirst().leftMost() + scaffolds[headF].getLast().rightMost() - scaffolds[headF].getFirst().leftMost()));
-			
-			// updating relative position of involved contigs based on the bridge of two main contigs. 
-			ScaffoldVector rev = ScaffoldVector.reverse(contigF.getVector());
-			//rev = headF -> currentF				
-
-			for (Contig ctg:scaffolds[headF]){					
-				ctg.composite(rev);
-				ctg.composite(trans);
-				ctg.composite(contigT.getVector());
-				//scaffolds[headT].addContig(ctg);
-
-				int contigID = ctg.getIndex();
-				head[contigID] = headT;											
-
-				int newS = ctg.getRelPos();
-				int newE = ctg.getRelPos() + ctg.getRelDir() * ctg.length();
-				if (newS > newE){
-					int t=newS;newS = newE;newE = t;
-				}
-			}
-			// merging two dequeues
-			scaffolds[headT].combineScaffold(scaffolds[headF], bridge, posT, posF);
-			System.out.println("After Connect " + contigF.index + " (" + headF +") and " + contigT.index + " (" + headT +") " + (scaffolds[headT].getLast().rightMost() - scaffolds[headT].getFirst().leftMost()));
-			nScaffolds --;
-			scaffolds[headT].view();
+		//Scaffold scf = scaffolds[scfIndex];
+		int scfIndex = scf.scaffoldIndex;
+		int headPos = scf.indexOf(newHead);
+		if(headPos < 0){
+			if(verbose)
+				System.out.printf("Cannot find contig %d in scaffold %d\n" , newHead.getIndex(), scfIndex);
+			return;
 		}
-	}
+		Scaffold newScf = new Scaffold(newHead.getIndex());
+		ScaffoldVector rev = ScaffoldVector.reverse(newHead.getVector()); //rev = newHead->head	
+		
+		if(newHead.getRelDir() == 0){
+			if(verbose)
+				System.out.printf("Contig %d of scaffold %d got direction 0!\n" , newHead.getIndex(), scfIndex);
+			return;
+		}
+		else if(newHead.getRelDir() > 0){
+			while(!scf.isEmpty())
+				newScf.add(scf.removeFirst());
+			while(!scf.bridges.isEmpty())
+				newScf.bridges.add(scf.bridges.removeFirst());
+			if(scf.closeBridge != null){
+				newScf.closeBridge = scf.closeBridge;
+				newScf.circle = scf.circle;
+			}
+		}
+		else{
+			while(!scf.isEmpty())
+				newScf.add(scf.removeLast());
+			while(!scf.bridges.isEmpty())
+				newScf.bridges.add(getReversedBridge(scf.bridges.removeLast()));
+			if(scf.closeBridge != null){
+				newScf.closeBridge = getReversedBridge(scf.closeBridge);
+				newScf.circle = ScaffoldVector.reverse(scf.circle);
+			}
+		}
 
-	public void printSequences(SequenceOutputStream out) throws IOException{
-		System.out.println(nScaffolds);
+		for (Contig ctg:newScf){					
+			ctg.composite(rev); // leftmost->head + head->ctg = leftmost->ctg
+		}
+		newScf.setHead(newHead.getIndex());
+		scaffolds[newHead.getIndex()] = newScf;
+		//scaffolds[scfIndex] = new Scaffold(contigs.get(scfIndex));
+	}
+	public synchronized void printSequences(SequenceOutputStream out) throws IOException{
+		//System.out.println(nScaffolds);
 		for (int i = 0; i < scaffolds.length;i++){
-			if ((head[i] == i 
-				&& !isRepeat(scaffolds[i].element())
-				&& scaffolds[i].element().length() > 1000)
-				|| scaffolds[i].element().isCircular
-				){
-				System.out.println("Scaffold " + i + " length " + (scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost()));
+			if(scaffolds[i].isEmpty()) continue;
+			int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
+			if ((contigs.get(i).head == i 
+				&& !isRepeat(contigs.get(i))
+				&& len > maxRepeatLength
+				)
+				|| scaffolds[i].closeBridge != null
+				)
+			{
+				if(verbose) 
+					System.out.println("Scaffold " + i + " length " + len);
 				scaffolds[i].viewSequence(out);
 
 			}
 		}
 
-/*		for (Contig contig:contigs){
-			System.out.printf("Contig %s used %6.3f of  %6.3f (%6.3f) Left over %6.3f times or %6.3f%% \n",
-					contig.getName(),
-					contig.portionUsed,
-					contig.coverage/this.estimatedCov,
-					contig.coverage,
-					contig.coverage/this.estimatedCov - contig.portionUsed,
-					100 - contig.portionUsed*100.0/ (contig.coverage/this.estimatedCov)
-					);
-
-		}*/
 		for (Contig contig:contigs){
 				contig.display();
 		}
 				
 	}	
 	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a milestone.
-	public boolean isRepeat(Contig ctg){
-		if (ctg.length() > maxRepeatLength || ctg.coverage < 1.3 * estimatedCov) 
-			return false;
-		else if (ctg.coverage > 1.5 * estimatedCov || ctg.length() < 1000)
+	public static boolean isRepeat(Contig ctg){
+		//for the case of AbySS when no coverage information of contigs is found
+		if(estimatedCov == 1.0 && ctg.coverage == 1.0){
+			if(ctg.length() > maxRepeatLength)
+				return false;
+			else
+				return true;
+		}
+		
+		if (ctg.length() < minContigLength) return true;
+		else if (ctg.length() > maxRepeatLength || ctg.coverage < 1.3 * estimatedCov) 
+			return false; 
+		else if (ctg.coverage > 1.5 * estimatedCov)
 			return true;
 		else{
 			for(ContigBridge bridge:ctg.bridges){
@@ -399,16 +684,21 @@ public class ScaffoldGraph{
 				if(other.getIndex()==ctg.getIndex()) continue;
 				int dist=bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig);
 				if( dist<0 && dist>-ctg.length()*.25){
-					if(other.length() > maxRepeatLength || other.getCoverage() < 1.5*estimatedCov)
+					if(other.length() > maxRepeatLength || other.getCoverage() < 1.3*estimatedCov)
 						return true;
 				}
 			}
 			//return false;
 		}
-		if(ctg.length() < 500 || ctg.coverage < .5 * estimatedCov) // maybe not repeat but crap 
+		if(ctg.coverage < .5 * estimatedCov || ctg.length() < 2*minContigLength) // second filter: maybe not repeat but insignificant contig 
 			return true;
 		else 
 			return false;
+	}
+
+
+	public void connectBridges() {
+		//TODO: to be override by children classes
 	}
 
 

@@ -36,6 +36,7 @@ package japsa.tools.seq;
 
 import japsa.seq.Alphabet;
 import japsa.seq.JapsaAnnotation;
+import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
@@ -43,8 +44,9 @@ import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
-import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
 
 /**
@@ -52,7 +54,7 @@ import java.io.IOException;
  * 
  */
 @Deployable(scriptName = "jsa.seq.gff2fasta",
-           scriptDesc = "Extract sequences from a gff annotation")
+scriptDesc = "Extract sequences from a gff annotation")
 public class ExtractGeneSequenceCmd extends CommandLine{	
 	public ExtractGeneSequenceCmd(){
 		super();
@@ -61,68 +63,91 @@ public class ExtractGeneSequenceCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 		
 		addString("sequence", null, "The sequence (whole chromosome)",true);
-		addString("gff", null, "Annotation file in gff format",true);
+		addString("gff", null, "Annotation file in gff format",true);		
 		addString("type", "gene", "types of features to be extracted (all, gene, CDS etc)");
-		addStdOutputFile();		
-		addStdAlphabet();//aphabet			
-		
+		addInt("flank", 0, "Size of flanking regions");
+		addStdOutputFile();	
+
 		addStdHelp();		
 	} 
 
-	
+
 	public static void main(String[] args) throws IOException {
 		CommandLine cmdLine = new ExtractGeneSequenceCmd();	
 		args = cmdLine.stdParseLine(args);
-		/**********************************************************************/
-		//Get dna 		
-		String alphabetOption = cmdLine.getStringVal("alphabet");		
-		Alphabet alphabet = Alphabet.getAlphabet(alphabetOption);
-		if (alphabet == null)
-			alphabet = Alphabet.DNA16();
-
-		String sequence = cmdLine.getStringVal("sequence");
+		/**********************************************************************/		
+		String sequence = cmdLine.getStringVal("sequence");		
 		String gff = cmdLine.getStringVal("gff");
-		String type = cmdLine.getStringVal("type");
+		String type = cmdLine.getStringVal("type");		
 		String output = cmdLine.getStringVal("output");
-		/**********************************************************************/	
-		
+		int flank = cmdLine.getIntVal("flank");	
 
-		SequenceReader reader = SequenceReader.getReader(sequence);
-		Sequence seq = reader.nextSequence(alphabet);
-		reader.close();
-		String name  = seq.getName();
-		
+		/**********************************************************************/
 		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);
-		
-		//a quick hack
-		String [] toks = name.split("\\|");
-		if (toks.length>3 && toks[2].equals("ref"))
-			seq.setName(toks[3]);
-		
+		extractGenes(sequence, gff, type, flank, out);
+		out.close();
+
+	}
+	
+	public static void extractGenes(String sequence, String gff, String type, int flank, SequenceOutputStream out) throws IOException{
 		
 		//Read annotation, without upstream and downstream
-		BufferedReader aReader = SequenceReader.openFile(gff);
-		JapsaAnnotation anno = JapsaAnnotation.readGFF(aReader,0,0,type);
+		FileInputStream aReader = new FileInputStream(gff);		
+		ArrayList<JapsaAnnotation> annos = JapsaAnnotation.readMGFF(aReader,0,0,type);
 		aReader.close();
-		
-		if (!anno.getAnnotationID().equals(seq.getName())){
-			Logging.exit( "IDs dont match : " + seq.getName() + " vs " + anno.getAnnotationID(),1);
-		}
-		anno.setSequence(seq);		
-		anno.writeFeatureSequence(out);
-		out.close();
+
+		Logging.info("Read " + annos.size());
+
+		SequenceReader reader = SequenceReader.getReader(sequence);
+		Sequence seq = reader.nextSequence(Alphabet.DNA());
+
+		for (JapsaAnnotation anno:annos){	
+			//Logging.info("Read anno " + anno.numFeatures());
+			while (seq != null && !seq.getName().equals(anno.getAnnotationID())){
+				seq = reader.nextSequence(Alphabet.DNA());
+			}
+			if (seq == null){
+				Logging.error("Sequence " + anno.getAnnotationID() + " not found");
+				reader.close();
+				out.close();				
+				System.exit(1);
+			}
+
+			for (JapsaFeature feature:anno.getFeatureList()){
+				int start = feature.getStart() - 1;//note: convert 1-index, inclusive to 0-index inclusive 
+				int end = feature.getEnd();//note: 1-index, inclusive == 0-index exclusive
+				Sequence featureSeq = new Sequence(Alphabet.DNA(), end - start + 2 * flank);
+
+				for (int i = 0; i < featureSeq.length();i++){
+					int j = start - flank + i; 
+					if (j < 0 || j>= seq.length())
+						featureSeq.setSymbol(i, Alphabet.DNA.N);
+					else 
+						featureSeq.setSymbol(i, seq.getBase(j));
+				}//for
+
+				if (feature.getStrand() == '-')
+					featureSeq = Alphabet.DNA.complement(featureSeq);
+
+				featureSeq.setName(seq.getName() + ":" + start + "-" + end +":" + feature.getStrand() + ":" + seq.length());
+				featureSeq.setDesc("Type=" + feature.getType() + ";" + feature.getDesc());
+
+				featureSeq.writeFasta(out);
+			}//for feature	
+		}//for anno
+		reader.close();
 	}
 }
 
-/*RST*
-----------------------------------------------------------
-*jsa.seq.gff2fasta*: Join multiple sequences into one file 
-----------------------------------------------------------
 
-*jsa.seq.gff2fasta* extract the functional sequences (genes, CDS, etc) from
+/*RST*
+-------------------------------------------
+ *jsa.seq.gff2fasta*: Extract gene sequences 
+-------------------------------------------
+
+ *jsa.seq.gff2fasta* extract the functional sequences (genes, CDS, etc) from
 a gff file and a sequence file.
 
 <usage> 
 
-*RST*/
-
+ *RST*/

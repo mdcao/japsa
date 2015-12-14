@@ -191,6 +191,7 @@ public class JapsaFeature implements Comparable<JapsaFeature> {
 	}
 
 	/**
+	 * Return the start position in 1-index, inclusive of the feature 
 	 * @return the start
 	 */
 	public int getStart() {
@@ -198,7 +199,8 @@ public class JapsaFeature implements Comparable<JapsaFeature> {
 	}
 
 	/**
-	 * return the end point (inclusive)
+	 * Return the end position in 1-index, inclusive of the feature
+	 * 
 	 * 
 	 * @return
 	 */

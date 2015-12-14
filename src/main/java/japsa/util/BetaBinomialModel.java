@@ -48,28 +48,43 @@ import org.apache.commons.math3.util.MathUtils;
  *
  */
 public class BetaBinomialModel {
-	;
+	
 	
 	static int psuedoCount = 1; 
 	
-	public static NormalDistribution dist(double countS, double totS, double countR, double totR){
-		BetaDistribution betaS = new BetaDistribution(countS + 1, totS - countS + 1);
-		BetaDistribution betaR = new BetaDistribution(countR + 1, totR - countR + 1);
-				
+	/**
+	 * Compute the ratio distribution of ps/pr where ps and pr are the params of
+	 * the binomial distributionsm from countR vs totR/countS vs totS 
+	 * 
+	 * Use a normal distribution for now. Use sampling to compute a nomal distribution
+	 * @param countS
+	 * @param totS
+	 * @param countR
+	 * @param totR
+	 * @param numSamples
+	 * @return
+	 */
+	public static NormalDistribution ratioDistribution(double countR, double totR, double countS, double totS, int numSamples){		
 		
+		BetaDistribution betaR = new BetaDistribution(countR + psuedoCount, totR - countR + psuedoCount);
+		BetaDistribution betaS = new BetaDistribution(countS + psuedoCount, totS - countS + psuedoCount);
+						
 		double sum = 0, sq = 0;
-		int count = 0;
-		for (int i = 0; i < 10000; i++){
+		//int count = 0;
+		for (int i = 0; i < numSamples; i++){
 			double r = betaR.sample();
-			if (r ==0 )
-				count ++;
-			else r = betaS.sample()/ r;
+			
+			if (r == 0 ){//wont happen{
+				i --;continue;				
+			}
+			
+			r = betaS.sample()/ r;
 			sum += r;
 			sq += r*r;			
 		}
-		double mean = sum/count;
+		double mean = sum/numSamples;
 				
-		return new NormalDistribution(mean, Math.sqrt(sq/count - mean*mean));
+		return new NormalDistribution(mean, Math.sqrt(sq/numSamples - mean*mean));
 	}
 	/**
 	 * @param args

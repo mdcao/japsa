@@ -49,9 +49,6 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import japsa.bio.np.ErrorCorrection;
-import org.apache.commons.math3.util.Pair;
-
-
 
 /**
  * Create a bridge that connects two contigs. The bridged can be ranked based
@@ -127,7 +124,22 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	public void setScore(double s) {
 		score = s;
 	}
-
+	public void setContigScores(){
+		if(transVector.magnitude < 0){
+			firstContig.prevScore = score;
+			if(transVector.direction < 0)
+				secondContig.prevScore = score;
+			else
+				secondContig.nextScore = score;
+		}
+		else{
+			firstContig.nextScore = score;
+			if(transVector.direction > 0)
+				secondContig.prevScore = score;
+			else
+				secondContig.nextScore = score;
+		}
+	}
 	/**
 	 * @return the transVector
 	 */
@@ -403,7 +415,12 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		return location;
 	}
 
-
+	public boolean isContaining(Contig ctg){
+		if(firstContig.getIndex() == ctg.getIndex() || secondContig.getIndex() == ctg.getIndex())
+			return true;
+		else 
+			return false;
+	}
 	public void display(){
 		System.out.printf("##################START########################\n"
 				+ "Contig %3d (%d) -> Contig %3d (%d) Vector (%s) score = %f distance = %d\n",
@@ -498,79 +515,11 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		return consensusRead;		
 		
 	}
-	// return two alignments with furthest contigs in the bridge
-	public Pair<AlignmentRecord, AlignmentRecord> bestPair(){
-		
-		int tS = 1, tE = firstContig.length(),
-				fS, fE, tC, fC;
-		AlignmentRecord tAlign = new AlignmentRecord(),
-						fAlign = new AlignmentRecord();
-		if (transVector.direction > 0){
-			fS = transVector.magnitude;
-			fE = transVector.magnitude + secondContig.length();
-		}else{
-			fE = transVector.magnitude;
-			fS = transVector.magnitude - secondContig.length();
-		}		
-		// tS---|->tE fS<-|--->fE
-		if (fS-tE > tS-fE){
-			int tEnd = firstContig.length()-1, fEnd = transVector.direction>0?0:secondContig.length()-1; //furthest pair
-			tC=tEnd;
-			fC=fEnd;
-			
-			for (Connection connection:connections){
-				if(Math.min(Math.abs(connection.getAlignment(firstContig).refStart-tEnd),
-							Math.abs(connection.getAlignment(firstContig).refEnd-tEnd))
-					> Math.abs(tC-tEnd)){
-					tC=	Math.abs(connection.getAlignment(firstContig).refStart-tEnd) <
-						Math.abs(connection.getAlignment(firstContig).refEnd-tEnd)?
-								connection.getAlignment(firstContig).refStart
-								:connection.getAlignment(firstContig).refEnd;
-					tAlign=connection.getAlignment(firstContig);
-				
-				}
-				if(Math.min(Math.abs(connection.getAlignment(secondContig).refStart-fEnd),
-						Math.abs(connection.getAlignment(secondContig).refEnd-fEnd))
-					> Math.abs(fC-fEnd)){
-					fC=	Math.abs(connection.getAlignment(secondContig).refStart-fEnd) <
-						Math.abs(connection.getAlignment(secondContig).refEnd-fEnd)?
-						connection.getAlignment(secondContig).refStart
-						:connection.getAlignment(secondContig).refEnd;
-					fAlign=connection.getAlignment(secondContig);	
-				}
-			}
-			
-		}
-		// fS<---|->fE tS-|--->tE
-		else{
-			int tEnd = 0, fEnd = transVector.direction>0?secondContig.length()-1:0; //furthest pair
-			tC=tEnd; 
-			fC=fEnd;
-			
-			for (Connection connection:connections){
-				if(Math.min(Math.abs(connection.getAlignment(firstContig).refStart-tEnd),
-							Math.abs(connection.getAlignment(firstContig).refEnd-tEnd))
-					> Math.abs(tC-tEnd))
-					tC=	Math.abs(connection.getAlignment(firstContig).refStart-tEnd) <
-						Math.abs(connection.getAlignment(firstContig).refEnd-tEnd)?
-								connection.getAlignment(firstContig).refStart
-								:connection.getAlignment(firstContig).refEnd;
-				if(Math.min(Math.abs(connection.getAlignment(secondContig).refStart-fEnd),
-						Math.abs(connection.getAlignment(secondContig).refEnd-fEnd))
-					> Math.abs(fC-fEnd))
-					fC=	Math.abs(connection.getAlignment(secondContig).refStart-fEnd) <
-						Math.abs(connection.getAlignment(secondContig).refEnd-fEnd)?
-						connection.getAlignment(secondContig).refStart
-						:connection.getAlignment(secondContig).refEnd;
-			}
-		}
-		return new Pair<AlignmentRecord,AlignmentRecord>(tAlign,fAlign);
-	}
 	/* 
 	 * Fill the scaffold considering all connections (get the consensus)
 	 * 
 	 */
-	public Sequence fillConsensus(Contig fromContig, AlignmentRecord ttAlign, AlignmentRecord ffAlign){
+	public Sequence fillConsensus(AlignmentRecord ttAlign, AlignmentRecord ffAlign){
 		int tS = 1, tE = firstContig.length(),
 				fS, fE, tC, fC;
 		AlignmentRecord tAlign = new AlignmentRecord(), 	
@@ -589,24 +538,24 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			fC=fEnd;
 			
 			for (Connection connection:connections){
-				if(Math.min(Math.abs(connection.getAlignment(firstContig).refStart-tEnd),
-							Math.abs(connection.getAlignment(firstContig).refEnd-tEnd))
+				if(Math.min(Math.abs(connection.firstAlignment.refStart-tEnd),
+							Math.abs(connection.firstAlignment.refEnd-tEnd))
 					> Math.abs(tC-tEnd)){
-					tC=	Math.abs(connection.getAlignment(firstContig).refStart-tEnd) <
-						Math.abs(connection.getAlignment(firstContig).refEnd-tEnd)?
-								connection.getAlignment(firstContig).refStart
-								:connection.getAlignment(firstContig).refEnd;
-					tAlign=connection.getAlignment(firstContig);
+					tC=	Math.abs(connection.firstAlignment.refStart-tEnd) <
+						Math.abs(connection.firstAlignment.refEnd-tEnd)?
+								connection.firstAlignment.refStart
+								:connection.firstAlignment.refEnd;
+					tAlign=connection.firstAlignment;
 				
 				}
-				if(Math.min(Math.abs(connection.getAlignment(secondContig).refStart-fEnd),
-						Math.abs(connection.getAlignment(secondContig).refEnd-fEnd))
+				if(Math.min(Math.abs(connection.secondAlignment.refStart-fEnd),
+						Math.abs(connection.secondAlignment.refEnd-fEnd))
 					> Math.abs(fC-fEnd)){
-					fC=	Math.abs(connection.getAlignment(secondContig).refStart-fEnd) <
-						Math.abs(connection.getAlignment(secondContig).refEnd-fEnd)?
-						connection.getAlignment(secondContig).refStart
-						:connection.getAlignment(secondContig).refEnd;
-					fAlign=connection.getAlignment(secondContig);	
+					fC=	Math.abs(connection.secondAlignment.refStart-fEnd) <
+						Math.abs(connection.secondAlignment.refEnd-fEnd)?
+						connection.secondAlignment.refStart
+						:connection.secondAlignment.refEnd;
+					fAlign=connection.secondAlignment;	
 				}
 			}
 			
@@ -618,35 +567,35 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			fC=fEnd;
 			
 			for (Connection connection:connections){
-				if(Math.min(Math.abs(connection.getAlignment(firstContig).refStart-tEnd),
-							Math.abs(connection.getAlignment(firstContig).refEnd-tEnd))
+				if(Math.min(Math.abs(connection.firstAlignment.refStart-tEnd),
+							Math.abs(connection.firstAlignment.refEnd-tEnd))
 					> Math.abs(tC-tEnd)){
-					tC=	Math.abs(connection.getAlignment(firstContig).refStart-tEnd) <
-						Math.abs(connection.getAlignment(firstContig).refEnd-tEnd)?
-								connection.getAlignment(firstContig).refStart
-								:connection.getAlignment(firstContig).refEnd;
-					tAlign=connection.getAlignment(firstContig);
+					tC=	Math.abs(connection.firstAlignment.refStart-tEnd) <
+						Math.abs(connection.firstAlignment.refEnd-tEnd)?
+								connection.firstAlignment.refStart
+								:connection.firstAlignment.refEnd;
+					tAlign=connection.firstAlignment;
 
 				}
-				if(Math.min(Math.abs(connection.getAlignment(secondContig).refStart-fEnd),
-						Math.abs(connection.getAlignment(secondContig).refEnd-fEnd))
+				if(Math.min(Math.abs(connection.secondAlignment.refStart-fEnd),
+						Math.abs(connection.secondAlignment.refEnd-fEnd))
 					> Math.abs(fC-fEnd)){
-					fC=	Math.abs(connection.getAlignment(secondContig).refStart-fEnd) <
-						Math.abs(connection.getAlignment(secondContig).refEnd-fEnd)?
-						connection.getAlignment(secondContig).refStart
-						:connection.getAlignment(secondContig).refEnd;
-					fAlign=connection.getAlignment(secondContig);
+					fC=	Math.abs(connection.secondAlignment.refStart-fEnd) <
+						Math.abs(connection.secondAlignment.refEnd-fEnd)?
+						connection.secondAlignment.refStart
+						:connection.secondAlignment.refEnd;
+					fAlign=connection.secondAlignment;
 				}
 			}
 		}
-		ttAlign.copy(fromContig==firstContig?tAlign:fAlign);
-		ffAlign.copy(fromContig==firstContig?fAlign:tAlign);
+		ttAlign.copy(tAlign);
+		ffAlign.copy(fAlign);
 
 		//----------------------------------------------------------------------------------
 		ArrayList<Sequence> seqList = new ArrayList<Sequence>();
 		
-		Contig toContig = 
-				(fromContig == firstContig)?secondContig:firstContig;
+		Contig fromContig = firstContig,
+				toContig = secondContig;
 
 		//loop over all connections
 		for(Connection connection:connections){
@@ -838,15 +787,6 @@ public class ContigBridge implements Comparable<ContigBridge>{
 					Math.min(a.readStart, a.readEnd) - Math.max(b.readEnd,b.readStart));											
 		}
 
-		public AlignmentRecord getAlignment(Contig contig){
-			if (contig.getIndex() == firstContig.getIndex())
-				return firstAlignment;
-			if (contig.getIndex() == secondContig.getIndex())
-				return secondAlignment;
-
-			return null;
-		}
-
 		void display (){
 			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] (%s) score=%d Read %s ==> %d [%d]\n", 
 					firstAlignment.refStart, firstAlignment.refEnd, secondAlignment.refStart, secondAlignment.refEnd,
@@ -885,28 +825,21 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			return bitSet.cardinality();
 		}
 
-		public int fillFrom(Contig fromContig, SequenceBuilder seqBuilder, JapsaAnnotation anno){
-			Contig toContig = 
-					(fromContig.getIndex() == firstContig.getIndex())?secondContig:firstContig;
+		public int filling(SequenceBuilder seqBuilder, JapsaAnnotation anno){
+			Contig fromContig = firstContig;
+			Contig toContig = secondContig;
 
-			AlignmentRecord fromAlignment = 
-					(fromContig.getIndex() == firstContig.getIndex())?firstAlignment:secondAlignment;
-
-			AlignmentRecord toAlignment = 
-					(fromContig.getIndex() == firstContig.getIndex())?secondAlignment:firstAlignment;
+			AlignmentRecord fromAlignment = firstAlignment,
+							toAlignment = secondAlignment;
 
 			ReadFilling readFilling = read;
 			if ( fromContig.getRelDir()>0 != fromAlignment.strand){
 				//swap
 				readFilling = read.reverse();
 				readFilling.sortAlignment();
-				for (AlignmentRecord record:readFilling.alignments){
-					if (record.contig.getIndex() == fromContig.getIndex())
-						fromAlignment = record;
 
-					if (record.contig.getIndex() == toContig.getIndex())
-						toAlignment = record;	
-				}
+				fromAlignment = fromAlignment.reverseRead();
+				toAlignment = toAlignment.reverseRead();
 			}
 			//now readFilling is good to go
 			int posReadEnd   = fromAlignment.readAlignmentEnd();

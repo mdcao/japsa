@@ -66,7 +66,7 @@ public class ScaffoldVector{
 	
 	/**
 	 * Return the distance between two closest tips of two contigs
-	 * that relative position of fContig to tContig (tContig->fContig) is represented by *this*
+	 * that relative position of fContig with regard to tContig (tContig->fContig) is represented by *this*
 	 * A negative value indicate the overlap of two contigs.
 	 * @param fContig
 	 * @param tContig
@@ -91,7 +91,7 @@ public class ScaffoldVector{
 		return Math.max(fS - tE, tS - fE);
 	}
 	/**
-	 * Compose two vectors: a to b is v2, b to c is v1. a to c is v1 * v2
+	 * Compose two vectors: a -> b is v2, b -> c is v1. returned a -> c is v1 * v2
 	 * Warning: the parameters' order doesn't follow normal intuition. USE WITH CARE!!!
 	 * @param v1
 	 * @param v2

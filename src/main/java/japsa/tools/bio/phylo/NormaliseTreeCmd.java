@@ -46,7 +46,7 @@ import java.io.PrintStream;
  * 
  */
 @Deployable(scriptName = "jsa.phylo.normalise",
-			scriptDesc = "Scale branches of a tree so that the sum of branch lengths is equal to a value")
+			scriptDesc = "Scale branches of a phylogeny so that the sum of branch lengths is equal to a value")
 public class NormaliseTreeCmd  extends CommandLine{	
 	public NormaliseTreeCmd(){
 		super();
@@ -56,7 +56,7 @@ public class NormaliseTreeCmd  extends CommandLine{
 		
 		addStdInputFile();
 		addDouble("sum",1.0,"Sum of branches after normalising");
-		addDouble("scale",-1.0,"Scale factor, if set will override the sum parameter");
+		addDouble("scale",0.0,"Scale factor, if set to a positive number will override the sum parameter");
 		addString("output", "-", "Name of the file for output, - for stdout");
 				
 		addStdHelp();		
@@ -83,7 +83,7 @@ public class NormaliseTreeCmd  extends CommandLine{
 		bf.close();
 
 		PhylogenyTree tree = PhylogenyTree.parseTree(str);
-		if (scale < 0){
+		if (scale <= 0){
 			double sum = tree.sumHops();
 			double num = tree.numHops();
 			scale = nSum * num / sum;

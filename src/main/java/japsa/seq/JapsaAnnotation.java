@@ -36,7 +36,6 @@ package japsa.seq;
 
 import japsa.util.MyBitSet;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -818,103 +817,4 @@ public class JapsaAnnotation {
 		
 		return annoList;
 	}	
-
-
-	/**
-	 * This function can only read annotation for 1 sequences, and hence
-	 * has been @Deprecated for readMGFF
-	 * @param in
-	 * @param upStr
-	 * @param downStr
-	 * @param list
-	 * @return
-	 * @throws IOException
-	 */
-	@Deprecated
-	public static JapsaAnnotation readGFF(BufferedReader in, int upStr, int downStr, String list) throws IOException{
-		boolean notAll = !list.equals("all");		
-
-		String line;		
-		JapsaAnnotation anno =  new JapsaAnnotation();
-		while ( (line = in.readLine()) != null){
-			//lineNo ++;
-			line = line.trim();
-
-			if (line.startsWith("##sequence-region")){
-				anno.setAnnotationID(line.split(" ")[1]);				
-				continue;
-			}			
-
-			if (line.startsWith("##FASTA")){
-				//anno.setAnnotationID(line.split(" ")[1]);				
-				//continue;
-
-				//TODO: read fasta
-				break;
-			}				
-
-			if (line.startsWith("#"))
-				continue;			
-
-			String [] toks = line.split("\t");
-			//if (toks[2].equals("region"))
-			//	continue;
-
-			if (toks.length < 2)
-				continue;
-
-			String type = toks[2];
-			if (notAll && !list.contains(type))
-				continue;
-
-			int start = Integer.parseInt(toks[3]);
-			int end = Integer.parseInt(toks[4]);
-
-			String parent = toks[0];
-			String ID = "";
-			char strand = toks[6].charAt(0);
-			String desc = toks[8];
-
-			String [] featureChars = toks[8].split(";");
-			for (String fch:featureChars){
-				if (fch.startsWith("Name="))
-					ID = fch.substring(5);
-
-				if (fch.startsWith("Parent="))
-					parent = fch.substring(7);
-			}
-
-			JapsaFeature feature = new JapsaFeature(start, end, type, ID, strand, parent);
-			feature.addDesc(desc);			
-			anno.add(feature);
-
-			//Add upstream
-			if (upStr > 0){// && feature.getType().equals("gene")){
-				if (feature.getStrand() == '-'){
-					JapsaFeature uFeature = new JapsaFeature(end + 1, end + upStr, "upstream", "u" + ID, strand, feature.getID());
-					uFeature.addDesc("Upstream region added automatically");
-					anno.add(uFeature);
-				}else{
-					JapsaFeature uFeature = new JapsaFeature(start - upStr, start - 1, "upstream", "u" + ID, strand, feature.getID());
-					uFeature.addDesc("Upstream region added automatically");
-					anno.add(uFeature);
-				}
-			}
-
-			//add downstream
-			if (downStr > 0){// && feature.getType().equals("gene")){
-				if (feature.getStrand() == '-'){
-					JapsaFeature dFeature = new JapsaFeature(start - downStr, start - 1, "downtream", "d" + ID, strand, feature.getID());
-					dFeature.addDesc("Downstream region added automatically");
-					anno.add(dFeature);					
-				}else{
-					JapsaFeature dFeature = new JapsaFeature(end + 1, end + downStr, "downtream", "d" + ID, strand, feature.getID());
-					dFeature.addDesc("Downstream region added automatically");
-					anno.add(dFeature);					
-				}
-			}						
-		}	
-		anno.sortFeatures();
-		return anno;
-	}
 }
