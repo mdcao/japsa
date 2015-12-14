@@ -107,7 +107,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.5-11a";
+	public static String VERSION = "1.5-12a";
 	public static final String FIELD_SEP = "\t";
 
 	//private static String AUTHORS = "Minh Duc Cao";
