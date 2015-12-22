@@ -84,7 +84,6 @@ public class BuildGeneDatabaseCmd  extends CommandLine{
 		CommandLine cmdLine = new BuildGeneDatabaseCmd();
 		args = cmdLine.stdParseLine(args);			
 
-
 		String inputOption = cmdLine.getStringVal("input");
 		String familyOption = cmdLine.getStringVal("family");
 		String alleleOption = cmdLine.getStringVal("allele");		

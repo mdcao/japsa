@@ -68,7 +68,7 @@ import japsa.util.Logging;
 
 public class BuildGeneDatabase {
 	//ArrayList<GeneDatabase.GeneFamily> geneFamilies;//Array list of gene family, each is a list of gene alleles
-	GeneDatabase geneDatabase;
+	public GeneDatabase geneDatabase;
 
 	String prefix;
 
@@ -80,11 +80,11 @@ public class BuildGeneDatabase {
 		//geneFamilies = new ArrayList<GeneDatabase.GeneFamily>();
 		geneDatabase = new  GeneDatabase();
 		prefix = p;
-		
+
 		fFile =prefix + "geneFam.fasta";
 		gFile =prefix + "gene.fasta";
 		bFile =prefix + "gene.sam";
-		
+
 		prepreScript();
 		prepreScript2();
 	}
@@ -110,13 +110,22 @@ public class BuildGeneDatabase {
 		sos.close();
 	}	
 
-	protected void cleanUp() throws IOException, InterruptedException{
+	public void cleanUp() throws IOException, InterruptedException{
 		Logging.info("rm -f "+ prefix +"*");
 		Process process = Runtime.getRuntime().exec("rm -f "+ prefix +"*");
 		process.waitFor();
 	}
 
-	protected HashMap<String, String> addGeneMap(final HashMap<String, Sequence> seqs, boolean checkGeneID) throws IOException, InterruptedException{
+	/**
+	 * Add a collection of genes to the database as a batch
+	 * 
+	 * @param seqs
+	 * @param checkGeneID
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public HashMap<String, String> addGeneMap(final HashMap<String, Sequence> seqs, boolean checkGeneID) throws IOException, InterruptedException{
 		HashMap<String, String>  strMap =  new HashMap<String, String> ();
 
 		//0: initialise grouping within the new sequences
@@ -128,8 +137,7 @@ public class BuildGeneDatabase {
 		}		
 		Logging.info("Total " + seqs.size() + " sequences");
 		//0.5 Merge based on annotation
-		if (checkGeneID)
-		{
+		if (checkGeneID){
 			HashMap<String, ArrayList<String>> annoMap = new HashMap<String, ArrayList<String>>();
 			int getIntrisciID = 0;
 			for (Sequence seq:seqs.values()){
@@ -213,10 +221,9 @@ public class BuildGeneDatabase {
 			merge = false;
 			iteration ++;
 			SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(gFile);			
-			
 			Logging.info("Iteration " + iteration + " size = " + setMap.size() + "  " + new Date());
 			int countI = 0;
-			
+
 			for (String key:setMap.keySet()){
 				ArrayList<String> tSet = setMap.get(key);
 				if (tSet.get(0) == key){
@@ -225,10 +232,10 @@ public class BuildGeneDatabase {
 				}
 			}
 			sos.close();
-			
+
 			Logging.info("Iteration " + iteration + " of " + countI + " sequences " + new Date());
 			JapsaTimer.systemInfo();
-			
+
 			Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA2.sh");
 			process.waitFor();
 
@@ -255,14 +262,9 @@ public class BuildGeneDatabase {
 				}
 
 				Sequence readSeq = seqs.get(readName);
-				Sequence refSeq = seqs.get(refName);	
-
-				japsa.util.HTSUtilities.IdentityProfile 
-				//in the other strand -> need to reverse
-				profile = sam.getReadNegativeStrandFlag()?HTSUtilities.identity(refSeq, DNA.complement(readSeq), sam)
-					:HTSUtilities.identity(refSeq, readSeq, sam);                 //on this strand
-
-				if (isSimilar(profile)){
+				Sequence refSeq = seqs.get(refName);
+				
+				if (isSimilar(refSeq, readSeq, sam)){
 					merge = true;
 					refSet.addAll(readSet);
 					for (String key:readSet){//merge every one in
@@ -275,7 +277,7 @@ public class BuildGeneDatabase {
 			samReader.close();
 			JapsaTimer.systemInfo();
 		}
-		
+
 		Logging.info(" 2 Grouping " + geneDatabase.size());
 		JapsaTimer.systemInfo();
 
@@ -320,11 +322,8 @@ public class BuildGeneDatabase {
 				if (refSeq == null){
 					Logging.error("ERROR 6: rep for family " + refName + " not found!");
 				}
-
-				japsa.util.HTSUtilities.IdentityProfile 
-				profile = sam.getReadNegativeStrandFlag()?HTSUtilities.identity(refSeq, DNA.complement(readSeq), sam):HTSUtilities.identity(refSeq, readSeq, sam);                 //on this strand
-
-				if (isSimilar(profile)){
+				
+				if (isSimilar(refSeq, readSeq, sam)){
 					ArrayList<String> readSet = setMap.get(readName);
 
 					for (String key:readSet){
@@ -347,7 +346,7 @@ public class BuildGeneDatabase {
 
 		Logging.info(" 3 Grouping " + geneDatabase.size() + " " + seqs.size());
 		JapsaTimer.systemInfo();
-		
+
 		for (Sequence seq:seqs.values()){
 			String seqName = seq.getName();
 			ArrayList<String> tSet =  setMap.get(seqName);
@@ -378,8 +377,8 @@ public class BuildGeneDatabase {
 		Logging.info("Manage to add " + G + " and " + GG + " " + new Date());
 		return strMap;
 	}
-	
-	protected String addGene(Sequence seq) throws IOException, InterruptedException{
+
+	public String addGene(Sequence seq) throws IOException, InterruptedException{
 		//1.Create first family is not done so already
 		if (geneDatabase.size() == 0){
 			return geneDatabase.addNewFamily(seq);			
@@ -423,16 +422,11 @@ public class BuildGeneDatabase {
 				continue;
 			}
 			Sequence refSeq = family.represetationSequence();
-
-			japsa.util.HTSUtilities.IdentityProfile 
-			profile = sam.getReadNegativeStrandFlag()?
-				HTSUtilities.identity(refSeq, DNA.complement(seq), sam): //in the other strand -> need to reverse
-					HTSUtilities.identity(refSeq, seq, sam);                 //on this strand
-
-				if (isSimilar(profile)){
-					geneID = family.addSequence(seq);
-					break;
-				}
+			
+			if (isSimilar(refSeq, seq, sam)){
+				geneID = family.addSequence(seq);
+				break;
+			}
 		}
 		samIter.close();
 		samReader.close();
@@ -441,13 +435,22 @@ public class BuildGeneDatabase {
 		return geneDatabase.addNewFamily(seq);	
 	}
 
-	static double ratio = 0.9;
+	//TODO: no good public
+	public static double ratio = 0.9;	
 
-	static boolean isSimilar(HTSUtilities.IdentityProfile profile){
+	static boolean isSimilar(Sequence refSeq, Sequence readSeq, SAMRecord sam){
+		japsa.util.HTSUtilities.IdentityProfile 
+		//in the other strand -> need to reverse
+		profile = sam.getReadNegativeStrandFlag()?HTSUtilities.identity(refSeq, DNA.complement(readSeq), sam)
+			:HTSUtilities.identity(refSeq, readSeq, sam); 
+
 		double m = profile.match / ratio;
 		//System.out.println("XXXX " + (1.0 *profile.match/profile.refBase) + " " + (1.0 *profile.match/profile.readBase));
 		return (m > profile.refBase && m > profile.readBase);
 	}
+
+
+
 
 
 	/**

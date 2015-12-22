@@ -109,13 +109,17 @@ public class MLSTyping{
 
 			int x = geneSeqs[i].size() - 1;
 			String alleleName = geneSeqs[i].get(x).getName();
-			int alleleNo = Integer.parseInt(alleleName.split("_")[1]);
+			
+			int index_ = alleleName.lastIndexOf('_');
+			
+			int alleleNo = Integer.parseInt(alleleName.substring(1 + index_));
 			alleleNo2AlleleIndex[i] = new int[alleleNo + 1];
 			Arrays.fill(alleleNo2AlleleIndex[i], -1);
 
 			for (; x >=0;x--){
-				alleleName = geneSeqs[i].get(x).getName();								
-				alleleNo = Integer.parseInt(alleleName.split("_")[1]);
+				alleleName = geneSeqs[i].get(x).getName();
+				index_ = alleleName.lastIndexOf('_');				
+				alleleNo = Integer.parseInt(alleleName.substring(1 + index_));
 				alleleNo2AlleleIndex[i][alleleNo] = x;
 
 				//if (!bitSets[i].get(alleleNo)){
