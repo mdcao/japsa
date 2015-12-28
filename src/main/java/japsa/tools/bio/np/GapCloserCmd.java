@@ -70,10 +70,10 @@ public class GapCloserCmd extends CommandLine{
 		addInt("support", 2, "Minimum supporting long read needed for a link between markers");
 		addString("connect", null, "Name of the connection file");
 		addString("stat", null, "Name of the stastistic file for Nanopore read alignment");
-		addBoolean("realtime", false, "Real-time processing mode. Default is batch mode (false)");
+		addBoolean("realtime", false, "Process in real-time mode. Default is batch mode (false)");
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 30,   "Minimum number of seconds between analyses");
-		addBoolean("verbose", false, "Turn on debugging mode if true (default false)");
+		addBoolean("verbose", false, "Turn on debugging mode");
 
 		addStdHelp();		
 		

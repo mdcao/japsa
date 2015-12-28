@@ -271,4 +271,25 @@ public class Sequence extends AbstractSequence implements Cloneable {
 		byte [] newSeq = Arrays.copyOfRange(byteSeq, start, end); 
 		return new Sequence(alphabet(), newSeq);
 	}
+	/**
+	 * Start: 0-index inclusive,
+	 * end:0-index, exclusive
+	 * @param start
+	 * @param end
+	 * @param flank
+	 * @return
+	 */
+	public Sequence subsequenceWithFlank(int start, int end, int flank){
+		Sequence featureSeq = new Sequence(alphabet(), end - start + 2 * flank);
+
+		for (int i = 0; i < featureSeq.length();i++){
+			int j = start - flank + i; 
+			if (j < 0 || j>= length())
+				featureSeq.setSymbol(i, Alphabet.DNA.N);
+			else 
+				featureSeq.setSymbol(i, getBase(j));
+		}//for		
+		return featureSeq;
+	}
+
 }

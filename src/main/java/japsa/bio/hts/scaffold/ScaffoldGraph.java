@@ -62,7 +62,7 @@ public class ScaffoldGraph{
 	Scaffold [] scaffolds;
 	//int [] head;
 	ArrayList<Contig> contigs;				
-	int nScaffolds=0;
+	//int nScaffolds=0;
 	public static double estimatedCov = 0;
 	double estimatedLength = 0;
 	//ArrayList<ContigBridge> bridgeList = new ArrayList<ContigBridge>();
@@ -113,6 +113,11 @@ public class ScaffoldGraph{
 			contigs.get(i).head = i;
 		}//for
 	}//constructor
+	
+	
+	public int n50(){
+		return 0;
+	}
 
 
 	/**
