@@ -259,8 +259,7 @@ public final class Scaffold extends LinkedList<Contig>{
 
 	/**
 	 * @param start the start to set
-	 */
-
+	 */	
 	public void view(){
 		System.out.println("========================== START =============================");
 		Iterator<ContigBridge> bridIter = bridges.iterator();
@@ -276,6 +275,15 @@ public final class Scaffold extends LinkedList<Contig>{
 				System.out.println();			
 		}
 		System.out.println("============================ END ===========================");
+	}
+	
+	/**
+	 * FIXME: return the length of this scaffold
+	 * May maintain a length variable, and update it every time the scaffold is bridged
+	 * Check out quast (https://github.com/ablab/quast)
+	 */
+	public int length(){
+		return 0;
 	}
 
 	public void viewSequence(SequenceOutputStream out) throws IOException{		

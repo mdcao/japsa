@@ -65,20 +65,18 @@ import org.rosuda.JRI.Rengine;
  */
 public class SpeciesMixtureIdenfication {	
 	private double qual = 0;
-	private Rengine rengine;
-	
+	private Rengine rengine;	
 	private int currentReadCount = 0;
 	private int currentReadAligned = 0;
-	//private long currentBaseCount = 0;
-	//private long currentBaseAligned= 0;
-
-	//int arrayIndex = 0;	
-	//String prefix;
-	
-	//public SequenceOutputStream countsOS;
+	private double threshold = 0.02;
 	private PrintStream outOS;
+	
+	HashMap<String, String> seq2Species = new HashMap<String, String>();
+	HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
+	ArrayList<String> speciesList = new ArrayList<String>(); 
 
-	public SpeciesMixtureIdenfication(String outputFile, double minQual) throws IOException{		
+
+	public SpeciesMixtureIdenfication(String outputFile, double minQual, double threshold) throws IOException{		
 		rengine = new Rengine (new String [] {"--no-save"}, false, null);
 		if (!rengine.waitForR()){
 			Logging.exit("Cannot load R",1);            
@@ -87,13 +85,14 @@ public class SpeciesMixtureIdenfication {
 		rengine.eval("alpha<-0.05");
 
 		Logging.info("REngine ready");
-		//countsOS = SequenceOutputStream.makeOutputStream(outputFile);
+
 		if (outputFile.equals("-"))
 			outOS = System.out;
 		else
 			outOS = new PrintStream (new FileOutputStream(outputFile));
-		
+
 		this.qual = minQual;
+		this.threshold = threshold;
 	}
 
 	public void close() throws IOException{
@@ -106,28 +105,6 @@ public class SpeciesMixtureIdenfication {
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
-	static class SpeciesCount implements Comparable<SpeciesCount>{
-		String species;
-		int count = 0;
-
-		SpeciesCount (String s){
-			species = s;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Comparable#compareTo(java.lang.Object)
-		 */
-		@Override
-		public int compareTo(SpeciesCount o) {		
-			return o.count - count;
-		}
-
-	}
-
-
-	HashMap<String, String> seq2Species = new HashMap<String, String>();
-	HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
-	ArrayList<String> speciesList = new ArrayList<String>(); 
 
 
 	public void preTyping(String indexFile)throws IOException{
@@ -161,7 +138,6 @@ public class SpeciesMixtureIdenfication {
 	}
 
 	private void simpleAnalysisCurrent() throws IOException{		
-		
 		int sum = 0;
 		double [] count = new double[speciesList.size()];
 		for (int i = 0; i < count.length;i++){			
@@ -171,15 +147,15 @@ public class SpeciesMixtureIdenfication {
 		DoubleArray countArray = new DoubleArray();
 		ArrayList<String> speciesArray = new ArrayList<String> ();
 
-		int minCount = Math.max(1,sum/50);
-		
+		double minCount = Math.max(1.0,sum * threshold);				
+
 		for (int i = 0; i < count.length;i++){			
 			if (count[i] >= minCount){
 				countArray.add(count[i]);
 				speciesArray.add(speciesList.get(i));
 			}
 		}
-		
+
 		countArray.add(1);
 		speciesArray.add("others");		
 
@@ -187,7 +163,7 @@ public class SpeciesMixtureIdenfication {
 		rengine.eval("tab = multinomialCI(count,alpha)");        
 		REXP tab  = rengine.eval("tab",true);  
 		double [][] results = tab.asDoubleMatrix();
-		
+
 		for (int i = 0; i < results.length;i++){
 			if (results[i][0] <= 0.00001)
 				continue;
@@ -197,15 +173,15 @@ public class SpeciesMixtureIdenfication {
 
 			//Species 
 			outOS.printf("%s\t%.4f\t%.4f\t%d\t%d\t%d\n", speciesArray.get(i).replaceAll("_"," "), mid, err, (int) countArray.get(i),currentReadAligned, currentReadCount);
-			
+
 		}
 		outOS.flush();
 		//Logging.info(step+"  " + countArray.size());
 	}
 
-	
+
 	public void typing(String bamFile) throws IOException, InterruptedException{
-		
+
 		//Read the bam file		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader;
@@ -219,10 +195,10 @@ public class SpeciesMixtureIdenfication {
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
 			currentReadCount ++;
-			
+
 			//int readLength = sam.getReadLength();
 			//currentBaseCount += readLength;
-			
+
 			if (sam.getReadUnmappedFlag()){				
 				continue;			
 			}
@@ -245,11 +221,32 @@ public class SpeciesMixtureIdenfication {
 			sCount.count ++;						
 
 		}
-		
+
 		//final run
 		simpleAnalysisCurrent();
 
 		samIter.close();
 		samReader.close();
-	}	
+	}
+	
+	
+	
+	
+	
+	static class SpeciesCount implements Comparable<SpeciesCount>{
+		String species;
+		int count = 0;
+
+		SpeciesCount (String s){
+			species = s;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Comparable#compareTo(java.lang.Object)
+		 */
+		@Override
+		public int compareTo(SpeciesCount o) {		
+			return o.count - count;
+		}
+	}
 }

@@ -60,6 +60,7 @@ public class SpeciesMixtureCmd extends CommandLine {
 		addString("output", "output.dat",  "Output file");		
 		addString("bamFile", null,  "The bam file");		
 		addString("indexFile", null,  "indexFile ");
+		addDouble("threshold", 0.02,  "The minimum proportion of a species");
 		addDouble("qual", 0,  "Minimum alignment quality");
 
 		addStdHelp();		
@@ -79,8 +80,9 @@ public class SpeciesMixtureCmd extends CommandLine {
 		String bamFile   = cmdLine.getStringVal("bamFile");			
 		String indexFile = cmdLine.getStringVal("indexFile");		
 		double qual      = cmdLine.getDoubleVal("qual");
+		double threshold      = cmdLine.getDoubleVal("threshold");
 		
-		SpeciesMixtureIdenfication paTyping = new SpeciesMixtureIdenfication(output, qual);		
+		SpeciesMixtureIdenfication paTyping = new SpeciesMixtureIdenfication(output, qual,threshold);		
 		paTyping.preTyping(indexFile);
 		paTyping.typing(bamFile);		
 		paTyping.close();		

@@ -77,7 +77,7 @@ public class MLSTCmd extends CommandLine{
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		
+
 		addString("build", null, "Build the databases to this directory only");		
 		addString("input", null, "Name of the genome file");
 		addString("mlstScheme", null, "Folder contianing the allele files");
@@ -93,32 +93,33 @@ public class MLSTCmd extends CommandLine{
 		String input = cmdLine.getStringVal("input");
 		String buildPath = cmdLine.getStringVal("build");
 		String mlstDir = cmdLine.getStringVal("mlstScheme");
-		int top = cmdLine.getIntVal("top");
-		
-		
+		int top = cmdLine.getIntVal("top");		
+
 		if (buildPath != null){
 			build(buildPath);
 			System.exit(0);
 		}
 
-		
+
 		if (input == null){
 			System.err.println("ERROR: The required param 'input' is not specified.");
+			System.err.println(cmdLine.usageString());
 			System.exit(-1);
 		}
 		if (mlstDir == null){
 			System.err.println("ERROR: The required param 'mlstScheme' is not specified.");
+			System.err.println(cmdLine.usageString());
 			System.exit(-1);
 		}
-		
-		
-		
+
+
+
 		//String blastn = cmdLine.getStringVal("blastn");		
 		ArrayList<Sequence> seqs = FastaReader.readAll(input, Alphabet.DNA());
 		if (top <= 0)
 			System.out.println(MLSTyping.bestMlst(seqs, mlstDir));
 		else{
-			
+
 			MLSTyping t = MLSTyping.topMlst(seqs, mlstDir);
 			if (top > t.getProfiles().size())
 				top = t.getProfiles().size();
@@ -130,13 +131,13 @@ public class MLSTCmd extends CommandLine{
 		}
 
 	}
-	
+
 	public static void build(String base) throws ParserConfigurationException, SAXException, IOException {
 		String SEP = File.separator;
-		
+
 		if (!base.endsWith(SEP))
 			base = base + SEP;
-		
+
 		//Get Document Builder
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
