@@ -253,6 +253,16 @@ public class SequenceOutputStream  extends OutputStream {
 		print('\n');
 	}
 	
+	public void printFormat(String str, int field) throws IOException{
+		if (field > str.length()){
+			print(str);
+			for (int i = str.length();i< field;i++)
+				print(' ');
+		}else{
+			print(str.substring(0,  field));
+		}		
+	}
+	
 	/**
 	 * Write every byte of the string to the stream
 	 * @param str
