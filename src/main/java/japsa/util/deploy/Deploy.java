@@ -107,7 +107,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.6-01a";
+	public static String VERSION = "1.6-01b";
 	public static final String FIELD_SEP = "\t";
 	
 	public static boolean DEBUG = true;
@@ -452,7 +452,8 @@ public class Deploy {
 		else
 			outJsaMain.println();		
 
-		outJsaMain.println(echoStr + "List of tools:");		
+		outJsaMain.println(echoStr);
+		outJsaMain.println(echoStr + " List of tools:");		
 
 		for (Object obj : toolList) {
 
