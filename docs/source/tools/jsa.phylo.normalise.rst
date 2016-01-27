@@ -14,7 +14,7 @@ Please see check the installation_ page for instructions.
 Synopsis
 ~~~~~~~~
 
-*jsa.phylo.normalise*: Scale branches of a tree so that the sum of branch lengths is equal to a value
+*jsa.phylo.normalise*: Scale branches of a phylogeny so that the sum of branch lengths is equal to a value
 
 ~~~~~
 Usage
@@ -30,8 +30,8 @@ Options
                   (REQUIRED)
   --sum=d         Sum of branches after normalising
                   (default='1.0')
-  --scale=d       Scale factor, if set will override the sum parameter
-                  (default='-1.0')
+  --scale=d       Scale factor, if set to a positive number will override the sum parameter
+                  (default='0.0')
   --output=s      Name of the file for output, - for stdout
                   (default='-')
   --help          Display this usage and exit

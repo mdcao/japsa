@@ -87,7 +87,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 
 
 		String tmp = cmdLine.getStringVal("tmp");		
-		double scoreThreshold = cmdLine.getDoubleVal("scoreThreshold");		
+		double scoreThreshold = cmdLine.getDoubleVal("score");		
 		int readPeriod = cmdLine.getIntVal("read");
 		int time = cmdLine.getIntVal("time");
 		int thread = cmdLine.getIntVal("thread");

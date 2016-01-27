@@ -36,6 +36,8 @@ Options
                   (default='DNA')
   --number        Add the order number to the beginning of contig name
                   (default='false')
+  --pad           Pad -- this only applied for number
+                  (default='false')
   --reverse       Reverse sort order
                   (default='false')
   --sortKey=s     Sort key
