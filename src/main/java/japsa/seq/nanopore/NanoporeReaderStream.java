@@ -136,10 +136,17 @@ public class NanoporeReaderStream{
 	}
 
 	public void print(FastqSequence fq) throws IOException{
-		fq.print(sos);
+		if (format.equals("fasta"))
+			fq.writeFasta(sos);
+		else
+			fq.print(sos);
+
 		if (networkOS != null){
 			for (SequenceOutputStream out:networkOS)
-				fq.print(out);
+				if (format.equals("fasta"))
+					fq.writeFasta(out);
+				else
+					fq.print(out);			//fq.print(out);
 		}
 	}
 
