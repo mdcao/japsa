@@ -132,12 +132,20 @@ else
 O_MXMEM=
 endif
 
+
+ifdef SERVER
+O_SERVER=--server=${SERVER}
+else
+O_SERVER=
+endif
+
+
 RELEASE=JapsaRelease
 
 pre-install: jar
-	@@echo "java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) --compiler \"`$(JCC) -version 2>&1`\"" > install.sh && \
+	@@echo "java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) $(O_SERVER) --compiler \"`$(JCC) -version 2>&1`\"" > install.sh && \
 	chmod u+x install.sh && \
-	echo "java -cp $(JAR_FILE);$(LIB_DIR)\guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) --compiler \"`$(JCC) -version 2>&1`\"" > install.bat && \
+	echo "java -cp $(JAR_FILE);$(LIB_DIR)\guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) $(O_SERVER) --compiler \"`$(JCC) -version 2>&1`\"" > install.bat && \
 	echo "Installation scripts created"
 
 install: pre-install
