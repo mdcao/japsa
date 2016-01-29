@@ -34,10 +34,11 @@ algorithms, implementation, documentation and feedback:
 
 ### Other projects based on Japsa
 
-https://github.com/mdcao/npAnalysis
-https://github.com/mdcao/npReader
-https://github.com/mdcao/XMas
+* [npAnalysis](https://github.com/mdcao/npAnalysis)
+* [npReader](https://github.com/mdcao/npReader)
+* [XMas](https://github.com/mdcao/XMas)
 
+and more to come.
 
 ### License
 Japsa is released under the accompanying BSD-like license.
