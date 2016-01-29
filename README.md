@@ -32,6 +32,13 @@ algorithms, implementation, documentation and feedback:
 * Julia Bernal
 * David Powell
 
+### Other projects based on Japsa
+
+https://github.com/mdcao/npAnalysis
+https://github.com/mdcao/npReader
+https://github.com/mdcao/XMas
+
+
 ### License
 Japsa is released under the accompanying BSD-like license.
 
