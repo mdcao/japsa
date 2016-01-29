@@ -19,7 +19,7 @@ Details of installation (including for Windows) and usage of Japsa can be found
 in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/latest/index.html) 
 
 ### Authors and Contributors
-Japsa was mainly developed and curated by Minh Duc Cao (@mdcao). The following 
+Japsa was maintained by Minh Duc Cao (@mdcao). The following 
 people have contributed to the development of Japsa, including ideas, 
 algorithms, implementation, documentation and feedback:
 

@@ -39,6 +39,7 @@ package japsa.util.deploy;
 import japsa.tools.bio.bac.Genomes2ResistanceGeneCmd;
 import japsa.tools.bio.bac.MLSTCmd;
 import japsa.tools.bio.hts.AlignmentParamOptCmd;
+import japsa.tools.bio.hts.AlternativeAllelesCmd;
 import japsa.tools.bio.hts.BreakBamCmd;
 import japsa.tools.bio.hts.CountReadInRegionCmd;
 import japsa.tools.bio.hts.FastQTrimCmd;
@@ -143,8 +144,10 @@ public class Deploy {
 		tools.add(new CountReadInRegionCmd());
 		tools.add(new AlignmentParamOptCmd());
 		tools.add(new HTSErrorAnalysisCmd());
+		tools.add(new AlternativeAllelesCmd());
 		tools.add(new GetN50Cmd());
 		tools.add(new SpeciesMixtureCmd());
+		
 
 		tools.add("Bacterial analysis:");
 		tools.add(new MLSTCmd());
