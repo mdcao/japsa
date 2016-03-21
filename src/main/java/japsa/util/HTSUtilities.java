@@ -260,8 +260,8 @@ public class HTSUtilities {
 		profile.match = 0;
 		profile.mismatch = 0;
 		profile.refBase = 0;
-		profile.readBase = 0;//the number of bases from ref and read		
-
+		profile.readBase = 0;//the number of bases from ref and read
+		
 		for (final CigarElement e : sam.getCigar().getCigarElements()) {
 			final int  length = e.getLength();
 			switch (e.getOperator()) {
