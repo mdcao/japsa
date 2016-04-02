@@ -33,7 +33,13 @@
  ****************************************************************************/
 package japsa.bio.hts.scaffold;
 
+import japsa.seq.JapsaFeature;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,11 +53,105 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	 * @param sequenceFile
 	 * @throws IOException
 	 */
-	public ScaffoldGraphDFS(String sequenceFile) throws IOException {
+	public ScaffoldGraphDFS(String sequenceFile, String resistFile, String isFile, String oriFile) throws IOException, InterruptedException {
 		super(sequenceFile);
-
+		if(resistFile != null){
+			readDb(resistFile, "Resistance genes", .8, .9);
+			annotation = true;
+		}
+		if(isFile != null){
+			readDb(isFile, "Insertion sites", .8, .9);
+			annotation = true;
+		}
+		if(oriFile != null){
+			readDb(oriFile, "Origin of replication", .8, .9);
+			annotation = true;
+		}
+		
+//		for (Contig contig:contigs){
+//			for(JapsaFeature feature:contig.resistanceGenes)
+//				System.out.println(contig.getName() + "\t" + feature.getStrand() + "\t" + feature);
+//		}
+//		for (Contig contig:contigs){
+//			for(JapsaFeature feature:contig.oriRep)
+//				System.out.println(contig.getName() + "\t" + feature.getStrand() + "\t" + feature);
+//		}
+//		for (Contig contig:contigs){
+//			for(JapsaFeature feature:contig.insertSeq)
+//				System.out.println(contig.getName() + "\t" + feature.getStrand() + "\t" + feature);
+//		}
 	}
-	
+	private void readDb(String data, String type, double minCov, double minID) throws IOException, InterruptedException{
+		String blastn = "blastn";
+
+		ProcessBuilder pb = new ProcessBuilder(blastn, 
+			"-subject", 
+			"-",
+			"-query", 
+			data, 
+			"-outfmt", 
+			"7 qseqid qlen qstart qend sseqid slen sstart send length frames pident nident gaps mismatch score bitscore sstrand");
+		/////    0      1     2     3    4     5     6     7     8      9      10     11    12    13       14     15		16
+		
+		//6 qseqid qlen length pident nident gaps mismatch
+		//    0      1    2      3      4      5    6
+		Process process = pb.start();
+		//Pass on the genome to blastn
+		SequenceOutputStream out = new SequenceOutputStream(process.getOutputStream());
+		for (Contig ctg:contigs){
+			Sequence seq=ctg.contigSequence;
+			seq.writeFasta(out);
+		}
+		out.close();
+
+		//Read the output of blastn
+		BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+		String line;
+
+		while ((line = br.readLine()) != null) {
+			if (line.startsWith("#"))
+				continue;
+
+			String [] toks = line.trim().split("\t");
+			int length = Integer.parseInt(toks[8]);
+			int qlen   = Integer.parseInt(toks[1]);
+			double cov = (float)length/qlen;
+			if (minCov > cov){
+				continue;
+			}
+
+			if (Double.parseDouble(toks[10]) < minID * 100){
+				continue;
+			}
+			//pass			
+			
+			Contig ctg = getContig(toks[4]);
+			if(ctg != null){
+				char strand = toks[16].equals("plus")?'+':'-';
+				JapsaFeature feature = new JapsaFeature(Integer.parseInt(toks[6]), Integer.parseInt(toks[7]), type, toks[0], strand, "");
+				feature.addDesc((int)(cov*100) + "% cover, " + toks[10] + "% identity");
+				switch (type.toLowerCase()){
+					case "resistance genes":
+						ctg.resistanceGenes.add(feature);
+						break;
+					case "insertion sites":
+						ctg.insertSeq.add(feature);
+						break;
+					case "origin of replication":
+						ctg.oriRep.add(feature);
+						break;
+					default:
+						System.err.println(type + " has not yet included in our analysis!");
+						break;
+				}
+			}
+			Collections.sort(ctg.resistanceGenes);
+			Collections.sort(ctg.insertSeq);
+			Collections.sort(ctg.oriRep);
+		}
+		br.close();
+		//process.waitFor();//Do i need this???
+	}
 	public ScaffoldGraphDFS(String sequenceFile, String graphFile) throws IOException {
 		super(sequenceFile);
 		//TODO: implement fastg reader for SequenceReader to have pre-assembled bridges
@@ -64,6 +164,12 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	 */
 	@Override
 	public synchronized void connectBridges(){
+//		for(Contig ctg:contigs){
+//			System.out.println(ctg.getName());
+//			for(ContigBridge brg:ctg.bridges)
+//				System.out.println("\t"+brg.hashKey+" : "+brg.getTransVector());
+//		}
+		
 		// Start scaffolding
 		if(verbose) 
 			System.out.println("Starting scaffolding.......");
@@ -147,7 +253,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	private boolean walk2(int i, boolean direction ){	
 		Scaffold scaffold = scaffolds[i];					
 		boolean extended = true;
-		boolean closed = false;
+		boolean closed = scaffold.closeBridge!=null;
 
 		/*****************************************************************/
 		while (extended && (!closed) && scaffold.size() > 0){
@@ -160,7 +266,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			 
 			extended = false; //only continue the while loop if extension is on the move (line 122)
 			int maxLink = ctg.bridges.size(),
-				extendDir = 0,
+				extendDir = 0, //direction to go on the second scaffold: ScaffoldT (realtime mode)
 				curStep = Integer.MAX_VALUE; //distance between singleton1 -> singleton2
 			double	curScore = 0.0; //score between singleton1 -> singleton2
 			ContigBridge stepBridge = null;
@@ -306,7 +412,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 					}else{
 						//check to join 2 scaffolds and stop this round
 						if (scaffolds[curContig.head].size() > 1){
-							if(!joinScaffold(prevContig,confirmedBridge,extendDir)){
+							if(!joinScaffold(prevContig,confirmedBridge,direction,extendDir)){
 								System.out.printf(" Skip to connect contig %d of %d to contig %d of %d\n", ctg.index,i,curContig.index, curContig.head);
 								continue;
 							}			
@@ -356,6 +462,8 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 		}//while
 		return closed;
 	}
+	
+	
 	class LengthIndex implements Comparable<LengthIndex>{
 		int length, index;
 		public LengthIndex(int len, int index){

@@ -857,13 +857,30 @@ public class NanoporeReader// implements Closeable
 		public double [] stdv(){
 			return stdv;
 		}		
-
+		
+		public double [] modelLv(){
+			return modelLevel;
+		}
+		
+		public String [] modelState(){
+			return modelState;
+		}
 	}
 
 	public static class BaseCallAlignment2D{
 		int dim;
 		long [] template, complement;
 		String [] kmer;
+		
+		public String[] getKmer(){
+			return kmer;
+		}
+		public long[] getComplementKmer(){
+			return complement;
+		}
+		public long[] getTemplateKmer(){
+			return template;
+		}
 	}
 
 	public static class BaseCallAlignmentHairpin{

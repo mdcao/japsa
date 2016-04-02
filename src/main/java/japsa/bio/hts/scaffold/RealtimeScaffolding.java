@@ -24,9 +24,9 @@ public class RealtimeScaffolding {
 	int currentReadCount = 0;
 	long currentBaseCount = 0;	
 	
-	public RealtimeScaffolding(String seqFile, String output)throws IOException{
+	public RealtimeScaffolding(String seqFile, String resistFile, String isFile, String oriFile, String output)throws IOException, InterruptedException{
 		scaffolder = new RealtimeScaffolder(this, output);		
-		graph = new ScaffoldGraphDFS(seqFile);
+		graph = new ScaffoldGraphDFS(seqFile,resistFile, isFile, oriFile);
 	}
 	
 	public void scaffolding(String bamFile, int readNumber, int timeNumber, double minCov, int qual) 
@@ -97,8 +97,6 @@ public class RealtimeScaffolding {
 		scaffolder.stopWaiting();
 		thread.join();
 		iter.close();
-
-		//outOS.close();
 		reader.close();		
 
 	}
@@ -142,9 +140,11 @@ public class RealtimeScaffolding {
 				}
 			}
 			try {
-				outOS.print(timeNow + "\t" + step + "\t" + lastReadNumber + "\t" + scaffolding.currentBaseCount + "\t" + scfCount + "\t" + cirCount);
+				outOS.print(timeNow + "\t" + step + "\t" + lastReadNumber + "\t" + scaffolding.currentBaseCount + "\t" + scfCount + "\t" + cirCount + "\t" + scaffolding.graph.getN50());
 				outOS.println();
 				outOS.flush();
+				if(scaffolding.graph.annotation)
+					scaffolding.graph.printSequences();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}			

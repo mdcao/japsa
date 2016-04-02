@@ -39,6 +39,7 @@ import java.util.Date;
 
 import japsa.seq.Alphabet;
 import japsa.seq.FastqReader;
+import japsa.seq.FastaReader;
 import japsa.seq.FastqSequence;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -90,7 +91,8 @@ public class RegulateTimeCmd extends CommandLine {
 
 		SequenceReader reader = SequenceReader.getReader(input);
 		
-		boolean isFastq = (reader instanceof FastqReader);
+		boolean isFastq = (reader instanceof FastqReader),
+				isFasta = (reader instanceof FastaReader);
 		Sequence seq;		
 		
 
@@ -107,6 +109,9 @@ public class RegulateTimeCmd extends CommandLine {
 		while ((seq = reader.nextSequence(Alphabet.DNA()))!= null){			
 			double cTime = 0;
 			String [] toks = seq.getName().split(" ");
+			if(isFasta)			
+				toks = seq.getDesc().split(" ");
+
 			try{
 				for (int i = 0; i < toks.length;i++){
 					if (toks[i].startsWith(sortKeyOptionPrefix)){

@@ -41,6 +41,8 @@ import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Iterator;
 import java.util.ListIterator;
@@ -116,8 +118,8 @@ public final class Scaffold extends LinkedList<Contig>{
 	 * @param bridge
 	 */
 	public void addFront(Contig contig, ContigBridge bridge){
+		assert bridge.firstContig.getIndex() == contig.getIndex(): "Front prob: "+ bridge.hashKey + " not connect " + contig.getIndex() + " and " + this.getFirst().getIndex();
 		this.addFirst(contig);
-		assert bridge.firstContig.getIndex() == contig.getIndex(): "Front: "+ bridge.hashKey + " " + contig.getIndex();
 		bridges.addFirst(bridge);
 		if(ScaffoldGraph.verbose)
 			System.out.printf("...adding contig %d to scaffold %d backward!\n", contig.getIndex(), scaffoldIndex);
@@ -130,8 +132,8 @@ public final class Scaffold extends LinkedList<Contig>{
 	 * @param bridge
 	 */
 	public void addRear(Contig contig, ContigBridge bridge){
+		assert bridge.secondContig.getIndex() == contig.getIndex():"Rear prob: "+ bridge.hashKey + " not connect " + this.getLast().getIndex() + " and " + contig.getIndex();
 		this.addLast(contig);
-		assert bridge.secondContig.getIndex() == contig.getIndex():"Rear: "+ bridge.hashKey + " " + contig.getIndex();
 		bridges.addLast(bridge);
 		if(ScaffoldGraph.verbose)
 			System.out.printf("...adding contig %d to scaffold %d forward!\n", contig.getIndex(), scaffoldIndex);
@@ -178,7 +180,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		return marker;
 
 	}
-		
+	//TODO: reset prevScore or nextScore to 0 according to removed bridges.
 	public void trim(){
 		if(ScaffoldGraph.verbose)
 			System.out.println("Trimming scaffold: " + scaffoldIndex);
@@ -190,7 +192,6 @@ public final class Scaffold extends LinkedList<Contig>{
 			if(ScaffoldGraph.verbose)
 				System.out.println("...removing contig " + rightmost.getIndex());	
 			this.removeLast();
-			//bridges.removeLast();
 			rightmost=this.peekLast();
 
 		}
@@ -205,14 +206,15 @@ public final class Scaffold extends LinkedList<Contig>{
 			else{
 				if(ScaffoldGraph.verbose)
 					System.out.println("...removing bridge " + bridges.peekLast().hashKey);	
-				bridges.removeLast();
+				//bridges.peekLast();
+				bridges.removeLast().resetContigScores();
 			}
 		}
 		if(bridges.size() > 1){
 			if(bridges.get(bridges.size() - 2).isContaining(rightmost)){
 				if(ScaffoldGraph.verbose)
 					System.out.println("...removing bridge " + bridges.peekLast().hashKey);	
-				this.bridges.removeLast();
+				bridges.removeLast().resetContigScores();
 			}
 		}
 		
@@ -222,7 +224,6 @@ public final class Scaffold extends LinkedList<Contig>{
 			if(ScaffoldGraph.verbose)
 				System.out.println("...removing contig " + leftmost.getIndex());			
 			this.removeFirst();
-			//bridges.removeFirst();
 			leftmost=this.peekFirst();
 		}
 		if(this.size() <=1){
@@ -236,14 +237,15 @@ public final class Scaffold extends LinkedList<Contig>{
 			else{
 				if(ScaffoldGraph.verbose)
 					System.out.println("...removing bridge " + bridges.peekFirst().hashKey);	
-				bridges.removeFirst();
+				//bridges.peekFirst();
+				bridges.removeFirst().resetContigScores();
 			}
 		}
 		if(bridges.size() > 1){
 			if(bridges.get(1).isContaining(leftmost)){
 				if(ScaffoldGraph.verbose)
-					System.out.println("...removing bridge " + bridges.peekFirst().hashKey);	
-				this.bridges.removeFirst();
+					System.out.println("...removing bridge " + bridges.peekFirst().hashKey);
+				bridges.removeFirst().resetContigScores();
 			}
 		}
 
@@ -278,15 +280,19 @@ public final class Scaffold extends LinkedList<Contig>{
 	}
 	
 	/**
-	 * FIXME: return the length of this scaffold
-	 * May maintain a length variable, and update it every time the scaffold is bridged
+	 * Return the length of this scaffold
 	 * Check out quast (https://github.com/ablab/quast)
 	 */
 	public int length(){
-		return 0;
+		if(isEmpty())
+			return 0;
+		int len = getLast().rightMost() - getFirst().leftMost();
+		if(circle!=null)
+			len = Math.abs(circle.getMagnitute());
+		return len;
 	}
 
-	public void viewSequence(SequenceOutputStream out) throws IOException{		
+	public void viewSequence(SequenceOutputStream fout, SequenceOutputStream jout) throws IOException{		
 
 
 		System.out.println("========================== START =============================");
@@ -331,10 +337,18 @@ public final class Scaffold extends LinkedList<Contig>{
 		int startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length(); //starting point after the last fillFrom
 		int endLeft   = (rightContig.getRelDir() < 0)?1:rightContig.length();
 		
+		/* uncomment for illumina-based */
+		//int closeDis = 0;
+		
 		if (closeBridge != null){
 			bestCloseConnection = closeBridge.fewestGapConnection();
 			leftContig = closeBridge.firstContig;
-			startLeft = bestCloseConnection.filling(null, null); //adjust the starting point
+			/* uncomment for longread-based */
+			startLeft = bestCloseConnection.filling(null, null); 
+			/* uncomment for illumina-based */
+//			closeDis =closeBridge.getTransVector().distance(closeBridge.firstContig, closeBridge.secondContig);		
+//			if(closeDis > 0)
+//				startLeft = bestCloseConnection.filling(null, null); //adjust the starting point
 
 			anno.addDescription("Circular");
 
@@ -347,14 +361,20 @@ public final class Scaffold extends LinkedList<Contig>{
 		leftContig = ctgIter.next();//The first
 
 		for (ContigBridge bridge:bridges){
-			//System.out.println("------------------------------------ START ------------------------------------");
 			rightContig = ctgIter.next();
-
 			ContigBridge.Connection connection = bridge.fewestGapConnection();
-
-			endLeft = (leftContig.getRelDir()>0)?(connection.firstAlignment.refEnd):
-				(connection.firstAlignment.refStart);
-
+			/* uncomment for longread-based */
+			endLeft = 	(leftContig.getRelDir()>0)?(connection.firstAlignment.refEnd):
+				 		(connection.firstAlignment.refStart);
+			/* uncomment for illumina-based */
+//			int distance = bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig);
+//			if(distance < 0){
+//				endLeft = (leftContig.getRelDir()>0)?(leftContig.length()-Math.abs(distance)):Math.abs(distance);
+//			}else{
+//				endLeft = (leftContig.getRelDir()>0)?(connection.firstAlignment.refEnd):
+//					(connection.firstAlignment.refStart);
+//			}
+			
 			if (startLeft<endLeft){
 				JapsaFeature feature = 
 						new JapsaFeature(seq.length() + 1, seq.length() + endLeft - startLeft + 1,
@@ -363,7 +383,6 @@ public final class Scaffold extends LinkedList<Contig>{
 				anno.add(feature);				
 				seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
 
-				leftContig.portionUsed += (1.0 + endLeft - startLeft + 1) / leftContig.length();
 			}else{
 
 				JapsaFeature feature = 
@@ -373,18 +392,32 @@ public final class Scaffold extends LinkedList<Contig>{
 				anno.add(feature);
 
 				seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
-				leftContig.portionUsed += (1.0 - endLeft + startLeft + 1) / leftContig.length();
 			}			
-			//Fill in the connection
-			startLeft = connection.filling(seq, anno);					
+			/* uncomment for longread-based */
+			startLeft = connection.filling(seq, anno);
+			/* uncomment for illumina-based */
+//			if(distance < 0){
+//				startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length();
+//			}else{
+//				//Fill in the connection
+//				startLeft = connection.filling(seq, anno);	
+//			}
 			leftContig = rightContig;			
 					
 		}//for
 
 		//leftContig = lastContig in the queue
 		if (bestCloseConnection != null){
+			/* uncomment for longread-based */
 			endLeft = (leftContig.getRelDir()>0)?(bestCloseConnection.firstAlignment.refEnd):
-				(bestCloseConnection.firstAlignment.refStart);	
+				(bestCloseConnection.firstAlignment.refStart);
+			/* uncomment for illumina-based */
+//			if(closeDis > 0)
+//				endLeft = (leftContig.getRelDir()>0)?(bestCloseConnection.firstAlignment.refEnd):
+//				(bestCloseConnection.firstAlignment.refStart);	
+//			else{ 
+//				endLeft = (rightContig.getRelDir() < 0)?Math.abs(closeDis):rightContig.length()-Math.abs(closeDis);
+//			}
 		}
 		else
 			endLeft = (rightContig.getRelDir() < 0)?1:rightContig.length();
@@ -396,7 +429,6 @@ public final class Scaffold extends LinkedList<Contig>{
 			feature.addDesc(leftContig.getName() + "+("+startLeft +"," + endLeft+")");
 			anno.add(feature);				
 			seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
-			leftContig.portionUsed += (1.0 + endLeft - startLeft + 1) / leftContig.length();
 		}else{
 
 			JapsaFeature feature = 
@@ -406,15 +438,166 @@ public final class Scaffold extends LinkedList<Contig>{
 			anno.add(feature);
 
 			seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
-			leftContig.portionUsed += (1.0 - endLeft + startLeft + 1) / leftContig.length();
 		}
 		if (bestCloseConnection != null){	
 			System.out.printf("Append bridge %d -- %d\n",closeBridge.firstContig.index,  closeBridge.secondContig.index);
+			/* uncomment for longread-based */
 			bestCloseConnection.filling(seq, anno);	
+			/* uncomment for illumina-based */
+//			if(closeDis >0 )
+//				bestCloseConnection.filling(seq, anno);	
 		}
 
 		System.out.println("============================ END ===========================");
-		//JapsaAnnotation.write(seq.toSequence(), anno, out); //uncomment this line and comment next line for debug
-		seq.writeFasta(out);
+		JapsaAnnotation.write(seq.toSequence(), anno, jout); 
+		seq.writeFasta(fout);
+	}
+	/********************************************************************************************
+	 * ******************************************************************************************
+	 */
+	public synchronized void viewAnnotation(SequenceOutputStream out) throws IOException{		
+
+		SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024,  "Scaffold" + scaffoldIndex);
+		JapsaAnnotation anno = new JapsaAnnotation();
+
+		ContigBridge.Connection bestCloseConnection = null;				
+		Contig leftContig, rightContig;		
+/*
+ * Nanopore reads:
+ * 	====================================                ==========================================
+ *                           |      |                     |       |                |       |
+ *                           |      |                     |       |                |       |
+ *        <fillFrom>         |      |     leftContig      |       |   <fillFrom>   |       |    rightContig
+ * Contigs:   ...		~~~~~*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*~~~	...		~~~*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
+ * 				          startLeft                            endLeft
+ * 
+ *                                that's what happens below!
+ * 
+ */
+		
+		rightContig = getFirst();		
+		
+		//startLeft: the leftPoint of leftContig, endLeft: rightPoint of left Contig
+		int startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length(); //starting point after the last fillFrom
+		int endLeft   = (rightContig.getRelDir() < 0)?1:rightContig.length();
+
+		if (closeBridge != null){
+			bestCloseConnection = closeBridge.fewestGapConnection();
+			leftContig = closeBridge.firstContig;
+			startLeft = bestCloseConnection.filling(null, null); 
+
+			anno.addDescription("Circular");
+
+		}else
+			anno.addDescription("Linear");
+
+		Iterator<Contig> ctgIter = this.iterator();
+		leftContig = ctgIter.next();//The first
+
+		JapsaFeature lastGene=null; 
+		if(leftContig.resistanceGenes.size()>0)
+			lastGene = startLeft<endLeft?leftContig.resistanceGenes.get(0):leftContig.resistanceGenes.get(leftContig.resistanceGenes.size()-1);
+
+		for (ContigBridge bridge:bridges){
+			rightContig = ctgIter.next();
+			ContigBridge.Connection connection = bridge.fewestGapConnection();
+
+			endLeft = 	(leftContig.getRelDir()>0)?(connection.firstAlignment.refEnd):
+				 		(connection.firstAlignment.refStart);
+			
+			/**********************************************************************************************/
+			ArrayList<JapsaFeature> resistLeft = leftContig.getFeatures(leftContig.resistanceGenes, startLeft, endLeft),
+					insertLeft = leftContig.getFeatures(leftContig.insertSeq, startLeft, endLeft),
+					oriLeft = leftContig.getFeatures(leftContig.oriRep, startLeft, endLeft);
+
+			for(JapsaFeature resist:resistLeft){
+				resist.setStart(resist.getStart()+seq.length());
+				resist.setEnd(resist.getEnd()+seq.length());
+				anno.add(resist);
+			}
+			Collections.sort(resistLeft);
+			if(resistLeft.size() > 0){
+				JapsaFeature leftGene = startLeft<endLeft?resistLeft.get(0):resistLeft.get(resistLeft.size()-1),
+							rightGene = startLeft>endLeft?resistLeft.get(0):resistLeft.get(resistLeft.size()-1);
+				//TODO: extract first and last gene here
+				if(lastGene!=null)
+					System.out.println(lastGene.getID() + "...next to..." + leftGene.getID());
+				lastGene = rightGene;
+			}
+			for(JapsaFeature insert:insertLeft){
+				insert.setStart(insert.getStart()+seq.length());
+				insert.setEnd(insert.getEnd()+seq.length());			
+				anno.add(insert);
+			}
+			for(JapsaFeature ori:oriLeft){
+				ori.setStart(ori.getStart()+seq.length());
+				ori.setEnd(ori.getEnd()+seq.length());
+				anno.add(ori);
+			}
+			/**********************************************************************************************/
+
+			if (startLeft<endLeft)			
+				seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
+			else
+				seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
+
+			startLeft = connection.filling(seq, anno);
+			leftContig = rightContig;			
+					
+		}//for
+
+		if (bestCloseConnection != null){
+			endLeft = (leftContig.getRelDir()>0)?(bestCloseConnection.firstAlignment.refEnd):
+				(bestCloseConnection.firstAlignment.refStart);
+
+		}
+		else
+			endLeft = (rightContig.getRelDir() < 0)?1:rightContig.length();
+		
+		/**********************************************************************************************/
+		ArrayList<JapsaFeature> resistLeft = leftContig.getFeatures(leftContig.resistanceGenes, startLeft, endLeft),
+				insertLeft = leftContig.getFeatures(leftContig.insertSeq, startLeft, endLeft),
+				oriLeft = leftContig.getFeatures(leftContig.oriRep, startLeft, endLeft);
+
+		for(JapsaFeature resist:resistLeft){
+			resist.setStart(resist.getStart()+seq.length());
+			resist.setEnd(resist.getEnd()+seq.length());
+			anno.add(resist);
+		}
+		if(resistLeft.size() > 0){
+			JapsaFeature leftGene = startLeft<endLeft?resistLeft.get(0):resistLeft.get(resistLeft.size()-1);
+			if(lastGene!=null)
+				System.out.println(lastGene.getID() + "...next to..." + leftGene.getID());
+		}
+		for(JapsaFeature insert:insertLeft){
+			insert.setStart(insert.getStart()+seq.length());
+			insert.setEnd(insert.getEnd()+seq.length());			
+			anno.add(insert);
+		}
+		for(JapsaFeature ori:oriLeft){
+			ori.setStart(ori.getStart()+seq.length());
+			ori.setEnd(ori.getEnd()+seq.length());
+			anno.add(ori);
+		}
+		/**********************************************************************************************/
+
+		if (startLeft<endLeft)			
+			seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
+
+		else
+			seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
+			
+		if (bestCloseConnection != null)	
+			bestCloseConnection.filling(seq, anno);	
+		
+		anno.setSequence(seq.toSequence());
+		//JapsaAnnotation.write(seq.toSequence(), anno, out); 
+		JapsaAnnotation.write(null, anno, out); 
+		
+//		out.print(">Scaffold "+scaffoldIndex+":"+size()+":"+length()+"\n");
+//		for(JapsaFeature resist:anno.getFeatureList()){
+//			out.print(resist.getID()+"\t");
+//		}
+//		out.print("\n");
 	}
 }

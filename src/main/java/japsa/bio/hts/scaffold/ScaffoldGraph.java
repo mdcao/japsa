@@ -49,23 +49,23 @@ import japsa.util.Logging;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.BitSet;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class ScaffoldGraph{
-	final static int maxRepeatLength=7500; //Koren S et al 2013
+	public static int maxRepeatLength=7500; //for ribosomal repeat cluster in bacteria (Koren S et al 2013), it's 9.1kb for yeast.
 	public static int marginThres = 1000;
 	public static int minContigLength = 300;
-	public static int minSupportReads = 2;
+	public static int minSupportReads = 1;
 	public static boolean verbose = false;
+	public boolean annotation = false;
+	
+	public String prefix = "out";
 	
 	Scaffold [] scaffolds;
-	//int [] head;
 	ArrayList<Contig> contigs;				
-	//int nScaffolds=0;
 	public static double estimatedCov = 0;
-	double estimatedLength = 0;
-	//ArrayList<ContigBridge> bridgeList = new ArrayList<ContigBridge>();
+	private static double estimatedLength = 0;
 	HashMap<String, ContigBridge> bridgeMap= new HashMap<String, ContigBridge>();
 
 
@@ -102,21 +102,51 @@ public class ScaffoldGraph{
 			System.out.println("Cov " + estimatedCov + " Length " + estimatedLength);
 
 		//2. Initialise scaffold graph
-		scaffolds = new Scaffold[contigs.size()];
-		//nScaffolds = contigs.size();
-		//head = new int[contigs.size()];			
+		scaffolds = new Scaffold[contigs.size()];		
 
 		for (int i = 0; i < contigs.size();i++){				
 			scaffolds[i] = new Scaffold(contigs.get(i));
-			//head[i] = i;//pointer contig -> scaffold
 			//point to the head of the scaffold
 			contigs.get(i).head = i;
 		}//for
+		
+		
 	}//constructor
 	
+	public Contig getContig(String name){
+		Contig res = null;
+		for(Contig ctg:contigs)
+			if(ctg.getName().equals(name)){
+				res = ctg;
+				break;
+			}
+		return res;
+	}
 	
-	public int n50(){
-		return 0;
+	
+	public synchronized int getN50(){
+		int [] lengths = new int[scaffolds.length];
+		int count=0;
+		for (int i = 0; i < scaffolds.length;i++){
+			if(scaffolds[i].isEmpty()) continue;
+			int len = scaffolds[i].length();
+			if (contigs.get(i).head == i)
+			{
+				lengths[count] = len;
+				count++;
+			}
+		}
+			
+		Arrays.sort(lengths);
+
+		int index = lengths.length;
+		double contains = 0;
+		while (contains < estimatedLength/2){
+			index --;
+			contains += lengths[index];
+		}
+
+		return lengths[index];	
 	}
 
 
@@ -130,7 +160,7 @@ public class ScaffoldGraph{
 	 * @param qual
 	 * @throws IOException
 	 */
-	public void makeConnections(String bamFile, double minCov, int qual, SequenceOutputStream connectStr, SequenceOutputStream statStr) throws IOException{
+	public void makeConnections(String bamFile, double minCov, int qual) throws IOException{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		
 		SamReader reader;
@@ -143,11 +173,8 @@ public class ScaffoldGraph{
 
 		String readID = "";
 		ReadFilling readFilling = null;
-		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
-		BitSet bitSet =null;
-		int readScore = 0, readLength = 0;
-		if(statStr != null)
-			statStr.print("#readID\tlength\tcovered\tscore\n");
+		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
+
 		while (iter.hasNext()) {
 			SAMRecord rec = iter.next();
 			if (rec.getReadUnmappedFlag())
@@ -157,16 +184,7 @@ public class ScaffoldGraph{
 
 			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
 
-			//////////////////////////////////////////////////////////////////
-			// Just to save this
-			if (connectStr != null && readID.equals(myRec.readID)) {								
-				for (AlignmentRecord s : samList) {
-					connectStr.print(myRec.contig.index + " " + s.contig.index + " " + readID + " " + myRec.useful + " " + s.useful + " " + myRec.pos() + " " + s.pos());
-					connectStr.println();
-					connectStr.print(s.contig.index + " " + myRec.contig.index + " " + readID + " " + s.useful + " " + myRec.useful + " " + s.pos() + " " + myRec.pos());
-					connectStr.println();
-				}
-			}
+
 			//////////////////////////////////////////////////////////////////
 			// make bridge of contigs that align to the same (Nanopore) read. 
 			// Note that SAM file MUST be sorted based on readID (samtools sort -n)
@@ -183,23 +201,11 @@ public class ScaffoldGraph{
 					}
 				}
 			} else {
-				//samList.clear();			
-				if(statStr != null && bitSet !=null)
-					statStr.print(readID + "\t" + readLength + "\t" + bitSet.cardinality() + "\t" + readScore + "\n");
-				bitSet = new BitSet(myRec.readLength);
-				readScore = 0;
-				readLength = 0;
 				
 				samList = new ArrayList<AlignmentRecord>();
 				readID = myRec.readID;	
 				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
-			}
-			bitSet.set(myRec.readAlignmentStart(), myRec.readAlignmentEnd());
-			//statStr.print(readID + "\t" + myRec.readAlignmentStart() + "->" + myRec.readAlignmentEnd() + ": " + myRec.refStart + "->" + myRec.refEnd + "\n");
-
-			readScore += myRec.score;
-			readLength = myRec.readLength;
-				
+			}			
 			samList.add(myRec);
 
 		}// while
@@ -317,10 +323,7 @@ public class ScaffoldGraph{
 	protected int extendDirection(Contig contig, ContigBridge bridge){
 		Contig contigF = bridge.secondContig;
 		ScaffoldVector trans = bridge.getTransVector(); //contigF -> contig
-//		if(contig.getIndex() == bridge.secondContig.getIndex()){
-//			contigF = bridge.firstContig;
-//			trans = ScaffoldVector.reverse(trans);
-//		}
+		int pointer = Integer.signum(trans.magnitude * trans.direction); //pointer < 0 => tail of contigF on bridge
 		assert scaffolds[contigF.head].size() > 1 : contigF.head;
 		
 		int headF = contigF.head;
@@ -355,13 +358,19 @@ public class ScaffoldGraph{
 				System.out.println("...headT->contig, contigF and prevMarker: " + contig.getVector() + headT2contigF + headT2Prev);
 			}
 			if ((direction > 0?rEndPrev > rEndF: lEndPrev < lEndF)){
-				if((rev.direction>=0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
+				if((pointer<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
 					if(verbose)
 						System.out.printf("=> go from %d to %d to %d \n", contig.getIndex(), contigF.getIndex(), prevMarker.getIndex());
 					return -1;
 				}
-				else 
+				else{
+					if(verbose)
+						System.out.printf("Bridge score not strong enough: %.2f < %.2f (%.2f)\n", 
+										bridge.getScore(), pointer<0?contigF.nextScore:contigF.prevScore,
+												pointer<0?contigF.prevScore:contigF.nextScore);
+				
 					return 0;
+				}
 			}
 		}
 		if(nextMarker != null){
@@ -377,19 +386,29 @@ public class ScaffoldGraph{
 			}
 			
 			if ((direction > 0? rEndNext > rEndF : lEndNext < lEndF)){
-				if((rev.direction<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
+				//if((rev.direction<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
+				if((pointer<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){	
 					if(verbose)
 						System.out.printf("=> go from %d to %d to %d \n", contig.getIndex(), contigF.getIndex(), nextMarker.getIndex());
 					return 1;
 				}
-				else 
+				else{
+					if(verbose)
+						System.out.printf("Bridge score not strong enough: %.2f < %.2f (%.2f)\n", 
+										bridge.getScore(), pointer<0?contigF.nextScore:contigF.prevScore,
+												pointer<0?contigF.prevScore:contigF.nextScore);
 					return 0;
+					
+				}
+			}else{
+				if(verbose)
+					System.out.printf("Direction conflict: %d, %d %d or %d %d \n", direction, rEndNext, rEndF, lEndNext, lEndF);
 			}
 		}
 		return 0;
 	}
 	/*********************************************************************************/
-	public synchronized boolean joinScaffold(Contig contig, ContigBridge bridge, int extendDir){		
+	public synchronized boolean joinScaffold(Contig contig, ContigBridge bridge, boolean firstDir, int secondDir){		
 		if(verbose) {
 			System.out.println("PROCEED TO CONNECT " + bridge.hashKey + " with score " + bridge.getScore() + 
 					", size " + bridge.getConnections().size() + 
@@ -401,10 +420,6 @@ public class ScaffoldGraph{
 		
 		Contig contigF = bridge.secondContig, contigT = contig;
 		ScaffoldVector trans = bridge.getTransVector();
-//		if(contig.getIndex() == bridge.secondContig.getIndex()){
-//			contigF = bridge.firstContig;
-//			trans = ScaffoldVector.reverse(trans);
-//		}
 					
 		int headF = contigF.head,
 			headT = contigT.head;
@@ -428,12 +443,13 @@ public class ScaffoldGraph{
 			count = index;
 
 		ScaffoldVector rev = ScaffoldVector.reverse(contigF.getVector()); //rev = contigF->headF	
-		//int extendDir = extendDirection(contigT, bridge);
+
 		int addScf=-1; 
 
-		if(extendDir == -1){
+		if(secondDir == -1){
 			if(headF==headT){
-				if(posT!=1)
+				//if(posT!=1)
+				if(firstDir)	
 					return false;
 				else{
 					Contig nextMarker = scaffoldF.nearestMarker(contigF, true);
@@ -465,32 +481,35 @@ public class ScaffoldGraph{
 					ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
 	
 					ctg.head = headT;
-					if (posT == 1){ 
+					//if (posT == 1){
+					if(!firstDir){
 						scaffoldT.addFront(ctg,brg);
 					}else{
 						scaffoldT.addRear(ctg,getReversedBridge(brg));
 					}	
-					if(count==0) break;
+					if(count<1) break;
 					ctg = scaffoldF.remove(--count);
 					brg = scaffoldF.bridges.remove(count);
 					
 				}
 				if(scaffoldF.closeBridge!=null && !scaffoldF.isEmpty()){
+					count = scaffoldF.size()-1;
 					ctg = scaffoldF.removeLast();
 					brg = scaffoldF.closeBridge;
-					count = scaffoldF.size()-1;
+					
 					while(true){
 						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
 						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
 						ctg.composite(ScaffoldVector.reverse(scaffoldF.circle));
 						ctg.head = headT;
-						if (posT == 1){ 
+						//if (posT == 1){ 
+						if(!firstDir){
 							scaffoldT.addFront(ctg,brg);
 						}else{
 							scaffoldT.addRear(ctg,getReversedBridge(brg));
 						}	
-						if(count==0) break;
+						if(count<1) break;
 						brg = scaffoldF.bridges.remove(count--);
 						ctg = scaffoldF.remove(count);		
 						
@@ -508,9 +527,10 @@ public class ScaffoldGraph{
 			}
 			scaffoldF = new Scaffold(contigs.get(headF));
 		}
-		else if(extendDir == 1){
+		else if(secondDir == 1){
 			if(headF==headT){
-					if(posT!=-1)
+					//if(posT!=-1)
+					if(!firstDir)
 						return false;
 					else{
 						Contig prevMarker = scaffoldF.nearestMarker(contigF, false);
@@ -542,7 +562,8 @@ public class ScaffoldGraph{
 					ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
 	
 					ctg.head = headT;
-					if (posT == 1){ 
+					//if (posT == 1){ 
+					if(!firstDir){
 						scaffoldT.addFront(ctg,getReversedBridge(brg));
 					}else{
 						scaffoldT.addRear(ctg,brg);
@@ -560,8 +581,9 @@ public class ScaffoldGraph{
 						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
 						ctg.composite(scaffoldF.circle);
 						ctg.head = headT;
-						if (posT == 1){ 
-							scaffoldT.addFront(ctg,getReversedBridge(brg));
+						//if (posT == 1){ 
+						if(!firstDir){
+						scaffoldT.addFront(ctg,getReversedBridge(brg));
 						}else{
 							scaffoldT.addRear(ctg,brg);
 						}	
@@ -577,7 +599,7 @@ public class ScaffoldGraph{
 					addScf=scaffoldF.getLast().getIndex();
 					changeHead(scaffoldF, scaffoldF.getLast());
 				}
-				//scaffoldF = new Scaffold(contigs.get(headF)); here?
+				
 			}
 			scaffoldF = new Scaffold(contigs.get(headF));
 		}	
@@ -642,10 +664,12 @@ public class ScaffoldGraph{
 		}
 		newScf.setHead(newHead.getIndex());
 		scaffolds[newHead.getIndex()] = newScf;
-		//scaffolds[scfIndex] = new Scaffold(contigs.get(scfIndex));
+		
 	}
-	public synchronized void printSequences(SequenceOutputStream out) throws IOException{
-		//System.out.println(nScaffolds);
+	public synchronized void printSequences() throws IOException{
+		SequenceOutputStream 	fout = SequenceOutputStream.makeOutputStream(prefix+".fin.fasta"),
+								jout = SequenceOutputStream.makeOutputStream(prefix+".fin.japsa"),
+								aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
 		for (int i = 0; i < scaffolds.length;i++){
 			if(scaffolds[i].isEmpty()) continue;
 			int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
@@ -658,15 +682,16 @@ public class ScaffoldGraph{
 			{
 				if(verbose) 
 					System.out.println("Scaffold " + i + " length " + len);
-				scaffolds[i].viewSequence(out);
-
+				
+				if(annotation)
+					scaffolds[i].viewAnnotation(aout);
+				else
+					scaffolds[i].viewSequence(fout, jout);
 			}
 		}
-
-		for (Contig contig:contigs){
-				contig.display();
-		}
-				
+		fout.close();
+		jout.close();
+		aout.close();
 	}	
 	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a milestone.
 	public static boolean isRepeat(Contig ctg){
@@ -678,7 +703,7 @@ public class ScaffoldGraph{
 				return true;
 		}
 		
-		if (ctg.length() < minContigLength) return true;
+		if (ctg.length() < minContigLength || ctg.coverage < .3 * estimatedCov) return true;
 		else if (ctg.length() > maxRepeatLength || ctg.coverage < 1.3 * estimatedCov) 
 			return false; 
 		else if (ctg.coverage > 1.5 * estimatedCov)
@@ -693,9 +718,9 @@ public class ScaffoldGraph{
 						return true;
 				}
 			}
-			//return false;
+			
 		}
-		if(ctg.coverage < .5 * estimatedCov || ctg.length() < 2*minContigLength) // second filter: maybe not repeat but insignificant contig 
+		if(ctg.length() < 2*minContigLength) // further filter: maybe not repeat but insignificant contig 
 			return true;
 		else 
 			return false;

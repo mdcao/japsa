@@ -34,9 +34,12 @@
 
 package japsa.seq.nanopore;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -507,7 +510,32 @@ public class NanoporeReaderStream{
 					Logging.info("Ave Comp qual " + meanQual + " " + qualComp.size() + " std = " + stdQual);
 				}	
 			}
+			printToFile("stats");
 		}
 	}
-
+	
+	public void printToFile(String prefix) throws IOException{
+		if(prefix.length() < 1)
+			prefix = "out";
+		BufferedWriter lenFile = new BufferedWriter(new PrintWriter(prefix + ".len")),
+				qualTempFile = new BufferedWriter(new PrintWriter(prefix + ".temp.qual")),
+				qualCompFile = new BufferedWriter(new PrintWriter(prefix + ".comp.qual")),
+				qual2DFile = new BufferedWriter(new PrintWriter(prefix + ".2d.qual"));
+		for(int i=0; i < lengths.size(); i++){
+			lenFile.write(lengths.get(i) + "\n");
+		}
+		for(int i=0; i < qualTemp.size(); i++){
+			qualTempFile.write(new DecimalFormat("#0.000").format(qualTemp.get(i)) + "\n");
+		}
+		for(int i=0; i < qualComp.size(); i++){
+			qualCompFile.write(new DecimalFormat("#0.000").format(qualComp.get(i)) + "\n");
+		}
+		for(int i=0; i < qual2D.size(); i++){
+			qual2DFile.write(new DecimalFormat("#0.000").format(qual2D.get(i)) + "\n");
+		}
+		lenFile.close();
+		qualTempFile.close();
+		qualCompFile.close();
+		qual2DFile.close();
+	}
 }

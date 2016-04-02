@@ -38,19 +38,22 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import japsa.seq.Sequence;
+import japsa.seq.JapsaFeature;
 
 public class Contig{
 	int index;
 	ScaffoldVector myVector;//relative position to the head contig of my scaffold	
 	Sequence contigSequence;//the sequence of the contig	
 	double   coverage = 1.0;
-	double   portionUsed = 0.0;
-	//int used = 0;
 	int head = -1; //point to the index of its head contig in the scaffold 
 	double prevScore=0, nextScore=0;
 	boolean isCircular = false;
 	//for depth first search
 	ArrayList<ContigBridge> bridges;	
+	//for annotation
+	ArrayList<JapsaFeature> oriRep,				//origin of replication: indicator of plasmid for bacteria
+							insertSeq,			// IS
+							resistanceGenes;	//list of antibiotic resistance genes found in this contig
 		
 	public Contig(int index, Sequence seq){
 		this.index = index;
@@ -58,19 +61,71 @@ public class Contig{
 		myVector = new ScaffoldVector(0,1);
 		bridges = new ArrayList<ContigBridge>();
 		usedRanges = new ArrayList<Range>();
+		
+		oriRep = new ArrayList<JapsaFeature>();
+		insertSeq = new ArrayList<JapsaFeature>();
+		resistanceGenes = new ArrayList<JapsaFeature>();
 	}
 
 	public Contig clone(){
 		Contig ctg = new Contig(this.index, this.contigSequence);
-		//ctg.used = used++; //TODO: replace by static array usage[nContigs] in ScaffoldGraphDFS??
 		ctg.coverage = coverage;
-		ctg.portionUsed = portionUsed;
 		ctg.bridges = this.bridges;
 		ctg.head = this.head; //update later
 		ctg.isCircular = this.isCircular;
 		ctg.usedRanges = this.usedRanges;
+
+		ctg.oriRep = this.oriRep;
+		ctg.insertSeq = this.insertSeq;
+		ctg.resistanceGenes = this.resistanceGenes;
 		return ctg;
 	}
+	// Get features in an interval of contig
+	public ArrayList<JapsaFeature> getFeatures(ArrayList<JapsaFeature> features, int start, int end){
+		
+		ArrayList<JapsaFeature> remainFeatures = new ArrayList<JapsaFeature>();
+		boolean isReverse= (start>end)?true:false;
+		for(JapsaFeature feature:features){
+			JapsaFeature cutFeature=feature.cloneFeature();
+			int fstart = feature.getStart(),
+				fend = feature.getEnd();
+			
+			//find overlap
+			if(Integer.signum(fstart-start)*Integer.signum(fstart-end) <= 0){
+				if(Integer.signum(fend-start)*Integer.signum(fend-end) > 0){
+					fend = (Math.abs(fend-start) < Math.abs(fend-end))?start:end;
+				}
+			}else{
+				fstart = (Math.abs(fstart-start) < Math.abs(fstart-end))?start:end;
+				if(Integer.signum(start-fend)*Integer.signum(start-fstart) <= 0 && Integer.signum(end-fend)*Integer.signum(end-fstart) <= 0)
+					fend = (Math.abs(fend-start) < Math.abs(fend-end))?start:end;
+				else if(Integer.signum(start-fend)*Integer.signum(start-fstart) > 0 && Integer.signum(end-fend)*Integer.signum(end-fstart) > 0)
+					continue;
+			}
+			//if the contig is reversed complement
+			if(isReverse){
+				int ostart = fstart;
+				fstart= this.length() - fend;
+				fend = this.length() - ostart;
+				if(cutFeature.getStrand() == '+')
+					cutFeature.setStrand('-');
+				else
+					cutFeature.setStrand('+');
+			}
+				
+			cutFeature.setStart(fstart);
+			cutFeature.setEnd(fend);
+			double cutRate=(float) Math.abs(cutFeature.getLength())/Math.abs(feature.getLength());
+			if(cutRate > .9){
+				cutFeature.setScore(feature.getScore()*cutRate);
+				remainFeatures.add(cutFeature);
+				
+			}
+		}
+		
+		return remainFeatures;
+	}
+
 	
 	public String getName(){
 		return contigSequence.getName();

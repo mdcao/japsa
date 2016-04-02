@@ -39,7 +39,6 @@ package japsa.bio.hts.scaffold;
 import htsjdk.samtools.CigarElement;
 import japsa.seq.Alphabet;
 import japsa.seq.JapsaAnnotation;
-import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
@@ -109,7 +108,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			connections.add(newConnect);			
 			transVector.magnitude = (transVector.magnitude * connections.size() + trans.magnitude) / (connections.size() + 1);
 
+			//the metric for bridge score is important!
 			score += sc;
+			//score = score>sc?score:sc;
 		}
 		return score;
 	}
@@ -124,21 +125,98 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	public void setScore(double s) {
 		score = s;
 	}
+	
+	//TODO: magnitude usually don't help for bridge with repeat.
+	// E.g. <--===---------------> prev not next for the both
 	public void setContigScores(){
+		int 	firstPointer = 0,
+				secondPointer = 0;
+		
 		if(transVector.magnitude < 0){
-			firstContig.prevScore = score;
+			firstPointer=-1;
 			if(transVector.direction < 0)
-				secondContig.prevScore = score;
+				secondPointer=-1;
 			else
-				secondContig.nextScore = score;
+				secondPointer=1;
+		}
+		// special case: magnitude < firstContig.length() && transVector.direction < 0;
+		else if(transVector.magnitude < firstContig.length() && transVector.direction < 0){
+			firstPointer = secondPointer = -1;
 		}
 		else{
-			firstContig.nextScore = score;
+			
+			firstPointer=1;
 			if(transVector.direction > 0)
-				secondContig.prevScore = score;
+				secondPointer=-1;
 			else
-				secondContig.nextScore = score;
+				secondPointer=1;
 		}
+		//reset based on the pointers
+		if(firstPointer > 0){
+			firstContig.nextScore = score;
+			if(ScaffoldGraph.verbose)
+				System.out.printf("...set nextScore of %s to %.2f\n", firstContig.getName(), score);
+		}else{
+			firstContig.prevScore = score;
+			if(ScaffoldGraph.verbose)
+				System.out.printf("...set prevScore of %s to %.2f\n", firstContig.getName(), score);	
+		}
+		
+		if(secondPointer > 0){
+			secondContig.nextScore = score;
+			if(ScaffoldGraph.verbose)
+				System.out.printf("...set nextScore of %s to %.2f\n", secondContig.getName(), score);
+		}else{
+			secondContig.prevScore = score;
+			if(ScaffoldGraph.verbose)
+				System.out.printf("...set prevScore of %s to %.2f\n", secondContig.getName(), score);	
+		}
+		
+	}
+	// when contig bridge is removed, reset the scores
+	public void resetContigScores(){
+		int 	firstPointer = 0,
+				secondPointer = 0;
+		System.out.print("Trans vector " + transVector + " :" );
+		if(transVector.magnitude < 0){
+			firstPointer=-1;
+			if(transVector.direction < 0)
+				secondPointer=-1;
+			else
+				secondPointer=1;
+		}
+		// special case: magnitude < firstContig.length() && transVector.direction < 0;
+		else if(transVector.magnitude < firstContig.length() && transVector.direction < 0){
+			firstPointer = secondPointer = -1;
+		}
+		else{
+			firstPointer=1;
+			if(transVector.direction > 0)
+				secondPointer=-1;
+			else
+				secondPointer=1;
+		}
+		//reset based on the pointers
+		if(firstPointer > 0){
+			firstContig.nextScore = 0;
+			if(ScaffoldGraph.verbose)
+				System.out.printf("...reset nextScore of %s to 0, ", firstContig.getName());
+		}else{
+			firstContig.prevScore = 0;
+			if(ScaffoldGraph.verbose)
+				System.out.printf("...reset prevScore of %s to 0, ", firstContig.getName());	
+		}
+		
+		if(secondPointer > 0){
+			secondContig.nextScore = 0;
+			if(ScaffoldGraph.verbose)
+				System.out.printf("reset nextScore of %s to 0\n", secondContig.getName());
+		}else{
+			secondContig.prevScore = 0;
+			if(ScaffoldGraph.verbose)
+				System.out.printf("reset prevScore of %s to 0\n", secondContig.getName());	
+		}
+			
 	}
 	/**
 	 * @return the transVector
@@ -858,27 +936,24 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				if (contig.getIndex() == fromContig.getIndex())
 					continue;
 
-				contig.portionUsed += (1.0 + record.refEnd - record.refStart) / contig.length();
-				//contig.addRange(record.refStart,record.refEnd,record.score);
 				if (posReadEnd >= posReadFinal -1)
 					continue;//I can break here, but want to get portionUsed of other contigs
 
 
 				if (record.readAlignmentEnd() < posReadEnd)
 					continue;				
-
-				//assert:  posReadEnd < readEnd				
+			
 				if (record.readAlignmentStart() > posReadEnd){
 					//Really need to fill in using read information
 					int newPosReadEnd = Math.min(posReadFinal - 1, record.readAlignmentStart() -1);
 					if (newPosReadEnd > posReadEnd){
-						JapsaFeature feature = 
-								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + newPosReadEnd - posReadEnd,
-										"CONTIG",readFilling.readSequence.getName(),'+',"");
-
-						//P=0 get the orignial read name and position
-						feature.addDesc(readFilling.readSequence.getName() + "+("+(posReadEnd + 1) +"," + newPosReadEnd+")");
-						anno.add(feature);
+//						JapsaFeature feature = 
+//								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + newPosReadEnd - posReadEnd,
+//										"CONTIG",readFilling.readSequence.getName(),'+',"");
+//
+//						//P=0 get the orignial read name and position
+//						feature.addDesc(readFilling.readSequence.getName() + "+("+(posReadEnd + 1) +"," + newPosReadEnd+")");
+//						anno.add(feature);
 						seqBuilder.append(readFilling.readSequence.subSequence(posReadEnd, newPosReadEnd));
 						posReadEnd = newPosReadEnd;
 					}
@@ -899,11 +974,11 @@ public class ContigBridge implements Comparable<ContigBridge>{
 							posReadEnd = record.readAlignmentEnd();
 						}
 						
-						JapsaFeature feature = 
-								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + refRight - refLeft +1,
-										"CONTIG",contig.getName(),'+',"");
-						feature.addDesc(contig.getName() + "+("+(refLeft ) +"," + refRight+")");
-						anno.add(feature);
+//						JapsaFeature feature = 
+//								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + refRight - refLeft +1,
+//										"CONTIG",contig.getName(),'+',"");
+//						feature.addDesc(contig.getName() + "+("+(refLeft ) +"," + refRight+")");
+//						anno.add(feature);
 						
 						seqBuilder.append(contig.contigSequence.subSequence(refLeft - 1, refRight));
 
@@ -918,11 +993,11 @@ public class ContigBridge implements Comparable<ContigBridge>{
 							posReadEnd = record.readAlignmentEnd();
 						}
 						
-						JapsaFeature feature = 
-								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() - refRight + refLeft +1,
-										"CONTIG",contig.getName(),'+',"");
-						feature.addDesc(contig.getName() + "-("+(refRight ) +"," + refLeft+")");
-						anno.add(feature);
+//						JapsaFeature feature = 
+//								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() - refRight + refLeft +1,
+//										"CONTIG",contig.getName(),'+',"");
+//						feature.addDesc(contig.getName() + "-("+(refRight ) +"," + refLeft+")");
+//						anno.add(feature);
 						
 						seqBuilder.append(Alphabet.DNA.complement(contig.contigSequence.subSequence(refRight - 1, refLeft)));
 
@@ -942,11 +1017,11 @@ public class ContigBridge implements Comparable<ContigBridge>{
 							posReadEnd = record.readAlignmentEnd();
 						}
 						
-						JapsaFeature feature = 
-								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + refRight - refLeft +1,
-										"CONTIG",contig.getName(),'+',"");
-						feature.addDesc(contig.getName() + "+("+(refLeft ) +"," + refRight+")");
-						anno.add(feature);
+//						JapsaFeature feature = 
+//								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() + refRight - refLeft +1,
+//										"CONTIG",contig.getName(),'+',"");
+//						feature.addDesc(contig.getName() + "+("+(refLeft ) +"," + refRight+")");
+//						anno.add(feature);
 						
 						seqBuilder.append(contig.contigSequence.subSequence(refLeft - 1, refRight));
 	
@@ -961,11 +1036,11 @@ public class ContigBridge implements Comparable<ContigBridge>{
 							posReadEnd = record.readAlignmentEnd();
 						}
 						
-						JapsaFeature feature = 
-								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() - refRight + refLeft +1,
-										"CONTIG",contig.getName(),'+',"");
-						feature.addDesc(contig.getName() + "-("+(refRight ) +"," + refLeft+")");
-						anno.add(feature);
+//						JapsaFeature feature = 
+//								new JapsaFeature(seqBuilder.length() + 1, seqBuilder.length() - refRight + refLeft +1,
+//										"CONTIG",contig.getName(),'+',"");
+//						feature.addDesc(contig.getName() + "-("+(refRight ) +"," + refLeft+")");
+//						anno.add(feature);
 						
 						seqBuilder.append(Alphabet.DNA.complement(contig.contigSequence.subSequence(refRight - 1, refLeft)));
 				
