@@ -140,11 +140,11 @@ public class RealtimeScaffolding {
 				}
 			}
 			try {
+				scaffolding.graph.printSequences();
+
 				outOS.print(timeNow + "\t" + step + "\t" + lastReadNumber + "\t" + scaffolding.currentBaseCount + "\t" + scfCount + "\t" + cirCount + "\t" + scaffolding.graph.getN50());
 				outOS.println();
 				outOS.flush();
-				if(scaffolding.graph.annotation)
-					scaffolding.graph.printSequences();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}			

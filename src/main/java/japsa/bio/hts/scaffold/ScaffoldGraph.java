@@ -127,12 +127,18 @@ public class ScaffoldGraph{
 	public synchronized int getN50(){
 		int [] lengths = new int[scaffolds.length];
 		int count=0;
+		double sum = 0;
 		for (int i = 0; i < scaffolds.length;i++){
 			if(scaffolds[i].isEmpty()) continue;
 			int len = scaffolds[i].length();
-			if (contigs.get(i).head == i)
+			if ((contigs.get(i).head == i 
+					&& !isRepeat(contigs.get(i))
+					&& len > maxRepeatLength
+					)
+					|| scaffolds[i].closeBridge != null)
 			{
 				lengths[count] = len;
+				sum+=len;
 				count++;
 			}
 		}
@@ -141,7 +147,7 @@ public class ScaffoldGraph{
 
 		int index = lengths.length;
 		double contains = 0;
-		while (contains < estimatedLength/2){
+		while (contains < sum/2){
 			index --;
 			contains += lengths[index];
 		}
@@ -250,8 +256,12 @@ public class ScaffoldGraph{
 			if(verbose) 
 				System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d)\n"
 							, a.contig.getName(), a.readID, a.readLength, gP, alignD);
-			a.contig.isCircular = true;							
+			a.contig.cirProb ++;							
 		}		
+		else{
+			a.contig.cirProb--;
+			b.contig.cirProb--;
+		}
 		// overlap length on aligned read (<0 if not overlap)
 		int overlap = Math.min(	a.readAlignmentEnd() - b.readAlignmentStart(), b.readAlignmentEnd() - a.readAlignmentStart());				
 
@@ -265,21 +275,25 @@ public class ScaffoldGraph{
 
 		ScaffoldVector trans = new ScaffoldVector(gP, alignD);		
 
-		int bridgeID = 0;
+		int count = 0;
 		ContigBridge bridge, bridge_rev;
 		while (true){
-			String 	hash = ContigBridge.makeHash(a.contig.index, b.contig.index, bridgeID),
-					hash_rev = ContigBridge.makeHash(b.contig.index, a.contig.index, bridgeID);
-			if(a.contig.getIndex()==b.contig.getIndex())
-				hash_rev = ContigBridge.makeHash(b.contig.index, a.contig.index, ++bridgeID);
+			int brgID = count, revID = count;
+			if(a.contig.getIndex()==b.contig.getIndex()){
+				brgID = 2*count;
+				revID = brgID+1;
+			}
+			String 	hash = ContigBridge.makeHash(a.contig.index, b.contig.index, brgID),
+					hash_rev = ContigBridge.makeHash(b.contig.index, a.contig.index, revID);
+
 			bridge = bridgeMap.get(hash);
 			bridge_rev = bridgeMap.get(hash_rev);
 			if (bridge == null){
 				assert bridge_rev==null:hash_rev + " not null!";
-				bridge = new ContigBridge(a.contig, b.contig, bridgeID);
+				bridge = new ContigBridge(a.contig, b.contig, brgID);
+				bridge_rev = new ContigBridge(b.contig, a.contig, revID);
+				
 				bridge.addConnection(readSequence, a, b, trans, score);
-
-				bridge_rev = new ContigBridge(b.contig, a.contig, bridgeID);
 				bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
 
 				a.contig.bridges.add(bridge);
@@ -289,27 +303,28 @@ public class ScaffoldGraph{
 				bridgeMap.put(hash_rev, bridge_rev);
 	
 				break;
-			}else if ((a.contig.getIndex() != b.contig.getIndex()) && bridge.consistentWith(trans)){
+			}
+			if ((a.contig.getIndex() != b.contig.getIndex()) && bridge.consistentWith(trans)){
 				assert bridge_rev!=null:hash_rev + "is null!";
 				bridge.addConnection(readSequence, a, b, trans, score);
 				bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
 				break;
-			}else if(a.contig.getIndex() == b.contig.getIndex()){
+			}
+			if(a.contig.getIndex() == b.contig.getIndex()){
 				assert bridge_rev!=null:hash_rev + "is null";
 				if(bridge.consistentWith(trans)){
 					bridge.addConnection(readSequence, a, b, trans, score);
 					bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
+					break;
 				}
 				if(bridge.consistentWith(ScaffoldVector.reverse(trans))){
 					bridge_rev.addConnection(readSequence, b, a, trans, score);
 					bridge.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
-				}
-				break;	
-			}else{
-				bridgeID ++;
-				//continue;
+					break;
+				}		
 			}
-		}
+			count ++;
+		}//while
 
 	}
 	/**********************************************************************************************/
@@ -498,10 +513,11 @@ public class ScaffoldGraph{
 					brg = scaffoldF.closeBridge;
 					
 					while(true){
+						ctg.myVector = ScaffoldVector.composition(ScaffoldVector.reverse(scaffoldF.circle),ctg.myVector);
 						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
 						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
-						ctg.composite(ScaffoldVector.reverse(scaffoldF.circle));
+						//ctg.composite(ScaffoldVector.reverse(scaffoldF.circle)); //composite co tinh giao hoan k ma de day???
 						ctg.head = headT;
 						//if (posT == 1){ 
 						if(!firstDir){
@@ -576,10 +592,11 @@ public class ScaffoldGraph{
 					ctg = scaffoldF.removeFirst();
 					brg = scaffoldF.closeBridge;
 					while(true){
+						ctg.myVector = ScaffoldVector.composition(scaffoldF.circle,ctg.myVector);
 						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
 						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
-						ctg.composite(scaffoldF.circle);
+						//ctg.composite(scaffoldF.circle);
 						ctg.head = headT;
 						//if (posT == 1){ 
 						if(!firstDir){
@@ -667,46 +684,61 @@ public class ScaffoldGraph{
 		
 	}
 	public synchronized void printSequences() throws IOException{
-		SequenceOutputStream 	fout = SequenceOutputStream.makeOutputStream(prefix+".fin.fasta"),
-								jout = SequenceOutputStream.makeOutputStream(prefix+".fin.japsa"),
-								aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
-		for (int i = 0; i < scaffolds.length;i++){
-			if(scaffolds[i].isEmpty()) continue;
-			int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
-			if ((contigs.get(i).head == i 
-				&& !isRepeat(contigs.get(i))
-				&& len > maxRepeatLength
-				)
-				|| scaffolds[i].closeBridge != null
-				)
-			{
-				if(verbose) 
-					System.out.println("Scaffold " + i + " length " + len);
-				
-				if(annotation)
+		if(annotation){
+			SequenceOutputStream aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
+			for (int i = 0; i < scaffolds.length;i++){
+				if(scaffolds[i].isEmpty()) continue;
+				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
+				if ((contigs.get(i).head == i 
+					&& !isRepeat(contigs.get(i))
+					&& len > maxRepeatLength
+					)
+					|| scaffolds[i].closeBridge != null
+					)
+				{
+					if(verbose) 
+						System.out.println("Scaffold " + i + " estimated length " + len);
 					scaffolds[i].viewAnnotation(aout);
-				else
-					scaffolds[i].viewSequence(fout, jout);
+				}
 			}
+			aout.close();
+		} else{
+			SequenceOutputStream 	fout = SequenceOutputStream.makeOutputStream(prefix+".fin.fasta"),
+									jout = SequenceOutputStream.makeOutputStream(prefix+".fin.japsa");
+			for (int i = 0; i < scaffolds.length;i++){
+				if(scaffolds[i].isEmpty()) continue;
+				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
+				if ((contigs.get(i).head == i 
+					&& !isRepeat(contigs.get(i))
+					&& len > maxRepeatLength
+					)
+					|| scaffolds[i].closeBridge != null
+					)
+				{
+					if(verbose) 
+						System.out.println("Scaffold " + i + " estimated length " + len);
+					
+					scaffolds[i].viewSequence(fout, jout);
+				}
+			}
+			fout.close();
+			jout.close();
 		}
-		fout.close();
-		jout.close();
-		aout.close();
 	}	
 	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a milestone.
 	public static boolean isRepeat(Contig ctg){
 		//for the case of AbySS when no coverage information of contigs is found
-		if(estimatedCov == 1.0 && ctg.coverage == 1.0){
+		if(estimatedCov == 1.0 && ctg.getCoverage() == 1.0){
 			if(ctg.length() > maxRepeatLength)
 				return false;
 			else
 				return true;
 		}
 		
-		if (ctg.length() < minContigLength || ctg.coverage < .3 * estimatedCov) return true;
-		else if (ctg.length() > maxRepeatLength || ctg.coverage < 1.3 * estimatedCov) 
+		if (ctg.length() < minContigLength || ctg.getCoverage() < .3 * estimatedCov) return true;
+		else if (ctg.length() > maxRepeatLength || ctg.getCoverage() < 1.3 * estimatedCov) 
 			return false; 
-		else if (ctg.coverage > 1.5 * estimatedCov)
+		else if (ctg.getCoverage() > 1.5 * estimatedCov)
 			return true;
 		else{
 			for(ContigBridge bridge:ctg.bridges){

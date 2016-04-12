@@ -59,6 +59,7 @@ public final class Scaffold extends LinkedList<Contig>{
 	private static final long serialVersionUID = -4310125261868862931L;	
 	LinkedList<ContigBridge> bridges;
 	int scaffoldIndex;
+	int len=-1;
 	//boolean closed = false;
 	/**
 	 * invariant: the direction of the decque is the same as the main (the longest one)
@@ -286,6 +287,8 @@ public final class Scaffold extends LinkedList<Contig>{
 	public int length(){
 		if(isEmpty())
 			return 0;
+		if(len > 0)
+			return len;
 		int len = getLast().rightMost() - getFirst().leftMost();
 		if(circle!=null)
 			len = Math.abs(circle.getMagnitute());
@@ -449,6 +452,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		}
 
 		System.out.println("============================ END ===========================");
+		len = seq.length();
 		JapsaAnnotation.write(seq.toSequence(), anno, jout); 
 		seq.writeFasta(fout);
 	}
@@ -591,13 +595,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			bestCloseConnection.filling(seq, anno);	
 		
 		anno.setSequence(seq.toSequence());
-		//JapsaAnnotation.write(seq.toSequence(), anno, out); 
 		JapsaAnnotation.write(null, anno, out); 
-		
-//		out.print(">Scaffold "+scaffoldIndex+":"+size()+":"+length()+"\n");
-//		for(JapsaFeature resist:anno.getFeatureList()){
-//			out.print(resist.getID()+"\t");
-//		}
-//		out.print("\n");
+		len = seq.length();
 	}
 }

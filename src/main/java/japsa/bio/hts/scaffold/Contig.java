@@ -44,10 +44,10 @@ public class Contig{
 	int index;
 	ScaffoldVector myVector;//relative position to the head contig of my scaffold	
 	Sequence contigSequence;//the sequence of the contig	
-	double   coverage = 1.0;
+	double coverage = 1.0;
 	int head = -1; //point to the index of its head contig in the scaffold 
 	double prevScore=0, nextScore=0;
-	boolean isCircular = false;
+	int cirProb = 0; //measure how likely the contig itself is circular
 	//for depth first search
 	ArrayList<ContigBridge> bridges;	
 	//for annotation
@@ -72,7 +72,7 @@ public class Contig{
 		ctg.coverage = coverage;
 		ctg.bridges = this.bridges;
 		ctg.head = this.head; //update later
-		ctg.isCircular = this.isCircular;
+		ctg.cirProb = this.cirProb;
 		ctg.usedRanges = this.usedRanges;
 
 		ctg.oriRep = this.oriRep;
@@ -182,6 +182,9 @@ public class Contig{
 		return rightMost(myVector); 
 	}
 	
+	public boolean isCircular(){
+		return (cirProb > 0);
+	}
 	
 	public ScaffoldVector getVector(){
 		return myVector;

@@ -90,7 +90,6 @@ import japsa.tools.util.StreamServerCmd;
 import japsa.tools.xm.ExpertModelCmd;
 import japsa.util.CommandLine;
 import japsa.util.StringSeparator;
-import japsa.bio.meth.BaseMethylationCmd;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -167,7 +166,7 @@ public class Deploy {
 		tools.add(new RegulateTimeCmd());		
 		tools.add(new GapCloserCmd());
 		//tools.add(new SpeciesMixtureCmd());
-		tools.add(new BaseMethylationCmd());
+		//tools.add(new BaseMethylationCmd());
 		
 		//jsa.trv.*
 		tools.add("Tandem repeat variation analysis tools:");

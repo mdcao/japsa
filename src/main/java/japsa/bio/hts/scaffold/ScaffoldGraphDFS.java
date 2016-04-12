@@ -165,9 +165,20 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	@Override
 	public synchronized void connectBridges(){
 //		for(Contig ctg:contigs){
-//			System.out.println(ctg.getName());
-//			for(ContigBridge brg:ctg.bridges)
-//				System.out.println("\t"+brg.hashKey+" : "+brg.getTransVector());
+//			//System.out.println(ctg.getName());
+//			if(ctg.isCircular){
+//				if(ctg.bridges.size() != 2){
+//					ctg.isCircular = false;
+//					break;
+//				}
+//				for(ContigBridge brg:ctg.bridges){
+//					//System.out.println("\t"+brg.hashKey+" : "+brg.getTransVector());
+//					if(brg.firstContig.getIndex() != brg.secondContig.getIndex()){
+//						ctg.isCircular = false;
+//						break;
+//					}
+//				}
+//			}
 //		}
 		
 		// Start scaffolding
@@ -186,7 +197,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			//Now extend scaffold i				
 			if(	isRepeat(scaffolds[i].element()) 
 				|| scaffolds[i].element().length() < minContigLength){
-				if(!scaffolds[i].element().isCircular)
+				if(!scaffolds[i].element().isCircular())
 					continue;
 			}
 			//1.a extend to the first
@@ -278,7 +289,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			Collections.sort(ctg.bridges);
 			for (ContigBridge bridge:ctg.bridges){
 				if (bridge.firstContig == bridge.secondContig) //2 identical markers ??!
-					if(!bridge.firstContig.isCircular)
+					if(!bridge.firstContig.isCircular())
 						continue;
 				Contig nextContig = bridge.secondContig;					
 				ScaffoldVector trans = bridge.getTransVector();
@@ -295,7 +306,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				//only take one next singleton (with highest score possible sorted) as the marker for the next extension
 				int distance = bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig);
 				if (direction?(newEnd > ctgEnd):(newEnd < ctgEnd)){	
-					if(!isRepeat(nextContig) || (ctg.isCircular && ctg.getIndex() == nextContig.getIndex())){
+					if(!isRepeat(nextContig) || (ctg.isCircular() && ctg.getIndex() == nextContig.getIndex())){
 						//check quality of the bridge connected 2 markers
 						int aDir = 0;
 						if(scaffolds[nextContig.head].size() > 1){
@@ -360,7 +371,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				ScaffoldVector curVector = extendableVector.get(index);
 				if(verbose) 
 					System.out.println("Checking contig " + curContig.getName() + "...");
-				if(	isRepeat(curContig) && !curContig.isCircular)
+				if(	isRepeat(curContig) && !curContig.isCircular())
 					if(checkHang(ctg, curContigBridge, stepBridge)==null)
 						continue;
 				prevVector = prevContig.getVector();
@@ -395,7 +406,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				if(extendable){
 					// if extension is circularized
 					if(curContig.getIndex() == (direction?scaffold.getFirst().getIndex():scaffold.getLast().getIndex())
-						&& (!isRepeat(curContig) || curContig.isCircular)
+						&& (!isRepeat(curContig) || curContig.isCircular())
 						){
 						if(verbose) 
 							System.out.printf(" *****************SCAFFOLD %d CLOSED AFTER CONNECT %d ***********************\n", i,curContig.index);
@@ -407,7 +418,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 					if(isRepeat(curContig)){
 						curContig.head = i; //must be here!
 						
-						curContig.isCircular = false; // tandem!
+						//curContig.cirProb--; // tandem!
 						curContig = curContig.clone();
 					}else{
 						//check to join 2 scaffolds and stop this round

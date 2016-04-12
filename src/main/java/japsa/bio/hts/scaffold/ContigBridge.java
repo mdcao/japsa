@@ -198,21 +198,21 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		}
 		//reset based on the pointers
 		if(firstPointer > 0){
-			firstContig.nextScore = 0;
+			firstContig.nextScore = .0;
 			if(ScaffoldGraph.verbose)
 				System.out.printf("...reset nextScore of %s to 0, ", firstContig.getName());
 		}else{
-			firstContig.prevScore = 0;
+			firstContig.prevScore = .0;
 			if(ScaffoldGraph.verbose)
 				System.out.printf("...reset prevScore of %s to 0, ", firstContig.getName());	
 		}
 		
 		if(secondPointer > 0){
-			secondContig.nextScore = 0;
+			secondContig.nextScore = .0;
 			if(ScaffoldGraph.verbose)
 				System.out.printf("reset nextScore of %s to 0\n", secondContig.getName());
 		}else{
-			secondContig.prevScore = 0;
+			secondContig.prevScore = .0;
 			if(ScaffoldGraph.verbose)
 				System.out.printf("reset prevScore of %s to 0\n", secondContig.getName());	
 		}
