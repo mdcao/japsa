@@ -68,7 +68,7 @@ public class GapCloserCmd extends CommandLine{
 		addString("insertSeq", null , "Realtime annotation: name of IS fasta file");
 		addString("oriRep", null, "Realtime annotation: name of fasta file containing possible origin of replication");
 		
-		addInt("marginThres", 1000, "Margin threshold: to limit distance to the contig's ends of the alignment used in bridging."); 
+		//addInt("marginThres", 1000, "Margin threshold: to limit distance to the contig's ends of the alignment used in bridging."); 
 		addInt("minContig", 300, "Minimum contigs length that are used in scaffolding (default 300)."); 
 		addInt("maxRepeat", 7500, "Maximum length of repeat in considering species (default 7500 for bacteria)."); 
 		
@@ -91,7 +91,7 @@ public class GapCloserCmd extends CommandLine{
 		CommandLine cmdLine = new GapCloserCmd();		
 		args = cmdLine.stdParseLine(args);
 
-		/**********************************************************************/
+		/***********************************************************************/
 		String prefix = cmdLine.getStringVal("prefix");
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String sequenceFile = cmdLine.getStringVal("sequenceFile"),
@@ -99,12 +99,12 @@ public class GapCloserCmd extends CommandLine{
 				isFile = cmdLine.getStringVal("insertSeq"),
 				oriFile = cmdLine.getStringVal("oriRep");
 		
-		int 	marginThres = cmdLine.getIntVal("marginThres"),
+		int 	//marginThres = cmdLine.getIntVal("marginThres"),
 				minContig = cmdLine.getIntVal("minContig"),
 				minSupport = cmdLine.getIntVal("support"),
 				maxRepeat = cmdLine.getIntVal("maxRepeat");
-		if(marginThres < 0)
-			Logging.exit("Marginal threshold must not be negative", 1);			
+		//if(marginThres < 0)
+		//	Logging.exit("Marginal threshold must not be negative", 1);			
 		if(minContig <= 0)
 			Logging.exit("Minimum contig length has to be positive", 1);
 		if(minSupport <= 0)
@@ -116,7 +116,7 @@ public class GapCloserCmd extends CommandLine{
 		ScaffoldGraph.minContigLength = minContig;
 		ScaffoldGraph.minSupportReads = minSupport;	
 		ScaffoldGraph.maxRepeatLength = maxRepeat;		
-		ScaffoldGraph.marginThres = marginThres;
+		//ScaffoldGraph.marginThres = marginThres;
 		ScaffoldGraph.verbose = cmdLine.getBooleanVal("verbose");
 			
 		
@@ -154,31 +154,42 @@ public class GapCloserCmd extends CommandLine{
 		graph.printSequences();
 	}
 }
+
 /*RST*
--------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
 *npScaffolder*: real-time scaffolder using SPAdes contigs and Nanopore sequencing reads
--------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+
 *npScaffolder* (jsa.np.gapcloser) is a program that connect contigs from a draft genomes 
 to generate sequences that are closer to finish. These pipelines can run on a single laptop
 for microbial datasets. In real-time mode, it can be integrated with simple structural 
 analyses such as gene ordering, plasmid forming.
+
 npScaffolder is included in the `Japsa package <http://mdcao.github.io/japsa/>`_.
+
 <usage>
+
 ~~~~~~~~~~~~~~
 Usage examples
 ~~~~~~~~~~~~~~
+
 A summary of *npScaffolder* usage can be obtained by invoking the --help option::
-   	jsa.np.gapcloser --help
+
+    jsa.np.gapcloser --help
+    
 Input
 ======
 *npScaffolder* takes two files as required input::
+
 	jsa.np.gapcloser -s <*draft*> -b <*bam*>
 	
 <*draft*> input is the FASTA file containing the pre-assemblies. Normally this 
 is the output from running SPAdes on Illumina MiSeq paired end reads.
+
 <*bam*> contains SAM/BAM formated alignments between <*draft*> file and <*nanopore*> 
 FASTA/FASTQ file of long read data. We use BWA-MEM as the recommended aligner 
 with the fixed parameter set as follow::
+
 	bwa mem -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y <*draft*> <*nanopore*> > <*bam*>
 	
 Output
@@ -186,39 +197,59 @@ Output
 *npScaffolder* output is specified by *-prefix* option. The default prefix is \'out\'.
 Normally the tool generate two files: *prefix*.fin.fasta and *prefix*.fin.japsa which 
 indicate the result scaffolders in FASTA and JAPSA format.
+
 In realtime mode, if any annotation analysis is enabled, a file named 
 *prefix*.anno.japsa is generated instead. This file contains features detected after
 scaffolding.
+
 Real-time scaffolding
 ===============
 To run *npScaffolder* in streaming mode::
+
    	jsa.np.gapcloser -realtime [options]
+
 In this mode, the <*bam*> file will be processed block by block. The size of block 
 (number of BAM/SAM records) can be manipulated through option *-read* and *-time*.
+
 The idea of streaming mode is when the input <*nanopore*> file is retrieved in stream.
 npReader is the module that provides such data from fast5 files returned from the real-time
 base-calling cloud service Metrichor. Ones can run::
+
 jsa.np.f5reader -realtime -folder c:\Downloads\ -fail -output - | \
+
 bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
+
 jsa.np.gapcloser --realtime -b - -seq <*draft*> > log.out 2>&1
+
 or if you have the whole set of Nanopore long reads already and want to emulate the 
 streaming mode::
+
 jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
+
 bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
+
 jsa.np.gapcloser --realtime -b - -seq <*draft*> > log.out 2>&1
+
 Note that jsa.np.timeEmulate based on the field *timeStamp* located in the read name line to
 decide the order of streaming data. So if your input <*nanopore*> already contains the field,
 you have to sort it::
+
 jsa.seq.sort -i <*nanopore*> -o <*nanopore-sorted*> -sortKey=timeStamp
+
 or if your file does not have the *timeStamp* data yet, you can manually make ones. For example::
+
 cat <*nanopore*> |awk 'BEGIN{time=0.0}NR%4==1{printf "%s timeStamp=%.2f\n", $0, time; time++}NR%4!=1{print}'
 > <*nanopore-with-time*> 
+
 Real-time annotation
 ====================
 The tool includes usecase for streaming annotation. Ones can provides database of antibiotic
 resistance genes and/or Origin of Replication in FASTA format for the analysis of gene ordering
 and/or plasmid identifying respectively::
+
 jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
+
 bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
+
 jsa.np.gapcloser --realtime -b - -seq <*draft*> -resistGene <*resistDB*> -oriRep <*origDB*> > log.out 2>&1
 *RST*/

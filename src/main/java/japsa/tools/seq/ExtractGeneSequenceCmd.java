@@ -189,12 +189,12 @@ public class ExtractGeneSequenceCmd extends CommandLine{
 
 /*RST*
 -------------------------------------------
- *jsa.seq.gff2fasta*: Extract gene sequences 
+*jsa.seq.gff2fasta*: Extract gene sequences 
 -------------------------------------------
 
- *jsa.seq.gff2fasta* extract the functional sequences (genes, CDS, etc) from
+*jsa.seq.gff2fasta* extract the functional sequences (genes, CDS, etc) from
 a gff file and a sequence file.
 
 <usage> 
 
- *RST*/
+*RST*/

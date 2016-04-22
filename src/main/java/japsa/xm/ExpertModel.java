@@ -283,7 +283,7 @@ public class ExpertModel {
 		MyHashtable hash = new MyHashtable(hashSize, (int) Math.ceil(JapsaMath.log2(alphabet.size())));
 		/*************************************************************************/
 		
-		System.out.println("Run first pass");
+		//System.out.println("Run first pass");
 
 		for (int sid = 0; sid < seqArray.length; sid++) {
 			for (int i = 0; i < seqArray[sid].length(); i++) {
@@ -293,7 +293,7 @@ public class ExpertModel {
 		}
 
 		hash.reinitialise_optimise();
-		System.out.println("Finish first pass");
+		//System.out.println("Finish first pass");
 
 		myHash = hash;
 		store(seqArray);
