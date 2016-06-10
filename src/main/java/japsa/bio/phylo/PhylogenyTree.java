@@ -70,17 +70,17 @@ public class PhylogenyTree {
 		distance = DEFAULT_LENGTH;
 		height = 0;
 	}
-	
+
 	// Create an internal tree
 	public PhylogenyTree(PhylogenyTree parent, PhylogenyTree left,
-			PhylogenyTree right) {
+		PhylogenyTree right) {
 		this(parent);
 
 		children = new PhylogenyTree[2];
 		setChild(left, 0);
 		setChild(right, 1);
 	}
-	
+
 	/**
 	 * Create a new tree who where the the root is moved to the parent of the
 	 * node A new node to be created (the root) and returned
@@ -96,7 +96,7 @@ public class PhylogenyTree {
 			return this;// Need not do anything
 
 		PhylogenyTree newNode = oldParen.addChild(new PhylogenyTree(null), node
-				.getIndex(), node.distance / 2);
+			.getIndex(), node.distance / 2);
 
 		newNode.getChild(1).setName("Tmp");
 		newNode.modifiedRoot(1);
@@ -301,8 +301,8 @@ public class PhylogenyTree {
 			int x = EXTRA_WIDTH;
 			INDEX++;
 			out.println("\\node[exnode,label=right:\\emph{"
-					+ formatName(this.name) + "}]  at (" + x + "," + CRT_LATEXY
-					+ ") (node" + INDEX + ") {};");
+				+ formatName(this.name) + "}]  at (" + x + "," + CRT_LATEXY
+				+ ") (node" + INDEX + ") {};");
 			// draw the name of the node
 			int y = CRT_LATEXY;
 			CRT_LATEXY -= LATEXDIS;
@@ -318,18 +318,18 @@ public class PhylogenyTree {
 			int y = (y0 + y1) / 2;
 			int x = level() * 5;
 			out.println("\\node[innode]  at (" + x + "," + y + ") (node"
-					+ INDEX + ") {};");
+				+ INDEX + ") {};");
 			// out.println("  ;");
 			if (len) {
 				out.println("\\node at (" + (x + 2.0) + "," + (y0 + 1.2)
-						+ ") {" + nf.format(children[0].distance) + "};");
+					+ ") {" + nf.format(children[0].distance) + "};");
 				out.println("\\node at (" + (x + 2.0) + "," + (y1 + 1.2)
-						+ ") {" + nf.format(children[1].distance) + "};");
+					+ ") {" + nf.format(children[1].distance) + "};");
 			}
 			out.println("\\path[edge] (node" + INDEX + ")  -- (" + x + "," + y0
-					+ ") -- (node" + ind0 + "); ");
+				+ ") -- (node" + ind0 + "); ");
 			out.println("\\path[edge] (node" + INDEX + ")  -- (" + x + "," + y1
-					+ ") -- (node" + ind1 + "); ");
+				+ ") -- (node" + ind1 + "); ");
 
 			return y;
 		}
@@ -377,7 +377,7 @@ public class PhylogenyTree {
 				break;
 
 			if (" ".equals(currentToken) || "\t".equals(currentToken) || "\n".equals(currentToken)
-					|| ",".equals(currentToken))
+				|| ",".equals(currentToken))
 				continue;
 
 			if ("(".equals(currentToken)) {// Start a new tree
@@ -420,7 +420,7 @@ public class PhylogenyTree {
 
 		children[index].distance -= dis;
 		PhylogenyTree newChild = new PhylogenyTree(this, this.getChild(index),
-				aTree);
+			aTree);
 
 		newChild.setDistance(dis);
 		aTree.distance = newChild.height = this.height - dis;
@@ -438,11 +438,19 @@ public class PhylogenyTree {
 		PhylogenyTree child = children[childIndex];
 		PhylogenyTree theGrandChild = child.children[grandChildIndex];
 
-		this.setChild(child.children[1 - grandChildIndex], childIndex);
+		PhylogenyTree newChild = child.children[1 - grandChildIndex];
+		double newDistance = child.distance + newChild.distance;
+
+
+		this.setChild(newChild, childIndex);
 
 		// Restore the distance
-		this.getChild(childIndex).distance = this.height
-				- this.getChild(childIndex).height;
+
+		newChild.distance =  newDistance;
+		//this.height - this.getChild(childIndex).height;
+		//if (newChild.isLeaf() && newChild.name.endsWith("_54")){
+		//	System.out.println("==== " + newChild.name + " = " + newChild.distance);
+		//}		
 
 		return theGrandChild;
 	}
@@ -510,7 +518,7 @@ public class PhylogenyTree {
 		int indA = routA.length(), indB = routB.length();
 
 		while (indA >= 0 && indB >= 0
-				&& routA.charAt(indA) == routB.charAt(indB)) {
+			&& routA.charAt(indA) == routB.charAt(indB)) {
 
 			int ind = Integer.parseInt(routA.charAt(indA) + "");
 			treePtr = treePtr.getChild(ind);
@@ -548,7 +556,7 @@ public class PhylogenyTree {
 		int indA = routA.length() - 1, indB = routB.length() - 1;
 
 		while (indA >= 0 && indB >= 0
-				&& routA.charAt(indA) == routB.charAt(indB)) {
+			&& routA.charAt(indA) == routB.charAt(indB)) {
 
 			int ind = Integer.parseInt(routA.charAt(indA) + "");
 			treePtr = treePtr.getChild(ind);
@@ -575,7 +583,7 @@ public class PhylogenyTree {
 		//this.addLeafTrees(v);
 		return getLeaves().iterator();
 	}
-	
+
 	public ArrayList<PhylogenyTree> getLeaves() {
 		ArrayList<PhylogenyTree> v = new ArrayList<PhylogenyTree>();
 		this.addLeafTrees(v);
@@ -605,7 +613,7 @@ public class PhylogenyTree {
 			return "" + name;
 		}
 		String tree = "(" + children[0] + ":" + children[0].getDistance() + ","
-				+ children[1] + ":" + children[1].getDistance() + ")";
+			+ children[1] + ":" + children[1].getDistance() + ")";
 		// if (parent == null) return tree + ";";//If the root
 		// else
 		return tree;
@@ -632,7 +640,7 @@ public class PhylogenyTree {
 			return 0;
 		else
 			return this.getChild(0).sumHops() + this.getChild(0).distance
-					+ this.getChild(1).sumHops() + this.getChild(1).distance;
+				+ this.getChild(1).sumHops() + this.getChild(1).distance;
 	}
 
 	public int numHops() {
@@ -640,7 +648,7 @@ public class PhylogenyTree {
 			return 0;
 		else
 			return this.getChild(0).numHops() + 1
-					+ this.getChild(1).numHops() + 1;
+				+ this.getChild(1).numHops() + 1;
 	}
 
 	/************************* Get and Set ********************************/
@@ -693,7 +701,7 @@ public class PhylogenyTree {
 	}
 
 	public static void writeNexus(Sequence[] seqs, PrintStream ps)
-			throws IOException {
+		throws IOException {
 
 		int length = seqs[0].length();
 		int charPerLine = 60;//	
@@ -701,7 +709,7 @@ public class PhylogenyTree {
 		//PrintStream ps = new PrintStream(new FileOutputStream(fileName));
 		ps.println("#NEXUS\nBEGIN DATA;");
 		ps.println("        Dimensions NTax=" + seqs.length + " NChar="
-				+ length + ";");
+			+ length + ";");
 		ps
 		.println("        Format DataType=DNA Interleave=yes Gap=- Missing=?;");
 		ps.println("        Matrix");
@@ -710,7 +718,7 @@ public class PhylogenyTree {
 		while (true) {
 			for (int i = 0; i < seqs.length; i++) {
 				ps.printf("%s ", (seqs[i].getName() + "             ")
-						.substring(0, 10));
+					.substring(0, 10));
 
 				for (int x = count; x < count + charPerLine && x < length; x++) {
 					if (x % 10 == 0 && x > count)
@@ -733,7 +741,7 @@ public class PhylogenyTree {
 	}
 
 	public static void writePhylip(Sequence[] seqs, PrintStream ps)
-			throws IOException {
+		throws IOException {
 
 		//PrintStream ps = new PrintStream(new FileOutputStream(fileName));
 		int length = seqs[0].length();
@@ -746,7 +754,7 @@ public class PhylogenyTree {
 			for (int i = 0; i < seqs.length; i++) {
 				if (count == 0) {
 					ps.printf("%s ", (seqs[i].getName() + "             ")
-							.substring(0, 10));
+						.substring(0, 10));
 				}
 
 				for (int x = count; x < count + charPerLine && x < length; x++) {

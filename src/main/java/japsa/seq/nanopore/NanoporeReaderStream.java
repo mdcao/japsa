@@ -109,7 +109,7 @@ public class NanoporeReaderStream{
 	public int minLength = 0;
 	public boolean wait = true;
 	public boolean realtime = true;
-	public int interval = 1, age = 1000;
+	public int interval = 1, age = 30000;
 	public boolean doFail = false;
 	public String output = "";
 	public String streamServers = null;

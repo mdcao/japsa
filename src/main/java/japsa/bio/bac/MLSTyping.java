@@ -187,7 +187,7 @@ public class MLSTyping{
 
 			String stKey = "";
 			for (int i = 0; i < mlstScheme.numGenes; i++){
-				stKey += mlstScheme.geneNames[i] + "_" + profile.geneAlleles[i] + "_";
+				stKey += mlstScheme.geneNames[i] + "_" + profile.geneAlleles[i] + "|";
 			}
 			stMap.put(stKey, ST);
 		}		
@@ -224,7 +224,7 @@ public class MLSTyping{
 			br.close();
 
 			process.waitFor();
-			key += allele + "_";
+			key += allele + "|";
 			typeScore += score;
 		}
 

@@ -40,6 +40,7 @@ import japsa.util.deploy.Deployable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Date;
 
 import com.google.common.io.ByteStreams;
 
@@ -82,11 +83,11 @@ public class StreamServerCmd extends CommandLine{
 		
 		ServerSocket serverSocket = new ServerSocket(port);
 		Logging.info("Listen on " +  serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort());		
-	    Socket clientSocket = serverSocket.accept();
-	    Logging.info("Connection establised");
+	    Socket clientSocket = serverSocket.accept();	    
+	    Logging.info("Connection established at " + new Date());
 	    ByteStreams.copy(clientSocket.getInputStream(), System.out);
 	    serverSocket.close();
-	    Logging.info("Connection closed");	    
+	    Logging.info("Connection closed at " + new Date());	    
 	}
 }
 

@@ -644,8 +644,8 @@ public class NanoporeReader// implements Closeable
 				if ((fullName.startsWith("/Analyses/EventDetection_000/Reads/") && fullName.endsWith("Events") )){
 					@SuppressWarnings("unchecked")
 					List<Object> dat = (List<Object>)  (((H5CompoundDS) member).getData());
-					long [] eventsStatTime = (long[]) dat.get(2);
-					seqTime = eventsStatTime[eventsStatTime.length -1] / 5000.0;
+					long [] eventsStatTime = (long[]) dat.get(0);
+					seqTime = eventsStatTime[eventsStatTime.length -1] / 4000.0;
 				}
 			}else if (member instanceof H5ScalarDS){
 				String fullName = member.getFullName(); 

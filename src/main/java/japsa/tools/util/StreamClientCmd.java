@@ -41,8 +41,8 @@ import japsa.util.net.StreamClient;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
 import java.net.Socket;
+import java.util.Date;
 
 /**
  * @author minhduc
@@ -81,7 +81,7 @@ public class StreamClientCmd extends CommandLine{
 		/**********************************************************************/
 		String input = cmdLine.getStringVal("input");
 		StreamClient client = new StreamClient(cmdLine.getStringVal("server"));
-		Logging.info("Connection established");
+		Logging.info("Connection established at " + new Date());
 
 		InputStream ins = input.equals("-")? System.in : new FileInputStream(input);
 		byte[] buffer = new byte[8192];
@@ -98,7 +98,7 @@ public class StreamClientCmd extends CommandLine{
 						socket.getOutputStream().write(buffer,0, ret);
 						count ++;
 					} catch (IOException e) {
-						Logging.info("Connection to " + socket.getRemoteSocketAddress() + " closed");
+						Logging.info("Connection to " + socket.getRemoteSocketAddress() + " closed at "+ new Date());
 						socket.close();
 					}					
 				}				
