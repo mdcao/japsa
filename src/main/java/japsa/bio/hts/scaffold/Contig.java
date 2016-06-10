@@ -51,8 +51,9 @@ public class Contig{
 	//for depth first search
 	ArrayList<ContigBridge> bridges;	
 	//for annotation
-	ArrayList<JapsaFeature> oriRep,				//origin of replication: indicator of plasmid for bacteria
-							insertSeq,			// IS
+	ArrayList<JapsaFeature> genes,				//genes list
+							oriRep,				//origin of replication: indicator of plasmid for bacteria
+							insertSeq,			//Insertion Sequence
 							resistanceGenes;	//list of antibiotic resistance genes found in this contig
 		
 	public Contig(int index, Sequence seq){
@@ -62,6 +63,7 @@ public class Contig{
 		bridges = new ArrayList<ContigBridge>();
 		usedRanges = new ArrayList<Range>();
 		
+		genes = new ArrayList<JapsaFeature>();
 		oriRep = new ArrayList<JapsaFeature>();
 		insertSeq = new ArrayList<JapsaFeature>();
 		resistanceGenes = new ArrayList<JapsaFeature>();
@@ -75,6 +77,7 @@ public class Contig{
 		ctg.cirProb = this.cirProb;
 		ctg.usedRanges = this.usedRanges;
 
+		ctg.genes = this.genes;
 		ctg.oriRep = this.oriRep;
 		ctg.insertSeq = this.insertSeq;
 		ctg.resistanceGenes = this.resistanceGenes;

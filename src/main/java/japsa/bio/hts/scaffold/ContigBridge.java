@@ -177,7 +177,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	public void resetContigScores(){
 		int 	firstPointer = 0,
 				secondPointer = 0;
-		System.out.print("Trans vector " + transVector + " :" );
+		if(ScaffoldGraph.verbose)
+			System.out.print("Trans vector " + transVector + " :" );
 		if(transVector.magnitude < 0){
 			firstPointer=-1;
 			if(transVector.direction < 0)

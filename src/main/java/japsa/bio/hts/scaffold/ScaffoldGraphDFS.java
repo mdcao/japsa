@@ -38,6 +38,7 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	 * @param sequenceFile
 	 * @throws IOException
 	 */
-	public ScaffoldGraphDFS(String sequenceFile, String resistFile, String isFile, String oriFile) throws IOException, InterruptedException {
+	public ScaffoldGraphDFS(String sequenceFile, String genesFile, String resistFile, String isFile, String oriFile) throws IOException, InterruptedException {
 		super(sequenceFile);
 		if(resistFile != null){
 			readDb(resistFile, "Resistance genes", .8, .9);
@@ -67,9 +68,12 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			readDb(oriFile, "Origin of replication", .8, .9);
 			annotation = true;
 		}
-		
+		if(genesFile != null){
+			readGFF(genesFile);
+			annotation = true;
+		}
 //		for (Contig contig:contigs){
-//			for(JapsaFeature feature:contig.resistanceGenes)
+//			for(JapsaFeature feature:contig.genes)
 //				System.out.println(contig.getName() + "\t" + feature.getStrand() + "\t" + feature);
 //		}
 //		for (Contig contig:contigs){
@@ -151,6 +155,34 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 		}
 		br.close();
 		//process.waitFor();//Do i need this???
+	}
+	private void readGFF(String fileName) throws IOException, InterruptedException{
+		BufferedReader br = new BufferedReader(new FileReader(fileName));
+		String line;
+
+		while ((line = br.readLine()) != null) {
+			if (line.startsWith("#"))
+				continue;
+			if (line.startsWith(">"))
+				break;
+			String [] toks = line.trim().split("\t");
+			Contig ctg = getContig(toks[0]+"_"); //get the contig from its shorten name
+			if(ctg != null){
+				int start = Integer.parseInt(toks[3]),
+					end = Integer.parseInt(toks[4]);
+				String [] des = toks[8].trim().split(";");
+				String [] id = des[0].trim().split("=");
+				String ID = "undefined";
+				if(id[0].equals("ID"))
+					ID = id[1];
+				if(!toks[2].equals("gene")){
+					JapsaFeature feature = new JapsaFeature(start, end, toks[2], ID, toks[6].charAt(0), ctg.getName());
+					feature.addDesc(toks[8]);
+					ctg.genes.add(feature);
+				}
+			}
+		}
+		br.close();
 	}
 	public ScaffoldGraphDFS(String sequenceFile, String graphFile) throws IOException {
 		super(sequenceFile);
@@ -424,7 +456,8 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 						//check to join 2 scaffolds and stop this round
 						if (scaffolds[curContig.head].size() > 1){
 							if(!joinScaffold(prevContig,confirmedBridge,direction,extendDir)){
-								System.out.printf(" Skip to connect contig %d of %d to contig %d of %d\n", ctg.index,i,curContig.index, curContig.head);
+								if(verbose)
+									System.out.printf(" Skip to connect contig %d of %d to contig %d of %d\n", ctg.index,i,curContig.index, curContig.head);
 								continue;
 							}			
 							else{

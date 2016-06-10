@@ -64,6 +64,7 @@ public class GapCloserCmd extends CommandLine{
 		addString("sequenceFile", null, "Name of the assembly file (sorted by length)",true);
 		addString("prefix", "out", "Prefix for the output files, default is out.*");	
 		
+		addString("genes", null , "Realtime annotation: name of annotated genes in GFF 3.0 format");
 		addString("resistGene", null , "Realtime annotation: name of antibiotic resistance gene fasta file");
 		addString("insertSeq", null , "Realtime annotation: name of IS fasta file");
 		addString("oriRep", null, "Realtime annotation: name of fasta file containing possible origin of replication");
@@ -95,6 +96,7 @@ public class GapCloserCmd extends CommandLine{
 		String prefix = cmdLine.getStringVal("prefix");
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String sequenceFile = cmdLine.getStringVal("sequenceFile"),
+				genesFile = cmdLine.getStringVal("genes"),
 				resistFile = cmdLine.getStringVal("resistGene"),
 				isFile = cmdLine.getStringVal("insertSeq"),
 				oriFile = cmdLine.getStringVal("oriRep");
@@ -137,12 +139,12 @@ public class GapCloserCmd extends CommandLine{
 		ScaffoldGraph graph;
 		boolean rt = cmdLine.getBooleanVal("realtime");
 		if(rt){
-			RealtimeScaffolding rtScaffolding = new RealtimeScaffolding(sequenceFile, resistFile, isFile, oriFile, "-");
+			RealtimeScaffolding rtScaffolding = new RealtimeScaffolding(sequenceFile, genesFile, resistFile, isFile, oriFile, "-");
 			rtScaffolding.scaffolding(bamFile, number, time, cov/1.6, qual);
 			graph = rtScaffolding.graph;
 		}
 		else{
-			graph = new ScaffoldGraphDFS(sequenceFile, resistFile, isFile, oriFile);
+			graph = new ScaffoldGraphDFS(sequenceFile, genesFile, resistFile, isFile, oriFile);
 			if (cov <=0)
 				cov = graph.estimatedCov;
 			graph.makeConnections(bamFile, cov / 1.6, qual);

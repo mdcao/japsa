@@ -41,13 +41,20 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import japsa.seq.Alphabet;
+import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -116,7 +123,7 @@ public class ScaffoldGraph{
 	public Contig getContig(String name){
 		Contig res = null;
 		for(Contig ctg:contigs)
-			if(ctg.getName().equals(name)){
+			if(ctg.getName().contains(name)){
 				res = ctg;
 				break;
 			}
@@ -724,6 +731,52 @@ public class ScaffoldGraph{
 			fout.close();
 			jout.close();
 		}
+	}	
+	public synchronized void printRT(long tpoint) throws IOException{
+		for (Contig contig:contigs){
+			if(contig.oriRep.size() > 0){
+				String fname = contig.getName() + ".rtout";
+				File f = new File(fname);
+				if(!f.exists())
+					f.createNewFile();
+				
+				//BufferedWriter out = new BufferedWriter(new FileWriter(f.getPath(), true));
+				FileWriter fw = new FileWriter(f,true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				PrintWriter pw = new PrintWriter(bw);
+				
+				ArrayList<String> 	ctgList = new ArrayList<String>(),
+									origList = new ArrayList<String>(), 
+									genesList = new ArrayList<String>();
+				
+				for(Contig ctg:scaffolds[contig.head]){
+					ctgList.add(ctg.getName());
+					if(ctg.oriRep.size()>0)
+						for(JapsaFeature ori:ctg.oriRep)
+							origList.add(ori.getID());
+					for (JapsaFeature feature:ctg.genes)
+						genesList.add(feature.getDesc());
+				}
+				float streamData=tpoint/1000000;
+				pw.print(">");
+				for(String ctg:ctgList)
+					pw.printf("%s\t", ctg);
+				
+				pw.printf("\n>%.2fMpb\t%d genes\t", streamData, genesList.size());
+				
+				for(String ori:origList)
+					pw.printf("+%s", ori);
+				
+				for(String genes:genesList)
+					pw.print(" \n\t"+genes);
+				pw.println("");
+				
+				pw.close();
+
+			}
+		}
+
+
 	}	
 	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a milestone.
 	public static boolean isRepeat(Contig ctg){

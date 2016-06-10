@@ -20,13 +20,13 @@ import japsa.util.Logging;
 //Simulate fastq realtime generator: jsa.np.timeEmulate -i <input> -output -
 public class RealtimeScaffolding {
 	RealtimeScaffolder scaffolder;
-	public ScaffoldGraph graph;
+	public ScaffoldGraphDFS graph;
 	int currentReadCount = 0;
 	long currentBaseCount = 0;	
 	
-	public RealtimeScaffolding(String seqFile, String resistFile, String isFile, String oriFile, String output)throws IOException, InterruptedException{
+	public RealtimeScaffolding(String seqFile, String genesFile, String resistFile, String isFile, String oriFile, String output)throws IOException, InterruptedException{
 		scaffolder = new RealtimeScaffolder(this, output);		
-		graph = new ScaffoldGraphDFS(seqFile,resistFile, isFile, oriFile);
+		graph = new ScaffoldGraphDFS(seqFile, genesFile, resistFile, isFile, oriFile);
 	}
 	
 	public void scaffolding(String bamFile, int readNumber, int timeNumber, double minCov, int qual) 
@@ -140,8 +140,8 @@ public class RealtimeScaffolding {
 				}
 			}
 			try {
-				scaffolding.graph.printSequences();
-
+				//scaffolding.graph.printSequences();
+				scaffolding.graph.printRT(scaffolding.currentBaseCount);
 				outOS.print(timeNow + "\t" + step + "\t" + lastReadNumber + "\t" + scaffolding.currentBaseCount + "\t" + scfCount + "\t" + cirCount + "\t" + scaffolding.graph.getN50());
 				outOS.println();
 				outOS.flush();
