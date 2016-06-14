@@ -142,6 +142,10 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 	 */
 	public abstract int symbolAt(int loc);
 	public abstract void setSymbol(int loc, int symbol);
+	
+	public abstract byte getBase(int loc);
+	public abstract byte setBase(int loc, byte base);
+	
 
 	
 	/**

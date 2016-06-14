@@ -230,11 +230,12 @@ public class SequenceBuilder extends AbstractSequence {
 	 * @param loc
 	 * @param base
 	 */
-	public void setBase(int loc, byte base) {
+	public byte setBase(int loc, byte base) {
 		if (loc < 0 || loc >= length()){
 			throw new RuntimeException("Wrong location (max " + length + "):" + loc);
 		}
 		byteSeq[loc] = base;
+		return base;
 	}
 
 	public void setSymbol(int loc, int symbol){

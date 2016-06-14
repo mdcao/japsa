@@ -195,8 +195,9 @@ public class Sequence extends AbstractSequence implements Cloneable {
 	 * @param loc
 	 * @param base
 	 */
-	public void setBase(int loc, byte base) {
+	public byte setBase(int loc, byte base) {
 		byteSeq[loc] = base;
+		return base;
 	}
 	
 	public void setSymbol(int loc, int symbol){

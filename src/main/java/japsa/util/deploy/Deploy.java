@@ -62,6 +62,8 @@ import japsa.tools.bio.phylo.XMasCmd;
 import japsa.tools.bio.phylo.XMDistanceCmd;
 import japsa.tools.bio.sim.SimHTSWithFSMCmd;
 import japsa.tools.bio.sim.SimProbFSMCmd;
+import japsa.tools.bio.sim.SimulateCaptureCmd;
+import japsa.tools.bio.sim.SimulateGenomeCmd;
 import japsa.tools.bio.tr.Fragment2TRVCmd;
 import japsa.tools.bio.tr.Japsa2TRCmd;
 import japsa.tools.bio.tr.ParseTRFCmd;
@@ -108,7 +110,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.6-06a";
+	public static String VERSION = "1.6-0ba";
 	public static final String FIELD_SEP = "\t";
 	
 	public static boolean DEBUG = true;
@@ -195,6 +197,8 @@ public class Deploy {
 		tools.add("Alignment with Finite State Machines");
 		tools.add(new SimProbFSMCmd());		
 		tools.add(new SimHTSWithFSMCmd());
+		tools.add(new SimulateGenomeCmd());
+		tools.add(new SimulateCaptureCmd());
 
 		//jsa.xm
 		tools.add("Export Model compression");
