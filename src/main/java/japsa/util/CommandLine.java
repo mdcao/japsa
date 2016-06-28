@@ -240,7 +240,7 @@ public class CommandLine {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-				+ "'");
+					+ "'");
 			return false;
 		}
 		return options.get(o).optionSet;
@@ -250,7 +250,7 @@ public class CommandLine {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-				+ "'");
+					+ "'");
 			return null;
 		}
 		return options.get(o).value;
@@ -260,13 +260,13 @@ public class CommandLine {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-				+ "'");
+					+ "'");
 			return 0;
 		}
 
 		if (options.get(o).optType != 'i') {
 			System.err.println("ERROR: Option '" + opt
-				+ "' is not an int option in getIntVal");
+					+ "' is not an int option in getIntVal");
 			return 0;
 		}
 
@@ -277,13 +277,13 @@ public class CommandLine {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-				+ "'");
+					+ "'");
 			return 0;
 		}
 
 		if (options.get(o).optType != 'f') {
 			System.err.println("ERROR: Option '" + opt
-				+ "' is not a double option in getDoubleVal");
+					+ "' is not a double option in getDoubleVal");
 			return 0;
 		}
 
@@ -294,13 +294,13 @@ public class CommandLine {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-				+ "'");
+					+ "'");
 			return null;
 		}
 
 		if (options.get(o).optType != 's') {
 			System.err.println("ERROR: Option '" + opt
-				+ "' is not a string option in getStringVal");
+					+ "' is not a string option in getStringVal");
 			return null;
 		}
 
@@ -311,13 +311,13 @@ public class CommandLine {
 		int o = isOption(opt, 1);
 		if (o < 0) {
 			System.err.println("ERROR: Attempt to lookup non-defined option '" + opt
-				+ "'");
+					+ "'");
 			return false;
 		}
 
 		if (options.get(o).optType  != 'b') {
 			System.err.println("ERROR: Option '" + opt
-				+ "' is not a boolean option in getBooleanVal");
+					+ "' is not a boolean option in getBooleanVal");
 			return false;
 		}
 
@@ -345,8 +345,8 @@ public class CommandLine {
 			if (opt.compareToIgnoreCase(optStr) == 0) {
 				if (match >= 0) {
 					addError("ERROR: Ambiguous option '" + opt
-						+ "' could be '" + options.get(i).optName + "' or '" + options.get(match).optName
-						+ "'");
+							+ "' could be '" + options.get(i).optName + "' or '" + options.get(match).optName
+							+ "'");
 					return match;
 				}
 				match = i;
@@ -384,7 +384,7 @@ public class CommandLine {
 	public String[] stdParseLine(String[] args) {				
 		/**********************************************************************/
 		String[] ret = parseLine(args);
-
+		//System.out.println(optionValues());
 		if (isOption("help", 1) >=0 && getBooleanVal("help")){
 			System.out.println(usageString());			
 			System.exit(0);
@@ -398,8 +398,15 @@ public class CommandLine {
 		return ret;
 	}
 
+	public String optionValues(){
+		String ret = "";
+		for (Option option:options){
+			ret = ret + String.format("%20s = ",option.optName) + ((option.value == null)?"(null)":option.value) + "\n";			
+		}		
+		
+		return ret;
+	}
 	public String[] parseLine(String[] args) {
-
 		//Keep the original command line
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < args.length;i++){
@@ -433,7 +440,7 @@ public class CommandLine {
 					case 'b':
 						if (args[i].indexOf("=") >= 0) {
 							String s = args[i]
-								.substring(args[i].indexOf("=") + 1);
+									.substring(args[i].indexOf("=") + 1);
 							if (s.equalsIgnoreCase("true"))
 								option.value = Boolean.TRUE;
 							else if (s.equalsIgnoreCase("yes"))
@@ -453,7 +460,7 @@ public class CommandLine {
 							else {
 								System.err
 								.println("ERROR: Unknown boolean option parameter '"
-									+ s + "'");
+										+ s + "'");
 								return null;
 							}
 						}else
@@ -478,7 +485,7 @@ public class CommandLine {
 					case 's':
 						if (args[i].indexOf("=") >= 0)
 							option.value = args[i]
-								.substring(args[i].indexOf("=") + 1);
+									.substring(args[i].indexOf("=") + 1);
 						else {
 							option.value = args[i + 1];
 							i++;

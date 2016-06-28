@@ -154,7 +154,7 @@ public class SimulateGenomeCmd extends CommandLine{
 				
 				logOS.print("#  " + sv.chr + ":" + sv.start + "-" + sv.end + ":" + ((sv.svType == StructualVarition.DELETION)?"-":"+") + "\n");
 				
-				if (sv.svType == StructualVarition.DELETION){
+				if (sv.svType == StructualVarition.DUPLICATION){
 					for (int x = currentIndex;x < end-1;x++){
 						sb.append(seq.getBase(x));
 					}
@@ -163,7 +163,7 @@ public class SimulateGenomeCmd extends CommandLine{
 						sb.append(seq.getBase(x));
 					}
 					
-				}else if (sv.svType == StructualVarition.DUPLICATION){
+				}else if (sv.svType == StructualVarition.DELETION){
 					//doing nothing
 				}else{
 					Logging.error("Dont know what to do");

@@ -65,6 +65,7 @@ jsa.np.f5reader_, jsa.np.rtSpeciesTyping_, jsa.np.rtStrainTyping_, jsa.util.stre
 Setting up
 ~~~~~~~~~~
 
-Refer to real-time analyais page at https://github.com/mdcao/npAnalysis/
+Refer to the documentation at https://github.com/mdcao/npAnalysis/ for more 
+details.
 
 

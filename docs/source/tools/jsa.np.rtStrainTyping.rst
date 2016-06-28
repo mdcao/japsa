@@ -9,14 +9,10 @@ gene presence, it makes an inference of the strain, together with the confidence
 interval of 95%.
 
 We provide the gene databases for three bacterial species  K. pneumoniae, 
-E. coli and S. aureus on  http://genomicsresearch.org/public/researcher/npAnalysis/StrainTyping.tar.gz 
-(or https://swift.rc.nectar.org.au:8888/v1/AUTH_15574c7fb24c44b3b34069185efba190/npAnalysis/StrainTyping.tar.gz).
-Obtain them by::
+E. coli and S. aureus on  http://data.genomicsresearch.org/Projects/npAnalysis/.
+Refer to the documentation at https://github.com/mdcao/npAnalysis/ for more 
+details.
 
-   wget https://swift.rc.nectar.org.au:8888/v1/AUTH_15574c7fb24c44b3b34069185efba190/npAnalysis/StrainTyping.tar.gz
-   tar zxvf StrainTyping.tar.gz
-
-which will generate three folders for the three species.
 
 ~~~~~~~~
 Synopsis

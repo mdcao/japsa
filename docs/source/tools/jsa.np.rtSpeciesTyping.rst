@@ -6,15 +6,11 @@
 using Oxford Nanopore sequencing in real-time. It reads data in SAM/BAM format
 of the alignments of sequence reads to a collection of species genomes.
 
-We provide a genome collection of nearly 1500 bacterial species http://genomicsresearch.org/public/researcher/npAnalysis/SpeciesTyping.tar.gz 
-(or https://swift.rc.nectar.org.au:8888/v1/AUTH_15574c7fb24c44b3b34069185efba190/npAnalysis/SpeciesTyping.tar.gz).
-Obtain them by::
-
-   wget https://swift.rc.nectar.org.au:8888/v1/AUTH_15574c7fb24c44b3b34069185efba190/npAnalysis/SpeciesTyping.tar.gz.tar.gz
-   tar zxvf SpeciesTyping.tar.gz
-
-which will generate three folders for the three species.
-
+We provide a genome collection of nearly 1500 bacterial species
+on  http://data.genomicsresearch.org/Projects/npAnalysis/.
+Refer to the documentation at https://github.com/mdcao/npAnalysis/ for more 
+details.
+ 
 ~~~~~~~~
 Synopsis
 ~~~~~~~~

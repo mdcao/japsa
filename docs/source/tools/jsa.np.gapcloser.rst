@@ -31,6 +31,8 @@ Options
                   (REQUIRED)
   --prefix=s      Prefix for the output files, default is out.*
                   (default='out')
+  --genes=s       Realtime annotation: name of annotated genes in GFF 3.0 format
+                  (default='null')
   --resistGene=s  Realtime annotation: name of antibiotic resistance gene fasta file
                   (default='null')
   --insertSeq=s   Realtime annotation: name of IS fasta file
