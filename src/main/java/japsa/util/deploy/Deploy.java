@@ -49,6 +49,7 @@ import japsa.tools.bio.hts.SelectReadIntersectCmd;
 import japsa.tools.bio.hts.SelectReadSpanCmd;
 import japsa.tools.bio.hts.SpeciesMixtureCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
+import japsa.tools.bio.hts.VNTRLongReadsCmd;
 import japsa.tools.bio.np.GapCloserCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
@@ -181,6 +182,7 @@ public class Deploy {
 		tools.add(new Japsa2TRCmd());
 		tools.add(new TRV2BedCmd());	
 		tools.add(new VNTRDepthCmd());
+		tools.add(new VNTRLongReadsCmd());
 
 		tools.add("Utilities:");
 		tools.add(new StreamServerCmd());
