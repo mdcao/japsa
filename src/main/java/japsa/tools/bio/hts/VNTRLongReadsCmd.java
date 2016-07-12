@@ -54,11 +54,13 @@ import japsa.util.deploy.Deployable;
 import java.io.File;
 import java.util.HashMap;
 
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileReader.ValidationStringency;
-import net.sf.samtools.CigarElement;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+
 
 /**
  * VNTR typing using long reads
@@ -117,6 +119,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			System.exit(1);
 		}
 
+		String bamFile = cmdLine.getStringVal("bamFile");
+		
 		String prefix = cmdLine.getStringVal("prefix");
 
 		if (prefix == null || prefix.length() == 0) {
@@ -149,12 +153,13 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 		/**********************************************************************/
 
+		
 		XAFReader xafReader = new XAFReader(strFile);
-		SAMFileReader
-		.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SAMFileReader reader = new SAMFileReader(new File(
-				cmdLine.getStringVal("bamFile")));
-
+		
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));						
+		
+			
 
 
 		IntArray intArray = new IntArray();
@@ -439,7 +444,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				outOS.print ("L = " + (costL/(hmmFlank + hmmPad)) + " R = " + costR/(hmmSeq.length() - hmmFlank - hmmPad - str.getPeriod()) + "\n");				
 
 				/*****************************************************************/				
-				outOS.print("##" + readSeq.getName()+"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\n');
+				outOS.print("##" + readSeq.getName()+"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + readSeq.getDesc() + '\n');
 				outOS.print("==================================================================\n");
 			}// while
 			iter.close();
