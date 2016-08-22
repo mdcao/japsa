@@ -938,7 +938,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 					continue;
 
 				if (posReadEnd >= posReadFinal -1)
-					continue;//I can break here, but want to get portionUsed of other contigs
+					//continue;//I can break here, but want to get portionUsed of other contigs
+					break; //so do it!
 
 
 				if (record.readAlignmentEnd() < posReadEnd)

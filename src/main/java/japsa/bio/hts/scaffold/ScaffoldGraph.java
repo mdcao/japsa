@@ -747,6 +747,7 @@ public class ScaffoldGraph{
 				
 				ArrayList<String> 	ctgList = new ArrayList<String>(),
 									origList = new ArrayList<String>(), 
+									resList = new ArrayList<String>(),
 									genesList = new ArrayList<String>();
 				
 				for(Contig ctg:scaffolds[contig.head]){
@@ -755,7 +756,9 @@ public class ScaffoldGraph{
 						for(JapsaFeature ori:ctg.oriRep)
 							origList.add(ori.getID());
 					for (JapsaFeature feature:ctg.genes)
-						genesList.add(feature.getDesc());
+						genesList.add(feature.toString());
+					for (JapsaFeature feature:ctg.resistanceGenes)
+						resList.add(feature.toString());
 				}
 				float streamData=tpoint/1000000;
 				pw.print(">");
@@ -769,6 +772,10 @@ public class ScaffoldGraph{
 				
 				for(String genes:genesList)
 					pw.print(" \n\t"+genes);
+				pw.println("");
+				
+				for(String res:resList)
+					pw.print(" \n\t"+res);
 				pw.println("");
 				
 				pw.close();

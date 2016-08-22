@@ -24,6 +24,8 @@ people have contributed to the development of Japsa, including ideas,
 algorithms, implementation, documentation and feedback:
 
 * Lachlan Coin
+* Devika Ganesamoorthy
+* Michael Hall
 * Son Hoang Nguyen
 * Mikael Boden
 * Lloyd Allison
@@ -34,6 +36,7 @@ algorithms, implementation, documentation and feedback:
 
 ### Other projects based on Japsa
 
+* [npScarf](https://github.com/mdcao/npScarf)
 * [npAnalysis](https://github.com/mdcao/npAnalysis)
 * [npReader](https://github.com/mdcao/npReader)
 * [XMas](https://github.com/mdcao/XMas)

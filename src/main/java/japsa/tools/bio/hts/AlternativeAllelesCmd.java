@@ -38,6 +38,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 import htsjdk.samtools.SAMFileHeader;
@@ -163,11 +164,15 @@ public class AlternativeAllelesCmd extends CommandLine{
 	}
 
 	static void addSequence(String inFile, String vcfFile, String reference, String outFile, int threshold) throws IOException{		
-		double sumIZ = 0, sumSq = 0;
-		int countGood = 0, countBad = 0, countUgly = 0;
+		//double sumIZ = 0, sumSq = 0;
+		//int countGood = 0, countBad = 0, countUgly = 0;
+		//int countALLGood = 0, countALLBad = 0, countALLUgly = 0;
+		//double sumALLIZ = 0, sumALLSq = 0;
 		//Good: 0 < insert size <= SIZE_THRESHOLD
 		//Bad:  insertSize >SIZE_THRESHOLD
 		//Ugly: insertSize=0
+		
+		HashSet<String> somaticSet = new HashSet<String>(); 
 
 
 		BufferedReader bf =  SequenceReader.openFile(vcfFile);
@@ -179,7 +184,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 
 		varList.add(fVar);
 
-		String myChrom = fVar.chrom;		
+		String myChrom = fVar.chrom;
 		Sequence refSeq = null;
 		{
 			Logging.info("Read reference started");
@@ -238,6 +243,22 @@ public class AlternativeAllelesCmd extends CommandLine{
 				break;//while
 
 			//assert samRefIndex == myChromIndex
+			
+			//int insertSize = Math.abs(sam.getInferredInsertSize());
+			
+			//if (insertSize == 0){
+			//	countALLUgly ++;
+			//}else if (insertSize <= threshold){
+			//	countALLGood ++;
+			//	sumALLIZ += insertSize;
+			//	sumALLSq += insertSize * insertSize;					
+			//}else{
+			//	countALLBad ++;
+			//}
+			
+			String readName = sam.getReadName();
+			if (somaticSet.contains(readName))
+				continue;
 
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			boolean support = false;
@@ -287,16 +308,6 @@ public class AlternativeAllelesCmd extends CommandLine{
 								if (var.pos == refPos + i && var.base == readBase){
 									//yay
 									support = true;
-									/************************************************
-									System.err.println(sam.getReadName() + "\t"
-									 + sam.getMappingQuality() + "\t"
-									 + sam.getAlignmentStart() + "\t" 
-									 + sam.getCigarString() + "\t"
-									 + sam.getReadString() +"\t" 
-									 + var.chrom + "\t" 
-									 + var.pos + "\t" 
-									 + var.base);
-									 /************************************************/
 									break;//for									
 								}
 
@@ -318,16 +329,6 @@ public class AlternativeAllelesCmd extends CommandLine{
 								if (var.pos == refPos + i && var.base == readBase){
 									//yay
 									support = true;
-									/************************************************
-									System.err.println(sam.getReadName() + "\t"
-									 + sam.getMappingQuality() + "\t"
-									 + sam.getAlignmentStart() + "\t" 
-									 + sam.getCigarString() + "\t"
-									 + sam.getReadString() +"\t" 
-									 + var.chrom + "\t" 
-									 + var.pos + "\t" 
-									 + var.base);
-									 /************************************************/
 									break;//for									
 								}
 
@@ -361,32 +362,59 @@ public class AlternativeAllelesCmd extends CommandLine{
 			}//for
 
 			if (support){
-				samWriter.writeAlignment(sam);
-				int insertSize = Math.abs(sam.getInferredInsertSize());
-				if (insertSize == 0){
-					countUgly ++;
-				}else if (insertSize <= threshold){
-					countGood ++;
-					sumIZ += insertSize;
-					sumSq += insertSize * insertSize;					
-				}else{
-					countBad ++;
-				}
+				//samWriter.writeAlignment(sam);				
+				//if (insertSize == 0){
+				//	countUgly ++;
+				//}else if (insertSize <= threshold){
+				//	countGood ++;
+				//	sumIZ += insertSize;
+				//	sumSq += insertSize * insertSize;					
+				//}else{
+				//	countBad ++;
+				//}
+				somaticSet.add(readName);
 			}
 
 		}//while
+		
+		samIter.close();
+		
+		samIter = samReader.query(refSeq.getName(),0,0,false);
+		while (samIter.hasNext()){			
+			SAMRecord sam = samIter.next();
+			String readName = sam.getReadName();
+			if (somaticSet.contains(readName)){
+				samWriter.writeAlignment(sam);
+			}
+		}
+		
 		samWriter.close();
 		samReader.close();
 		bf.close();
+		/**********************************************************************
 		
+		System.out.println("================ ALL DATA===================");
+		System.out.printf("Good insert fragments  (0<insert<=%d): %d\n", threshold,countALLGood);
+		if (countALLGood>0){
+			double mean  = sumALLIZ / countALLGood;
+			double stdev = Math.sqrt(sumALLSq/countALLGood - mean * mean );			
+			System.out.printf("  mean = %f, std=%f\n",mean, stdev);	
+		}
+		System.out.printf("Bad  insert fragments  (insert>%d): %d\n", threshold,countALLBad);
+		System.out.printf("Ungly insert fragments (insert=0): %d\n", countALLUgly);
+		
+		
+		System.out.println("================ SELECTED DATA===================");
 		System.out.printf("Good insert fragments  (0<insert<=%d): %d\n", threshold,countGood);
 		if (countGood>0){
 			double mean  = sumIZ / countGood;
 			double stdev = Math.sqrt(sumSq/countGood - mean * mean );			
 			System.out.printf("  mean = %f, std=%f\n",mean, stdev);	
 		}
-		System.out.printf("Bad  insert fragments  (insert>%d): %d\n", threshold,countGood);
-		System.out.printf("Ungly insert fragments (insert=0): %d\n", countGood);		
+		System.out.printf("Bad  insert fragments  (insert>%d): %d\n", threshold,countBad);
+		System.out.printf("Ungly insert fragments (insert=0): %d\n", countUgly);
+		
+		/**********************************************************************/
 	}
 
 

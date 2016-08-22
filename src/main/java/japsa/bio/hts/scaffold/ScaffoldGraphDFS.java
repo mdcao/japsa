@@ -36,6 +36,7 @@ package japsa.bio.hts.scaffold;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
+import japsa.util.Logging;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -86,6 +87,8 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 //		}
 	}
 	private void readDb(String data, String type, double minCov, double minID) throws IOException, InterruptedException{
+		type = type.toLowerCase();
+		
 		String blastn = "blastn";
 
 		ProcessBuilder pb = new ProcessBuilder(blastn, 
@@ -134,20 +137,31 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				char strand = toks[16].equals("plus")?'+':'-';
 				JapsaFeature feature = new JapsaFeature(Integer.parseInt(toks[6]), Integer.parseInt(toks[7]), type, toks[0], strand, "");
 				feature.addDesc((int)(cov*100) + "% cover, " + toks[10] + "% identity");
-				switch (type.toLowerCase()){
-					case "resistance genes":
-						ctg.resistanceGenes.add(feature);
-						break;
-					case "insertion sites":
-						ctg.insertSeq.add(feature);
-						break;
-					case "origin of replication":
-						ctg.oriRep.add(feature);
-						break;
-					default:
-						System.err.println(type + " has not yet included in our analysis!");
-						break;
+								
+				if ("resistance genes".equals(type))
+					ctg.resistanceGenes.add(feature);
+				else if ("insertion sites".equals(type)){
+					ctg.insertSeq.add(feature);
+				}else if ("origin of replication".equals(type)){
+					ctg.oriRep.add(feature);
+				}else{
+					Logging.warn(type + " has not yet included in our analysis!");					
 				}
+				//Rewritten the below with the above
+				//switch (type.toLowerCase()){
+				//	case "resistance genes":
+				//		ctg.resistanceGenes.add(feature);
+				//		break;
+				//	case "insertion sites":
+				//		ctg.insertSeq.add(feature);
+				//		break;
+				//	case "origin of replication":
+				//		ctg.oriRep.add(feature);
+				//		break;
+				//	default:
+				//		System.err.println(type + " has not yet included in our analysis!");
+				//		break;
+				//}
 			}
 			Collections.sort(ctg.resistanceGenes);
 			Collections.sort(ctg.insertSeq);

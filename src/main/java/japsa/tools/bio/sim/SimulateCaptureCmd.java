@@ -40,6 +40,8 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Random;
 
+import org.apache.commons.math3.distribution.LogNormalDistribution;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
@@ -71,16 +73,22 @@ public class SimulateCaptureCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addString("reference", null, "Name of genome to be ",true);
-		addString("probe", null,  "File containing probes in bam format");				
-
+		addString("probe", null,  "File containing probes in bam format");
 
 		addString("logFile", "-",  "Log file");
 		addString("ID", "",  "A unique ID for the data set");
 
-		addInt("mean", 340 , "Fragment size mean");
-		addInt("std", 100, "Fragment size standard deviation");
-		addInt("num", 1000000, "Number of fragments ");
+		addInt("mode", 340 , "Mode of fragment size distribution");
+		addDouble("shape", 0.5, "Shape parameter of the fragment size distribution");
+
+		addInt("num", 1000000, "Number of fragments ");		
 		addInt("seed", 0, "Random seed, 0 for a random seed");
+
+
+		//addDouble("mismatch",0.01,"probability of mismatches");
+		//addDouble("deletion",0.01,"probability of deletion");
+		//addDouble("insertion",0.01,"probability of insertion");
+		//addDouble("extension",0.01,"probability of indel extention");
 
 		addString("fragment", null, "Output of fragment file");
 		addString("miseq", null, "Name of read file if miseq is simulated");
@@ -91,7 +99,7 @@ public class SimulateCaptureCmd extends CommandLine{
 	public static void main(String [] args) throws IOException{
 		CommandLine cmdLine = new SimulateCaptureCmd ();
 		args = cmdLine.stdParseLine(args);	
-		
+
 
 		/**********************************************************************/
 
@@ -101,8 +109,8 @@ public class SimulateCaptureCmd extends CommandLine{
 		String ID       =  cmdLine.getStringVal("ID");
 		String referenceFile =  cmdLine.getStringVal("reference");
 
-		int mean = cmdLine.getIntVal("mean");
-		int std = cmdLine.getIntVal("std");		
+		int mode = cmdLine.getIntVal("mode");
+		int shape = cmdLine.getIntVal("shape");		
 		int seed = cmdLine.getIntVal("seed");		
 		int num = cmdLine.getIntVal("num");
 
@@ -126,7 +134,8 @@ public class SimulateCaptureCmd extends CommandLine{
 			pacbioFq = SequenceOutputStream.makeOutputStream(pacbio + ".fastq.gz");
 		}	
 
-		int flank = mean + 4 * std;
+		//TODO: what is it?
+		int flank = mode + 4 * shape;
 
 		SequenceOutputStream 
 		logOS =	logFile.equals("-")? (new SequenceOutputStream(System.err)):(SequenceOutputStream.makeOutputStream(logFile));
@@ -150,6 +159,12 @@ public class SimulateCaptureCmd extends CommandLine{
 			Logging.info("Acc " +i + " " +  accLen[i]);			
 		}
 
+
+		double mu = Math.log(mode) + shape * shape;		
+		LogNormalDistribution logNormalDist = new LogNormalDistribution(mu, shape);
+		//Reseed the distribution to make sure the same results if the same seed given
+		logNormalDist.reseedRandomGenerator(rnd.nextInt());		
+
 		BitSet [] bitSets = null;
 		SamReader samReader =  null;
 
@@ -169,7 +184,7 @@ public class SimulateCaptureCmd extends CommandLine{
 					continue;
 
 				int start = sam.getAlignmentStart();			
-				int end = sam.getAlignmentEnd();				
+				int end = sam.getAlignmentEnd();	
 				//probe can only bind if > 90%
 				if ((end - start) < 0.9 * sam.getReadLength())
 					continue;			
@@ -187,7 +202,6 @@ public class SimulateCaptureCmd extends CommandLine{
 		if (fragment != null)
 			sos = SequenceOutputStream.makeOutputStream(fragment);
 
-
 		int numFragment = 0;
 		//actual number of fragments generated, including the non probed
 		long numGen = 0;
@@ -198,6 +212,10 @@ public class SimulateCaptureCmd extends CommandLine{
 				Logging.info("Generated " + numGen + " selected " + numFragment);				
 			}
 
+			//1. Generate the length of the next fragment
+			int fragLength = Math.max(((int) logNormalDist.sample()),50);
+
+			//2. Generate the position of the fragment
 			//toss the coin
 			double r = rnd.nextDouble();
 			long p = (long) (r * genome.getLength());			
@@ -207,16 +225,15 @@ public class SimulateCaptureCmd extends CommandLine{
 			//identify the chroms
 			if (index > 0){
 				p = p - accLen[index - 1];
-			}
+			}			
 
 			int myP = (int) p;
 			//Logging.info("Found " + index + " " + myP + "  " + p);
 
 			if (p > chrList.get(index).length()){
 				Logging.exit("Not expecting " + p + " vs " + index, 1);
-			}
+			}			
 
-			int fragLength = Math.max(((int) (rnd.nextGaussian() * std + mean)),50);
 			if (myP + fragLength > chrList.get(index).length()){
 				Logging.warn("Whoops");
 				continue;
@@ -244,7 +261,7 @@ public class SimulateCaptureCmd extends CommandLine{
 						continue;
 
 					countProbe += (end - start + 1);
-					myEnd = end;				
+					myEnd = end;
 				}
 				iter.close();
 
@@ -411,7 +428,7 @@ public class SimulateCaptureCmd extends CommandLine{
 
 			for (int i = 0; i < read2.length();i++)
 				o1.print("I");
-			o1.print("\n");			
+			o1.print("\n");
 		}
 	}
 
