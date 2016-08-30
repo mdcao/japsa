@@ -28,43 +28,94 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 26/08/2016 - Minh Duc Cao: Start                                        
- *  
+ * 28/08/2016 - Minh Duc Cao: Created                                        
  ****************************************************************************/
+package japsa.bio.sim;
 
-
-package japsa.util;
-
+import java.io.IOException;
 import java.util.Random;
 
-/**
- * A library for simulation
- * @author minhduc
- *
- */
-public class Simulation {
-	/**
-	 * This function return a sample from log-logistic distribution (aka Fisk 
-	 * distribution) with a scale parameter alpha and shape parameter beta.
-	 * 
-	 * See wikipedia on Fisk Distribution
-	 * 
-	 * @param alpha: scale parameter
-	 * @param beta: shape parameter
-	 * @param rnd: random generator
-	 * @return
-	 */
-	public static double logLogisticSample(double alpha, double beta, Random rnd){
-		double u = rnd.nextDouble();
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceBuilder;
+import japsa.seq.SequenceOutputStream;
 
-		if (u <= 0.5)
-			return alpha * Math.pow (u / (1.0 - u), 1.0 / beta);
-		else
-			return alpha / Math.pow ((1.0 - u)/ u, 1.0 / beta);	
+/**
+ * Class represent Illumina sequencing
+ * 
+ * @author minhduc
+ *TODO: make full class
+ */
+public class IlluminaSequencing{
+
+	/**
+	 * Simulate MiSeq
+	 * @param fragment
+	 * @param o1
+	 * @param o2
+	 * @param rnd
+	 * @throws IOException
+	 */
+	public static void simulatePaired(Sequence fragment, SequenceOutputStream o1 , SequenceOutputStream o2, Random rnd) throws IOException{		
+
+		double snp = 0.01;
+		double del = 0.0001;				
+		double ins = 0.0001;
+		double ext = 0.2;
+
+		//double r = 
+		int len = Math.min(250, fragment.length());
+		String name = fragment.getName();				
+
+		SequenceBuilder read1 = SequencingSimulation.simulateRead(fragment, len, snp, del, ins, ext, rnd);
+		SequenceBuilder read2 = SequencingSimulation.simulateRead(Alphabet.DNA.complement(fragment), len, snp, del, ins, ext, rnd);
+
+		if (rnd.nextBoolean()){
+			o1.print("@");
+			o1.print(name);						
+			o1.print("\n");
+			for (int i = 0; i < read1.length();i++)
+				o1.print(read1.charAt(i));
+			o1.print("\n+\n");
+
+			for (int i = 0; i < read1.length();i++)
+				o1.print("I");
+			o1.print("\n");
+
+			o2.print("@");
+			o2.print(name);						
+			o2.print("\n");
+			for (int i = 0; i < read2.length();i++)
+				o2.print(read2.charAt(i));
+			o2.print("\n+\n");
+
+			for (int i = 0; i < read2.length();i++)
+				o2.print("I");
+			o2.print("\n");			
+		}else{
+			o2.print("@");
+			o2.print(name);						
+			o2.print("\n");
+			for (int i = 0; i < read1.length();i++)
+				o2.print(read1.charAt(i));
+			o2.print("\n+\n");
+
+			for (int i = 0; i < read1.length();i++)
+				o2.print("I");
+			o2.print("\n");
+
+			o1.print("@");
+			o1.print(name);						
+			o1.print("\n");
+			for (int i = 0; i < read2.length();i++)
+				o1.print(read2.charAt(i));
+			o1.print("\n+\n");
+
+			for (int i = 0; i < read2.length();i++)
+				o1.print("I");
+			o1.print("\n");
+		}
 	}
+
 	
-	public static double logLogisticPDF(double x, double alpha, double beta){
-		x = x / alpha;
-		return Math.pow(beta * x, -beta -1) *  Math.pow(( 1 + Math.pow(x, -beta)), -2);
-	}	
 }

@@ -28,43 +28,76 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 26/08/2016 - Minh Duc Cao: Start                                        
- *  
+ * 28/08/2016 - Minh Duc Cao: Created                                        
  ****************************************************************************/
-
-
-package japsa.util;
+package japsa.bio.sim;
 
 import java.util.Random;
 
+import japsa.seq.Sequence;
+import japsa.seq.SequenceBuilder;
+
 /**
- * A library for simulation
  * @author minhduc
  *
  */
-public class Simulation {
+public class SequencingSimulation {
 	/**
-	 * This function return a sample from log-logistic distribution (aka Fisk 
-	 * distribution) with a scale parameter alpha and shape parameter beta.
-	 * 
-	 * See wikipedia on Fisk Distribution
-	 * 
-	 * @param alpha: scale parameter
-	 * @param beta: shape parameter
-	 * @param rnd: random generator
+	 * Simulate a read from the start of a fragment
+	 * @param fragment
+	 * @param len
+	 * @param snp
+	 * @param indel
+	 * @param ext
+	 * @param rnd
 	 * @return
 	 */
-	public static double logLogisticSample(double alpha, double beta, Random rnd){
-		double u = rnd.nextDouble();
+	public static SequenceBuilder simulateRead(Sequence fragment, int len,  double snp, double del, double ins, double ext, Random rnd){		
+		//accumulative prob
+		double aSNP = snp;
+		double aDel = aSNP + del;
+		double aIns = aDel + ins;
 
-		if (u <= 0.5)
-			return alpha * Math.pow (u / (1.0 - u), 1.0 / beta);
-		else
-			return alpha / Math.pow ((1.0 - u)/ u, 1.0 / beta);	
+		//why - 10?/
+		len = Math.min(len, fragment.length() - 10); 
+
+		//Sequence read = new Sequence(fragment.alphabet(), len);
+		SequenceBuilder sb = new SequenceBuilder(fragment.alphabet(), len);
+
+		//int mIndex = 0; 
+		int fIndex = 0;
+		//mIndex < len &&
+		for (; sb.length() < len && fIndex < fragment.length();){
+			byte base = fragment.getBase(fIndex);
+			double r = rnd.nextDouble(); 
+			if (r < aSNP){
+				//simulate a SNP aka mismatch
+				sb.append((byte) ((base + rnd.nextInt(3)) % 4));
+				//read.setBase(mIndex, (byte) ((base + rnd.nextInt(3)) % 4));
+				//mIndex ++;
+				fIndex ++;				
+			}else if (r < aDel){
+				do{
+					fIndex ++;
+				}while (rnd.nextDouble() < ext);
+			}else if (r < aIns){
+				//insertion
+				do{
+					sb.append((byte) (rnd.nextInt(4)));
+					//mIndex ++;
+				}while (rnd.nextDouble() < ext);
+			}else{
+				sb.append(base);
+				//read.setBase(mIndex, base);
+				//mIndex ++;
+				fIndex ++;
+			}//else
+		}//for
+		//for (;mIndex < len;mIndex ++){
+		//	//pad in random to fill in
+		//	read.setBase(mIndex, (byte) rnd.nextInt(4));
+		//}
+		return sb;
 	}
-	
-	public static double logLogisticPDF(double x, double alpha, double beta){
-		x = x / alpha;
-		return Math.pow(beta * x, -beta -1) *  Math.pow(( 1 + Math.pow(x, -beta)), -2);
-	}	
+
 }

@@ -28,7 +28,7 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 28/05/2014 - Minh Duc Cao: Created                                        
+ * 28/05/2016 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
 package japsa.tools.bio.sim;
@@ -40,14 +40,14 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Random;
 
-import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import japsa.seq.Alphabet;
+import japsa.bio.sim.IlluminaSequencing;
+import japsa.bio.sim.PacBioSequencing;
 import japsa.seq.Genome;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
@@ -85,7 +85,7 @@ public class SimulateCaptureCmd extends CommandLine{
 		addString("pacbio", null, "Name of read file if pacbio is simulated");
 
 		//Fragment size distribution
-		addInt("median", 340 , "Median of fragment size distribution");
+		addInt("median", 700 , "Median of fragment size distribution");
 		addDouble("shape", 5, "Shape parameter of the fragment size distribution");
 
 		addInt("num", 1000000, "Number of fragments ");		
@@ -101,7 +101,6 @@ public class SimulateCaptureCmd extends CommandLine{
 
 		addInt("illen", 300, "Illumina: read length");
 		addString("ilmode", "pe", "Illumina: Sequencing mode: pe = paired-end, mp=mate-paired and se=singled-end");
-
 
 		addInt("seed", 0, "Random seed, 0 for a random seed");
 		addStdHelp();
@@ -120,7 +119,7 @@ public class SimulateCaptureCmd extends CommandLine{
 		String referenceFile =  cmdLine.getStringVal("reference");
 
 		int median =  cmdLine.getIntVal("median");
-		int shape = cmdLine.getIntVal("shape");		
+		double shape = cmdLine.getDoubleVal("shape");		
 		int seed =  cmdLine.getIntVal("seed");		
 		int num =   cmdLine.getIntVal("num");
 
@@ -132,6 +131,23 @@ public class SimulateCaptureCmd extends CommandLine{
 		if (miseq == null && pacbio == null && fragment==null){
 			System.err.println("At least one of fragment, miseq and pacbio has to be set\n" + cmdLine.usageString());			
 			System.exit(-1);
+		}
+
+		int median2 = 400;
+
+		double [] dist2 = new double[median2*4];
+
+		double max = 0.0;
+		for (int i = 0; i < dist2.length;i++){
+			dist2[i] = Simulation.logLogisticPDF(i + 1, median2, 4);
+			if (dist2[i] > max)
+				max = dist2[i];			
+		}	
+
+		//Normalise to 1
+		for (int i = 0; i < dist2.length;i++){			
+			//Logging.info("dist2 [" + i + "] = " + dist2[i] + " max = " + max + " after " + dist2[i] / max);
+			dist2[i] = dist2[i] / max;
 		}
 
 		SequenceOutputStream miSeq1Fq = null, miSeq2Fq = null, pacbioFq = null, sos = null;
@@ -146,7 +162,9 @@ public class SimulateCaptureCmd extends CommandLine{
 		}	
 
 		//TODO: what is it?
-		int flank = median + 4 * shape;
+		int flank = median * 4;
+
+		double hybridizationRatio = 0.5;
 
 		SequenceOutputStream 
 		logOS =	logFile.equals("-")? (new SequenceOutputStream(System.err)):(SequenceOutputStream.makeOutputStream(logFile));
@@ -168,8 +186,7 @@ public class SimulateCaptureCmd extends CommandLine{
 		for (int i = 1; i < accLen.length;i++){
 			accLen[i] = accLen[i-1] + chrList.get(i).length();
 			Logging.info("Acc " +i + " " +  accLen[i]);			
-		}
-
+		}	
 
 		//double mu = Math.log(median) + shape * shape;		
 		//LogNormalDistribution logNormalDist = new LogNormalDistribution(mu, shape);
@@ -213,19 +230,30 @@ public class SimulateCaptureCmd extends CommandLine{
 		if (fragment != null)
 			sos = SequenceOutputStream.makeOutputStream(fragment);
 
-		int numFragment = 0;
+		int numFragment = 0;		
 		//actual number of fragments generated, including the non probed
 		long numGen = 0;
+
+		int 	
+		fragmentRej1 = 0,
+		fragmentRej2 = 0,
+		fragmentRej3 = 0;		
 
 		while (numFragment < num){
 			numGen ++;
 			if (numGen % 1000000 ==0){
-				Logging.info("Generated " + numGen + " selected " + numFragment);				
+				Logging.info("Generated " + numGen + " selected " + numFragment
+						//+ "app = " + numFragmentApp
+						+ "; reject1 = " + fragmentRej1 
+						+ "; reject2 = " + fragmentRej2
+						+ "; reject3 = " + fragmentRej3);				
 			}
 
 			//1. Generate the length of the next fragment
 			int fragLength = 
 					Math.max((int) Simulation.logLogisticSample(median, shape, rnd), 50);	
+
+			//Logging.info("Gen0 " + fragLength);
 
 			//2. Generate the position of the fragment
 			//toss the coin
@@ -246,15 +274,21 @@ public class SimulateCaptureCmd extends CommandLine{
 				Logging.exit("Not expecting " + p + " vs " + index, 1);
 			}			
 
-			if (myP + fragLength > chrList.get(index).length()){
+			//Take the min of the frag length and the length to the end
+			fragLength = Math.min(fragLength, chrList.get(index).length() - myP);
+			if (fragLength < 50){
 				Logging.warn("Whoops");
 				continue;
 			}
 
 			if (samReader != null){
 				//if probe is provided, see if the fragment is rejected
-				if (!bitSets[index].get(myP))
+				if (!bitSets[index].get(myP)){
+					//Logging.info("Reject0 " + fragLength);
+
+					fragmentRej1 ++;
 					continue;//while
+				}
 
 				SAMRecordIterator iter = samReader.query(chrList.get(index).getName(), myP, myP + fragLength, true);
 
@@ -268,46 +302,71 @@ public class SimulateCaptureCmd extends CommandLine{
 						continue;
 
 					int end = sam.getAlignmentEnd();				
-					//probe can only bind if > 90%
-					if ((end - start) < 0.9 * sam.getReadLength())
-						continue;
+					//probe can only bind if > 80%
+					if ((end - start) < hybridizationRatio * sam.getReadLength())
+						continue;//while iter probe
 
 					countProbe += (end - start + 1);
 					myEnd = end;
 				}
 				iter.close();
 
-				if (countProbe <= 0)
-					continue;							 
+				if (countProbe <= 0){
+					//Logging.info("Reject1 " + fragLength + " " + countProbe);
+					fragmentRej1 ++;
+					continue;
+				}
+
 
 				r = rnd.nextDouble();
 
-				double myOdd = 
-						(countProbe * 1.0 / fragLength - 0.4) / 0.6;
+				double myOdd = countProbe * 1.0 / fragLength  + 0.5;
 				//myOdd = (myOdd - 0.4)/0.6;
 
 				if (r > myOdd){
+					//bad luck, rejected
+					//Logging.info("Reject2 " + fragLength + " " + countProbe);
+					fragmentRej2 ++;
 					continue;//while
 				}
-
 			}//if
 
+			//Logging.info("Gen1 " + fragLength);
+			//here, the fragment is captured
+
+			//another round	of selection
+			double myOdd = 0;
+			if (fragLength >= dist2.length)
+				myOdd = dist2[dist2.length - 1];
+			else myOdd = dist2[fragLength];
+
+
+
+
+			if (rnd.nextDouble() > myOdd){
+				fragmentRej3 ++;				
+				continue;
+			}
+			numFragment ++;
+			//numFragmentApp += count;
+
+			//Logging.info("Gen2 " + fragLength);
 			//now that the fragment is to be sequenced
 			Sequence seq = chrList.get(index).subSequence(myP, myP + fragLength);
 			seq.setName(ID + "_" + chrList.get(index).getName() + "_" + (myP + 1) + "_" +(myP + fragLength));
 
-			numFragment ++;		
 
 			if (sos != null)
 				seq.writeFasta(sos);
 
 			if (miSeq1Fq != null){
-				simulatePaired(seq, miSeq1Fq, miSeq2Fq, rnd);
+				IlluminaSequencing.simulatePaired(seq, miSeq1Fq, miSeq2Fq, rnd);
 			}
 
 			if (pacbioFq != null){
-				simulatePacBio(seq, pblen, pacbioFq, rnd);
+				PacBioSequencing.simulatePacBio(seq, pblen, pacbioFq, rnd);
 			}
+
 		}
 		if (sos != null)
 			sos.close();
@@ -322,157 +381,9 @@ public class SimulateCaptureCmd extends CommandLine{
 			pacbioFq.close();		
 
 		logOS.close();
-	}
-
-	static int PACBIO_ADAPTER_LENGTH = 46;
-
-	/**
-	 * Simulate a read from the start of a fragment
-	 * @param fragment
-	 * @param len
-	 * @param snp
-	 * @param indel
-	 * @param ext
-	 * @param rnd
-	 * @return
-	 */
-	static SequenceBuilder simulateRead(Sequence fragment, int len,  double snp, double del, double ins, double ext, Random rnd){		
-		//accumulative prob
-		double aSNP = snp;
-		double aDel = aSNP + del;
-		double aIns = aDel + ins;
-
-		//why - 10?/
-		len = Math.min(len, fragment.length() - 10); 
-
-		//Sequence read = new Sequence(fragment.alphabet(), len);
-		SequenceBuilder sb = new SequenceBuilder(fragment.alphabet(), len);
-
-		//int mIndex = 0; 
-		int fIndex = 0;
-		//mIndex < len &&
-		for (; sb.length() < len && fIndex < fragment.length();){
-			byte base = fragment.getBase(fIndex);
-			double r = rnd.nextDouble(); 
-			if (r < aSNP){
-				//simulate a SNP aka mismatch
-				sb.append((byte) ((base + rnd.nextInt(3)) % 4));
-				//read.setBase(mIndex, (byte) ((base + rnd.nextInt(3)) % 4));
-				//mIndex ++;
-				fIndex ++;				
-			}else if (r < aDel){
-				do{
-					fIndex ++;
-				}while (rnd.nextDouble() < ext);
-			}else if (r < aIns){
-				//insertion
-				do{
-					sb.append((byte) (rnd.nextInt(4)));
-					//mIndex ++;
-				}while (rnd.nextDouble() < ext);
-			}else{
-				sb.append(base);
-				//read.setBase(mIndex, base);
-				//mIndex ++;
-				fIndex ++;
-			}//else
-		}//for
-		//for (;mIndex < len;mIndex ++){
-		//	//pad in random to fill in
-		//	read.setBase(mIndex, (byte) rnd.nextInt(4));
-		//}
-		return sb;
-	}
-
-	/**
-	 * Simulate MiSeq
-	 * @param fragment
-	 * @param o1
-	 * @param o2
-	 * @param rnd
-	 * @throws IOException
-	 */
-	static void simulatePaired(Sequence fragment, SequenceOutputStream o1 , SequenceOutputStream o2, Random rnd) throws IOException{		
-
-		double snp = 0.01;
-		double del = 0.0001;				
-		double ins = 0.0001;
-		double ext = 0.2;
-
-		//double r = 
-		int len = Math.min(250, fragment.length());
-		String name = fragment.getName();				
-
-		SequenceBuilder read1 = simulateRead(fragment, len, snp, del, ins, ext, rnd);
-		SequenceBuilder read2 = simulateRead(Alphabet.DNA.complement(fragment), len, snp, del, ins, ext, rnd);
-
-		if (rnd.nextBoolean()){
-			o1.print("@");
-			o1.print(name);						
-			o1.print("\n");
-			for (int i = 0; i < read1.length();i++)
-				o1.print(read1.charAt(i));
-			o1.print("\n+\n");
-
-			for (int i = 0; i < read1.length();i++)
-				o1.print("I");
-			o1.print("\n");
-
-			o2.print("@");
-			o2.print(name);						
-			o2.print("\n");
-			for (int i = 0; i < read2.length();i++)
-				o2.print(read2.charAt(i));
-			o2.print("\n+\n");
-
-			for (int i = 0; i < read2.length();i++)
-				o2.print("I");
-			o2.print("\n");			
-		}else{
-			o2.print("@");
-			o2.print(name);						
-			o2.print("\n");
-			for (int i = 0; i < read1.length();i++)
-				o2.print(read1.charAt(i));
-			o2.print("\n+\n");
-
-			for (int i = 0; i < read1.length();i++)
-				o2.print("I");
-			o2.print("\n");
-
-			o1.print("@");
-			o1.print(name);						
-			o1.print("\n");
-			for (int i = 0; i < read2.length();i++)
-				o1.print(read2.charAt(i));
-			o1.print("\n+\n");
-
-			for (int i = 0; i < read2.length();i++)
-				o1.print("I");
-			o1.print("\n");
-		}
-	}
-
-	static void simulatePacBio(Sequence fragment, int pblen, SequenceOutputStream o, Random rnd) throws IOException{
-		double snp = 0.01;
-		double ins = 0.1;	
-		double del = 0.04;
-		double ext = 0.4;
-
-		//int len = (int) (fragment.length() * .9);
-		String name = fragment.getName();		
-		SequenceBuilder read	=  simulateRead(fragment, fragment.length(), snp, del, ins, ext, rnd);		
-
-		o.print("@");
-		o.print(name);						
-		o.print("\n");
-		for (int i = 0; i < read.length();i++)
-			o.print(read.charAt(i));
-		o.print("\n+\n");
-
-		for (int i = 0; i < read.length();i++)
-			o.print("E");
-		o.print("\n");
-
-	}
+	}	
+	static class GenomicRegion{
+		int length, start, chrIndex;
+	}	
+	
 }

@@ -28,43 +28,46 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 26/08/2016 - Minh Duc Cao: Start                                        
- *  
+ * 28/08/2016 - Minh Duc Cao: Created                                        
  ****************************************************************************/
+package japsa.bio.sim;
 
-
-package japsa.util;
-
+import java.io.IOException;
 import java.util.Random;
 
+import japsa.seq.Sequence;
+import japsa.seq.SequenceBuilder;
+import japsa.seq.SequenceOutputStream;
+
 /**
- * A library for simulation
+ * Implement PacBio sequencing
  * @author minhduc
  *
  */
-public class Simulation {
-	/**
-	 * This function return a sample from log-logistic distribution (aka Fisk 
-	 * distribution) with a scale parameter alpha and shape parameter beta.
-	 * 
-	 * See wikipedia on Fisk Distribution
-	 * 
-	 * @param alpha: scale parameter
-	 * @param beta: shape parameter
-	 * @param rnd: random generator
-	 * @return
-	 */
-	public static double logLogisticSample(double alpha, double beta, Random rnd){
-		double u = rnd.nextDouble();
+public class PacBioSequencing{
+	static int PACBIO_ADAPTER_LENGTH = 46;
 
-		if (u <= 0.5)
-			return alpha * Math.pow (u / (1.0 - u), 1.0 / beta);
-		else
-			return alpha / Math.pow ((1.0 - u)/ u, 1.0 / beta);	
+
+	public static void simulatePacBio(Sequence fragment, int pblen, SequenceOutputStream o, Random rnd) throws IOException{
+		double snp = 0.01;
+		double ins = 0.1;	
+		double del = 0.04;
+		double ext = 0.4;
+
+		//int len = (int) (fragment.length() * .9);
+		String name = fragment.getName();		
+		SequenceBuilder read	=  SequencingSimulation.simulateRead(fragment, fragment.length(), snp, del, ins, ext, rnd);		
+
+		o.print("@");
+		o.print(name);						
+		o.print("\n");
+		for (int i = 0; i < read.length();i++)
+			o.print(read.charAt(i));
+		o.print("\n+\n");
+
+		for (int i = 0; i < read.length();i++)
+			o.print("E");
+		o.print("\n");
+
 	}
-	
-	public static double logLogisticPDF(double x, double alpha, double beta){
-		x = x / alpha;
-		return Math.pow(beta * x, -beta -1) *  Math.pow(( 1 + Math.pow(x, -beta)), -2);
-	}	
 }
