@@ -35,6 +35,7 @@ package japsa.bio.sim;
 import java.io.IOException;
 import java.util.Random;
 
+import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
@@ -46,28 +47,45 @@ import japsa.seq.SequenceOutputStream;
  */
 public class PacBioSequencing{
 	static int PACBIO_ADAPTER_LENGTH = 46;
+	static int READ_ID = 0;
 
 
-	public static void simulatePacBio(Sequence fragment, int pblen, SequenceOutputStream o, Random rnd) throws IOException{
+	public static void simulatePacBio(Sequence fragment, int readLen, SequenceOutputStream o, Random rnd) throws IOException{
 		double snp = 0.01;
 		double ins = 0.1;	
 		double del = 0.04;
 		double ext = 0.4;
 
+		READ_ID ++;
+
 		//int len = (int) (fragment.length() * .9);
-		String name = fragment.getName();		
-		SequenceBuilder read	=  SequencingSimulation.simulateRead(fragment, fragment.length(), snp, del, ins, ext, rnd);		
+		String name = fragment.getName();
+		Sequence compStrand = Alphabet.DNA.complement(fragment);
+		int start = 0;
 
-		o.print("@");
-		o.print(name);						
-		o.print("\n");
-		for (int i = 0; i < read.length();i++)
-			o.print(read.charAt(i));
-		o.print("\n+\n");
+		boolean template = true;
+		while (readLen > 0){
+			int len = readLen;
+			Sequence myStrand = template?fragment:compStrand;
 
-		for (int i = 0; i < read.length();i++)
-			o.print("E");
-		o.print("\n");
+			if (len > fragment.length()){
+				len = fragment.length();
+			}		
+			SequenceBuilder read	=  SequencingSimulation.simulateRead(myStrand, len, snp, del, ins, ext, rnd);
+			o.print("@");
+			o.print(name);
+			o.print("/" + READ_ID + "/" + start + "_" + (start + read.length()) + "\n");			
+			for (int i = 0; i < read.length();i++)
+				o.print(read.charAt(i));
+			o.print("\n+\n");
+			for (int i = 0; i < read.length();i++)
+				o.print("E");
+			o.print("\n");
 
+			start += read.length() + PACBIO_ADAPTER_LENGTH;
+			readLen -= (read.length() + PACBIO_ADAPTER_LENGTH);
+
+			template = !template;					
+		}
 	}
 }
