@@ -52,7 +52,6 @@ import japsa.util.deploy.Deployable;
  * @author minhduc
  *
  */
-@Deployable(scriptName = "jsa.dev.profileDP", scriptDesc = "Using a 1-state machine for alignment")
 public class ProfileDP {	
 	// cost from a match state
 	double  matProb,
@@ -62,6 +61,27 @@ public class ProfileDP {
 	double  matchProb,misMatchProb;
 
 	private double 	matCost, delCost, insCost;
+	
+	public double getMatCost() {
+		return matCost;
+	}
+
+	public double getDelCost() {
+		return delCost;
+	}
+
+	public double getInsCost() {
+		return insCost;
+	}
+
+	public double getMatchCost() {
+		return matchCost;
+	}
+
+	public double getMisMatchCost() {
+		return misMatchCost;
+	}
+
 	private double  matchCost, misMatchCost;
 
 	Alphabet alphabet = Alphabet.DNA6();
@@ -446,115 +466,5 @@ public class ProfileDP {
 				countIns * insCost + countDel * delCost,
 				matProb, insProb, delProb, matchProb, misMatchProb);
 		return new Sequence(Alphabet.DNA4(), bArray, "gen");		
-	}
-
-	//public static SequenceOutputStream datOutGen , datOutEst; 
-	public static void main(String[] args) throws Exception{
-		/*********************** Setting up script ****************************/
-		Deployable annotation = ProfileDP.class.getAnnotation(Deployable.class);		 		
-		CommandLine cmdLine = new CommandLine("\nUsage: " + annotation.scriptName() + " [options]", annotation.scriptDesc());		
-		/**********************************************************************/		
-
-		cmdLine.addInt("length", 20, "Length");
-		cmdLine.addDouble("iProb", 0.10, "Probability of insertion");
-		cmdLine.addDouble("dProb", 0.10, "Probability of deletion");
-		cmdLine.addDouble("mProb", 0.10, "Probability of mutation");		
-
-		args = cmdLine.stdParseLine_old(args);	
-		/**********************************************************************/
-		int length   = cmdLine.getIntVal("length");
-
-		double iProb = cmdLine.getDoubleVal("iProb");
-		double dProb = cmdLine.getDoubleVal("dProb");
-		double mProb = cmdLine.getDoubleVal("mProb");
-
-		Alphabet dna = Alphabet.DNA4();
-		Random rnd = new Random(1);
-		Sequence seq = Sequence.random(dna, length, new double[]{.25,.25,.25,.25}, rnd);
-
-		//SequenceOutputStream out = SequenceOutputStream.makeOutputStream(cmdLine.getStringVal("out"));
-		//seq.print(out);
-		/*****************************************************/
-		//Sequence seq = SequenceReader.getReader(args[0]).nextSequence(dna);
-		//ProfileDP dp = new ProfileDP(seq, 20, seq.length() - 20);
-		ProfileDP genDp = new ProfileDP(seq, -1, seq.length() *2);
-
-		//datOutGen = SequenceOutputStream.makeOutputStream(cmdLine.getStringVal("prefix") + "gen.dat");
-		//datOutEst = SequenceOutputStream.makeOutputStream(cmdLine.getStringVal("prefix") + "est.dat");
-
-		genDp.setTransitionProbability(1 - iProb - dProb, iProb,  dProb);
-		genDp.setMatchProbability(1 - mProb);		
-
-		ProfileDP dp = new ProfileDP(seq, -1, seq.length() *2);
-
-		System.out.println("Length = " + length + " Ins = " + iProb + " Del = " + dProb + " Mis = " + mProb);
-		System.out.printf("%8.4f %8.4f %8.4f\n",dp.matCost,dp.insCost,dp.delCost);
-		System.out.printf("%8.4f %8.4f\n",dp.matchCost,dp.misMatchCost);
-
-		int numSeq = 20;
-		ArrayList<Sequence> seqs = new ArrayList<Sequence>(numSeq); 
-		for (int i = 0; i < numSeq; i++ ){	
-			System.out.printf("%3d  ",i);
-			Sequence genSeq = genDp.generate(1, rnd);
-			seqs.add(genSeq);
-			//genSeq.print(out);			
-			/***************************************************************
-			//Emission alignScore = dp.align(genSeq);			
-			Emission alignScore = genDp.align(genSeq);
-			System.out.println(alignScore.score + "  " + genSeq.length() * 2);	
-
-			IntArray iP = new IntArray();
-			IntArray iS = new IntArray();
-
-			Emission tmp = alignScore;
-			do{
-				iP.add(tmp.profilePos);
-				iS.add(tmp.seqPos);
-				tmp = tmp.bwdState;
-			}while (tmp != null);
-
-			for (int x = iP.size()-1; x> 0; x--){
-				int p = iP.get(x) + 1;
-				int s = iS.get(x) + 1;
-
-				if (iP.get(x) == iP.get(x-1)){
-					datOutEst.print("I " + p + " " + s + " " + genSeq.charAt(s) + "\n");
-				}else if (iS.get(x) == iS.get(x-1)){
-					datOutEst.print("D " + p + " " + s + " " + seq.charAt(p) + "\n");
-				}else if (seq.getBase(p) == genSeq.getBase(s)){
-					datOutEst.print("= " + p + " " + s + " " + seq.charAt(p) + "\n");
-				}else
-					datOutEst.print("X " + p + " " + s + " " + seq.charAt(p) + " " + genSeq.charAt(s) + "\n");
-			}
-			datOutEst.print("EST: " + alignScore.countMG + " " +alignScore.countMB + " " + alignScore.countIns + " " + alignScore.countDel + " " + alignScore.score + "\n");
-			/***************************************************************/
-		}		
-		//out.close();
-		/***************************************************************
-		datOutEst.close();
-		datOutGen.close();
-		/***************************************************************/
-		for (int x = 0; x < 5;x++){
-			int countIns = 0, countDel = 0, countMG = 0, countMB = 0;
-			for (int i = 0; i < numSeq; i++ ){
-				System.out.printf("%3d  ",i);
-				EmissionState retState = dp.align(seqs.get(i));
-				countIns += retState.countIns;
-				countDel += retState.countDel;
-				countMG += retState.countMG;
-				countMB += retState.countMB;
-			}
-
-			double sum = 3.0 + countMG + countMB + countIns + countDel;
-			double insP = (countIns + 1.0) /sum;
-			double delP = (countDel + 1.0) /sum;
-			double matP = (countMG + countMB + 1.0) /sum;
-			double matchP = (countMG + 1.0) / (countMG + countMB + 2.0);
-			double misMatchP = 1 - matchP;
-			System.out.printf("Total: %3d %3d %3d %3d %8.4f %8.4f %8.4f\n", countMG, countMB, countIns, countDel,  insP, delP,  misMatchP);
-			dp.setTransitionProbability(matP, insP, delP);
-			dp.setMatchProbability(matchP);
-		}
-		/***************************************************************/
 	}
 }
