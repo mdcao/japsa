@@ -90,6 +90,7 @@ public class ScaffoldVector{
 		//FIXME: not handle the case that contig A contain contigB and via verse		
 		return Math.max(fS - tE, tS - fE);
 	}
+
 	/**
 	 * Compose two vectors: a -> b is v2, b -> c is v1. returned a -> c is v1 * v2
 	 * Warning: the parameters' order doesn't follow normal intuition. USE WITH CARE!!!
@@ -122,5 +123,12 @@ public class ScaffoldVector{
 		return direction;
 	}
 	
-
+	/**
+	 * Set the new magnitude
+	 * @param magnitude
+	 */
+	public void setMagnitute(int magnitude){
+		this.magnitude=magnitude;
+		
+	}
 }

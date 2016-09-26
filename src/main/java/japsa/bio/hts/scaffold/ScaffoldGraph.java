@@ -50,7 +50,6 @@ import japsa.util.Logging;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -67,15 +66,19 @@ public class ScaffoldGraph{
 	public static boolean verbose = false;
 	public boolean annotation = false;
 	
-	public String prefix = "out";
-	
-	Scaffold [] scaffolds;
-	ArrayList<Contig> contigs;				
+	public String prefix = "out";					
 	public static double estimatedCov = 0;
 	private static double estimatedLength = 0;
+	
+	//below maps contain avatar of contigs and bridges only, 
+	//not the actual ones in used (because of the repeats that need to be cloned)
+
+	ArrayList<Contig> contigs;
 	HashMap<String, ContigBridge> bridgeMap= new HashMap<String, ContigBridge>();
+	static HashMap<Integer, ArrayList<ContigBridge>> bridgesFromContig = new HashMap<Integer, ArrayList<ContigBridge>>();
 
-
+	Scaffold [] scaffolds; // DNA translator, previous image of sequence is stored for real-time processing
+	// Constructor for the graph with contigs FASTA file (contigs.fasta from SPAdes output)
 	public ScaffoldGraph(String sequenceFile) throws IOException{
 		//1. read in contigs
 		SequenceReader reader = SequenceReader.getReader(sequenceFile);
@@ -100,6 +103,7 @@ public class ScaffoldGraph{
 			ctg.setCoverage(mycov);
 
 			contigs.add(ctg);
+			bridgesFromContig.put(ctg.getIndex(), new ArrayList<ContigBridge>());
 			index ++;
 		}
 		reader.close();
@@ -120,16 +124,64 @@ public class ScaffoldGraph{
 		
 	}//constructor
 	
-	public Contig getContig(String name){
+	/* Read short-read assembly information from SPAdes output: assembly graph (assembly_graph.fastg) and 
+	** traversed paths (contigs.pahth) to make up the contigs
+	*/ 
+	public void readMore(String assemblyGraph, String paths) throws IOException{	
+		//1. Read assembly graph and store in a string graph
+		Graph g = new Graph(assemblyGraph);
+		
+//		for(Vertex v:g.getVertices()){
+//			System.out.println("Neighbors of vertex " + v.getLabel() + " (" + v.getNeighborCount() +"):");
+//			for(Edge e:v.getNeighbors())
+//				System.out.println(e + "; ");
+//			System.out.println();
+//		}
+		
+		Contig.setGraph(g);
+		
+		//2. read file contigs.paths from SPAdes
+		BufferedReader pathReader = new BufferedReader(new FileReader(paths));
+		
+		String s;
+		//Read contigs from contigs.paths and refer themselves to contigs.fasta
+		Contig curContig = null;
+		while((s=pathReader.readLine()) != null){
+			if(s.contains("NODE"))
+				curContig=getSPadesContig(s);
+			else if(curContig!=null)
+				curContig.setPath(new Path(g,s));
+
+		}
+		pathReader.close();
+		
+	}
+	
+	public Contig getSPadesContig(String name){
+		if(name.contains("'")){
+			if(verbose)
+				System.out.println("Ignored (redundant) reversed sequence: " + name);
+			return null;
+		}
+		
 		Contig res = null;
-		for(Contig ctg:contigs)
-			if(ctg.getName().contains(name)){
+
+		for(Contig ctg:contigs){
+			// Extract to find contig named NODE_x_ 
+			//because sometimes there are disagreement between contig name (_length_) in contigs.paths and contigs.fasta in SPAdes!!!
+			// 
+			if(ctg.getName().contains("NODE_"+name.split("_")[1]+"_")){
 				res = ctg;
 				break;
 			}
+		}
+		
+		if(res==null && verbose){
+			System.out.println("Contig not found:" + name);
+		}
+		
 		return res;
 	}
-	
 	
 	public synchronized int getN50(){
 		int [] lengths = new int[scaffolds.length];
@@ -207,7 +259,7 @@ public class ScaffoldGraph{
 				if (myRec.useful){				
 					for (AlignmentRecord s : samList) {
 						if (s.useful){
-							this.addBridge(readFilling, s, myRec, minCov);
+							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
 							//...update with synchronized
 							
 						}
@@ -303,8 +355,10 @@ public class ScaffoldGraph{
 				bridge.addConnection(readSequence, a, b, trans, score);
 				bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
 
-				a.contig.bridges.add(bridge);
-				b.contig.bridges.add(bridge_rev);
+//				a.contig.bridges.add(bridge);
+//				b.contig.bridges.add(bridge_rev);
+				bridgesFromContig.get(a.contig.getIndex()).add(bridge);
+				bridgesFromContig.get(b.contig.getIndex()).add(bridge_rev);
 				
 				bridgeMap.put(hash, bridge);
 				bridgeMap.put(hash_rev, bridge_rev);
@@ -334,17 +388,26 @@ public class ScaffoldGraph{
 		}//while
 
 	}
+	public static ArrayList<ContigBridge> getListOfBridgesFromContig(Contig ctg){
+		return bridgesFromContig.get(ctg.getIndex());
+	}
 	/**********************************************************************************************/
 	public ContigBridge getReversedBridge(ContigBridge bridge){
 		String hash = ContigBridge.makeHash(bridge.secondContig.index, bridge.firstContig.index, bridge.orderIndex);
 		return bridgeMap.get(hash);
 	}
 	/**********************************************************************************************/
-	// check if it's possible to extend from *contig* with *bridge* to another extended-already contig (contigF)
-	// use for markers and unique bridge only
+	/*
+	 * Check if it's possible to extend from *contig* with *bridge* to another extended-already contig (contigF) 
+	 * use for markers and unique bridge only. 
+	 * This is a pre-step to join 2 scaffolds: scaffoldT going to scaffoldF
+	 * @param 	Contig: a contig to start with
+	 * 			ContigBridge: a bridge from given contig to a candidate unique contig for the extension
+	 * @return	int: direction on targeted scaffold (scaffoldF) that can be traversed
+	 */
 	protected int extendDirection(Contig contig, ContigBridge bridge){
 		Contig contigF = bridge.secondContig;
-		ScaffoldVector trans = bridge.getTransVector(); //contigF -> contig
+		ScaffoldVector trans = bridge.getTransVector(); //contig->contigF 
 		int pointer = Integer.signum(trans.magnitude * trans.direction); //pointer < 0 => tail of contigF on bridge
 		assert scaffolds[contigF.head].size() > 1 : contigF.head;
 		
@@ -364,8 +427,9 @@ public class ScaffoldGraph{
 		if(verbose)
 			System.out.println("Examining extending direction from contig " + contig.getIndex() + " to " + bridge.hashKey);
 		Scaffold scaffoldF = scaffolds[headF];
-		Contig 	prevMarker = scaffoldF.nearestMarker(contigF, false), // previous marker of contigF on corresponding scaffold
-				nextMarker = scaffoldF.nearestMarker(contigF, true); // next marker of contigF on corresponding scaffold		
+		// Get order-based (order on scaffold other than orientation-based of contig) previous and next marker(unique contig)
+		Contig 	prevMarker = scaffoldF.nearestMarker(contigF, false), // previous marker of contigF on *corresponding scaffold*
+				nextMarker = scaffoldF.nearestMarker(contigF, true); // next marker of contigF on *corresponding scaffold*		
 		
 		ScaffoldVector rev = ScaffoldVector.reverse(contigF.getVector()); //rev = contigF->headF	
 		if(prevMarker != null){
@@ -380,6 +444,7 @@ public class ScaffoldGraph{
 				System.out.println("...headT->contig, contigF and prevMarker: " + contig.getVector() + headT2contigF + headT2Prev);
 			}
 			if ((direction > 0?rEndPrev > rEndF: lEndPrev < lEndF)){
+				//check if the candidate ContigBridge is more confident than the current or not 
 				if((pointer<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
 					if(verbose)
 						System.out.printf("=> go from %d to %d to %d \n", contig.getIndex(), contigF.getIndex(), prevMarker.getIndex());
@@ -393,6 +458,9 @@ public class ScaffoldGraph{
 				
 					return 0;
 				}
+			}else{
+				if(verbose)
+					System.out.printf("Direction conflict: %d, %d %d or %d %d. Checking otherway... \n", direction, rEndPrev, rEndF, lEndPrev, lEndF);
 			}
 		}
 		if(nextMarker != null){
@@ -424,7 +492,7 @@ public class ScaffoldGraph{
 				}
 			}else{
 				if(verbose)
-					System.out.printf("Direction conflict: %d, %d %d or %d %d \n", direction, rEndNext, rEndF, lEndNext, lEndF);
+					System.out.printf("Direction conflict: %d, %d %d or %d %d. End searching! \n", direction, rEndNext, rEndF, lEndNext, lEndF);
 			}
 		}
 		return 0;
@@ -732,6 +800,7 @@ public class ScaffoldGraph{
 			jout.close();
 		}
 	}	
+	
 	public synchronized void printRT(long tpoint) throws IOException{
 		for (Contig contig:contigs){
 			if(contig.oriRep.size() > 0){
@@ -801,7 +870,7 @@ public class ScaffoldGraph{
 		else if (ctg.getCoverage() > 1.5 * estimatedCov)
 			return true;
 		else{
-			for(ContigBridge bridge:ctg.bridges){
+			for(ContigBridge bridge:getListOfBridgesFromContig(ctg)){
 				Contig other = bridge.firstContig.getIndex()==ctg.getIndex()?bridge.secondContig:bridge.firstContig;
 				if(other.getIndex()==ctg.getIndex()) continue;
 				int dist=bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig);

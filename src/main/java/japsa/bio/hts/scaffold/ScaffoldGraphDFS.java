@@ -58,7 +58,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	public ScaffoldGraphDFS(String sequenceFile, String genesFile, String resistFile, String isFile, String oriFile) throws IOException, InterruptedException {
 		super(sequenceFile);
 		if(resistFile != null){
-			readDb(resistFile, "Resistance genes", .8, .9);
+			readDb(resistFile, "Resistance genes", .9, 1.0);
 			annotation = true;
 		}
 		if(isFile != null){
@@ -86,6 +86,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 //				System.out.println(contig.getName() + "\t" + feature.getStrand() + "\t" + feature);
 //		}
 	}
+
 	private void readDb(String data, String type, double minCov, double minID) throws IOException, InterruptedException{
 		type = type.toLowerCase();
 		
@@ -132,20 +133,28 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			}
 			//pass			
 			
-			Contig ctg = getContig(toks[4]);
+			Contig ctg = getSPadesContig(toks[4]);
 			if(ctg != null){
 				char strand = toks[16].equals("plus")?'+':'-';
-				JapsaFeature feature = new JapsaFeature(Integer.parseInt(toks[6]), Integer.parseInt(toks[7]), type, toks[0], strand, "");
-				feature.addDesc((int)(cov*100) + "% cover, " + toks[10] + "% identity");
-								
-				if ("resistance genes".equals(type))
-					ctg.resistanceGenes.add(feature);
-				else if ("insertion sites".equals(type)){
-					ctg.insertSeq.add(feature);
-				}else if ("origin of replication".equals(type)){
-					ctg.oriRep.add(feature);
-				}else{
-					Logging.warn(type + " has not yet included in our analysis!");					
+
+				JapsaFeature feature = new JapsaFeature(Integer.parseInt(toks[6]), Integer.parseInt(toks[7]), type, toks[0], strand, ctg.getName());
+
+				feature.addDesc(toks[0]+ ":" + (int)(cov*100) + "% cover, " + toks[10] + "% identity");
+
+				switch (type.toLowerCase()){
+					case "resistance genes":
+						ctg.resistanceGenes.add(feature);
+						break;
+					case "insertion sites":
+						ctg.insertSeq.add(feature);
+						break;
+					case "origin of replication":
+						ctg.oriRep.add(feature);
+						break;
+					default:
+						System.err.println(type + " has not yet included in our analysis!");
+						break;
+
 				}
 				//Rewritten the below with the above
 				//switch (type.toLowerCase()){
@@ -180,7 +189,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			if (line.startsWith(">"))
 				break;
 			String [] toks = line.trim().split("\t");
-			Contig ctg = getContig(toks[0]+"_"); //get the contig from its shorten name
+			Contig ctg = getSPadesContig(toks[0]+"_"); //get the contig from its shorten name
 			if(ctg != null){
 				int start = Integer.parseInt(toks[3]),
 					end = Integer.parseInt(toks[4]);
@@ -286,7 +295,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 		ScaffoldVector prevToCur = ScaffoldVector.composition(mark2Cur,ScaffoldVector.reverse(mark2Prev));
 		if(verbose) 
 			System.out.printf("\texamining %s to %s:\n ",prevContig.getName(),curContig.getName());
-		for(ContigBridge brg:prevContig.bridges){
+		for(ContigBridge brg:getListOfBridgesFromContig(prevContig)){
 			if(brg.secondContig.getIndex() == curContig.getIndex()){
 				if(brg.consistentWith(prevToCur)){
 					if(verbose) 
@@ -314,15 +323,17 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 
 		/*****************************************************************/
 		while (extended && (!closed) && scaffold.size() > 0){
-			Contig ctg = direction?scaffold.getLast():scaffold.getFirst();				
+			Contig ctg = direction?scaffold.getLast():scaffold.getFirst();		
+			ArrayList<ContigBridge> bridges=getListOfBridgesFromContig(ctg);
+
 			if(verbose) {
 				System.out.printf(" Last of scaffold %d extention is on contig %d (%s): ",i,ctg.getIndex(),ctg.getName());
-				System.out.printf("iterating among %d bridges\n",ctg.bridges.size());
+				System.out.printf("iterating among %d bridges\n",bridges.size());
 			}
 			int ctgEnd = direction?ctg.rightMost():ctg.leftMost();
 			 
 			extended = false; //only continue the while loop if extension is on the move (line 122)
-			int maxLink = ctg.bridges.size(),
+			int maxLink = bridges.size(),
 				extendDir = 0, //direction to go on the second scaffold: ScaffoldT (realtime mode)
 				curStep = Integer.MAX_VALUE; //distance between singleton1 -> singleton2
 			double	curScore = 0.0; //score between singleton1 -> singleton2
@@ -332,8 +343,8 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			ArrayList<ContigBridge> extendableContigBridge = new ArrayList<ContigBridge>(maxLink);
 			ArrayList<ScaffoldVector> extendableVector = new ArrayList<ScaffoldVector>(maxLink);
 			ArrayList<Integer> distances = new ArrayList<Integer>(maxLink);
-			Collections.sort(ctg.bridges);
-			for (ContigBridge bridge:ctg.bridges){
+			Collections.sort(bridges);
+			for (ContigBridge bridge:bridges){
 				if (bridge.firstContig == bridge.secondContig) //2 identical markers ??!
 					if(!bridge.firstContig.isCircular())
 						continue;
@@ -463,8 +474,6 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 					
 					if(isRepeat(curContig)){
 						curContig.head = i; //must be here!
-						
-						//curContig.cirProb--; // tandem!
 						curContig = curContig.clone();
 					}else{
 						//check to join 2 scaffolds and stop this round
@@ -491,12 +500,15 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 							i,ctg.index, ctgEnd, curContig.index, curContig.rightMost(curVector), curContigBridge.getScore());						
 						System.out.printf(" curContigBridge %d -> %d\n", confirmedBridge.firstContig.getIndex(), curContigBridge.secondContig.getIndex());
 					}
-					
+					curContig.myVector = ScaffoldVector.composition(prevToCur,prevContig.getVector());//from the head contig
+					//confirmedBridge=confirmedBridge.clone(prevContig,curContig);
+
 					if(direction)
 						scaffolds[i].addRear(curContig, confirmedBridge);
 					else
 						scaffolds[i].addFront(curContig, getReversedBridge(confirmedBridge));
-					curContig.myVector = ScaffoldVector.composition(prevToCur,prevContig.getVector());//from the head contig
+					
+					
 					curEnd = direction?curContig.rightMost(curVector):curContig.leftMost(curVector);
 					extended = true; //scaffold extension is really on the move...									
 					

@@ -51,6 +51,7 @@ import japsa.tools.bio.hts.SpeciesMixtureCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.hts.VNTRLongReadsCmd;
 import japsa.tools.bio.np.GapCloserCmd;
+import japsa.tools.bio.np.NanoporeFast5ReaderCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.np.RealtimeMLSTCmd;
@@ -111,7 +112,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.6-08a";
+	public static String VERSION = "1.6-09b";
 	public static final String FIELD_SEP = "\t";
 	
 	public static boolean DEBUG = true;
@@ -160,6 +161,7 @@ public class Deploy {
 		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(new NanoporeReaderCmd());
+		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new NanoporeReadFilterCmd());		
 		//tools.add(new SpeciesMixtureTypingCmd());		
 		tools.add(new RealtimeSpeciesTypingCmd());
@@ -168,6 +170,7 @@ public class Deploy {
 		tools.add(new RealtimeResistanceGeneCmd());
 		tools.add(new RegulateTimeCmd());		
 		tools.add(new GapCloserCmd());
+		
 		//tools.add(new SpeciesMixtureCmd());
 		//tools.add(new BaseMethylationCmd());
 		
@@ -205,7 +208,10 @@ public class Deploy {
 		//jsa.xm
 		tools.add("Export Model compression");
 		tools.add(new ExpertModelCmd());
-		//tools.add(.class);		
+		//
+		
+		
+		//tools.add(new NanoporeFast5ReaderCmd());
 	}	
 
 

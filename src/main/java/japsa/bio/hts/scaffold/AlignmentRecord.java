@@ -47,14 +47,13 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	public String readID;
 	Contig contig;
 
-	public int refStart, refEnd;  //position on ref of the start and end of the alignment
+	public int refStart, refEnd;  //1-based position on ref of the start and end of the alignment
 	
 	//Position on read of the start and end of the alignment (using the direction of read) 
-	public int readStart = 0, readEnd = 0;	
-	
 	//readStart map to refStart, readEnd map to refEnd. 
 	//readStart < readEnd if strand = true, else readStart > readEnd
-
+	public int readStart = 0, readEnd = 0;	
+	
 	//read length
 	public int readLength = 0;		
 
@@ -68,8 +67,20 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	//public int readLeft, readRight, readAlign, refLeft, refRight, refAlign;
 	//left and right are in the direction of the reference sequence
 	
-	public AlignmentRecord(){
+	public AlignmentRecord(String readID, int refStart, int refEnd, int readLength, 
+			int readStart, int readEnd, boolean strand, boolean useful, Contig contig, int score){
+		this.readID = readID;
+		this.contig = contig;
+		this.refStart = refStart;
+		this.refEnd = refEnd;
 		
+		this.readLength = readLength;
+		this.readStart = readStart;//1-index
+		this.readEnd = readEnd;//1-index
+		this.strand = strand;
+		this.useful = useful;			
+		this.contig = contig;
+		this.score = score;
 	}
 	public AlignmentRecord(SAMRecord sam, Contig ctg) {
 //		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
@@ -139,7 +150,6 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 			)
 			useful = true;
 
-		contig.addRange(refStart,refEnd,score);
 	}
 	
 	
@@ -176,38 +186,21 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 				;
 	}
 	// return same alignment but with reversed read
+	//TODO: change to object self-editing function?
 	public AlignmentRecord reverseRead(){
-		AlignmentRecord revAlign = new AlignmentRecord();
-		revAlign.readID = readID;
-		revAlign.contig = contig;
-		revAlign.refStart = refStart;
-		revAlign.refEnd = refEnd;
+		AlignmentRecord revAlign = new AlignmentRecord(readID, refStart, refEnd, readLength, 
+		readLength - readStart + 1, readLength - readEnd + 1, !strand, useful, contig, score);
 		
-		revAlign.readLength = readLength;
-		revAlign.readStart = readLength - readStart + 1;//1-index
-		revAlign.readEnd = readLength - readEnd + 1;//1-index
-		revAlign.strand = !strand;
-		revAlign.useful = useful;			
 		revAlign.alignmentCigars = alignmentCigars;
-		revAlign.contig = contig;
-		revAlign.score = score;
+
 		return revAlign;
 	}
 	public AlignmentRecord clones(){
-		AlignmentRecord align = new AlignmentRecord();
-		align.readID = readID;
-		align.contig = contig;
-		align.refStart = refStart;
-		align.refEnd = refEnd;
+		AlignmentRecord align = new AlignmentRecord(readID, refStart, refEnd, readLength,
+				readStart, readEnd, strand, useful, contig, score);
 		
-		align.readLength = readLength;
-		align.readStart = readStart;//1-index
-		align.readEnd = readEnd;//1-index
-		align.strand = strand;
-		align.useful = useful;			
 		align.alignmentCigars = alignmentCigars;
-		align.contig = contig;
-		align.score = score;
+
 		return align;
 	}
 	public void copy(AlignmentRecord rec){

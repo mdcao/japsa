@@ -181,7 +181,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		return marker;
 
 	}
-	//TODO: reset prevScore or nextScore to 0 according to removed bridges.
+	//reset prevScore or nextScore to 0 according to removed bridges.
 	public void trim(){
 		if(ScaffoldGraph.verbose)
 			System.out.println("Trimming scaffold: " + scaffoldIndex);
@@ -295,7 +295,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		return len;
 	}
 
-	public void viewSequence(SequenceOutputStream fout, SequenceOutputStream jout) throws IOException{		
+	public synchronized void viewSequence(SequenceOutputStream fout, SequenceOutputStream jout) throws IOException{		
 
 
 		System.out.println("========================== START =============================");
@@ -315,6 +315,16 @@ public final class Scaffold extends LinkedList<Contig>{
 
 		System.out.println("Size = " + size() + " sequence");
 		
+		// Synchronize positions of 2 contigs (myVector) of a bridge based on the real list of contigs
+		// TODO: do the same with viewAnnotation()
+		assert this.size()==bridges.size()+1:"Number of contigs ("+this.size()+")" + " doesn't agree with number of bridges ("+bridges.size()+"!";
+		for(int i=0;i<bridges.size();i++){
+			ContigBridge brg=bridges.get(i).clone(this.get(i), this.get(i+1));
+			bridges.set(i, brg);
+		}
+		if(closeBridge!=null)
+			closeBridge=closeBridge.clone(this.get(this.size()-1), this.get(0));
+		
 		SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024,  "Scaffold" + scaffoldIndex);
 		JapsaAnnotation anno = new JapsaAnnotation();
 
@@ -328,7 +338,7 @@ public final class Scaffold extends LinkedList<Contig>{
  *                           |      |                     |       |                |       |
  *        <fillFrom>         |      |     leftContig      |       |   <fillFrom>   |       |    rightContig
  * Contigs:   ...		~~~~~*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*~~~	...		~~~*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
- * 				          startLeft                            endLeft
+ * 				          startLeft(1)                          endLeft(1)       startLeft(2)                 ...
  * 
  *                                that's what happens below!
  * 
@@ -337,8 +347,12 @@ public final class Scaffold extends LinkedList<Contig>{
 		rightContig = getFirst();		
 
 		//startLeft: the leftPoint of leftContig, endLeft: rightPoint of left Contig
-		int startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length(); //starting point after the last fillFrom
-		int endLeft   = (rightContig.getRelDir() < 0)?1:rightContig.length();
+		int startLeft = (rightContig.getRelDir() > 0)?0:rightContig.length(); //starting point after the last fillFrom
+		int endLeft   = (rightContig.getRelDir() < 0)?0:rightContig.length();
+		//TODO: re-check the coordinate of two ends (0 or 1, inclusive/exclusive)
+//		int startLeft = (rightContig.getRelDir() > 0)?1:rightContig.length(); //starting point after the last fillFrom
+//		int endLeft   = (rightContig.getRelDir() < 0)?1:rightContig.length();
+		
 		
 		/* uncomment for illumina-based */
 		//int closeDis = 0;
@@ -359,7 +373,6 @@ public final class Scaffold extends LinkedList<Contig>{
 			anno.addDescription("Linear");
 
 
-		bridIter = bridges.iterator();
 		Iterator<Contig> ctgIter = this.iterator();
 		leftContig = ctgIter.next();//The first
 
@@ -380,21 +393,29 @@ public final class Scaffold extends LinkedList<Contig>{
 			
 			if (startLeft<endLeft){
 				JapsaFeature feature = 
-						new JapsaFeature(seq.length() + 1, seq.length() + endLeft - startLeft + 1,
+						new JapsaFeature(seq.length() + 1, seq.length() + endLeft - startLeft,
 								"CONTIG",leftContig.getName(),'+',"");
-				feature.addDesc(leftContig.getName() + "+("+startLeft +"," + endLeft+")");
-				anno.add(feature);				
-				seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
+				feature.addDesc(leftContig.getName() + "+["+startLeft +"," + endLeft+")");
+				anno.add(feature);		
+				if(ScaffoldGraph.verbose)
+					System.out.println("Append " + leftContig.getName() + ": " + startLeft + " to " + (endLeft-1));
+				
+				seq.append(leftContig.contigSequence.subSequence(startLeft, endLeft));
+				//seq.append(leftContig.contigSequence.subSequence(startLeft-1, endLeft));
 
 			}else{
 
 				JapsaFeature feature = 
-						new JapsaFeature(seq.length() + 1, seq.length() + startLeft - endLeft + 1,
+						new JapsaFeature(seq.length() + 1, seq.length() + startLeft - endLeft,
 								"CONTIG",leftContig.getName(),'+',"");
-				feature.addDesc(leftContig.getName() + "-("+endLeft +"," + startLeft+")");
+				feature.addDesc(leftContig.getName() + "-["+endLeft +"," + startLeft+")");
 				anno.add(feature);
+				
+				if(ScaffoldGraph.verbose)
+					System.out.println("Append RC of " + leftContig.getName() + ": " + endLeft + " to " + (startLeft-1));
 
-				seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
+				seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft, startLeft)));
+				//seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft-1, startLeft)));
 			}			
 			/* uncomment for longread-based */
 			startLeft = connection.filling(seq, anno);
@@ -429,18 +450,25 @@ public final class Scaffold extends LinkedList<Contig>{
 			JapsaFeature feature = 
 					new JapsaFeature(seq.length() + 1, seq.length() + endLeft - startLeft,
 							"CONTIG",leftContig.getName(),'+',"");
-			feature.addDesc(leftContig.getName() + "+("+startLeft +"," + endLeft+")");
+			feature.addDesc(leftContig.getName() + "+["+startLeft +"," + endLeft+")");
 			anno.add(feature);				
-			seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
+			if(ScaffoldGraph.verbose)
+				System.out.println("Append " + leftContig.getName() + ": " + startLeft + " to " + (endLeft-1));
+
+			seq.append(leftContig.contigSequence.subSequence(startLeft, endLeft));
+			//seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
 		}else{
 
 			JapsaFeature feature = 
 					new JapsaFeature(seq.length() + 1, seq.length() + startLeft - endLeft,
 							"CONTIG",leftContig.getName(),'+',"");
-			feature.addDesc(leftContig.getName() + "-("+endLeft +"," + startLeft+")");
+			feature.addDesc(leftContig.getName() + "-["+endLeft +"," + startLeft+")");
 			anno.add(feature);
-
-			seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
+			
+			if(ScaffoldGraph.verbose)
+				System.out.println("Append RC of " + leftContig.getName() + ": " + endLeft + " to " + (startLeft-1));
+			seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft, startLeft)));
+			//seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
 		}
 		if (bestCloseConnection != null){	
 			System.out.printf("Append bridge %d -- %d\n",closeBridge.firstContig.index,  closeBridge.secondContig.index);
@@ -456,8 +484,8 @@ public final class Scaffold extends LinkedList<Contig>{
 		JapsaAnnotation.write(seq.toSequence(), anno, jout); 
 		seq.writeFasta(fout);
 	}
-	/********************************************************************************************
-	 * ******************************************************************************************
+	/* Output annotation of this scaffold
+	 * TODO: output annotations from the filling sequences
 	 */
 	public synchronized void viewAnnotation(SequenceOutputStream out) throws IOException{		
 
@@ -471,7 +499,7 @@ public final class Scaffold extends LinkedList<Contig>{
  * 	====================================                ==========================================
  *                           |      |                     |       |                |       |
  *                           |      |                     |       |                |       |
- *        <fillFrom>         |      |     leftContig      |       |   <fillFrom>   |       |    rightContig
+ *         <filling>         |      |     leftContig      |       |    <filling>   |       |    rightContig
  * Contigs:   ...		~~~~~*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*~~~	...		~~~*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
  * 				          startLeft                            endLeft
  * 
@@ -523,7 +551,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			if(resistLeft.size() > 0){
 				JapsaFeature leftGene = startLeft<endLeft?resistLeft.get(0):resistLeft.get(resistLeft.size()-1),
 							rightGene = startLeft>endLeft?resistLeft.get(0):resistLeft.get(resistLeft.size()-1);
-				//TODO: extract first and last gene here
+				//extract first and last gene here
 				if(lastGene!=null)
 					System.out.println(lastGene.getID() + "...next to..." + leftGene.getID());
 				lastGene = rightGene;
@@ -541,11 +569,11 @@ public final class Scaffold extends LinkedList<Contig>{
 			/**********************************************************************************************/
 
 			if (startLeft<endLeft)			
-				seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
+				seq.append(leftContig.contigSequence.subSequence(startLeft, endLeft));
 			else
-				seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
+				seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft, startLeft)));
 
-			startLeft = connection.filling(seq, anno);
+			startLeft = connection.filling(seq, new JapsaAnnotation());
 			leftContig = rightContig;			
 					
 		}//for
@@ -586,13 +614,13 @@ public final class Scaffold extends LinkedList<Contig>{
 		/**********************************************************************************************/
 
 		if (startLeft<endLeft)			
-			seq.append(leftContig.contigSequence.subSequence(startLeft - 1, endLeft));
+			seq.append(leftContig.contigSequence.subSequence(startLeft, endLeft));
 
 		else
-			seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
+			seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft, startLeft)));
 			
 		if (bestCloseConnection != null)	
-			bestCloseConnection.filling(seq, anno);	
+			bestCloseConnection.filling(seq, new JapsaAnnotation());	
 		
 		anno.setSequence(seq.toSequence());
 		JapsaAnnotation.write(null, anno, out); 

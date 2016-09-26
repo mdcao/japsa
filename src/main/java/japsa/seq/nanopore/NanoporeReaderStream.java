@@ -114,7 +114,7 @@ public class NanoporeReaderStream{
 	public String output = "";
 	public String streamServers = null;
 	boolean doLow = true;
-	public boolean getTime = false;
+	//public boolean getTime = false;
 	boolean done = false;
 
 	public String format = "fastq";
@@ -162,31 +162,19 @@ public class NanoporeReaderStream{
 		}
 	}
 
-	public boolean readFastq2(String fileName) throws JapsaException, IOException{
+	/**************************************************************************************
+	public boolean readFastq3_XXX(String fileName) throws JapsaException, IOException{
 		//Logging.info("Open " + fileName);
-		try{					
-			NanoporeReader npReader = new NanoporeReader(fileName);
-			npReader.readFastq(getTime);						
-			npReader.close();
-
-			//Get time & date
-			String log = npReader.getLog();					
-			if (log != null){
-				String [] toks = log.split("\n");
-				if (toks.length > 0)
-					toks = toks[toks.length - 1].split(",");
-
-				log = toks[0];
-			}else
-				log = "";
-
-			if (getTime){
-				log = "ExpStart=" + npReader.expStart + " timestamp=" + npReader.seqTime + " "  + log;				
-			}
+		try{				
+			Fast5NPReader f5Reader  = new Fast5NPReader(fileName);			
+			String log = "";
+			//if (getTime){
+			//	log = "ExpStart=" + npReader.expStart + " timestamp=" + npReader.seqTime + " "  + log;				
+			//}
 
 			FastqSequence fq;
 
-			fq = npReader.getSeq2D();
+			fq = f5Reader.readTwoDim();
 			if (fq != null && fq.length() >= minLength){
 				fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
 				print(fq);
@@ -205,7 +193,7 @@ public class NanoporeReaderStream{
 				}
 			}
 
-			fq = npReader.getSeqTemplate();
+			fq = f5Reader.readTemplate();
 			if (fq != null && fq.length() >= minLength && this.doLow){
 				fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName() + " " + log);
 				print(fq);
@@ -225,9 +213,96 @@ public class NanoporeReaderStream{
 				}
 			}
 
-			fq = npReader.getSeqComplement();
+			fq = f5Reader.readComplement();
 			if (fq != null && fq.length() >= minLength && this.doLow){						
 				fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName() + " " + log);						
+				print(fq);
+				if (stats){						
+					lengths.add(fq.length());	
+					lengthsComp.add(fq.length());
+					compCount ++;
+
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qualComp.add(sumQual/fq.length());
+					}
+
+				}
+			}
+			f5Reader.close();
+			fileNumber ++;
+			
+		}catch (JapsaException e){
+			throw e;
+		}catch (Exception e){
+			Logging.error("Problem with reading " + fileName + ":" + e.getMessage());
+			e.printStackTrace();			
+			return false;
+		}
+		return true;
+	}
+/*****************************************************************************/
+	
+	public boolean readFastq2(String fileName) throws JapsaException, IOException{
+		//Logging.info("Open " + fileName);
+		try{					
+			Fast5NPReader npReader = new Fast5NPReader(fileName);
+			npReader.readFastq();						
+			npReader.close();
+
+			//String log = "";
+			//if (getTime){
+			//	log = "ExpStart=" + npReader.expStart + " timestamp=" + npReader.seqTime + " "  + log;				
+			//}
+
+			FastqSequence fq;
+
+			fq = npReader.getSeq2D();
+			if (fq != null && fq.length() >= minLength){
+				fq.setName((number?(fileNumber *3) + "_":"") + fq.getName());
+				print(fq);
+				if (stats){						
+					lengths.add(fq.length());
+					lengths2D.add(fq.length());
+					twoDCount ++;
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qual2D.add(sumQual/fq.length());
+					}
+				}
+			}
+
+			fq = npReader.getSeqTemplate();
+			if (fq != null && fq.length() >= minLength && this.doLow){
+				fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName());
+				print(fq);
+				if (stats){						
+					lengths.add(fq.length());	
+					lengthsTemp.add(fq.length());
+					tempCount ++;
+
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qualTemp.add(sumQual/fq.length());
+					}
+				}
+			}
+
+			fq = npReader.getSeqComplement();
+			if (fq != null && fq.length() >= minLength && this.doLow){						
+				fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName());						
 				print(fq);
 				if (stats){						
 					lengths.add(fq.length());	
@@ -256,6 +331,7 @@ public class NanoporeReaderStream{
 		}		
 		return true;
 	}
+	/*****************************************************************************/
 
 	public boolean moveFile(File f, String pFolder){
 		String fName = f.getName();
@@ -513,7 +589,7 @@ public class NanoporeReaderStream{
 			printToFile("stats");
 		}
 	}
-	
+
 	public void printToFile(String prefix) throws IOException{
 		if(prefix.length() < 1)
 			prefix = "out";

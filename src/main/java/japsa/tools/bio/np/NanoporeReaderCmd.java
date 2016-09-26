@@ -48,7 +48,7 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(	
-	scriptName = "jsa.np.f5reader", 
+	scriptName = "jsa.np.npreader", 
 	scriptDesc = "Extract and stream Oxford Nanopore sequencing data in real-time",
 	seeAlso = "jsa.np.filter, jsa.util.streamServer, jsa.util.streamClient,jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.np.rtResistGenes"
 	)
@@ -69,7 +69,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		addInt("minLength", 0,"Minimum read length");
 		addBoolean("number", false,"Add a unique number to read name");
 		addBoolean("stats", false,"Generate a report of read statistics");
-		addBoolean("time", false,"Extract the sequencing time of each read -- only work with Metrichor > 1.12");		
+		//addBoolean("time", false,"Extract the sequencing time of each read -- only work with Metrichor > 1.12");		
 
 
 		addStdHelp();		
@@ -85,7 +85,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		int minLength  = cmdLine.getIntVal("minLength");
 		boolean stats  = cmdLine.getBooleanVal("stats");
 		boolean number  = cmdLine.getBooleanVal("number");
-		boolean time  = cmdLine.getBooleanVal("time");
+		//boolean time  = cmdLine.getBooleanVal("time");
 		boolean GUI  = cmdLine.getBooleanVal("GUI");
 		boolean realtime  = cmdLine.getBooleanVal("realtime");
 		boolean fail  = cmdLine.getBooleanVal("fail");
@@ -106,7 +106,7 @@ public class NanoporeReaderCmd extends CommandLine{
 
 		NanoporeReaderStream reader = new NanoporeReaderStream();
 
-		reader.getTime = time;
+		//reader.getTime = time;
 		reader.stats = stats;
 		reader.number = number;
 		reader.minLength = minLength;

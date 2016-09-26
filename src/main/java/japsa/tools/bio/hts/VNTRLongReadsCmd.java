@@ -39,7 +39,6 @@ import japsa.bio.alignment.ProfileDP.EmissionState;
 import japsa.bio.tr.TandemRepeat;
 import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.Alphabet;
-import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
@@ -76,7 +75,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		setDesc(annotation.scriptDesc());
 
 
-		addStdInputFile();
+		addString("reference", null, "Name of the reference genome ", true);
+		///addStdInputFile();
 		addString("bamFile", null, "Name of the bam file", true);
 		addString("output", "-",
 				"Name of the output file, -  for stdout");
@@ -101,14 +101,14 @@ public class VNTRLongReadsCmd  extends CommandLine {
 	InterruptedException {
 		/*********************** Setting up script ****************************/
 		CommandLine cmdLine = new VNTRLongReadsCmd();		
-		
+
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		// Get options
 
 		int flanking = cmdLine.getIntVal("flanking");
-		if (flanking < 20)
-			flanking = 20;
+		if (flanking < 10)
+			flanking = 10;
 
 		int qual = cmdLine.getIntVal("qual");
 
@@ -120,7 +120,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		}
 
 		String bamFile = cmdLine.getStringVal("bamFile");
-		
+
 		String prefix = cmdLine.getStringVal("prefix");
 
 		if (prefix == null || prefix.length() == 0) {
@@ -143,7 +143,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 		Logging.info("Read genome begins");
 		HashMap <String, Sequence> genome = new HashMap <String, Sequence>();
-		SequenceReader seqReader = SequenceReader.getReader(cmdLine.getStringVal("input"));
+		SequenceReader seqReader = SequenceReader.getReader(cmdLine.getStringVal("reference"));
 		Sequence seq;
 		while ((seq = seqReader.nextSequence(dna)) != null){
 			genome.put(seq.getName(), seq);
@@ -153,14 +153,11 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 		/**********************************************************************/
 
-		
+
 		XAFReader xafReader = new XAFReader(strFile);
-		
+
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));						
-		
-			
-
 
 		IntArray intArray = new IntArray();
 		DoubleArray doubleArray = new DoubleArray();
@@ -319,74 +316,11 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				readIndex ++;
 				////////////////////////////////////////////////////////////////////
 				//assert currentRefBase < start
-				int readPos = 0;
-				byte[]  seqRead = rec.getReadBases();//
-				if (seqRead.length <=0)
+				
+				Sequence readSeq = getReadPosition(rec,start,end);
+				if (readSeq == null)
 					continue;
-
-
-				//assert currentRefBase <= start
-				SequenceBuilder sb = new SequenceBuilder(dna, rec.getReadLength(),rec.getReadName());
-
-				for (final CigarElement e : rec.getCigar().getCigarElements()) {
-					int length = e.getLength();
-					switch (e.getOperator()) {
-					case H:
-						break; // ignore hard clips
-					case P:
-						break; // ignore pads
-					case S:
-						readPos += e.getLength();
-						break; // soft clip read bases
-					case N: // N ~ D
-					case D:
-						currentRefPos += length;
-						break;// case
-					case I:				
-						if (currentRefPos >= start){
-							for (;length >0;length --){
-								sb.append(dna.byte2index(seqRead[readPos]));
-								readPos ++;
-							}
-						}else
-							readPos += length;						
-						break;
-
-					case M:
-					case EQ:
-					case X:						
-						if (currentRefPos < start && currentRefPos + length >= start){
-							readPos += (start - currentRefPos);
-							length -= (start - currentRefPos);
-							currentRefPos = start;							
-						}
-
-
-						if (currentRefPos >= start){//already in the region to copy
-							for (;currentRefPos <=end && length >0;length --){
-								sb.append(dna.byte2index(seqRead[readPos]));
-								readPos ++;
-								currentRefPos ++;						
-							}
-						}else{//currentRefPos + length < start
-							currentRefPos += length;
-							readPos += length;
-						}
-						break;
-					default:
-						throw new IllegalStateException(
-								"Case statement didn't deal with cigar op: "
-										+ e.getOperator());
-					}// case
-					if (currentRefPos >= end)
-						break;//for
-
-				}// for
-				//////////////////////////////////////
-				Sequence readSeq = sb.toSequence();
-				readSeq.setDesc(readSeq.getName());
-				readSeq.setName("R" + readIndex);
-
+				
 				readSeq.writeFasta(os);
 
 				EmissionState bestState = dp.align(readSeq);
@@ -443,9 +377,19 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				outOS.println();
 				outOS.print ("L = " + (costL/(hmmFlank + hmmPad)) + " R = " + costR/(hmmSeq.length() - hmmFlank - hmmPad - str.getPeriod()) + "\n");				
 
+				
+				String readName = readSeq.getName();
+				String [] toks =  readName.split("/",4);
+
+				//String polymerageRead = toks[0] + "/" + toks[1];
+				
+				String polymerageRead = (toks.length > 1)?toks[1]:toks[0];
+				String subRead = (toks.length > 2)?toks[2]:"_";
+				String alignSubRead = (toks.length > 3)?toks[3]:"_";
+				
 				/*****************************************************************/				
-				outOS.print("##" + readSeq.getName()+"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + readSeq.getDesc() + '\n');
-				outOS.print("==================================================================\n");
+				outOS.print("##" + polymerageRead + "_" + subRead +"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + readSeq.getDesc() + '\n');
+				outOS.print("==================================================================\n");				
 			}// while
 			iter.close();
 			os.close();
@@ -458,4 +402,79 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		outOS.close();
 	}
 
+
+	public static Sequence getReadPosition(SAMRecord rec, int startRef, int endRef){
+		byte[]  seqRead = rec.getReadBases();//
+		if (seqRead.length <= 1)
+			return null;
+		
+		int startRead = -1, endRead = -1;
+
+		int refPos = rec.getAlignmentStart();
+		int readPos = 0;		
+		//currentRefPos <= startRead				
+
+		for (final CigarElement e : rec.getCigar().getCigarElements()) {
+			int length = e.getLength();
+			switch (e.getOperator()) {
+			case H:
+				break; // ignore hard clips
+			case P:
+				break; // ignore pads
+			case S:
+				readPos += e.getLength();								
+				break; // soft clip read bases
+			case N: // N ~ D
+			case D:
+				refPos += length;
+
+				if (startRead < 0  && refPos >= startRef){					
+					startRead = readPos;
+				}
+
+				if (endRead < 0  && refPos >= endRef){					
+					endRead = readPos;
+				}
+
+				break;// case
+			case I:				
+				readPos += length;						
+				break;
+
+			case M:
+			case EQ:
+			case X:				
+				if ((startRead < 0) && refPos + length >= startRef) {
+					startRead = readPos + startRef - refPos;					
+				}
+
+				if ((endRead < 0) && (refPos + length >= endRef)){
+					endRead = readPos + endRef - refPos;
+				}
+
+				refPos += length;
+				readPos += length;				
+				break;
+			default:
+				throw new IllegalStateException(
+						"Case statement didn't deal with cigar op: "
+								+ e.getOperator());
+			}// case
+			if (refPos >= endRef)
+				break;//for
+
+		}// for
+		if (startRead < 0 || endRead < 0){
+			Logging.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
+			return null;
+		}		
+				
+		Alphabet alphabet = Alphabet.DNA16();
+		Sequence retSeq = new Sequence(alphabet, endRead - startRead + 1, rec.getReadName() + "/" + startRead + "_" + endRead);
+		for (int i = 0; i < retSeq.length();i++){
+			retSeq.setBase(i, alphabet.byte2index(seqRead[startRead + i]));			
+		}
+		return retSeq;
+
+	}
 }

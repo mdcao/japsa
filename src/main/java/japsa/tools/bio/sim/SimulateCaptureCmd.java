@@ -138,7 +138,7 @@ public class SimulateCaptureCmd extends CommandLine{
 			System.exit(-1);
 		}
 
-		int flank = fmedian * 4;
+		int flank = fmedian  + (fmedian / 4);
 		double hybridizationRatio = 0.5;
 
 		//int median2 = 1300;
@@ -339,8 +339,8 @@ public class SimulateCaptureCmd extends CommandLine{
 					continue;//while
 				}
 
+				/*******************************************************************************
 				SAMRecordIterator iter = samReader.query(chrList.get(chrIndex).getName(), chrPos, chrPos + fragLength, false);
-
 				int countProbe = 0;
 				int myEnd = 0;
 				while (iter.hasNext()){				
@@ -371,12 +371,39 @@ public class SimulateCaptureCmd extends CommandLine{
 					fragmentRej2 ++;
 					continue;
 				}
-
-				r = rnd.nextDouble();
-
 				double myOdd = countProbe * 4.0/ fragLength;
-				//myOdd = 4 * (myOdd - 0.1) / 0.9; 
+				//myOdd = 4 * (myOdd - 0.1) / 0.9;				
+				/*******************************************************************************/
+				
+				/*******************************************************************************/				
+				SAMRecordIterator iter = samReader.query(chrList.get(chrIndex).getName(), chrPos, chrPos + fragLength, false);
+				int countProbe = 0;
+				
+				while (iter.hasNext()){				
+					SAMRecord sam = iter.next();
 
+					int start = sam.getAlignmentStart();
+					int end = sam.getAlignmentEnd();
+															
+					if (start < chrPos)
+						start = chrPos;
+										
+					if (end > chrPos + fragLength)
+						end = chrPos + fragLength;
+					
+					countProbe += (end - start + 1);					
+				}
+				iter.close();
+
+				if (countProbe <= 0){
+					//Logging.info("Reject1 " + fragLength + " " + countProbe);
+					fragmentRej2 ++;
+					continue;
+				}
+				double myOdd = (countProbe * 0.5 / fragLength) - 0.2;								
+				/*******************************************************************************/
+				
+				r = rnd.nextDouble();
 				if (r > myOdd){
 					//bad luck, rejected
 					//Logging.info("Reject2 " + fragLength + " " + countProbe);
@@ -396,10 +423,10 @@ public class SimulateCaptureCmd extends CommandLine{
 			else myOdd = dist2[fragLength];
 
 
-			if (rnd.nextDouble() > myOdd){
-				fragmentRej4 ++;				
-				continue;
-			}
+			//if (rnd.nextDouble() > myOdd){
+			//	fragmentRej4 ++;				
+			//	continue;
+			//}
 			numFragment ++;
 			//numFragmentApp += count;
 
@@ -421,6 +448,13 @@ public class SimulateCaptureCmd extends CommandLine{
 			}
 
 		}
+		
+		Logging.info("Generated " + numGen + " selected " + numFragment
+				+ "; reject1 = " + fragmentRej1 
+				+ "; reject2 = " + fragmentRej2
+				+ "; reject3 = " + fragmentRej3
+				+ "; reject4 = " + fragmentRej4);				
+
 		if (sos != null)
 			sos.close();
 

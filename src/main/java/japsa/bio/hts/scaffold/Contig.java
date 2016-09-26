@@ -35,8 +35,6 @@
 package japsa.bio.hts.scaffold;
 
 import java.util.ArrayList;
-import java.util.Collections;
-
 import japsa.seq.Sequence;
 import japsa.seq.JapsaFeature;
 
@@ -48,39 +46,50 @@ public class Contig{
 	int head = -1; //point to the index of its head contig in the scaffold 
 	double prevScore=0, nextScore=0;
 	int cirProb = 0; //measure how likely the contig itself is circular
-	//for depth first search
-	ArrayList<ContigBridge> bridges;	
+
 	//for annotation
 	ArrayList<JapsaFeature> genes,				//genes list
 							oriRep,				//origin of replication: indicator of plasmid for bacteria
 							insertSeq,			//Insertion Sequence
 							resistanceGenes;	//list of antibiotic resistance genes found in this contig
-		
+	//a contig is composed of edges from assembly graph
+	public static Graph asGraph;
+	
+	ArrayList<Path> paths;
+	
 	public Contig(int index, Sequence seq){
 		this.index = index;
 		contigSequence = seq;
 		myVector = new ScaffoldVector(0,1);
-		bridges = new ArrayList<ContigBridge>();
-		usedRanges = new ArrayList<Range>();
 		
 		genes = new ArrayList<JapsaFeature>();
 		oriRep = new ArrayList<JapsaFeature>();
 		insertSeq = new ArrayList<JapsaFeature>();
 		resistanceGenes = new ArrayList<JapsaFeature>();
+		
+		paths = new ArrayList<Path>();
 	}
 
+	public static void setGraph(Graph g){
+		asGraph=g;
+	}
+	
 	public Contig clone(){
 		Contig ctg = new Contig(this.index, this.contigSequence);
 		ctg.coverage = coverage;
-		ctg.bridges = this.bridges;
+
 		ctg.head = this.head; //update later
 		ctg.cirProb = this.cirProb;
-		ctg.usedRanges = this.usedRanges;
 
 		ctg.genes = this.genes;
 		ctg.oriRep = this.oriRep;
 		ctg.insertSeq = this.insertSeq;
 		ctg.resistanceGenes = this.resistanceGenes;
+		
+		ctg.paths = new ArrayList<Path>();
+		for(Path p:paths)
+			ctg.paths.add(p);
+		
 		return ctg;
 	}
 	// Get features in an interval of contig
@@ -200,59 +209,23 @@ public class Contig{
 	public double getCoverage(){
 		return coverage;
 	}
+	
+	/*
+	 * Operators related to Path
+	 */
+	public ArrayList<Path> getPaths(){
+		return paths;
+	}
+	public void setPath(Path path){
+		this.paths.add(path);
+	}
+	
 	public void setCoverage(double cov){
 		coverage =  cov;
 	}
 	public String toString(){
 		return new String(" contig" + getIndex());
 	}
-	////////////////for tracing the used part////////////////////
-	ArrayList<Range> usedRanges;
-	class Range implements Comparable<Range> {
-		int start, end, score;
-		Range(){
-			start = end = score = 0;
-		}
-		Range(int start, int end, int score){
-			this.start = start<end?start:end;
-			this.end = start+end-this.start;
-			this.score = score;
-		}
-		public int getLen(){
-			return Math.abs(end-start)+1;
-		}
-		public String toString(){
-			return new String(start + " --> " + end + ": " + score);
-		}
-		@Override
-		public int compareTo(Range rg) {
-			// TODO Auto-generated method stub
-			if(this.start!=rg.start)
-				return (this.start-rg.start);
-			else if(this.end != rg.end)
-				return (this.end-rg.end);
-			else
-				return (this.score-rg.score);
-		}
-	}
-	public void addRange(int start, int end, int score){
-		usedRanges.add(new Range(start,end,score));
-	}
-	public void display(){
-		Collections.sort(usedRanges);
-		System.out.println("Contig " + this.getName());
-		for(Range rg:usedRanges)
-			System.out.println("used " + rg);
-		
-		int prevEnd = 0, minLen = 100;
-		for (Range rg:usedRanges){
-			if(rg.start > prevEnd + minLen){
-				System.out.println("\tuncovered: " + prevEnd + " --> " + rg.start + " ( " + (rg.start-prevEnd+1) +" )");
-			}
-			if(prevEnd < rg.end)
-				prevEnd = rg.end;
-		}
-		if (prevEnd + minLen < length()-1)
-			System.out.println("\tuncovered: " + prevEnd + " --> " + (length()-1) + " ( " + (length()-prevEnd) +" )");
-	}
+	
+	
 }

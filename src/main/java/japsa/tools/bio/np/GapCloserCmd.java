@@ -41,6 +41,7 @@ import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -62,6 +63,10 @@ public class GapCloserCmd extends CommandLine{
 
 		addString("bamFile", null, "Name of the bam file", true);
 		addString("sequenceFile", null, "Name of the assembly file (sorted by length)",true);
+		
+		addString("spadesFolder", null, "Name of the output folder by SPAdes, containing contigs.fasta, "
+										+ "contigs.paths and assembly_graph.fastg (on developing, may cause conflicts)");
+		
 		addString("prefix", "out", "Prefix for the output files, default is out.*");	
 		
 		addString("genes", null , "Realtime annotation: name of annotated genes in GFF 3.0 format");
@@ -95,11 +100,24 @@ public class GapCloserCmd extends CommandLine{
 		/***********************************************************************/
 		String prefix = cmdLine.getStringVal("prefix");
 		String bamFile = cmdLine.getStringVal("bamFile");
+
 		String sequenceFile = cmdLine.getStringVal("sequenceFile"),
+				spadesFolder = cmdLine.getStringVal("spadesFolder"),
+				
 				genesFile = cmdLine.getStringVal("genes"),
 				resistFile = cmdLine.getStringVal("resistGene"),
 				isFile = cmdLine.getStringVal("insertSeq"),
 				oriFile = cmdLine.getStringVal("oriRep");
+		
+		
+		File 	graphFile = new File(spadesFolder+"/assembly_graph.fastg"),
+				pathFile = new File(spadesFolder+"/contigs.paths");
+		if(graphFile.exists() && pathFile.exists())
+			Logging.info("===> Use assembly graph and path from SPAdes!");
+		else
+			Logging.warn(spadesFolder + " is not SPAdes output folder (either contigs.paths or "
+					+ "	assembly_graph.fastg is omitted)");
+		
 		
 		int 	//marginThres = cmdLine.getIntVal("marginThres"),
 				minContig = cmdLine.getIntVal("minContig"),
@@ -140,20 +158,35 @@ public class GapCloserCmd extends CommandLine{
 		boolean rt = cmdLine.getBooleanVal("realtime");
 		if(rt){
 			RealtimeScaffolding rtScaffolding = new RealtimeScaffolding(sequenceFile, genesFile, resistFile, isFile, oriFile, "-");
-			rtScaffolding.scaffolding(bamFile, number, time, cov/1.6, qual);
+
 			graph = rtScaffolding.graph;
+			if(prefix != null)
+				graph.prefix = prefix;
+			if(spadesFolder!=null)
+				synchronized(graph){
+					graph.readMore(spadesFolder+"/assembly_graph.fastg",spadesFolder+"/contigs.paths");
+				}
+			
+			rtScaffolding.scaffolding(bamFile, number, time, cov/1.6, qual);
+			
 		}
 		else{
+
 			graph = new ScaffoldGraphDFS(sequenceFile, genesFile, resistFile, isFile, oriFile);
+			if(spadesFolder!=null)
+				graph.readMore(spadesFolder+"/assembly_graph.fastg",spadesFolder+"/contigs.paths");
+
 			if (cov <=0)
 				cov = graph.estimatedCov;
+			
 			graph.makeConnections(bamFile, cov / 1.6, qual);
 	
 			graph.connectBridges();
+			if(prefix != null)
+				graph.prefix = prefix;
+			graph.printSequences();
 		}
-		if(prefix != null)
-			graph.prefix = prefix;
-		graph.printSequences();
+
 	}
 }
 

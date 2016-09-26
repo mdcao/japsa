@@ -58,36 +58,36 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	varHd    = "var",                 //06
 	var2Hd    = "var2",                 //06
 	confidenceHd = "confidence",      //07
-	
+
 	meanHd   = "mean",                //08
 	stdHd    = "std",                 //09
 	eviHd  = "evidence",             //10
 	evi2Hd  = "evidence2" ;             //10
-	
+
 
 	//public static String[] STANDARD_HEADERS  = {TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, varHd, confidenceHd, meanHd, stdHd,eviHd}; 
 	//public static String[] STANDARD_HEADERS2 = {TandemRepeat.chrHd, TandemRepeat.idHd, TandemRepeat.startHd, TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, varHd, meanHd, stdHd};
 
 	public static String[] STANDARD_HEADERS  = 
 		{TandemRepeat.chromHd, TandemRepeat.idHd, TandemRepeat.startHd, 
-		TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
-		varHd, confidenceHd, stdHd, eviHd};
+				TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
+				varHd, confidenceHd, stdHd, eviHd};
 
 	public static String[] STANDARD_HEADERS2 = 
 		{TandemRepeat.chromHd, TandemRepeat.idHd, TandemRepeat.startHd, 
-		TandemRepeat.endHd, TandemRepeat.periodHd, 
-		TandemRepeat.unitNoHd, varHd, stdHd};
-	
+				TandemRepeat.endHd, TandemRepeat.periodHd, 
+				TandemRepeat.unitNoHd, varHd, stdHd};
+
 	public static String[] SIMPLE_HEADERS  = 
 		{TandemRepeat.chromHd, TandemRepeat.idHd, TandemRepeat.startHd, 
-		TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
-		varHd, eviHd};
-	
+				TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
+				varHd, eviHd};
+
 	public static String[] SIMPLE_HEADERS2  = 
 		{TandemRepeat.chromHd, TandemRepeat.idHd, TandemRepeat.startHd, 
-		TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
-		varHd, eviHd, var2Hd, evi2Hd};
-			
+				TandemRepeat.endHd, TandemRepeat.periodHd, TandemRepeat.unitNoHd, 
+				varHd, eviHd, var2Hd, evi2Hd};
+
 	TandemRepeat tandemRepeat;
 	/**
 	 * @return the tandemRepeat
@@ -107,8 +107,8 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	double var2;//second allele
 	double confidence, evidence;//The confident is in probability (i.e., 1-10^phred
 	double evidence2;
-	
-	 @Deprecated
+
+	@Deprecated
 	double mean = 0;//a bland distribution
 
 
@@ -138,7 +138,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	 * @return the mean
 	 * @Deprecated: mean will be removed in the new future
 	 */
-	 @Deprecated
+	@Deprecated
 	public double getMean() {
 		return mean;
 	}
@@ -146,7 +146,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	 * @param mean the mean to set
 	 *  @Deprecated: mean will be removed
 	 */
-	 @Deprecated
+	@Deprecated
 	public void setMean(double mean) {
 		this.mean = mean;
 	}
@@ -162,7 +162,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	public void setStd(double std) {
 		this.std = std;
 	}
-	
+
 	public void swapVar(){
 		double tmp = var;var = var2;var2 = tmp;
 	}
@@ -173,7 +173,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	public double getVar() {
 		return var;
 	}
-	
+
 	public double getVar2() {
 		return var2;
 	}
@@ -206,7 +206,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 
 		return trv;
 	}
-	
+
 	/**
 	 * Read from a line and a list of fields
 	 * @param line
@@ -310,7 +310,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	public void addEvidence2(double moreEvi){
 		evidence2 += moreEvi;
 	}	
-	
+
 	public double getEvidence(){
 		return evidence;
 	}
@@ -322,7 +322,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	public static ArrayList<TandemRepeatVariant> readFromFile(String fileName) throws IOException{
 		//Start with the default header
 		String[] headers = STANDARD_HEADERS2;
-		
+
 		ArrayList<TandemRepeatVariant> trfList = new ArrayList<TandemRepeatVariant>(); 
 		BufferedReader in = SequenceReader.openFile(fileName);
 		String line = "";
@@ -338,7 +338,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 				trfList.add(TandemRepeatVariant.read(line, headers));		
 
 		}//while
-		
+
 		Logging.info("Read in " + trfList.size() + " TRs");
 		return trfList;
 	}
@@ -354,12 +354,12 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 		for (int idx = 0; idx < annoList.size(); idx ++){
 			JapsaAnnotation anno = annoList.get(idx);
 			for (int x = 0; x < anno.numFeatures(); x++){
-				
+
 				JapsaFeature feature = anno.getFeature(x);
-				
+
 				if (!feature.getType().equals("trf"))
 					continue;
-				
+
 				TandemRepeatVariant trv = new TandemRepeatVariant();
 				trv.tandemRepeat.setChr(anno.getAnnotationID());
 				trv.tandemRepeat.setStart(Integer.parseInt(feature.getID().substring(1)));
@@ -401,14 +401,14 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 			out.print('\n');
 		}
 	}
-	
+
 	public static void printHeader(SequenceOutputStream out, String [] headers) throws IOException{
 		out.print("#H:" + headers[0]);
 		for (int i=1; i < headers.length; i++)
 			out.print("\t"+headers[i]);
 		out.print('\n');
 	}
-	
+
 
 
 	public String toString(){
@@ -423,7 +423,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	public int compareTo(TandemRepeatVariant o) {
 		return tandemRepeat.compareTo(o.tandemRepeat);
 	}
-	
+
 	/**
 	 * Write the variant to bed file. Currently use only the first heterozygous 
 	 * variant is written out.

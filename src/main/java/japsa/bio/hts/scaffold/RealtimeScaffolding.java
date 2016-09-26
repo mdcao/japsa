@@ -106,7 +106,7 @@ public class RealtimeScaffolding {
 		RealtimeScaffolder(RealtimeScaffolding scf, String output)  throws IOException{
 			scaffolding = scf;
 			outOS = SequenceOutputStream.makeOutputStream(output);
-			outOS.print("time\tstep\treads\tbases\tscaffolds\n");
+			outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50\n");
 		}
 
 		@Override
@@ -140,9 +140,11 @@ public class RealtimeScaffolding {
 				}
 			}
 			try {
-				//scaffolding.graph.printSequences();
-				scaffolding.graph.printRT(scaffolding.currentBaseCount);
-				outOS.print(timeNow + "\t" + step + "\t" + lastReadNumber + "\t" + scaffolding.currentBaseCount + "\t" + scfCount + "\t" + cirCount + "\t" + scaffolding.graph.getN50());
+				// This function is for the sake of real-time annotation experiments being more readable
+				//scaffolding.graph.printRT(scaffolding.currentBaseCount);
+				scaffolding.graph.printSequences();
+
+				outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + scfCount + " |\t" + cirCount + " |\t" + scaffolding.graph.getN50());
 				outOS.println();
 				outOS.flush();
 			} catch (IOException e) {
