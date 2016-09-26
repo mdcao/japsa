@@ -84,7 +84,7 @@ A summary of *npScarf* usage can be obtained by invoking the --help option::
     jsa.np.npscarf --help
     
 Input
-======
+=====
 *npScarf* takes two files as required input::
 
 	jsa.np.npscarf -s <*draft*> -b <*bam*>
@@ -109,7 +109,7 @@ In realtime mode, if any annotation analysis is enabled, a file named
 scaffolding.
 
 Real-time scaffolding
-===============
+=====================
 To run *npScarf* in streaming mode::
 
    	jsa.np.npscarf -realtime [options]
@@ -121,31 +121,28 @@ The idea of streaming mode is when the input <*nanopore*> file is retrieved in s
 npReader is the module that provides such data from fast5 files returned from the real-time
 base-calling cloud service Metrichor. Ones can run::
 
-jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \
-
-bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
-
-jsa.np.npscarf --realtime -b - -seq <*draft*> > log.out 2>&1
+    jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \
+      bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
+      jsa.np.npscarf --realtime -b - -seq <*draft*> > log.out 2>&1
 
 or if you have the whole set of Nanopore long reads already and want to emulate the 
 streaming mode::
 
-jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
-
-bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
-
-jsa.np.npscarf --realtime -b - -seq <*draft*> > log.out 2>&1
+    jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
+      bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
+      jsa.np.npscarf --realtime -b - -seq <*draft*> > log.out 2>&1
 
 Note that jsa.np.timeEmulate based on the field *timestamp* located in the read name line to
 decide the order of streaming data. So if your input <*nanopore*> already contains the field,
 you have to sort it::
 
-jsa.seq.sort -i <*nanopore*> -o <*nanopore-sorted*> -sortKey=timestamp
+    jsa.seq.sort -i <*nanopore*> -o <*nanopore-sorted*> -sortKey=timestamp
 
 or if your file does not have the *timestamp* data yet, you can manually make ones. For example::
 
-cat <*nanopore*> |awk 'BEGIN{time=0.0}NR%4==1{printf "%s timestamp=%.2f\n", $0, time; time++}NR%4!=1{print}'
-> <*nanopore-with-time*> 
+    cat <*nanopore*> | \
+       awk 'BEGIN{time=0.0}NR%4==1{printf "%s timestamp=%.2f\n", $0, time; time++}NR%4!=1{print}' \
+       > <*nanopore-with-time*> 
 
 Real-time annotation
 ====================
@@ -153,19 +150,17 @@ The tool includes usecase for streaming annotation. Ones can provides database o
 resistance genes and/or Origin of Replication in FASTA format for the analysis of gene ordering
 and/or plasmid identifying respectively::
 
-jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
-
-bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
-
-jsa.np.npscarf --realtime -b - -seq <*draft*> -resistGene <*resistDB*> -oriRep <*origDB*> > log.out 2>&1
+    jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
+      bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
+      jsa.np.npscarf --realtime -b - -seq <*draft*> -resistGene <*resistDB*> -oriRep <*origDB*> > log.out 2>&1
 
 Assembly graph
 ==============
 *npScarf* can read the assembly graph info from SPAdes to make the results more precise down to SNP level.
 This function is still on development and the results might be slightly deviate from the stable version in
-term of number of final contigs.
+term of number of final contigs::
 
-jsa.np.npscarf --spadesFolder=<SPAdes_output_directory> <options...>
+    jsa.np.npscarf --spadesFolder=<SPAdes_output_directory> <options...>
 
 where SPAdes_output_directory indicates the result folder of SPAdes, containing files such as contigs.fasta, 
 contigs.paths and assembly_graph.fastg.
