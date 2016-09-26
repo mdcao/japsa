@@ -34,6 +34,10 @@ Linux distribution software repository, such as::
 The library is typically installed to */usr/lib/jni*. Enter this path when
 prompted for "Path to HDF library" during installation of Japsa.
 
+HDF-View (https://www.hdfgroup.org/products/java/release/download.html) also 
+contains the neccessary library. Please install HDF-2.10.1 instead of the 
+latest version.
+
 ~~~~~~~~
 Synopsis
 ~~~~~~~~
