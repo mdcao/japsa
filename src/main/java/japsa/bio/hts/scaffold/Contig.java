@@ -53,8 +53,15 @@ public class Contig{
 							insertSeq,			//Insertion Sequence
 							resistanceGenes;	//list of antibiotic resistance genes found in this contig
 	//a contig is composed of edges from assembly graph
-	public static Graph asGraph;
-	
+
+	static Graph asGraph=null;
+	public static void setGraph(Graph g){
+		asGraph=g;
+	}
+	public static boolean hasGraph(){
+		return asGraph!=null;
+	}
+
 	ArrayList<Path> paths;
 	
 	public Contig(int index, Sequence seq){
@@ -70,9 +77,6 @@ public class Contig{
 		paths = new ArrayList<Path>();
 	}
 
-	public static void setGraph(Graph g){
-		asGraph=g;
-	}
 	
 	public Contig clone(){
 		Contig ctg = new Contig(this.index, this.contigSequence);

@@ -64,7 +64,7 @@ public class DemoGraph {
 				graph.readMore("/home/s.hoangnguyen/Projects/scaffolding/data/test/assembly_graph.fastg","/home/s.hoangnguyen/Projects/scaffolding/data/test/contigs.paths");
 			}
 			
-			rtScaffolding.scaffolding(bamFile, 500, 300, 0, 1);
+			rtScaffolding.scaffolding(bamFile, 500, 5, 0, 1);
 				
 		}catch (Exception e) {
 			// TODO Auto-generated catch block

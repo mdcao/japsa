@@ -75,6 +75,18 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	private ArrayList<Connection> connections;//a list of connections that make up this
 	private Path bridgePath=null;
 	
+
+	final static int SEARCH_THRES=300;
+	protected static boolean forceFill=false;
+	
+	public static void forceFilling(){
+		forceFill=true;
+	}
+	public static void relaxFilling(){
+		forceFill=false;
+	}
+	
+
 	public ContigBridge(Contig c1, Contig c2, int ind){
 		firstContig = c1;
 		secondContig = c2;
@@ -144,7 +156,17 @@ public class ContigBridge implements Comparable<ContigBridge>{
 							secondPathList=secondContig.getPaths(),
 							candidates=new ArrayList<Path>();
 		int d=transVector.distance(firstContig, secondContig);
+
+		//if the distance is too long, we should wait for more long reads coming in
+		if(!forceFill && d>SEARCH_THRES)
+			return null;
 		
+		//not doing it again
+		//FIXME: remove this when implement progressive taxa-typing based on long reads...
+		if(bridgePath!=null)
+			return path2Connection(bridgePath);
+			
+
 		for(Path p1:firstPathList)
 			for(Path p2:secondPathList){
 				System.out.println("Trying to find path that connect " + firstContig.getName() + "("+ (firstContig.getRelDir()>0?"F":"R") + ")" + 
@@ -152,6 +174,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				System.out.print((firstContig.getRelDir()>0?p1:p1.rc()) + " =====> ");
 				System.out.println(secondContig.getRelDir()>0?p2:p2.rc());
 				
+
+				//because we go from left->right of a Scaffold when invoking Scaffold.viewSequence()
 				Node	tip1=firstContig.getRelDir()>0?p1.getEnd():p1.rc().getEnd(),
 						tip2=secondContig.getRelDir()>0?p2.getStart():p2.rc().getStart();
 				
@@ -159,10 +183,12 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				candidates.addAll(Contig.asGraph.DFS(tip1, tip2, d));
 		}
 		Collections.sort(candidates);
-		Connection retval=null;
+
 		/**
 		 * Using poa to find best candidate regarding long reads data.
 		 */
+		String bestMatch=null;
+
 		if(candidates.isEmpty())
 			return null;
 //		else if(candidates.size()==1)
@@ -178,7 +204,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 //			// locate the offset points on two contigs. Note: 1-based due to the fuking htsjdk.samtools
 //			int 	cutOnFirstContig=firstContig.getRelDir()>0?(firstContig.length()):1,
 //					cutOnSecondContig=secondContig.getRelDir()>0?1:(secondContig.length());
-//			String bestMatch="";
+//			
 //			for (Connection connection:allSeq){
 //				int 	firstCutOnRead=mapToRead(cutOnFirstContig, connection.firstAlignment),
 //						secondCutOnRead=mapToRead(cutOnSecondContig, connection.secondAlignment);
@@ -249,17 +275,19 @@ public class ContigBridge implements Comparable<ContigBridge>{
 //		}
 		
 			
-		if(bridgePath==null){
+		if(bestMatch==null){
 			System.out.println("Not found a stand-out path! Pick the first one.");
 			bridgePath=candidates.get(0);
 		}
 		
 		//now make change to the transVector to fit the bridgePath
 		int newDistance=bridgePath.length-bridgePath.getStart().getSeq().length()-bridgePath.getEnd().getSeq().length(); //distance between two closest tips of two connecting Nodes
-		transVector.setMagnitute(transVector.getMagnitute()+newDistance-d);
-		secondContig.myVector.setMagnitute(secondContig.myVector.getMagnitute()+newDistance-d);
-		retval=path2Connection(bridgePath);
-		return retval;
+		transVector.setMagnitute(transVector.getMagnitute()+(newDistance-d)*Integer.signum(firstContig.getRelDir()));
+		//check if this is not the close bridge of the scaffold
+		if(consistentWith(ScaffoldVector.composition(secondContig.myVector, ScaffoldVector.reverse(firstContig.myVector))))
+			secondContig.myVector=ScaffoldVector.composition(transVector, firstContig.myVector);
+		return path2Connection(bridgePath);
+
 	}
 	/**
 	 * Get an artifact connection out of current bridgePath
@@ -311,7 +339,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			int newDistance=p.length-tip1.getSeq().length()-tip2.getSeq().length(); //distance between two closest tips of two connecting Nodes
 
 			retval=new Connection(	read, firstAlignment, secondAlignment,
-									new ScaffoldVector(transVector.getDirection(), transVector.getMagnitute()+newDistance-d));
+									new ScaffoldVector(transVector.getDirection(), transVector.getMagnitute()+(newDistance-d)*Integer.signum(firstContig.getRelDir())));
 		}
 		return retval;
 		
@@ -328,7 +356,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		score = s;
 	}
 	
-	//TODO: magnitude usually doesn't help for bridges with repeat.
+	//NOTE: magnitude usually doesn't help for bridges with repeat.
 	// E.g. <--===---------------> prev not next for the both
 	public void setContigScores(){
 		int 	firstPointer = 0,
@@ -433,6 +461,12 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	public ArrayList<Connection> getConnections() {
 		return connections;
 	}	
+	/*
+	 * @return the equivalent path
+	 */
+	public Path getBridgePath(){
+		return bridgePath;
+	}
 
 	public Connection fewestGapConnection() throws IOException{
 		if(ScaffoldGraph.verbose)
@@ -463,7 +497,6 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	}
 	/**
 	 * Try to connect contigs with consensus sequence from involved reads
-	 * TODO optimized the code
 	 * @return 
 	 * @throws IOException
 	 */

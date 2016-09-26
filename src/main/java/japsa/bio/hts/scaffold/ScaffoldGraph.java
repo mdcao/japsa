@@ -214,9 +214,44 @@ public class ScaffoldGraph{
 		return lengths[index];	
 	}
 
+	public synchronized String getGapsInfo(){
+		int 	gapCount=0,
+				gapMaxLen=0;
+		
+		for (int i = 0; i < scaffolds.length;i++){
+			if(scaffolds[i].isEmpty()) continue;
+			int len = scaffolds[i].length();
+			if ((contigs.get(i).head == i 
+					&& !isRepeat(contigs.get(i))
+					&& len > maxRepeatLength
+					)
+					|| scaffolds[i].closeBridge != null)
+			{
+				for(ContigBridge brg:scaffolds[i].bridges){
+					if(brg.getBridgePath()==null){
+						gapCount++;
+						if(brg.getTransVector().distance(brg.firstContig, brg.secondContig) > gapMaxLen)
+							gapMaxLen=brg.getTransVector().distance(brg.firstContig, brg.secondContig);
+					}
+				}
+				if(scaffolds[i].closeBridge!=null){
+					ContigBridge brg=scaffolds[i].closeBridge;
+					if(brg.getBridgePath()==null){
+						gapCount++;
+						if(brg.getTransVector().distance(brg.firstContig, brg.secondContig) > gapMaxLen)
+							gapMaxLen=brg.getTransVector().distance(brg.firstContig, brg.secondContig);
+					}
+				}
+				
+			}
+		}
+			
+
+		return gapCount+" ("+gapMaxLen+")";	
+	}
 
 	/**
-	 * Make connections between any two uniquely (non-repeat) contigs
+	 * Forming bridges based on alignments
 	 * 
 	 * @param bamFile
 	 * @param minCov

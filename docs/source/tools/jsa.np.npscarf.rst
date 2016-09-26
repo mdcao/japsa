@@ -2,7 +2,7 @@
 *npScaffolder*: real-time scaffolder using SPAdes contigs and Nanopore sequencing reads
 ---------------------------------------------------------------------------------------
 
-*npScaffolder* (jsa.np.gapcloser) is a program that connect contigs from a draft genomes 
+*npScaffolder* (jsa.np.npscarf) is a program that connect contigs from a draft genomes 
 to generate sequences that are closer to finish. These pipelines can run on a single laptop
 for microbial datasets. In real-time mode, it can be integrated with simple structural 
 analyses such as gene ordering, plasmid forming.
@@ -13,25 +13,25 @@ npScaffolder is included in the `Japsa package <http://mdcao.github.io/japsa/>`_
 Synopsis
 ~~~~~~~~
 
-*jsa.np.gapcloser*: Scaffold and finish assemblies using Oxford Nanopore sequencing reads
+*jsa.np.npscarf*: Scaffold and finish assemblies using Oxford Nanopore sequencing reads
 
 ~~~~~
 Usage
 ~~~~~
 ::
 
-   jsa.np.gapcloser [options]
+   jsa.np.npscarf [options]
 
 ~~~~~~~
 Options
 ~~~~~~~
-  --bamFile=s     Name of the bam file
-                  (REQUIRED)
   --sequenceFile=s Name of the assembly file (sorted by length)
                   (REQUIRED)
-  --spadesFolder=s Name of the output folder by SPAdes, containing contigs.fasta, contigs.paths and assembly\_graph.fastg (on developing, may cause conflicts)
+  --bamFile=s     Name of the bam file
+                  (REQUIRED)
+  --spadesFolder=s Name of the output folder by SPAdes (on development)
                   (default='null')
-  --prefix=s      Prefix for the output files, default is out.*
+  --prefix=s      Prefix for the output files
                   (default='out')
   --genes=s       Realtime annotation: name of annotated genes in GFF 3.0 format
                   (default='null')
@@ -67,8 +67,9 @@ Options
 See also
 ~~~~~~~~
 
-jsa.np.f5reader, jsa.util.streamServer_, jsa.util.streamClient_
+jsa.np.npreader_, jsa.util.streamServer_, jsa.util.streamClient_
 
+.. _jsa.np.npreader: jsa.np.npreader.html
 .. _jsa.util.streamServer: jsa.util.streamServer.html
 .. _jsa.util.streamClient: jsa.util.streamClient.html
 
@@ -78,15 +79,15 @@ jsa.np.f5reader, jsa.util.streamServer_, jsa.util.streamClient_
 Usage examples
 ~~~~~~~~~~~~~~
 
-A summary of *npScaffolder* usage can be obtained by invoking the --help option::
+A summary of *npScarf* usage can be obtained by invoking the --help option::
 
-    jsa.np.gapcloser --help
+    jsa.np.npscarf --help
     
 Input
 ======
-*npScaffolder* takes two files as required input::
+*npScarf* takes two files as required input::
 
-	jsa.np.gapcloser -s <*draft*> -b <*bam*>
+	jsa.np.npscarf -s <*draft*> -b <*bam*>
 	
 <*draft*> input is the FASTA file containing the pre-assemblies. Normally this 
 is the output from running SPAdes on Illumina MiSeq paired end reads.
@@ -99,7 +100,7 @@ with the fixed parameter set as follow::
 	
 Output
 =======
-*npScaffolder* output is specified by *-prefix* option. The default prefix is \'out\'.
+*npScarf* output is specified by *-prefix* option. The default prefix is \'out\'.
 Normally the tool generate two files: *prefix*.fin.fasta and *prefix*.fin.japsa which 
 indicate the result scaffolders in FASTA and JAPSA format.
 
@@ -109,9 +110,9 @@ scaffolding.
 
 Real-time scaffolding
 ===============
-To run *npScaffolder* in streaming mode::
+To run *npScarf* in streaming mode::
 
-   	jsa.np.gapcloser -realtime [options]
+   	jsa.np.npscarf -realtime [options]
 
 In this mode, the <*bam*> file will be processed block by block. The size of block 
 (number of BAM/SAM records) can be manipulated through option *-read* and *-time*.
@@ -120,11 +121,11 @@ The idea of streaming mode is when the input <*nanopore*> file is retrieved in s
 npReader is the module that provides such data from fast5 files returned from the real-time
 base-calling cloud service Metrichor. Ones can run::
 
-jsa.np.f5reader -realtime -folder c:\Downloads\ -fail -output - | \
+jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \
 
 bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
 
-jsa.np.gapcloser --realtime -b - -seq <*draft*> > log.out 2>&1
+jsa.np.npscarf --realtime -b - -seq <*draft*> > log.out 2>&1
 
 or if you have the whole set of Nanopore long reads already and want to emulate the 
 streaming mode::
@@ -133,17 +134,17 @@ jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
 
 bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
 
-jsa.np.gapcloser --realtime -b - -seq <*draft*> > log.out 2>&1
+jsa.np.npscarf --realtime -b - -seq <*draft*> > log.out 2>&1
 
-Note that jsa.np.timeEmulate based on the field *timeStamp* located in the read name line to
+Note that jsa.np.timeEmulate based on the field *timestamp* located in the read name line to
 decide the order of streaming data. So if your input <*nanopore*> already contains the field,
 you have to sort it::
 
-jsa.seq.sort -i <*nanopore*> -o <*nanopore-sorted*> -sortKey=timeStamp
+jsa.seq.sort -i <*nanopore*> -o <*nanopore-sorted*> -sortKey=timestamp
 
-or if your file does not have the *timeStamp* data yet, you can manually make ones. For example::
+or if your file does not have the *timestamp* data yet, you can manually make ones. For example::
 
-cat <*nanopore*> |awk 'BEGIN{time=0.0}NR%4==1{printf "%s timeStamp=%.2f\n", $0, time; time++}NR%4!=1{print}'
+cat <*nanopore*> |awk 'BEGIN{time=0.0}NR%4==1{printf "%s timestamp=%.2f\n", $0, time; time++}NR%4!=1{print}'
 > <*nanopore-with-time*> 
 
 Real-time annotation
@@ -156,4 +157,15 @@ jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
 
 bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
 
-jsa.np.gapcloser --realtime -b - -seq <*draft*> -resistGene <*resistDB*> -oriRep <*origDB*> > log.out 2>&1
+jsa.np.npscarf --realtime -b - -seq <*draft*> -resistGene <*resistDB*> -oriRep <*origDB*> > log.out 2>&1
+
+Assembly graph
+==============
+*npScarf* can read the assembly graph info from SPAdes to make the results more precise down to SNP level.
+This function is still on development and the results might be slightly deviate from the stable version in
+term of number of final contigs.
+
+jsa.np.npscarf --spadesFolder=<SPAdes_output_directory> <options...>
+
+where SPAdes_output_directory indicates the result folder of SPAdes, containing files such as contigs.fasta, 
+contigs.paths and assembly_graph.fastg.

@@ -106,12 +106,16 @@ public class RealtimeScaffolding {
 		RealtimeScaffolder(RealtimeScaffolding scf, String output)  throws IOException{
 			scaffolding = scf;
 			outOS = SequenceOutputStream.makeOutputStream(output);
-			outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50\n");
 		}
 
 		@Override
 		protected void close() {
-			// TODO Auto-generated method stub
+			//if SPAdes assembly graph is involved
+			if(Contig.hasGraph()){
+				ContigBridge.forceFilling();
+				analysis();
+			}
+			
 			try{
 				outOS.close();
 			}catch (Exception e){
@@ -143,8 +147,10 @@ public class RealtimeScaffolding {
 				// This function is for the sake of real-time annotation experiments being more readable
 				//scaffolding.graph.printRT(scaffolding.currentBaseCount);
 				scaffolding.graph.printSequences();
+				outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50 | \tBreaks (maxlen)\n");
+				outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + scfCount 
+							+ " |\t" + cirCount + " |\t" + scaffolding.graph.getN50() + " |\t" + scaffolding.graph.getGapsInfo());
 
-				outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + scfCount + " |\t" + cirCount + " |\t" + scaffolding.graph.getN50());
 				outOS.println();
 				outOS.flush();
 			} catch (IOException e) {

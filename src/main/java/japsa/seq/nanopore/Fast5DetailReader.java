@@ -161,8 +161,7 @@ public class Fast5DetailReader extends Fast5NPReader{
 		java.util.List<HObject> members = g.getMemberList();		
 
 		for (HObject member:members) {
-			String f = member.getFullName();		
-
+			//String f = member.getFullName();
 			if (member instanceof Group) {
 				readData((Group) member);
 			}else if (member instanceof H5CompoundDS){ 

@@ -22,7 +22,9 @@ public class Graph {
     private HashMap<String, Vertex> vertices;
     private HashMap<Integer, Edge> edges;
     private int kmer;
-    final int tolerate=200;
+
+    static final int TOLERATE=300;
+
     
     public Graph(){
         this.vertices = new HashMap<String, Vertex>();
@@ -286,7 +288,8 @@ public class Graph {
     		if(e.getDOne()==source.getDirection()){
     			path.addNode(e.getTwo(), e.getDTwo());
 
-    			if(e.getTwo()==dest.getVertex() && e.getDTwo()==dest.getDirection() && Math.abs(distance+getKmerSize()) < tolerate){
+    			if(e.getTwo()==dest.getVertex() && e.getDTwo()==dest.getDirection() && Math.abs(distance+getKmerSize()) < TOLERATE){
+
     		    	Path 	curPath=curResult.isEmpty()?new Path(this):curResult.get(0), //the best path saved among all possible paths from the list curResult
     		    			tmpPath=new Path(this);
     		    	tmpPath.setComp(path.getComp());
@@ -299,7 +302,7 @@ public class Graph {
     				System.out.println("Hit added: "+path+"(candidate deviation: "+Math.abs(distance+getKmerSize())+")");
     			}else{
     				int newDistance=distance-e.getTwo().getSequence().length()+getKmerSize();
-    				if (newDistance+getKmerSize()<-tolerate){
+    				if (newDistance+getKmerSize()<-TOLERATE){
     					System.out.println("Stop following path with distance "+newDistance+" already! : "+path);
     				}else
     					traverse(path, dest, curResult, newDistance);

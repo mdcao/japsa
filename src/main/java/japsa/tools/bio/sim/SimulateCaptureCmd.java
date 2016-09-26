@@ -62,8 +62,8 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(
-		scriptName = "jsa.sim.capture", 
-		scriptDesc = "Simulate the capture process"
+		scriptName = "jsa.sim.capsim", 
+		scriptDesc = "Simulate capture sequencing"
 		)
 public class SimulateCaptureCmd extends CommandLine{
 	//CommandLine cmdLine;
@@ -79,24 +79,28 @@ public class SimulateCaptureCmd extends CommandLine{
 		addString("logFile", "-",  "Log file");
 		addString("ID", "",  "A unique ID for the data set");
 
-		addString("fragment", null, "Output of fragment file");
+		//addString("fragment", null, "Output of fragment file");
 		addString("miseq", null, "Name of read file if miseq is simulated");
 		addString("pacbio", null, "Name of read file if pacbio is simulated");
 
 		//Fragment size distribution
-		addInt("fmedian", 2000 , "Median of fragment size distribution");
-		addDouble("fshape", 4, "Shape parameter of the fragment size distribution");
+		addInt("fmedian", 2000 , "Median of fragment size at shearing");
+		addDouble("fshape", 6, "Shape parameter of the fragment size distribution");
+
+		addInt("smedian", 1300 , "Median of fragment size distribution");
+		addDouble("sshape", 6, "Shape parameter of the fragment size distribution");
+
+		addInt("tmedian", 0 , "Median of target fragment size (the fragment size of the data).\n If specified, will override fmedian and smedian.\n Othersise will be estimated");
+		addDouble("tshape", 0, "Shape parameter of the effective fragment size distribution");
+
 		addInt("num", 1000000, "Number of fragments ");
 
 		//addDouble("mismatch",0.01,"probability of mismatches");
 		//addDouble("deletion",0.01,"probability of deletion");
 		//addDouble("insertion",0.01,"probability of insertion");
 		//addDouble("extension",0.01,"probability of indel extention");
-
 		//Specific parameter for each sequencing technology
 
-		addInt("smedian", 1300 , "Median of fragment size distribution");
-		addDouble("sshape", 3, "Shape parameter of the fragment size distribution");
 
 		addInt("pblen", 30000, "PacBio: Average (polymerase) read length");
 
@@ -113,17 +117,18 @@ public class SimulateCaptureCmd extends CommandLine{
 		/**********************************************************************/
 		String logFile = cmdLine.getStringVal("logFile");
 		String probe       =  cmdLine.getStringVal("probe");
-		String fragment       =  cmdLine.getStringVal("fragment");
 		String ID       =  cmdLine.getStringVal("ID");
 		String referenceFile =  cmdLine.getStringVal("reference");
 
 		int fmedian =  cmdLine.getIntVal("fmedian");
 		double fshape = cmdLine.getDoubleVal("fshape");
-		
+
 		int smedian =  cmdLine.getIntVal("smedian");
 		double sshape = cmdLine.getDoubleVal("sshape");
 
-		
+		int tmedian =  cmdLine.getIntVal("smedian");
+		double tshape = cmdLine.getDoubleVal("sshape");
+
 		int seed =  cmdLine.getIntVal("seed");		
 		int num =   cmdLine.getIntVal("num");
 
@@ -133,32 +138,48 @@ public class SimulateCaptureCmd extends CommandLine{
 		String miseq       =  cmdLine.getStringVal("miseq");
 		String pacbio       =  cmdLine.getStringVal("pacbio");
 
-		if (miseq == null && pacbio == null && fragment==null){
-			System.err.println("At least one of fragment, miseq and pacbio has to be set\n" + cmdLine.usageString());			
+		if (miseq == null && pacbio == null){
+			System.err.println("One of miseq or pacbio must be set\n" + cmdLine.usageString());			
+			System.exit(-1);
+		}
+
+		if (miseq != null && pacbio != null){
+			System.err.println("One of miseq or pacbio must be set\n" + cmdLine.usageString());			
 			System.exit(-1);
 		}
 
 		int flank = fmedian  + (fmedian / 4);
 		double hybridizationRatio = 0.5;
 
-		//int median2 = 1300;
-
-		double [] dist2 = new double[smedian*4];
-
-		double max = 0.0;
-		for (int i = 0; i < dist2.length;i++){
-			dist2[i] = Simulation.logLogisticPDF(i + 1, smedian, sshape);
-			if (dist2[i] > max)
-				max = dist2[i];			
-		}	
-
-		//Normalise to 1
-		for (int i = 0; i < dist2.length;i++){			
-			//Logging.info("dist2 [" + i + "] = " + dist2[i] + " max = " + max + " after " + dist2[i] / max);
-			dist2[i] = dist2[i] / max;
+		double [] dist2 = null;
+		if (tmedian <=0){
+			Logging.info("Estimating target distribution");
+			dist2 = new double[fmedian*6];		
+		}else{
+			dist2 = new double[tmedian*6];
+			double max = 0;
+			for (int i = 0; i < dist2.length;i++){
+				dist2[i] = Simulation.logLogisticPDF(i + 1, smedian, sshape);
+				if (dist2[i] > max)
+					max = dist2[i];			
+			}
 		}
 
-		SequenceOutputStream miSeq1Fq = null, miSeq2Fq = null, pacbioFq = null, sos = null;
+		//double [] dist2 = new double[smedian*4];
+		//double max = 0.0;
+		//for (int i = 0; i < dist2.length;i++){
+		//	dist2[i] = Simulation.logLogisticPDF(i + 1, smedian, sshape);
+		//	if (dist2[i] > max)
+		//		max = dist2[i];			
+		//}
+
+		//Normalise to 1
+		//for (int i = 0; i < dist2.length;i++){			
+		//	//Logging.info("dist2 [" + i + "] = " + dist2[i] + " max = " + max + " after " + dist2[i] / max);
+		//	dist2[i] = dist2[i] / max;
+		//}
+
+		SequenceOutputStream miSeq1Fq = null, miSeq2Fq = null, pacbioFq = null;
 
 		if (miseq != null){
 			miSeq1Fq = SequenceOutputStream.makeOutputStream(miseq + "_1.fastq.gz");	
@@ -168,7 +189,6 @@ public class SimulateCaptureCmd extends CommandLine{
 		if (pacbio != null){
 			pacbioFq = SequenceOutputStream.makeOutputStream(pacbio + ".fastq.gz");
 		}	
-
 
 		SequenceOutputStream 
 		logOS =	logFile.equals("-")? (new SequenceOutputStream(System.err)):(SequenceOutputStream.makeOutputStream(logFile));
@@ -191,7 +211,6 @@ public class SimulateCaptureCmd extends CommandLine{
 		long [] accLen = null;
 
 		if (probe != null){
-
 			genRegion = new GenomicRegion();
 
 			SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -220,7 +239,7 @@ public class SimulateCaptureCmd extends CommandLine{
 				bitSets[refIndex].set(Math.max(start - flank,0), end);
 			}		
 			samIter.close();
-			Logging.info("Mark capturable regions -- done");
+			//Logging.info("Mark capturable regions -- done");
 			for (int x=0; x < genome.chrList().size();x++){
 				Sequence chrom = genome.chrList().get(x);
 				BitSet myBitSet = bitSets[x];
@@ -239,7 +258,7 @@ public class SimulateCaptureCmd extends CommandLine{
 					genRegion.addRegion(x, regionStart, chrom.length() - regionStart);
 				}
 			}//for
-			Logging.info("Mark capturable regions 2 -- done");
+			//Logging.info("Mark capturable regions 2 -- done");
 		}else{
 			accLen = new long[chrList.size()];		
 			accLen[0] = chrList.get(0).length();		
@@ -251,8 +270,8 @@ public class SimulateCaptureCmd extends CommandLine{
 
 		}
 
-		if (fragment != null)
-			sos = SequenceOutputStream.makeOutputStream(fragment);
+		//if (fragment != null)
+		//	sos = SequenceOutputStream.makeOutputStream(fragment);
 
 		long numFragment = 0;		
 		//actual number of fragments generated, including the non probed
@@ -354,13 +373,13 @@ public class SimulateCaptureCmd extends CommandLine{
 					//probe can only bind if > 80%
 					//if ((end - start) < hybridizationRatio * sam.getReadLength())
 					//	continue;//while iter probe
-										
+
 					if (start < chrPos)
 						start = chrPos;
-										
+
 					if (end > chrPos + fragLength)
 						end = chrPos + fragLength;
-					
+
 					countProbe += (end - start + 1);
 					myEnd = end;
 				}
@@ -374,23 +393,23 @@ public class SimulateCaptureCmd extends CommandLine{
 				double myOdd = countProbe * 4.0/ fragLength;
 				//myOdd = 4 * (myOdd - 0.1) / 0.9;				
 				/*******************************************************************************/
-				
+
 				/*******************************************************************************/				
 				SAMRecordIterator iter = samReader.query(chrList.get(chrIndex).getName(), chrPos, chrPos + fragLength, false);
 				int countProbe = 0;
-				
+
 				while (iter.hasNext()){				
 					SAMRecord sam = iter.next();
 
 					int start = sam.getAlignmentStart();
 					int end = sam.getAlignmentEnd();
-															
+
 					if (start < chrPos)
 						start = chrPos;
-										
+
 					if (end > chrPos + fragLength)
 						end = chrPos + fragLength;
-					
+
 					countProbe += (end - start + 1);					
 				}
 				iter.close();
@@ -402,7 +421,7 @@ public class SimulateCaptureCmd extends CommandLine{
 				}
 				double myOdd = (countProbe * 0.5 / fragLength) - 0.2;								
 				/*******************************************************************************/
-				
+
 				r = rnd.nextDouble();
 				if (r > myOdd){
 					//bad luck, rejected
@@ -417,10 +436,10 @@ public class SimulateCaptureCmd extends CommandLine{
 			//here, the fragment is captured
 
 			//another round	of selection
-			double myOdd = 0;
-			if (fragLength >= dist2.length)
-				myOdd = dist2[dist2.length - 1];
-			else myOdd = dist2[fragLength];
+			//double myOdd = 0;
+			//if (fragLength >= dist2.length)
+			//	myOdd = dist2[dist2.length - 1];
+			//else myOdd = dist2[fragLength];
 
 
 			//if (rnd.nextDouble() > myOdd){
@@ -435,8 +454,8 @@ public class SimulateCaptureCmd extends CommandLine{
 			Sequence seq = chrList.get(chrIndex).subSequence(chrPos, chrPos + fragLength);
 			seq.setName(ID + "_" + chrList.get(chrIndex).getName() + "_" + (chrPos + 1) + "_" +(chrPos + fragLength));
 
-			if (sos != null)
-				seq.writeFasta(sos);
+			//if (sos != null)
+			//	seq.writeFasta(sos);
 
 			if (miSeq1Fq != null){
 				IlluminaSequencing.simulatePaired(seq, miSeq1Fq, miSeq2Fq, rnd);
@@ -448,15 +467,15 @@ public class SimulateCaptureCmd extends CommandLine{
 			}
 
 		}
-		
+
 		Logging.info("Generated " + numGen + " selected " + numFragment
 				+ "; reject1 = " + fragmentRej1 
 				+ "; reject2 = " + fragmentRej2
 				+ "; reject3 = " + fragmentRej3
 				+ "; reject4 = " + fragmentRej4);				
 
-		if (sos != null)
-			sos.close();
+		//if (sos != null)
+		//	sos.close();
 
 		if (miSeq1Fq != null)
 			miSeq1Fq.close();

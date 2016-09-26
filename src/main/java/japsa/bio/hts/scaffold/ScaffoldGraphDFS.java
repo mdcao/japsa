@@ -136,7 +136,6 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			Contig ctg = getSPadesContig(toks[4]);
 			if(ctg != null){
 				char strand = toks[16].equals("plus")?'+':'-';
-
 				JapsaFeature feature = new JapsaFeature(Integer.parseInt(toks[6]), Integer.parseInt(toks[7]), type, toks[0], strand, ctg.getName());
 
 				feature.addDesc(toks[0]+ ":" + (int)(cov*100) + "% cover, " + toks[10] + "% identity");

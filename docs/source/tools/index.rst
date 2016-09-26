@@ -22,7 +22,7 @@ This chapter presents the list of tools provided by Japsa.
    jsa.np.rtMLST.rst
    jsa.np.rtStrainTyping.rst
    jsa.np.rtResistGenes.rst
-   jsa.np.gapcloser.rst
+   jsa.np.npscarf.rst
    jsa.util.streamServer.rst
    jsa.util.streamClient.rst
    jsa.phylo.xmas.rst
