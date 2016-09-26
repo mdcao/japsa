@@ -51,7 +51,7 @@ import java.util.Date;
 @Deployable(
 	scriptName = "jsa.util.streamClient",
 	scriptDesc = "Forward data from a stream input or a file over the network to a jsa.util.streamServer",
-	seeAlso = "jsa.util.streamServer, jsa.np.filter, jsa.np.f5reader"
+	seeAlso = "jsa.util.streamServer, jsa.np.filter, jsa.np.npreader"
 	)
 
 public class StreamClientCmd extends CommandLine{	

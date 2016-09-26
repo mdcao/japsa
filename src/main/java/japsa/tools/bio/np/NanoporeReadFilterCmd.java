@@ -52,7 +52,7 @@ import japsa.util.deploy.Deployable;
 @Deployable(
 	scriptName = "jsa.np.filter", 
 	scriptDesc = "Filter nanopore reads data from fastq file",
-	seeAlso = "jsa.np.f5reader, jsa.util.streamServer, jsa.util.streamClient")
+	seeAlso = "jsa.np.npreader, jsa.util.streamServer, jsa.util.streamClient")
 public class NanoporeReadFilterCmd extends CommandLine{	
 	public NanoporeReadFilterCmd(){
 		super();
@@ -157,7 +157,7 @@ public class NanoporeReadFilterCmd extends CommandLine{
 ---------------------------------------
 
 *jsa.np.filter* filters sequencing data based on sequence read type, length and
-quality. Examples of its usage can be found on jsa.np.f5reader_.
+quality. Examples of its usage can be found on jsa.np.npreader_.
 
 <usage>
 

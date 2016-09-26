@@ -47,7 +47,7 @@ import japsa.util.deploy.Deployable;
 @Deployable(
 	scriptName = "jsa.np.rtMLST", 
 	scriptDesc = "Realtime Multi-Locus Strain Typing using Nanopore Sequencing data",
-	seeAlso = "jsa.np.f5reader, jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.np.rtResistGenes, jsa.util.streamServer, jsa.util.streamClient"
+	seeAlso = "jsa.np.npreader, jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.np.rtResistGenes, jsa.util.streamServer, jsa.util.streamClient"
 	)
 public class RealtimeMLSTCmd extends CommandLine{	
 	public RealtimeMLSTCmd(){

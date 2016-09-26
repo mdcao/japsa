@@ -3,7 +3,7 @@
 ---------------------------------------
 
 *jsa.np.filter* filters sequencing data based on sequence read type, length and
-quality. Examples of its usage can be found on jsa.np.f5reader_.
+quality. Examples of its usage can be found on jsa.np.npreader_.
 
 ~~~~~~~~
 Synopsis
@@ -49,9 +49,9 @@ Options
 See also
 ~~~~~~~~
 
-jsa.np.f5reader_, jsa.util.streamServer_, jsa.util.streamClient_
+jsa.np.npreader_, jsa.util.streamServer_, jsa.util.streamClient_
 
-.. _jsa.np.f5reader: jsa.np.f5reader.html
+.. _jsa.np.npreader: jsa.np.npreader.html
 .. _jsa.util.streamServer: jsa.util.streamServer.html
 .. _jsa.util.streamClient: jsa.util.streamClient.html
 

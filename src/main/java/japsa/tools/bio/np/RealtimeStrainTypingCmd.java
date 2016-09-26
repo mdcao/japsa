@@ -49,7 +49,7 @@ import japsa.util.deploy.Deployable;
 @Deployable(
 	scriptName = "jsa.np.rtStrainTyping", 
 	scriptDesc = "Realtime strain typing using Nanopore sequencing data",
-	seeAlso = "jsa.np.f5reader, jsa.np.rtSpeciesTyping, jsa.np.rtResistGenes, jsa.util.streamServer, jsa.util.streamClient")
+	seeAlso = "jsa.np.npreader, jsa.np.rtSpeciesTyping, jsa.np.rtResistGenes, jsa.util.streamServer, jsa.util.streamClient")
 public class RealtimeStrainTypingCmd extends CommandLine{	
 	public RealtimeStrainTypingCmd(){
 		super();
@@ -138,7 +138,7 @@ to listen on port 3457
 and streams data to this pipeline using npReader:
 ::
 
-  jsa.np.f5reader -GUI -realtime -folder <DownloadFolder> -fail -output data.fastq -stream serverAddress:3457
+  jsa.np.npreader -GUI -realtime -folder <DownloadFolder> -fail -output data.fastq -stream serverAddress:3457
 
 
 *RST*/

@@ -174,7 +174,7 @@ public class NanoporeReaderCmd extends CommandLine{
 *npReader*: real-time conversion and analysis of Nanopore sequencing data
 -------------------------------------------------------------------------
 
-*npReader* (jsa.np.f5reader) is a program that extracts Oxford Nanopore
+*npReader* (jsa.np.npreader) is a program that extracts Oxford Nanopore
 sequencing data from FAST5 files, performs an initial analysis of the date and
 streams them to real-time analysis pipelines. These pipelines can run on the
 same computer or on computing clouds/high performance clusters.
@@ -214,16 +214,16 @@ Usage examples
 
 A summary of npReader usage can be obtained by invoking the --help option::
 
-   jsa.np.f5reader --help
+   jsa.np.npreader --help
 
 The simplest way to run *npReader* in GUI mode is by typing::
 
-   jsa.np.f5reader -GUI -realtime
+   jsa.np.npreader -GUI -realtime
 
 and specify various options in the GUI. All of these options can be specified
 from the command line::
 
-   jsa.np.f5reader -GUI -realtime -folder c:\Downloads\ -fail -output myrun.fastq --minLength 200 --stats
+   jsa.np.npreader -GUI -realtime -folder c:\Downloads\ -fail -output myrun.fastq --minLength 200 --stats
 
 npReader can run natively on a Windows laptop that runs the Metrichor agent. It
 can stream sequence data to multiple analysis pipelines on the same computer
@@ -256,7 +256,7 @@ analysis pipelines, such as::
 Once these pipelines are ready, npReader can start streaming data off the
 MinION and the Metrichor agent to these pipelines::
 
-   jsa.np.f5reader -realtime -folder c:\Downloads\ -fail -output myrun.fastq \
+   jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output myrun.fastq \
       --minLength 200 --streams server1IP:3456,server2IP:3457
 
 One can run *npReader* on a computing cloud if the download folder (containing
@@ -264,7 +264,7 @@ base-called data) can be mounted to the cloud. In such case, npReader can
 direct stream data to the pipelines without the need of
 *jsa.util.streamServer*::
 
-   jsa.np.f5reader -realtime -folder c:\Downloads\ -fail -output - | \
+   jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \
    bwa mem -t 8 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -Y -K 10000 index - | \
    jsa.np.speciesTyping  -bam - --index speciesIndex -output output.dat
 
@@ -273,13 +273,13 @@ the user's liking. Like any other streamline tools, jsa.np.filter can run
 behind *jsa.util.streamServer* on a remote machine, or can get data directly
 from npReader via pipe::
 
-   jsa.np.f5reader -realtime -folder c:\Downloads\ -fail -output - | \
+   jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \
    jsa.np.filter -input - -lenMin 2000 --qualMin 10 -output goodreads.fq
 
 One can also use *tee* to group data into different bins *in real-time* with
 *jsa.np.filter*::
 
-   jsa.np.f5reader -realtime -folder c:\Downloads\ -fail -output - | \   
+   jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \   
    tee >(jsa.np.filter -input - -lenMax 2000 -output 0k2k.fq) \ 
    >(jsa.np.filter -lenMin 2000 -lenMax 4000 -input - -output 2k4k.fq) \ 
    >(jsa.np.filter -lenMin 4000 -lenMax 6000 -input - -output 4k6k.fq) \

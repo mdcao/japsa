@@ -16,7 +16,7 @@ This chapter presents the list of tools provided by Japsa.
    jsa.seq.annovcf.rst
    jsa.seq.gff2fasta.rst
    jsa.seq.emalign.rst
-   jsa.np.f5reader.rst
+   jsa.np.npreader.rst
    jsa.np.filter.rst
    jsa.np.rtSpeciesTyping.rst
    jsa.np.rtMLST.rst

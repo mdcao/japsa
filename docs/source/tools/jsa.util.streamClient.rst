@@ -33,11 +33,11 @@ Options
 See also
 ~~~~~~~~
 
-jsa.util.streamServer_, jsa.np.filter_, jsa.np.f5reader_
+jsa.util.streamServer_, jsa.np.filter_, jsa.np.npreader_
 
 .. _jsa.util.streamServer: jsa.util.streamServer.html
 .. _jsa.np.filter: jsa.np.filter.html
-.. _jsa.np.f5reader: jsa.np.f5reader.html
+.. _jsa.np.npreader: jsa.np.npreader.html
 
 
  

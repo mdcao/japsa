@@ -51,9 +51,9 @@ Options
 See also
 ~~~~~~~~
 
-jsa.np.f5reader_, jsa.np.rtSpeciesTyping_, jsa.np.rtStrainTyping_, jsa.util.streamServer_, jsa.util.streamClient_
+jsa.np.npreader_, jsa.np.rtSpeciesTyping_, jsa.np.rtStrainTyping_, jsa.util.streamServer_, jsa.util.streamClient_
 
-.. _jsa.np.f5reader: jsa.np.f5reader.html
+.. _jsa.np.npreader: jsa.np.npreader.html
 .. _jsa.np.rtSpeciesTyping: jsa.np.rtSpeciesTyping.html
 .. _jsa.np.rtStrainTyping: jsa.np.rtStrainTyping.html
 .. _jsa.util.streamServer: jsa.util.streamServer.html

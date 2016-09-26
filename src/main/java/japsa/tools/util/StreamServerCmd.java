@@ -52,7 +52,7 @@ import com.google.common.io.ByteStreams;
 @Deployable(
 		scriptName = "jsa.util.streamServer",
 		scriptDesc = "Listen for input from a stream and forward the streamed data to the standard output",
-		seeAlso = "jsa.util.streamClient, jsa.np.filter, jsa.np.f5reader"
+		seeAlso = "jsa.util.streamClient, jsa.np.filter, jsa.np.npreader"
 		)
 public class StreamServerCmd extends CommandLine{
 	public static int DEFAULT_PORT = 3456;

@@ -29,6 +29,8 @@ Options
                   (REQUIRED)
   --sequenceFile=s Name of the assembly file (sorted by length)
                   (REQUIRED)
+  --spadesFolder=s Name of the output folder by SPAdes, containing contigs.fasta, contigs.paths and assembly\_graph.fastg (on developing, may cause conflicts)
+                  (default='null')
   --prefix=s      Prefix for the output files, default is out.*
                   (default='out')
   --genes=s       Realtime annotation: name of annotated genes in GFF 3.0 format
@@ -65,9 +67,8 @@ Options
 See also
 ~~~~~~~~
 
-jsa.np.f5reader_, jsa.util.streamServer_, jsa.util.streamClient_
+jsa.np.f5reader, jsa.util.streamServer_, jsa.util.streamClient_
 
-.. _jsa.np.f5reader: jsa.np.f5reader.html
 .. _jsa.util.streamServer: jsa.util.streamServer.html
 .. _jsa.util.streamClient: jsa.util.streamClient.html
 

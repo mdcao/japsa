@@ -47,7 +47,7 @@ import japsa.util.deploy.Deployable;
 @Deployable(
 	scriptName = "jsa.np.rtResistGenes", 
 	scriptDesc = "Realtime identification of antibiotic resistance genes from Nanopore sequencing",
-	seeAlso = "jsa.np.f5reader, jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.util.streamServer, jsa.util.streamClient"
+	seeAlso = "jsa.np.npreader, jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.util.streamServer, jsa.util.streamClient"
 	)
 public class RealtimeResistanceGeneCmd extends CommandLine{	
 	public RealtimeResistanceGeneCmd(){
