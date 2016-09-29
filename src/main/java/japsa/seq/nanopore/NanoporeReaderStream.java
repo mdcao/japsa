@@ -505,7 +505,7 @@ public class NanoporeReaderStream{
 				}
 
 				Logging.info("Open " + fileNumber + " files");
-				Logging.info("Read count = " + ls.length + "(" + tempCount + " temppate, " + compCount + " complements and " + twoDCount +"  2D)");
+				Logging.info("Read count = " + ls.length + "(" + tempCount + " templates, " + compCount + " complements and " + twoDCount +"  2D)");
 				Logging.info("Base count = " + baseCount);		
 				Logging.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
 				Logging.info("Average read length = " + mean);

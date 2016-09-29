@@ -52,7 +52,6 @@ import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.hts.VNTRLongReadsCmd;
 import japsa.tools.bio.np.FastNanoporeReaderCmd;
 import japsa.tools.bio.np.GapCloserCmd;
-import japsa.tools.bio.np.NanoporeFast5ReaderCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.np.RealtimeMLSTCmd;
@@ -162,8 +161,7 @@ public class Deploy {
 		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(new NanoporeReaderCmd());
-		tools.add(new FastNanoporeReaderCmd());
-		tools.add(new NanoporeFast5ReaderCmd());
+		tools.add(new FastNanoporeReaderCmd());		
 		tools.add(new NanoporeReadFilterCmd());		
 		//tools.add(new SpeciesMixtureTypingCmd());		
 		tools.add(new RealtimeSpeciesTypingCmd());
