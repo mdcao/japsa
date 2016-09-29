@@ -62,17 +62,17 @@ public class GapCloserCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
-		addString("sequenceFile", null, "Name of the assembly file (sorted by length)",true);
+		addString("seqFile", null, "Name of the assembly file (sorted by length)",true);
 		addString("bamFile", null, "Name of the bam file", true);
-		addString("spadesFolder", null, "Name of the output folder by SPAdes (on development)");
+		addString("spadesDir", null, "Name of the output folder by SPAdes (on development)");
 		addString("prefix", "out", "Prefix for the output files");	
 		addString("genes", null , "Realtime annotation: name of annotated genes in GFF 3.0 format");
 		addString("resistGene", null , "Realtime annotation: name of antibiotic resistance gene fasta file");
 		addString("insertSeq", null , "Realtime annotation: name of IS fasta file");
 		addString("oriRep", null, "Realtime annotation: name of fasta file containing possible origin of replication");
 		//addInt("marginThres", 1000, "Margin threshold: to limit distance to the contig's ends of the alignment used in bridging."); 
-		addInt("minContig", 300, "Minimum contigs length that are used in scaffolding (default 300)."); 
-		addInt("maxRepeat", 7500, "Maximum length of repeat in considering species (default 7500 for bacteria)."); 
+		addInt("minContig", 300, "Minimum contigs length that are used in scaffolding."); 
+		addInt("maxRepeat", 7500, "Maximum length of repeat in considering species."); 
 		
 		addDouble("cov", 0, "Expected average coverage of Illumina, <=0 to estimate");
 		addInt("qual", 1, "Minimum quality");
@@ -97,8 +97,8 @@ public class GapCloserCmd extends CommandLine{
 		String prefix = cmdLine.getStringVal("prefix");
 		String bamFile = cmdLine.getStringVal("bamFile");
 
-		String sequenceFile = cmdLine.getStringVal("sequenceFile"),
-				spadesFolder = cmdLine.getStringVal("spadesFolder"),
+		String sequenceFile = cmdLine.getStringVal("seqFile"),
+				spadesFolder = cmdLine.getStringVal("spadesDir"),
 				
 				genesFile = cmdLine.getStringVal("genes"),
 				resistFile = cmdLine.getStringVal("resistGene"),

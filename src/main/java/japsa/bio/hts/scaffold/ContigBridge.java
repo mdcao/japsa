@@ -304,7 +304,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			// Convert bridgePath to a Connection
 			String readID=p.getID();
 			Sequence seq=p.spelling();
-			int refStart, refEnd, readLength=seq.length(), readStart, readEnd, score=21588;
+			int refStart, refEnd, readLength=seq.length(), readStart, readEnd, score=Integer.MAX_VALUE;
 			boolean strand, useful=true;
 			
 			refStart=firstContig.length()-tip1.getSeq().length()+1; refEnd=firstContig.length();
@@ -350,10 +350,6 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	 */
 	public double getScore() {
 		return score;
-	}
-
-	public void setScore(double s) {
-		score = s;
 	}
 	
 	//NOTE: magnitude usually doesn't help for bridges with repeat.

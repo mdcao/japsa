@@ -46,6 +46,7 @@ import java.util.HashSet;
 
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
+import japsa.seq.nanopore.Fast5NPReader.BaseCalledFastq;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.JapsaException;
@@ -106,7 +107,7 @@ public class NanoporeReaderStream{
 	ArrayList<SequenceOutputStream> networkOS = null;
 	public boolean stats, number;
 	public String folder = null;
-	public int minLength = 0;
+	public int minLength = 1;
 	public boolean wait = true;
 	public boolean realtime = true;
 	public int interval = 1, age = 30000;
@@ -235,7 +236,7 @@ public class NanoporeReaderStream{
 			}
 			f5Reader.close();
 			fileNumber ++;
-			
+
 		}catch (JapsaException e){
 			throw e;
 		}catch (Exception e){
@@ -246,7 +247,7 @@ public class NanoporeReaderStream{
 		return true;
 	}
 /*****************************************************************************/
-	
+
 	public boolean readFastq2(String fileName) throws JapsaException, IOException{
 		//Logging.info("Open " + fileName);
 		try{					
@@ -254,72 +255,40 @@ public class NanoporeReaderStream{
 			npReader.readFastq();						
 			npReader.close();
 
-			//String log = "";
-			//if (getTime){
-			//	log = "ExpStart=" + npReader.expStart + " timestamp=" + npReader.seqTime + " "  + log;				
-			//}
-
-			FastqSequence fq;
-
-			fq = npReader.getSeq2D();
-			if (fq != null && fq.length() >= minLength){
-				fq.setName((number?(fileNumber *3) + "_":"") + fq.getName());
-				print(fq);
-				if (stats){						
-					lengths.add(fq.length());
-					lengths2D.add(fq.length());
-					twoDCount ++;
-					if (fq.length() > 0){
-						double sumQual  = 0;
-						for (int p = 0; p < fq.length(); p++){
-							sumQual += (fq.getQualByte(p) - MIN_QUAL);
-
+			ArrayList<BaseCalledFastq> seqList = npReader.getFastqList();
+			if (seqList!= null){
+				for (BaseCalledFastq fq:seqList){
+					if (fq.length() >= minLength){
+						fq.setName((number?(fileNumber *3 + fq.type()) + "_":"") + fq.getName());
+						print(fq);						
+						if (stats){						
+							lengths.add(fq.length());
+							double sumQual  = 0;
+							for (int p = 0; p < fq.length(); p++){
+								sumQual += (fq.getQualByte(p) - MIN_QUAL);
+							}
+							if (fq.isTwoDim()){
+								lengths2D.add(fq.length());
+								twoDCount ++;
+								qual2D.add(sumQual/fq.length());
+							}else if (fq.isComplement()){
+								lengthsComp.add(fq.length());
+								compCount ++;
+								qualComp.add(sumQual/fq.length());
+							}else if (fq.isTemplate()){
+								lengthsTemp.add(fq.length());
+								tempCount ++;
+								qualTemp.add(sumQual/fq.length());								
+							}
 						}
-						qual2D.add(sumQual/fq.length());
+
 					}
 				}
+
 			}
 
-			fq = npReader.getSeqTemplate();
-			if (fq != null && fq.length() >= minLength && this.doLow){
-				fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName());
-				print(fq);
-				if (stats){						
-					lengths.add(fq.length());	
-					lengthsTemp.add(fq.length());
-					tempCount ++;
 
-					if (fq.length() > 0){
-						double sumQual  = 0;
-						for (int p = 0; p < fq.length(); p++){
-							sumQual += (fq.getQualByte(p) - MIN_QUAL);
 
-						}
-						qualTemp.add(sumQual/fq.length());
-					}
-				}
-			}
-
-			fq = npReader.getSeqComplement();
-			if (fq != null && fq.length() >= minLength && this.doLow){						
-				fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName());						
-				print(fq);
-				if (stats){						
-					lengths.add(fq.length());	
-					lengthsComp.add(fq.length());
-					compCount ++;
-
-					if (fq.length() > 0){
-						double sumQual  = 0;
-						for (int p = 0; p < fq.length(); p++){
-							sumQual += (fq.getQualByte(p) - MIN_QUAL);
-
-						}
-						qualComp.add(sumQual/fq.length());
-					}
-
-				}
-			}
 
 			fileNumber ++;			
 		}catch (JapsaException e){
@@ -352,6 +321,9 @@ public class NanoporeReaderStream{
 	 * @throws IOException 
 	 */
 	public void readFastq(String pFolder) throws JapsaException, IOException{
+		if (minLength < 1)
+			minLength = 1;
+
 		if (pFolder != null ){
 			pFolder = pFolder + File.separatorChar;
 			Logging.info("Copy to " + pFolder);

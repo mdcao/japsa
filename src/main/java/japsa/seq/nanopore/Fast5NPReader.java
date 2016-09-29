@@ -39,21 +39,27 @@ import ncsa.hdf.object.Group;
 import ncsa.hdf.object.HObject;
 import ncsa.hdf.object.h5.H5ScalarDS;
 import japsa.seq.Alphabet.DNA;
+
+import java.util.ArrayList;
+
+import japsa.seq.Alphabet;
 import japsa.seq.FastqSequence;
+import japsa.seq.SequenceOutputStream;
 import japsa.util.JapsaException;
-import japsa.util.Logging;
 
 
 /**
  * Read nanopore data (read sequence, events, alignment, models etc) from a raw
  * (fast5) format.
- * Re-implemented from the previous to aim for faster, which static key
+ *  
  *  
  * @author minhduc
  */
 public class Fast5NPReader{	
 	protected FileFormat f5File;
-	FastqSequence seqTemplate = null, seqComplement = null, seq2D = null;
+	//	FastqSequence seqTemplate = null, seqComplement = null, seq2D = null;
+
+	ArrayList<BaseCalledFastq> seqList = null;
 
 	/**
 	 * Open a fast5 file before reading anything from it.
@@ -83,37 +89,82 @@ public class Fast5NPReader{
 	public void close() throws Exception{		
 		f5File.close();
 	}
-	
-	
 
 	public void readFastq() throws OutOfMemoryError, Exception{
+		if (seqList !=null) return;
+		seqList = new ArrayList<BaseCalledFastq>();
 		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
 		readFastq(root);
 	}
-	
-	
-	/**
-	 * @return the seqTemplate
-	 */
-	public FastqSequence getSeqTemplate() {
-		return seqTemplate;
+
+	public ArrayList<BaseCalledFastq> getFastqList(){
+		return seqList;
+	}
+
+	public void readAllFastq(SequenceOutputStream sos) throws OutOfMemoryError, Exception{
+		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
+		readAllFastq(root, sos);
 	}
 
 
-	/**
-	 * @return the seqComplement
-	 */
-	public FastqSequence getSeqComplement() {
-		return seqComplement;
+	///**
+	// * @return the seqTemplate
+	// */
+	//public FastqSequence getSeqTemplate() {
+	//	return seqTemplate;
+	//}
+
+
+	///**
+	// * @return the seqComplement
+	// */
+	//public FastqSequence getSeqComplement() {
+	//	return seqComplement;
+	//}
+
+	///**
+	// * @return the seq2D
+	// */
+	//public FastqSequence getSeq2D() {
+	//	return seq2D;
+	//}
+
+	private void readAllFastq(Group g, SequenceOutputStream out) throws OutOfMemoryError, Exception{
+		if (g == null) return;
+		java.util.List<HObject> members = g.getMemberList();		
+
+		for (HObject member:members) {
+			if (member instanceof Group) {
+				readAllFastq((Group) member, out);			
+			}else if (member instanceof H5ScalarDS){
+				String fullName = member.getFullName(); 
+				if (fullName.endsWith("Fastq")){
+					Object  data = ((H5ScalarDS) member).getData();
+					if (data != null){
+						//Logging.info(fullName);
+						//out.print(((String[]) data)[0]);
+						//out.println();						
+						//Logging.info("Read " + fullName);
+
+						String [] toks = ((String[]) data)[0].split("\n",2);						
+						if  (fullName.contains("BaseCalled_2D")){							
+							out.print(toks[0] + "_twodimentional path="  + fullName);							                		
+						}else if (fullName.contains("BaseCalled_complement")){
+							out.print(toks[0] + "_complement path="  + fullName);							
+						}else if (fullName.contains("BaseCalled_template")){
+							out.print(toks[0] + "_template path="  + fullName);
+						}else
+							out.print(toks[0] + "_unknown path="  + fullName);
+
+						out.print('\n');
+						out.print(toks[1]);
+						out.print('\n');						
+					}
+				}
+			}
+		}	
 	}
 
-	/**
-	 * @return the seq2D
-	 */
-	public FastqSequence getSeq2D() {
-		return seq2D;
-	}
-	
 	/**
 	 * Recursively print a group and its members. Fastq data are read.If all 
 	 * flag is turned on, this method will also reads all events and model data.
@@ -122,7 +173,6 @@ public class Fast5NPReader{
 	 * @throws Exception
 	 */
 	private void readFastq(Group g) throws OutOfMemoryError, Exception{
-
 		if (g == null) return;
 		java.util.List<HObject> members = g.getMemberList();		
 
@@ -134,80 +184,48 @@ public class Fast5NPReader{
 				if (fullName.endsWith("Fastq")){
 					Object  data = ((H5ScalarDS) member).getData();
 					if (data != null){
-						Logging.info("Read " + fullName);
+						//Logging.info("Read " + fullName);
 						String [] toks = ((String[]) data)[0].split("\n");						
 						if  (fullName.contains("BaseCalled_2D")){
 							toks[0] = toks[0].substring(1) + "_twodimentional" + " length=" + toks[1].length() ;
-							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);                		
+							seqList.add(new BaseCalledFastq(DNA.DNA16(), toks, BaseCalledFastq.TWODIM));
 						}else if (fullName.contains("BaseCalled_complement")){
 							toks[0] = toks[0].substring(1) + "_complement" + " length=" + toks[1].length() ;
-							this.seqComplement =  new FastqSequence(DNA.DNA16(), toks);							
+							seqList.add(new BaseCalledFastq(DNA.DNA16(), toks, BaseCalledFastq.COMPLEMENT));
 						}else if (fullName.contains("BaseCalled_template")){
-							toks[0] = toks[0].substring(1) + "_template" + " length=" + toks[1].length() ;
-							this.seqTemplate =  new FastqSequence(DNA.DNA16(), toks);
+							toks[0] = toks[0].substring(1) + "_template" + " length=" + toks[1].length();
+							seqList.add(new BaseCalledFastq(DNA.DNA16(), toks, BaseCalledFastq.TEMPLATE));
 						}
 					}
 				}
 			}
 		}
 	}
-/**************************************************************************************
-	
-	static String [] TEMPLATE_FQ_PATHS = {
-			"/Analyses/Basecall_1D_000/BaseCalled_template/Fastq",
-			"/Analyses/Basecall_2D_000/BaseCalled_template/Fastq",
-	};
 
-	static String [] COMPLEMENT_FQ_PATHS = {
-			"/Analyses/Basecall_1D_000/BaseCalled_complement/Fastq",
-			"/Analyses/Basecall_2D_000/BaseCalled_complement/Fastq"
-	};
+	public static class BaseCalledFastq extends FastqSequence{
+		public static final int UNKNOWN = 4;
+		public static final int TWODIM = 0;
+		public static final int TEMPLATE = 1;
+		public static final int COMPLEMENT = 2;		
+		int myType = 4;
 
-	static String [] TWODIM_FQ_PATHS = {			
-			"/Analyses/Basecall_2D_000/BaseCalled_2D/Fastq"
-	};
-	
-
-	public FastqSequence readTemplate() throws Exception{		
-		for (String path:TEMPLATE_FQ_PATHS){
-			Object object = f5File.get(path);
-			if (object != null){
-				Object  data = ((H5ScalarDS) object).getData();						
-				String [] toks = ((String[]) data)[0].split("\n");		
-				toks[0] = toks[0].substring(1) + "_template length=" + toks[1].length() ;			
-				FastqSequence seq =  new FastqSequence(DNA.DNA16(), toks);
-				return seq;
-			}
+		public BaseCalledFastq(Alphabet alphabet, String [] toks, int type) {	
+			super(alphabet, toks);		
+			myType = type; 
 		}
-		return null;		
-	}
 
-	public FastqSequence readComplement() throws Exception{
-		for (String path:COMPLEMENT_FQ_PATHS){Object object = f5File.get(path);
-		if (object != null){
-			Object  data = ((H5ScalarDS) object).getData();			
-				String [] toks = ((String[]) data)[0].split("\n");		
-				toks[0] = toks[0].substring(1) + "_complement length=" + toks[1].length() ;			
-				FastqSequence seq =  new FastqSequence(DNA.DNA16(), toks);
-				return seq;
-			}
+		public int type(){
+			return myType;
 		}
-		return null;		
-	}
 
-	public FastqSequence readTwoDim() throws Exception{
-		for (String path:TWODIM_FQ_PATHS){Object object = f5File.get(path);
-		if (object != null){
-			Object  data = ((H5ScalarDS) object).getData();			
-				String [] toks = ((String[]) data)[0].split("\n");		
-				toks[0] = toks[0].substring(1) + "_twodimentional length=" + toks[1].length() ;			
-				FastqSequence seq =  new FastqSequence(DNA.DNA16(), toks);
-				return seq;
-			}
+		public boolean isTwoDim(){
+			return myType == TWODIM;
 		}
-		return null;		
+		public boolean isTemplate(){
+			return myType == TEMPLATE;
+		}
+		public boolean isComplement(){
+			return myType == COMPLEMENT;
+		}
 	}
-	
-/**************************************************************************************/	
-	
 }

@@ -40,8 +40,6 @@ import ncsa.hdf.object.Group;
 import ncsa.hdf.object.HObject;
 import ncsa.hdf.object.h5.H5CompoundDS;
 import ncsa.hdf.object.h5.H5ScalarDS;
-import japsa.seq.Alphabet.DNA;
-import japsa.seq.FastqSequence;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
 
@@ -53,15 +51,6 @@ import japsa.util.Logging;
  * @author minhduc
  */
 public class Fast5DetailReader extends Fast5NPReader{	
-	static String TEMPLATE_EVENT  = "/Analyses/Basecall_1D_000/BaseCalled_template/Events";	
-	static String TEMPLATE_MODEL   = "/Analyses/Basecall_1D_000/BaseCalled_template/Model";
-
-	static String COMPLEMENT_EVENT = "/Analyses/Basecall_1D_000/BaseCalled_complement/Events";
-	static String COMPLEMENT_MODEL = "/Analyses/Basecall_1D_000/BaseCalled_complement/Model";
-
-	static String TWODIM_ALIGNMENT = "/Analyses/Basecall_2D_000/BaseCalled_2D/Alignment";	
-	static String HAIRPIN_ALIGNMENT = "/Analyses/Basecall_2D_000/HairpinAlign/Alignment";
-
 	static String RAW_PREFIX = "/Raw/Reads";
 	static String CHANNEL_ID = "/UniqueGlobalKey/channel_id";
 	static String TRACKING_ID = "/UniqueGlobalKey/tracking_id";		
@@ -249,25 +238,6 @@ public class Fast5DetailReader extends Fast5NPReader{
 							bcAlignment2D.kmer = (String[]) dat.get(2);
 						}
 					/********************************************************/
-				}
-			}else if (member instanceof H5ScalarDS){
-				String fullName = member.getFullName(); 
-				if (fullName.endsWith("Fastq")){
-					Object  data = ((H5ScalarDS) member).getData();
-					if (data != null){
-						Logging.info("Read " + fullName);
-						String [] toks = ((String[]) data)[0].split("\n");						
-						if  (fullName.contains("BaseCalled_2D")){
-							toks[0] = toks[0].substring(1) + "_twodimentional" + " length=" + toks[1].length() ;
-							this.seq2D =  new FastqSequence(DNA.DNA16(), toks);                		
-						}else if (fullName.contains("BaseCalled_complement")){
-							toks[0] = toks[0].substring(1) + "_complement" + " length=" + toks[1].length() ;
-							this.seqComplement =  new FastqSequence(DNA.DNA16(), toks);							
-						}else if (fullName.contains("BaseCalled_template")){
-							toks[0] = toks[0].substring(1) + "_template" + " length=" + toks[1].length() ;
-							this.seqTemplate =  new FastqSequence(DNA.DNA16(), toks);
-						}
-					}
 				}
 			}
 		}

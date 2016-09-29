@@ -25,11 +25,11 @@ Usage
 ~~~~~~~
 Options
 ~~~~~~~
-  --sequenceFile=s Name of the assembly file (sorted by length)
+  --seqFile=s     Name of the assembly file (sorted by length)
                   (REQUIRED)
   --bamFile=s     Name of the bam file
                   (REQUIRED)
-  --spadesFolder=s Name of the output folder by SPAdes (on development)
+  --spadesDir=s   Name of the output folder by SPAdes (on development)
                   (default='null')
   --prefix=s      Prefix for the output files
                   (default='out')
@@ -41,9 +41,9 @@ Options
                   (default='null')
   --oriRep=s      Realtime annotation: name of fasta file containing possible origin of replication
                   (default='null')
-  --minContig=i   Minimum contigs length that are used in scaffolding (default 300).
+  --minContig=i   Minimum contigs length that are used in scaffolding.
                   (default='300')
-  --maxRepeat=i   Maximum length of repeat in considering species (default 7500 for bacteria).
+  --maxRepeat=i   Maximum length of repeat in considering species.
                   (default='7500')
   --cov=d         Expected average coverage of Illumina, <=0 to estimate
                   (default='0.0')

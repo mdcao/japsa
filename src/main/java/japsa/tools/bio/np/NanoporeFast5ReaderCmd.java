@@ -45,7 +45,7 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(	
 	scriptName = "jsa.np.openfast5", 
-	scriptDesc = "Extract data from a fast5 file",
+	scriptDesc = "Extract data from a fast5 file. Still under development",
 	seeAlso = "jsa.np.npreader"
 	)
 public class NanoporeFast5ReaderCmd extends CommandLine{	

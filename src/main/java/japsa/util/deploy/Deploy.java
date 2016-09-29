@@ -50,6 +50,7 @@ import japsa.tools.bio.hts.SelectReadSpanCmd;
 import japsa.tools.bio.hts.SpeciesMixtureCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.hts.VNTRLongReadsCmd;
+import japsa.tools.bio.np.FastNanoporeReaderCmd;
 import japsa.tools.bio.np.GapCloserCmd;
 import japsa.tools.bio.np.NanoporeFast5ReaderCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
@@ -112,7 +113,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.6-09b";
+	public static String VERSION = "1.6-10a";
 	public static final String FIELD_SEP = "\t";
 	
 	public static boolean DEBUG = true;
@@ -161,6 +162,7 @@ public class Deploy {
 		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
 		tools.add(new NanoporeReaderCmd());
+		tools.add(new FastNanoporeReaderCmd());
 		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new NanoporeReadFilterCmd());		
 		//tools.add(new SpeciesMixtureTypingCmd());		
@@ -211,7 +213,7 @@ public class Deploy {
 		//
 		
 		
-		//tools.add(new NanoporeFast5ReaderCmd());
+		//tools.add(new FastNanoporeReaderCmd());
 	}	
 
 
