@@ -1,10 +1,5 @@
 package japsa.bio.hts.scaffold;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-
 /**
 *
 * @author Son Nguyen

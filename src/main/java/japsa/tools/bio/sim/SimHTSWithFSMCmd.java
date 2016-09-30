@@ -271,6 +271,7 @@ public class SimHTSWithFSMCmd  extends CommandLine{
 	static final char sep = '#';
 	static final String sepSTR = "#";
 	
+	
 	static int relax = 20;
 	static void eval(String bamFile){
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -278,10 +279,10 @@ public class SimHTSWithFSMCmd  extends CommandLine{
 						
 		SAMRecordIterator samIter = samReader.iterator();
 		
-		int countRead = 0;
-		int TP = 0, FP = 0, FN =0 , dup = 0;
+		//int countRead = 0;
+		int TP = 0, FP = 0;
 		while (samIter.hasNext()){
-			countRead ++;
+			//countRead ++;
 			SAMRecord samRecord = samIter.next();
 			
 			String readName = samRecord.getReadName();

@@ -124,6 +124,7 @@ public class PresenceAbsence {
 
 
 
+	@SuppressWarnings("unchecked")
 	PresenceAbsence(int len){
 		spl = new SpeciesLikelihood[len];
 		bg = new SpeciesLikelihood();

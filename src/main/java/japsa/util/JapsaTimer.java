@@ -64,6 +64,7 @@ public class JapsaTimer { // A Timer object can 'mark' an event by printing the 
 				    );
 	}
 
+	/************************************************************************
 	// -------------------------------------------------------------------------
 	public static void main(String[] args) {
 		System.out.println("-- test Timer.java --");
@@ -78,6 +79,7 @@ public class JapsaTimer { // A Timer object can 'mark' an event by printing the 
 		t.mark("tock");
 		System.out.println("-- done --");
 	}// main()
+	/************************************************************************/
 }// class Timer
 
 //LA, 4/2009

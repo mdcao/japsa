@@ -97,6 +97,7 @@ public class SpeciesLikelihood {
 		while((st = br.readLine())!=null){
 			l.add(st);
 		}
+		br.close();
 		return l.iterator();
 
 	}

@@ -49,10 +49,8 @@ import htsjdk.samtools.ValidationStringency;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -255,7 +253,7 @@ public class RealtimeStrainTyping {
 		}
 	}
 
-	private static double distance (HashSet<String> s1,HashSet<String> s2){		
+	protected static double distance (HashSet<String> s1,HashSet<String> s2){		
 		int notIn = 0;
 		int intersect = 0;
 

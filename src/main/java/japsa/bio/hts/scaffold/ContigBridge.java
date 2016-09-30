@@ -38,16 +38,11 @@ package japsa.bio.hts.scaffold;
 
 import htsjdk.samtools.CigarElement;
 import japsa.seq.Alphabet;
-import japsa.seq.FastaReader;
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
-import japsa.seq.Alphabet.DNA;
-import japsa.util.Logging;
-
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;

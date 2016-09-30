@@ -36,7 +36,6 @@ package japsa.bio.np;
 
 import japsa.bio.alignment.ProbFSM;
 import japsa.bio.alignment.ProbFSM.Emission;
-import japsa.bio.alignment.ProbFSM.ProbOneSM;
 import japsa.bio.alignment.ProbFSM.ProbThreeSM;
 import japsa.bio.bac.MLSTyping;
 import japsa.bio.bac.MLSTyping.MLSType;
@@ -71,7 +70,7 @@ public class RealtimeMLST{
 	/////////////////////////////////////////////////////////////////////////////	
 	private double minQual = 0;
 	private boolean twoDOnly = false;
-	private int numThread = 16;
+	//private int numThread = 16;
 
 	ArrayList<Sequence> [] alignmentLists;
 
@@ -83,6 +82,7 @@ public class RealtimeMLST{
 
 	RealtimeMLSTyper typer;	
 
+	@SuppressWarnings("unchecked")
 	public RealtimeMLST(String mlstDir, String output, int minRead, int minTime) throws IOException{
 		typer = new RealtimeMLSTyper(this, mlstDir, output);		
 		typer.setReadPeriod(minRead);

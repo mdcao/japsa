@@ -244,7 +244,8 @@ public class DynamicHistogram extends AbstractIntervalXYDataset
      * @throws IndexOutOfBoundsException if <code>series</code> is outside the
      *     specified range.
      */
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public Comparable getSeriesKey(int series) {
     	return this.mySeriesList.get(series).seriesID;
     }

@@ -35,16 +35,13 @@
 package japsa.bio.alignment;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.util.ByteArray;
-import japsa.util.CommandLine;
 import japsa.util.JapsaMath;
-import japsa.util.deploy.Deployable;
 
 
 /**
