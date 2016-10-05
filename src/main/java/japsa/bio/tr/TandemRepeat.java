@@ -76,8 +76,8 @@ public class TandemRepeat extends JapsaFeature{
 	/**
 	 * This field is deprecated, changes to chrom
 	 */
-	@Deprecated
-	public static String chrHd    = "chr";                 //01
+	//@Deprecated
+	//public static String chrHd    = "chr";                 //01
 	//Property of a TR -- start, end are with regards to the reference genome	
 	private int     period = 2;
 	private double unitNo; //the length number of units on the ref
@@ -195,8 +195,8 @@ public class TandemRepeat extends JapsaFeature{
 			else if (TandemRepeat.annotationHd.equals(fieldStr))
 				rec.annotations = reader.getField(i);
 			//TODO: To be removed
-			else if (TandemRepeat.chrHd.equals(fieldStr))
-				rec.setChr(reader.getField(i));
+			//else if (TandemRepeat.chrHd.equals(fieldStr))
+			//	rec.setChr(reader.getField(i));
 		}
 		return rec;
 	}
@@ -214,8 +214,8 @@ public class TandemRepeat extends JapsaFeature{
 		String [] toks = line.trim().split("\\t");
 
 		for (int i = 0; i < hds.length; i++ ){
-			if (TandemRepeat.chrHd.equals(hds[i]))
-				rec.setChr(toks[i]);
+			//if (TandemRepeat.chrHd.equals(hds[i]))
+			//	rec.setChr(toks[i]);
 			if (TandemRepeat.chromHd.equals(hds[i]))
 				rec.setChr(toks[i]);
 			else if (TandemRepeat.idHd.equals(hds[i]))
