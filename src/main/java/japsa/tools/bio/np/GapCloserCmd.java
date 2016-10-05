@@ -41,7 +41,6 @@ import japsa.bio.hts.scaffold.ScaffoldGraphDFS;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
-
 import java.io.File;
 import java.io.IOException;
 

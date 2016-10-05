@@ -32,9 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.hts.scaffold;
-
-
+package japsadev.bio.hts.scaffold;
 
 import htsjdk.samtools.CigarElement;
 import japsa.seq.Alphabet;
@@ -47,7 +45,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
-
 import japsa.bio.np.ErrorCorrection;
 
 /**

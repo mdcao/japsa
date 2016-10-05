@@ -31,7 +31,7 @@
  * 3 Jan 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;

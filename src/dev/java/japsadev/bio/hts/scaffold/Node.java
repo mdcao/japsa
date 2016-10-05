@@ -1,7 +1,7 @@
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
+
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
-
 
 public 	class Node{
 	Vertex v;

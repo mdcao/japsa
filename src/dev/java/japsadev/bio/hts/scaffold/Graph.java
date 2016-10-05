@@ -1,13 +1,11 @@
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 
 import java.io.IOException;
 import java.util.*;
-
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
-
 
 /**
  * This class models a simple, bidirected graph using an 

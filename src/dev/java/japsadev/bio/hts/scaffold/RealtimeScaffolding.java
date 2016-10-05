@@ -1,4 +1,4 @@
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 import htsjdk.samtools.SAMRecord;
 
 import htsjdk.samtools.SAMRecordIterator;
@@ -11,13 +11,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
-
 import japsa.bio.np.RealtimeAnalysis;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.Logging;
-
 //Simulate fastq realtime generator: jsa.np.timeEmulate -i <input> -output -
 public class RealtimeScaffolding {
 	RealtimeScaffolder scaffolder;

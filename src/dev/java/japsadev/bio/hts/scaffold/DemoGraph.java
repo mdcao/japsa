@@ -1,4 +1,5 @@
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
+
 
 /**
 *

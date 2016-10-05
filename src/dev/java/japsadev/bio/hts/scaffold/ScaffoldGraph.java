@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -46,6 +46,7 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.Logging;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;

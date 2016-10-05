@@ -32,10 +32,11 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
