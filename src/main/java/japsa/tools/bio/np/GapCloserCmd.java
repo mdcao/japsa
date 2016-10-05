@@ -175,8 +175,7 @@ public class GapCloserCmd extends CommandLine{
 				graph.readMore(spadesFolder+"/assembly_graph.fastg",spadesFolder+"/contigs.paths");
 
 			if (cov <=0)
-				cov = 	ScaffoldGraph.estimatedCov;
-			//FIXME: change estimatedCov to not static
+				cov = graph.estimatedCov;
 			
 			graph.makeConnections(bamFile, cov / 1.6, qual);
 	

@@ -36,6 +36,7 @@ package japsa.bio.hts.scaffold;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
+import japsa.util.Logging;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
