@@ -74,7 +74,6 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
-
 		addString("reference", null, "Name of the reference genome ", true);
 		///addStdInputFile();
 		addString("bamFile", null, "Name of the bam file", true);
@@ -100,8 +99,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 	public static void main(String[] args) throws Exception,
 	InterruptedException {
 		/*********************** Setting up script ****************************/
-		CommandLine cmdLine = new VNTRLongReadsCmd();		
-
+		CommandLine cmdLine = new VNTRLongReadsCmd();
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		// Get options
@@ -114,19 +112,16 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 		int np = cmdLine.getIntVal("nploidy");
 		if (np > 2) {
-			System.err
-			.println("The program currenly only support haploid and diployd. Enter nploidy of 1 or 2");
+			System.err.println("The program currenly only support haploid and diployd. Enter nploidy of 1 or 2");
 			System.exit(1);
 		}
 
 		String bamFile = cmdLine.getStringVal("bamFile");
-
 		String prefix = cmdLine.getStringVal("prefix");
 
 		if (prefix == null || prefix.length() == 0) {
 			prefix = "p" + System.currentTimeMillis();
 		}
-
 		/**********************************************************************/
 
 		SequenceOutputStream outOS = SequenceOutputStream
@@ -272,25 +267,10 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				/*********************************************************/
 			}
 
-
-			//for (int x = 0; x < 10; x++ ){			
-			//	Sequence genSeq = dp.generate(random.nextInt(5) + 5);
-			//	double alignScore = dp.align(genSeq);
-			//	System.out.println("Best myCost: " + alignScore + " vs " + genSeq.length() * 2 + " (" + alignScore/genSeq.length() +")");
-			//}
-			//System.out.println("CHECKING END");
-
-			SAMRecordIterator iter 
-			= reader.query(str.getParent(), start, end, false);
+			SAMRecordIterator iter = reader.query(str.getParent(), start, end, false);
 
 			String fileName = prefix + "_" + str.getID() + "_i.fasta";
-			SequenceOutputStream os = SequenceOutputStream
-					.makeOutputStream(fileName);
-
-			//refRepeat.writeFasta(os);
-			//os.close();
-			//if (1>0)
-			//	continue;
+			SequenceOutputStream os = SequenceOutputStream.makeOutputStream(fileName);
 
 
 			double var = 0;
@@ -316,11 +296,11 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				readIndex ++;
 				////////////////////////////////////////////////////////////////////
 				//assert currentRefBase < start
-				
+
 				Sequence readSeq = getReadPosition(rec,start,end);
 				if (readSeq == null)
 					continue;
-				
+
 				readSeq.writeFasta(os);
 
 				EmissionState bestState = dp.align(readSeq);
@@ -377,16 +357,16 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				outOS.println();
 				outOS.print ("L = " + (costL/(hmmFlank + hmmPad)) + " R = " + costR/(hmmSeq.length() - hmmFlank - hmmPad - str.getPeriod()) + "\n");				
 
-				
+
 				String readName = readSeq.getName();
 				String [] toks =  readName.split("/",4);
 
 				//String polymerageRead = toks[0] + "/" + toks[1];
-				
+
 				String polymerageRead = (toks.length > 1)?toks[1]:toks[0];
 				String subRead = (toks.length > 2)?toks[2]:"_";
 				String alignSubRead = (toks.length > 3)?toks[3]:"_";
-				
+
 				/*****************************************************************/				
 				outOS.print("##" + polymerageRead + "_" + subRead +"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + readSeq.getDesc() + '\n');
 				outOS.print("==================================================================\n");				
@@ -402,12 +382,11 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		outOS.close();
 	}
 
-
 	public static Sequence getReadPosition(SAMRecord rec, int startRef, int endRef){
 		byte[]  seqRead = rec.getReadBases();//
 		if (seqRead.length <= 1)
 			return null;
-		
+
 		int startRead = -1, endRead = -1;
 
 		int refPos = rec.getAlignmentStart();
@@ -468,7 +447,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			Logging.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
 			return null;
 		}		
-				
+
 		Alphabet alphabet = Alphabet.DNA16();
 		Sequence retSeq = new Sequence(alphabet, endRead - startRead + 1, rec.getReadName() + "/" + startRead + "_" + endRead);
 		for (int i = 0; i < retSeq.length();i++){

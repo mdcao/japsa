@@ -194,7 +194,7 @@ public class SimulateCaptureCmd extends CommandLine{
 		logOS =	logFile.equals("-")? (new SequenceOutputStream(System.err)):(SequenceOutputStream.makeOutputStream(logFile));
 		logOS.print("Parameters for simulation \n" + cmdLine.optionValues());
 
-		seed = SimulateGenomeCmd.seed(seed);
+		seed = Simulation.seed(seed);
 		Random rnd = new Random(seed);
 
 		logOS.print("#Seed " + seed + "\n");

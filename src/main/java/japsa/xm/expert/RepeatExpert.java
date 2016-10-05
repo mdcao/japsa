@@ -59,7 +59,7 @@ public abstract class RepeatExpert extends Expert {
 	MyBitSet bitSet;
 	protected int expertType = 1;// Copy or palindrome
 	
-	AbstractSequence seq;
+	protected AbstractSequence seq;
 	
 	protected int id;// ID to identify it self
 	public int getID() {
@@ -92,7 +92,7 @@ public abstract class RepeatExpert extends Expert {
 	}
 
 
-	RepeatExpert(AbstractSequence seq, int start, MyBitSet b, int type) {
+	protected RepeatExpert(AbstractSequence seq, int start, MyBitSet b, int type) {
 		super();
 		this.seq = seq;
 		bitSet = b;
@@ -154,5 +154,9 @@ public abstract class RepeatExpert extends Expert {
 
 	public int getExpertType() {
 		return expertType;
+	}
+	
+	public AbstractSequence getSeq(){
+		return seq;
 	}
 }

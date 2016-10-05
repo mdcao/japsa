@@ -41,6 +41,7 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
+import japsa.util.Simulation;
 import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
@@ -111,7 +112,7 @@ public class SimulateGenomeCmd extends CommandLine{
 
 		
 		//generate a random seed if need to
-		seed = seed(seed);
+		seed = Simulation.seed(seed);
 		Random rnd = new Random(seed);
 		
 		SequenceReader reader = SequenceReader.getReader(inFile);
@@ -254,21 +255,7 @@ public class SimulateGenomeCmd extends CommandLine{
 		//outJsa.close();
 	}
 	
-	/**
-	 * Generate a random seed if the input <=0
-	 * @param seed
-	 * @return
-	 */
-	public static int seed(int seed){
-		if (seed <= 0)
-			seed = new Random().nextInt();
-		
-		//make sure seed is not negative
-		if (seed <0 )
-			seed = - seed;
-		
-		return seed;
-	}
+
 
 	static class StructualVarition{
 		static final int DELETION = 0;		

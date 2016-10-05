@@ -43,6 +43,23 @@ import java.util.Random;
  *
  */
 public class Simulation {
+	
+	/**
+	 * Generate a random seed if the input <=0
+	 * @param seed
+	 * @return
+	 */
+	public static int seed(int seed){
+		if (seed <= 0)
+			seed = new Random().nextInt();
+		
+		//make sure seed is not negative
+		if (seed <0 )
+			seed = - seed;
+		
+		return seed;
+	}
+	
 	/**
 	 * This function return a sample from log-logistic distribution (aka Fisk 
 	 * distribution) with a scale parameter alpha and shape parameter beta.
