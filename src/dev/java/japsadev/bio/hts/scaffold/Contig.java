@@ -32,10 +32,14 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 
 import java.util.ArrayList;
 import japsa.seq.Sequence;
+import japsadev.bio.hts.scaffold.Contig;
+import japsadev.bio.hts.scaffold.Graph;
+import japsadev.bio.hts.scaffold.Path;
+import japsadev.bio.hts.scaffold.ScaffoldVector;
 import japsa.seq.JapsaFeature;
 
 public class Contig{

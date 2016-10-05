@@ -37,6 +37,11 @@ import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.Logging;
+import japsa.bio.hts.scaffold.Contig;
+import japsa.bio.hts.scaffold.ContigBridge;
+import japsa.bio.hts.scaffold.Scaffold;
+import japsa.bio.hts.scaffold.ScaffoldGraph;
+import japsa.bio.hts.scaffold.ScaffoldVector;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

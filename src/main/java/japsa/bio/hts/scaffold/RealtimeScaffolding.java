@@ -17,6 +17,13 @@ import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.Logging;
+import japsa.bio.hts.scaffold.AlignmentRecord;
+import japsa.bio.hts.scaffold.Contig;
+import japsa.bio.hts.scaffold.ContigBridge;
+import japsa.bio.hts.scaffold.ReadFilling;
+import japsa.bio.hts.scaffold.RealtimeScaffolding;
+import japsa.bio.hts.scaffold.ScaffoldGraph;
+import japsa.bio.hts.scaffold.ScaffoldGraphDFS;
 //Simulate fastq realtime generator: jsa.np.timeEmulate -i <input> -output -
 public class RealtimeScaffolding {
 	RealtimeScaffolder scaffolder;

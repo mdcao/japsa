@@ -46,6 +46,14 @@ import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.Alphabet.DNA;
 import japsa.util.Logging;
+import japsa.bio.hts.scaffold.AlignmentRecord;
+import japsa.bio.hts.scaffold.Contig;
+import japsa.bio.hts.scaffold.ContigBridge;
+import japsa.bio.hts.scaffold.Node;
+import japsa.bio.hts.scaffold.Path;
+import japsa.bio.hts.scaffold.ReadFilling;
+import japsa.bio.hts.scaffold.ScaffoldGraph;
+import japsa.bio.hts.scaffold.ScaffoldVector;
 
 import java.io.BufferedReader;
 import java.io.IOException;

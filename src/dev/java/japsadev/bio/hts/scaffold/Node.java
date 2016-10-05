@@ -1,4 +1,6 @@
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
+import japsadev.bio.hts.scaffold.Node;
+import japsadev.bio.hts.scaffold.Vertex;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 

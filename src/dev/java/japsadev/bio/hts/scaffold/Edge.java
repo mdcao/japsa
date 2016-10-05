@@ -1,4 +1,7 @@
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
+
+import japsadev.bio.hts.scaffold.Edge;
+import japsadev.bio.hts.scaffold.Vertex;
 
 /**
  * This class models an bidirected Edge in my Graph implementation.

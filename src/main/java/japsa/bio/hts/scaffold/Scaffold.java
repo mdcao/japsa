@@ -39,6 +39,10 @@ import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
+import japsa.bio.hts.scaffold.Contig;
+import japsa.bio.hts.scaffold.ContigBridge;
+import japsa.bio.hts.scaffold.ScaffoldGraph;
+import japsa.bio.hts.scaffold.ScaffoldVector;
 
 import java.io.IOException;
 import java.util.ArrayList;

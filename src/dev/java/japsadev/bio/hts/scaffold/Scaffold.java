@@ -32,8 +32,12 @@
  *  
  ****************************************************************************/
 
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 
+import japsadev.bio.hts.scaffold.Contig;
+import japsadev.bio.hts.scaffold.ContigBridge;
+import japsadev.bio.hts.scaffold.ScaffoldGraph;
+import japsadev.bio.hts.scaffold.ScaffoldVector;
 import japsa.seq.Alphabet;
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;

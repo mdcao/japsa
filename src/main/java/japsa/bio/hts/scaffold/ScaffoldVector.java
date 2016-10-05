@@ -34,6 +34,9 @@
 
 package japsa.bio.hts.scaffold;
 
+import japsa.bio.hts.scaffold.Contig;
+import japsa.bio.hts.scaffold.ScaffoldVector;
+
 /**
  * Implementation of a vector of relative position of a contig in its scaffold 
  * @author minhduc

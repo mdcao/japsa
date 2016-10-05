@@ -7,6 +7,10 @@ import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
+import japsa.bio.hts.scaffold.Edge;
+import japsa.bio.hts.scaffold.Node;
+import japsa.bio.hts.scaffold.Path;
+import japsa.bio.hts.scaffold.Vertex;
 
 /**
  * This class models a simple, bidirected graph using an 

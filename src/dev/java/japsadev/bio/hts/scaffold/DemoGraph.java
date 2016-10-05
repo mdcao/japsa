@@ -1,9 +1,8 @@
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
+
+import japsadev.bio.hts.scaffold.RealtimeScaffolding;
+import japsadev.bio.hts.scaffold.ScaffoldGraph;
 
 /**
 *

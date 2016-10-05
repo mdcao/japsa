@@ -31,8 +31,13 @@
  * 3 Jan 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.bio.hts.scaffold;
+package japsadev.bio.hts.scaffold;
 
+import japsadev.bio.hts.scaffold.Contig;
+import japsadev.bio.hts.scaffold.ContigBridge;
+import japsadev.bio.hts.scaffold.Scaffold;
+import japsadev.bio.hts.scaffold.ScaffoldGraph;
+import japsadev.bio.hts.scaffold.ScaffoldVector;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
