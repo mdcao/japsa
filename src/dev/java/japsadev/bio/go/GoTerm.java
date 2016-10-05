@@ -55,9 +55,7 @@ public class GoTerm {
 	
 	public void addRelationShip(TypeRelationship type, GoTerm term){
 		relationship.add(new GoRelationship(type, term));
-	}
-	
-	
+	}		
 	
 	public static class GoRelationship{		
 		GoTerm relTerm;

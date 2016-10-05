@@ -114,7 +114,7 @@ public class Deploy {
 	public static ArrayList<Object> tools = new ArrayList<Object>();
 	public static String VERSION = "1.6-10a";
 	public static final String FIELD_SEP = "\t";
-	
+
 	public static boolean DEBUG = true;
 
 	//private static String AUTHORS = "Minh Duc Cao";
@@ -151,12 +151,12 @@ public class Deploy {
 		tools.add(new AlternativeAllelesCmd());
 		tools.add(new GetN50Cmd());
 		tools.add(new SpeciesMixtureCmd());
-		
+
 
 		tools.add("Bacterial analysis:");
 		tools.add(new MLSTCmd());
 		tools.add(new Genomes2ResistanceGeneCmd());
-		
+
 		//jsa.np.
 		//tools.add(NanoporeReader());
 		tools.add("Oxford Nanopore sequencing analysis tools:");
@@ -170,10 +170,10 @@ public class Deploy {
 		tools.add(new RealtimeResistanceGeneCmd());
 		tools.add(new RegulateTimeCmd());		
 		tools.add(new GapCloserCmd());
-		
+
 		//tools.add(new SpeciesMixtureCmd());
 		//tools.add(new BaseMethylationCmd());
-		
+
 		//jsa.trv.*
 		tools.add("Tandem repeat variation analysis tools:");
 		tools.add(new ParseTRFCmd());		
@@ -209,8 +209,8 @@ public class Deploy {
 		tools.add("Export Model compression");
 		tools.add(new ExpertModelCmd());
 		//
-		
-		
+
+
 		//tools.add(new FastNanoporeReaderCmd());
 	}	
 
@@ -284,6 +284,14 @@ public class Deploy {
 	private static String classPath = null;
 	private static String javaCommand = null;	
 
+	private static void guessJapsaPath(){
+		if (japsaPath == null){
+			boolean isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
+			japsaPath = isWindows? 
+					"c:\\Japsa" 
+					: System.getProperty("user.home") + "/.usr/local";			
+		}
+	}
 	/**
 	 * Prepare the directory to copy libraries and scripts for instalation.
 	 * This method also set up classpath, java command, library path, and
@@ -301,10 +309,7 @@ public class Deploy {
 		System.out.println("Setting up Japsa Directory and copying libraries");
 		////////////////////////////////////////////////////////////////////////////
 		if (japsaPath == null){
-			//Get directory to install and create
-			japsaPath = isWindows? 
-				"c:\\Japsa" 
-				: System.getProperty("user.home") + "/.usr/local";
+			guessJapsaPath();			
 			while (true){
 				System.out.print("Directory to install japsa: [" + japsaPath + "]");
 				line = scanner.nextLine();
@@ -336,8 +341,8 @@ public class Deploy {
 		}
 
 		javaCommand = isWindows? 
-			"java -Xmx%JSA_MEM% -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8"
-			:"java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8";
+				"java -Xmx%JSA_MEM% -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8"
+				:"java -Xmx${JSA_MEM} -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8";
 
 
 		//Get server mode or client mode
@@ -443,7 +448,7 @@ public class Deploy {
 	 * @throws IOException
 	 */
 	public static void setUpScripts(ArrayList<Object> toolList, String masterScript) 
-		throws IOException{		
+			throws IOException{		
 		System.out.println("Set upting scripts in " + masterScript + ":");
 		boolean isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
 		//Set up differences between windows and the rest
@@ -459,7 +464,7 @@ public class Deploy {
 		}
 
 		outJsaMain.print(echoStr + "Japsa: A Java Package for Statistical Sequence Analysis\n"
-			+ echoStr + "Version " + VERSION + ", Built on " + (new Date()));
+				+ echoStr + "Version " + VERSION + ", Built on " + (new Date()));
 
 		if (compiler != null){
 			outJsaMain.println(" with " + compiler);
@@ -480,7 +485,7 @@ public class Deploy {
 			}			
 			if (obj instanceof CommandLine){
 				Class<?> tool = obj.getClass();
-				
+
 				Deployable annotation = (Deployable) tool.getAnnotation(Deployable.class);
 				File file = new File(japsaPath + File.separator +  "bin" + File.separator + annotation.scriptName() + suffixStr);
 
@@ -499,17 +504,17 @@ public class Deploy {
 					out.println("#!/bin/sh\n");
 					out.println("case $JSA_MEM in\n  '')JSA_MEM="+maxMem +";;\n  *);;\nesac\n\n");
 					out.println("case $JSA_CP in\n  '')JSA_CP="
-						+ classPath
-						+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
+							+ classPath
+							+ ";;\n  *)echo \"[INFO] Use ${JSA_CP} as path \" 1>&2;;\nesac\n\n");
 
 					//out.println("JSA_CMD=\"`basename $0` $@\"\n");
 
 					out.println(javaCommand + " -classpath ${JSA_CP} "
-						+ tool.getCanonicalName() + " \"$@\"");
+							+ tool.getCanonicalName() + " \"$@\"");
 					out.close();
 
 					Runtime.getRuntime().exec(
-						"chmod a+x " + file.getCanonicalPath());	
+							"chmod a+x " + file.getCanonicalPath());	
 				}
 				System.out.println(" " + file.getCanonicalPath() + " created");
 				outJsaMain.printf(echoStr + "  %-23s  %s\n", annotation.scriptName(),	annotation.scriptDesc());
@@ -527,13 +532,15 @@ public class Deploy {
 		outJsaMain.close();
 		if (!isWindows){
 			Runtime.getRuntime().exec(
-				"chmod a+x " + outJsa.getCanonicalPath());
+					"chmod a+x " + outJsa.getCanonicalPath());
 		}
 		System.out.println("Done " + masterScript + "\n");
 	}
 
 
-	public static boolean uninstallLibraries() throws IOException{
+	public static boolean uninstallLibraries() throws IOException{		
+		guessJapsaPath();
+		
 		if (japsaPath.startsWith("~/")) {
 			japsaPath = System.getProperty("user.home") + japsaPath.substring(1);
 		}
@@ -568,11 +575,13 @@ public class Deploy {
 
 		// Delete all the scripts			
 		for (Object obj : toolList) {				
-			if (!(obj instanceof Class<?>)){			
+			if (!(obj instanceof CommandLine)){			
 				continue;
 			}				
-			Class<?> tool = (Class<?>) obj;
+			
+			Class<?> tool = obj.getClass();
 			Deployable annotation = tool.getAnnotation(Deployable.class);
+			
 			File file = new File(japsaPath + File.separator +  "bin" + File.separator + annotation.scriptName());
 			System.out.println("rm " + file.getCanonicalPath());				
 			file.delete();
