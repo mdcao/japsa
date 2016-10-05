@@ -1,12 +1,6 @@
 package japsadev.bio.hts.scaffold;
 
 import java.util.ArrayList;
-
-import japsadev.bio.hts.scaffold.Edge;
-import japsadev.bio.hts.scaffold.Graph;
-import japsadev.bio.hts.scaffold.Node;
-import japsadev.bio.hts.scaffold.Path;
-import japsadev.bio.hts.scaffold.Vertex;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;

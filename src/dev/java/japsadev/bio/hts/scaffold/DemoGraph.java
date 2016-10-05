@@ -1,9 +1,6 @@
 package japsadev.bio.hts.scaffold;
 
 
-import japsadev.bio.hts.scaffold.RealtimeScaffolding;
-import japsadev.bio.hts.scaffold.ScaffoldGraph;
-
 /**
 *
 * @author Son Nguyen

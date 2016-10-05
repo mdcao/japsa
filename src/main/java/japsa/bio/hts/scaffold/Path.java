@@ -5,11 +5,6 @@ import java.util.ArrayList;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
-import japsa.bio.hts.scaffold.Edge;
-import japsa.bio.hts.scaffold.Graph;
-import japsa.bio.hts.scaffold.Node;
-import japsa.bio.hts.scaffold.Path;
-import japsa.bio.hts.scaffold.Vertex;
 
 public class Path implements Comparable<Path>{
 	ArrayList<Node> nodes;

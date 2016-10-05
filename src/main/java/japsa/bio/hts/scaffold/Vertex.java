@@ -4,8 +4,6 @@ import java.util.ArrayList;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
-import japsa.bio.hts.scaffold.Edge;
-import japsa.bio.hts.scaffold.Vertex;
 
 /**
  * This class models a vertex for my string graph which actually corresponds to an edge in SPAdes's assembly graph. 

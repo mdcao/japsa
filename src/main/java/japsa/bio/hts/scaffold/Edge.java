@@ -1,8 +1,5 @@
 package japsa.bio.hts.scaffold;
 
-import japsa.bio.hts.scaffold.Edge;
-import japsa.bio.hts.scaffold.Vertex;
-
 /**
  * This class models an bidirected Edge in my Graph implementation.
  * An Edge contains two vertices and a weight (distance between them).

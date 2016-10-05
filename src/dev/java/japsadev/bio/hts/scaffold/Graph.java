@@ -2,11 +2,6 @@ package japsadev.bio.hts.scaffold;
 
 import java.io.IOException;
 import java.util.*;
-
-import japsadev.bio.hts.scaffold.Edge;
-import japsadev.bio.hts.scaffold.Node;
-import japsadev.bio.hts.scaffold.Path;
-import japsadev.bio.hts.scaffold.Vertex;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;

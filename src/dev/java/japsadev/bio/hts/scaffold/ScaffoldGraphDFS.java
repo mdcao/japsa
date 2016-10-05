@@ -33,16 +33,9 @@
  ****************************************************************************/
 package japsadev.bio.hts.scaffold;
 
-import japsadev.bio.hts.scaffold.Contig;
-import japsadev.bio.hts.scaffold.ContigBridge;
-import japsadev.bio.hts.scaffold.Scaffold;
-import japsadev.bio.hts.scaffold.ScaffoldGraph;
-import japsadev.bio.hts.scaffold.ScaffoldVector;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.util.Logging;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;

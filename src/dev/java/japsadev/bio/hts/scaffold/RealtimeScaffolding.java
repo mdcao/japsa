@@ -11,15 +11,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
-
-import japsadev.bio.hts.scaffold.AlignmentRecord;
-import japsadev.bio.hts.scaffold.Contig;
-import japsadev.bio.hts.scaffold.ContigBridge;
-import japsadev.bio.hts.scaffold.ReadFilling;
-import japsadev.bio.hts.scaffold.RealtimeScaffolding;
-import japsadev.bio.hts.scaffold.ScaffoldGraph;
-import japsadev.bio.hts.scaffold.ScaffoldGraphDFS;
-
 import japsa.bio.np.RealtimeAnalysis;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;

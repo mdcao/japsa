@@ -39,9 +39,6 @@ import java.util.ArrayList;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
-import japsadev.bio.hts.scaffold.AlignmentRecord;
-import japsadev.bio.hts.scaffold.Contig;
-import japsadev.bio.hts.scaffold.ScaffoldGraph;
 
 public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	static final double matchCost = 0;
