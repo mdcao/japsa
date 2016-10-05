@@ -39,6 +39,7 @@ package japsadev.util.deploy;
 import japsa.tools.bio.phylo.XMDistance2Cmd;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deploy;
+import japsadev.misc.dnaPlatform.gui.DnaGraphToolCmd;
 import japsadev.tools.AnalyseCaptureCmd;
 import japsadev.tools.BreakPointAnalysisCmd;
 import japsadev.tools.CaptureProbeDesignCmd;
@@ -73,7 +74,6 @@ import japsadev.tools.work.PlasmaAnalysisCmd;
 import japsadev.tools.work.PlasmaAnalysisCrossCorrelationCmd;
 import japsadev.tools.work.RepeatPrimers;
 import japsadev.tools.work.TreeHetLinageCmd;
-import misc.dnaPlatform.gui.DnaGraphToolCmd;
 
 import java.io.File;
 import java.io.IOException;
