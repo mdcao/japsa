@@ -23,7 +23,7 @@ public class Graph {
     private HashMap<Integer, Edge> edges;
     private int kmer;
 
-    static final int TOLERATE=300;
+    static final int TOLERATE=500;
 
     
     public Graph(){
