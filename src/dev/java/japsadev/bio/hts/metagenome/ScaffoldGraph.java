@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsadev.bio.hts.scaffold;
+package japsadev.bio.hts.metagenome;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;

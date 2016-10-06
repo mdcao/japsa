@@ -1,4 +1,4 @@
-package japsadev.bio.hts.scaffold;
+package japsadev.bio.hts.metagenome;
 
 
 /**

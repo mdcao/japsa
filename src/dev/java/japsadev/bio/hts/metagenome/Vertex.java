@@ -1,4 +1,4 @@
-package japsadev.bio.hts.scaffold;
+package japsadev.bio.hts.metagenome;
 
 import java.util.ArrayList;
 import japsa.seq.Alphabet;

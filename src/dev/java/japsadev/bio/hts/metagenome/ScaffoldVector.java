@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsadev.bio.hts.scaffold;
+package japsadev.bio.hts.metagenome;
 
 /**
  * Implementation of a vector of relative position of a contig in its scaffold 

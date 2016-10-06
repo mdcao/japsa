@@ -1,4 +1,4 @@
-package japsadev.bio.hts.scaffold;
+package japsadev.bio.hts.metagenome;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;

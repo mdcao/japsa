@@ -31,7 +31,7 @@
  * 3 Jan 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsadev.bio.hts.scaffold;
+package japsadev.bio.hts.metagenome;
 
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;

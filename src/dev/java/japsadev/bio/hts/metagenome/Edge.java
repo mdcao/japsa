@@ -1,4 +1,4 @@
-package japsadev.bio.hts.scaffold;
+package japsadev.bio.hts.metagenome;
 
 /**
  * This class models an bidirected Edge in my Graph implementation.
