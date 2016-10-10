@@ -106,7 +106,7 @@ main-classes:  $(CLASS_MAIN_FILES)
 dev-classes:  $(CLASS_DEV_FILES) 
 
 images:
-	cp -r  $(SRC_DEV_DIR)/misc/dnaPlatform/gui/images  $(CLASS_DIR)/misc/dnaPlatform/gui/ 
+	cp -r  $(SRC_DEV_DIR)/japsadev/misc/dnaPlatform/gui/images  $(CLASS_DIR)/japsadev/misc/dnaPlatform/gui/ 
 
 ###Create the class directory if neccessary
 $(CLASS_DIR):

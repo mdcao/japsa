@@ -29,7 +29,7 @@
 
 /****************************************************************************
  *                           Revision History                                
- * 15/05/2014 - Minh Duc Cao: Started
+ * 10/10/2016 - Minh Duc Cao: forked from v1
  *  
  ****************************************************************************/
 package japsa.tools.bio.hts;
@@ -66,9 +66,9 @@ import htsjdk.samtools.ValidationStringency;
  * 
  */
 
-@Deployable(scriptName = "jsa.tr.longreads", scriptDesc = "VNTR typing using long reads")
-public class VNTRLongReadsCmd  extends CommandLine {
-	public VNTRLongReadsCmd(){
+@Deployable(scriptName = "jsa.tr.longreadsv2", scriptDesc = "VNTR typing using long reads")
+public class VNTRLongReadsV2Cmd  extends CommandLine {
+	public VNTRLongReadsV2Cmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -93,13 +93,12 @@ public class VNTRLongReadsCmd  extends CommandLine {
 	} 
 
 
-
 	static Alphabet dna = Alphabet.DNA16();
 
 	public static void main(String[] args) throws Exception,
 	InterruptedException {
 		/*********************** Setting up script ****************************/
-		CommandLine cmdLine = new VNTRLongReadsCmd();
+		CommandLine cmdLine = new VNTRLongReadsV2Cmd();
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		// Get options
