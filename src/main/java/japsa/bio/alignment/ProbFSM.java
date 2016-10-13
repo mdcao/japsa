@@ -76,8 +76,10 @@ public abstract class ProbFSM {
 	 */
 	public void resetCount(){
 		for (int i = 0; i < states.length;i++){
-			states[i].countCopy	
-			= states[i].countMutate = states[i].countIns = states[i].countDel = 0;  
+			states[i].countCopy	= 
+					states[i].countMutate =
+					states[i].countIns =
+					states[i].countDel = 0;  
 		}
 	}
 
@@ -239,12 +241,12 @@ public abstract class ProbFSM {
 		}
 		return countEmis;
 	}
-	
+
 	public void printAlignment(Emission emiss, Sequence gSeq, SequenceOutputStream out) throws IOException{		
 		SequenceBuilder sbm = new SequenceBuilder(Alphabet.DNA(), 1000, mSeq.getName());
 		SequenceBuilder sbg = new SequenceBuilder(Alphabet.DNA(), 1000, gSeq.getName());
 		StringBuilder sb = new StringBuilder(1000);
-		
+
 		while (true){			
 			Emission bwdEmission = emiss.bwdEmission;
 			if (bwdEmission == null)
@@ -284,54 +286,54 @@ public abstract class ProbFSM {
 			}		
 			emiss = bwdEmission;			
 		}
-		
-		
-			
+
+
+
 		int nameLength = 32;
 		int done = sbm.length();		
 		while (done > 0){			
 			int n = Math.min(60, done);
 			String mName = sbm.getName();
 			String gName = sbg.getName();
-			
+
 			if (mName.length() > nameLength -1)
 				mName = mName.substring(0, nameLength -1);
-			
+
 			if (gName.length() > nameLength)
 				gName = gName.substring(0, nameLength -1);
-			
-			
+
+
 			out.print(mName);
 			for (int i = mName.length(); i < nameLength; i++)
 				out.print(' ');
-			
+
 			for (int i = 1; i <= n; i++)
 				out.print(sbm.charAt(done - i));
 			out.println();
-			
+
 
 			out.print(gName);
 			for (int i = gName.length(); i < nameLength; i++)
 				out.print(' ');			
-			
+
 			for (int i = 1; i <= n; i++)
 				out.print(sbg.charAt(done - i));
 			out.println();
-			
+
 			for (int i = 0; i < nameLength; i++)
 				out.print(' ');
-			
+
 			for (int i = 1; i <= n; i++)
 				out.print(sb.charAt(done - i));
 			out.println();
-			
+
 			out.println();
 			done -= n;
 		}		
 	}
 
-	
-	
+
+
 
 	/************************************************************************/
 	/**
@@ -343,10 +345,10 @@ public abstract class ProbFSM {
 		//return state
 		//JapsaTimer timer = new JapsaTimer();
 		//timer.systemInfo();
-		
+
 		Emission retEmission = new Emission(states[0], mSeq.length()-1, genSeq.length() -1);
 		retEmission.myCost = genSeq.length() * (insEmissionCost + 4);
-		
+
 
 		Emission currentEmission, finalEmission;//current pointer and last pointer on the linked-list		
 		currentEmission = finalEmission = new Emission(states[0],-1,-1);
@@ -451,19 +453,19 @@ public abstract class ProbFSM {
 
 			//helping GC to gabbabe collect current state
 			Emission tmp = currentEmission.next;
-			
+
 			hash.remove(Emission.hashKey(currentEmission.toState.name, currentEmission.mPos, currentEmission.gPos));			
 			currentEmission.next = null;
-			
+
 			currentEmission = tmp;
 		}
-		
+
 		Logging.info("Hash = " + hash.size());
-		
+
 		//timer.systemInfo();
 		//Runtime.getRuntime().gc();
 		//timer.systemInfo();
-		
+
 		//timer.mark("toc");		
 		return retEmission;
 	}
@@ -476,7 +478,7 @@ public abstract class ProbFSM {
 		//return state
 		Emission retEmission = new Emission(states[0], mSeq.length()-1, genSeq.length() -1);
 		retEmission.myCost = genSeq.length() * (insEmissionCost + 4);
-		
+
 		Emission currentEmission, finalEmission;//current pointer and last pointer on the linked-list		
 		currentEmission = finalEmission = new Emission(states[0],-1,-1);
 		currentEmission.myCost = 0;	
@@ -637,6 +639,11 @@ public abstract class ProbFSM {
 		}			
 	}
 
+	/**
+	 * Implement a machine state
+	 * @author minhduc
+	 *
+	 */
 	public static class MachineState{	
 		double copyProb = 0.9, changeProb = 0.1;
 		double matchProb = 0.8, insProb = 0.14, delProb = 0.06;
@@ -672,6 +679,7 @@ public abstract class ProbFSM {
 			changeCost =  (changeProb > 0)? -JapsaMath.log2(changeProb):Double.MAX_VALUE;
 		}
 	}
+
 
 
 	public static class ProbThreeSM extends ProbFSM{

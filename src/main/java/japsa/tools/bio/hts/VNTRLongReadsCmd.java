@@ -270,7 +270,6 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			String fileName = prefix + "_" + str.getID() + "_i.fasta";
 			SequenceOutputStream os = SequenceOutputStream.makeOutputStream(fileName);
 
-
 			double var = 0;
 			TandemRepeatVariant trVar = new TandemRepeatVariant();
 			trVar.setTandemRepeat(str);
