@@ -47,11 +47,15 @@ import japsa.util.ByteArray;
 import japsa.util.CommandLine;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
+import japsa.util.JapsaMath;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import japsa.xm.expert.Expert;
+import japsa.xm.expert.MarkovExpert;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Random;
 
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
@@ -154,7 +158,10 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 		IntArray intArray = new IntArray();
 		DoubleArray doubleArray = new DoubleArray();
-		ByteArray byteArray = new ByteArray(); 
+		ByteArray byteArray = new ByteArray();
+
+		Expert.setAlphabet(Alphabet.DNA4());
+		Random random = new Random();
 
 		//int _tIndex = 0;
 		while (xafReader.next() != null){	
@@ -207,25 +214,23 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				if (x == hmmFlank + hmmPad -1 || x ==  hmmFlank + hmmPad + str.getPeriod() - 1)
 					outOS.print("==");
 			}
-			outOS.println();
-
-			Sequence refRepeat = seq.subSequence(start, end);
-			refRepeat.setName("reference");
+			outOS.println();			
 
 			//run on the reference
 			//if (1==0)
 			{
+				int baseL = 0, baseR = 0, baseRep = 0;
+				Sequence refRepeat = seq.subSequence(start, end);
+				refRepeat.setName("reference");
 				EmissionState bestState = dp.align(refRepeat);
 				double alignScore = bestState.getScore();
 				//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
-				int bestIter = bestState.getIter();
-				outOS.print("##" + refRepeat.getName()+"\t"+bestIter+"\t"+refRepeat.length() +"\t" +alignScore+"\t" + alignScore/refRepeat.length() + '\n');
-
+				int bestIter = bestState.getIter();				
 
 				/*********************************************************/
 				intArray.clear();
 				doubleArray.clear();
-				byteArray.clear();				
+				byteArray.clear();
 
 				//double oldCost = bestState.score;
 				EmissionState lastState = bestState;				
@@ -245,10 +250,20 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				}					
 
 				double costL = 0, costR = 0;
-
+				
+				
 				for (int x = intArray.size() - 1; x >=0; x--){
-					outOS.print(Alphabet.DNA().int2char(byteArray.get(x)));
+					int pos = intArray.get(x);
+					if (pos < hmmFlank + hmmPad)
+						baseL ++;
+					else if(pos > hmmFlank + hmmPad + str.getPeriod())
+						baseR ++;
+					else
+						baseRep ++;
 
+					
+					
+					outOS.print(Alphabet.DNA().int2char(byteArray.get(x)));
 					//
 					if (x <intArray.size() - 1  && intArray.get(x) <  intArray.get(x+1)){
 						outOS.println();	 
@@ -261,9 +276,22 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				}
 				outOS.println();
 				outOS.print ("L = " + (costL/(hmmFlank + hmmPad)) + " R = " + costR/(hmmSeq.length() - hmmFlank - hmmPad - str.getPeriod()) + "\n");
+				MarkovExpert expert = new MarkovExpert(1);
+				double costM = 0;
+				for (int x = 0; x< refRepeat.length();x++){
+					int base = refRepeat.getBase(x);	
+					if (base >=4)
+						base = random.nextInt(4);
+					costM -= JapsaMath.log2(expert.update(base));
+				}				
+				outOS.print ("M = " + costM + " " + costM / refRepeat.length() + "\n");				
+				outOS.print("##reference\t"+bestIter+"\t"+refRepeat.length() +"\t" +alignScore+"\t" + alignScore/refRepeat.length() + '\t' + costM + "\t" + costM / refRepeat.length() + "\t" + costL + "\t" + baseL + "\t" + costR + "\t" + baseR + "\t" + (alignScore - costL - costR) + "\t" + baseRep +'\n');
 				outOS.print("==================================================================\n");
-				/*********************************************************/
+
+				/******************************************************************************/
 			}
+
+
 
 			SAMRecordIterator iter = reader.query(str.getParent(), start, end, false);
 
@@ -328,22 +356,36 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				}					
 
 				double costL = 0, costR = 0;
-
+				int baseL = 0, baseR = 0, baseRep = 0;
+				
 				for (int x = intArray.size() - 1; x >=0; x--){
 					outOS.print(Alphabet.DNA().int2char(byteArray.get(x)));
+					
+					int pos = intArray.get(x);
+					if (pos < hmmFlank + hmmPad)
+						baseL ++;
+					else if(pos > hmmFlank + hmmPad + str.getPeriod())
+						baseR ++;
+					else
+						baseRep ++;
 
 					//end of a repeat cycle
 					if (x <intArray.size() - 1  && intArray.get(x) < intArray.get(x+1)){
+						outOS.print("<-----------------REP");
 						outOS.println();	 
 					}
 
 					//left 
-					if (x <intArray.size() - 1  && intArray.get(x) < hmmFlank + hmmPad && intArray.get(x + 1) >= hmmFlank + hmmPad)
+					if (x <intArray.size() - 1  && intArray.get(x) < hmmFlank + hmmPad && intArray.get(x + 1) >= hmmFlank + hmmPad){
+						outOS.print("<-----------------LEFT");
 						outOS.println();
+					}
 
 					//right
-					if (x <intArray.size() - 1  && intArray.get(x) < hmmFlank + hmmPad + str.getPeriod() && intArray.get(x + 1) >= hmmFlank + hmmPad + str.getPeriod())
+					if (x <intArray.size() - 1  && intArray.get(x) < hmmFlank + hmmPad + str.getPeriod() && intArray.get(x + 1) >= hmmFlank + hmmPad + str.getPeriod()){
+						outOS.print("<-----------------RIGHT");
 						outOS.println();
+					}				
 
 
 					if (intArray.get(x) < hmmFlank + hmmPad)
@@ -352,20 +394,25 @@ public class VNTRLongReadsCmd  extends CommandLine {
 						costR += doubleArray.get(x);													
 				}
 				outOS.println();
-				outOS.print ("L = " + (costL/(hmmFlank + hmmPad)) + " R = " + costR/(hmmSeq.length() - hmmFlank - hmmPad - str.getPeriod()) + "\n");				
+				outOS.print ("L = " + (costL/(hmmFlank + hmmPad)) + " R = " + costR/(hmmSeq.length() - hmmFlank - hmmPad - str.getPeriod()) + "\n");
 
-
+				MarkovExpert expert = new MarkovExpert(1);
+				double costM = 0;
+				for (int x = 0; x< readSeq.length();x++){
+					int base = readSeq.getBase(x);					
+					costM -= JapsaMath.log2(expert.update(base));
+				}
 				String readName = readSeq.getName();
 				String [] toks =  readName.split("/",4);
 
 				//String polymerageRead = toks[0] + "/" + toks[1];
 
-				String polymerageRead = (toks.length > 1)?toks[1]:toks[0];
-				String subRead = (toks.length > 2)?toks[2]:"_";
-				String alignSubRead = (toks.length > 3)?toks[3]:"_";
+				String polymerageRead = (toks.length > 1) ? toks[1] : toks[0];
+				String subRead = (toks.length > 2) ? toks[2] : "_";
+				String alignSubRead = (toks.length > 3) ? toks[3] : "_";
 
 				/*****************************************************************/				
-				outOS.print("##" + polymerageRead + "_" + subRead +"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + readSeq.getDesc() + '\n');
+				outOS.print("##" + polymerageRead + "_" + subRead +"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + costM + "\t" + costM / readSeq.length() + "\t"  + costL + "\t" + baseL + "\t" + costR + "\t" + baseR + "\t" + (alignScore - costL - costR) + "\t" + baseRep +'\n');			
 				outOS.print("==================================================================\n");				
 			}// while
 			iter.close();

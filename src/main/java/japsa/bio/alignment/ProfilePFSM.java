@@ -10,6 +10,6 @@ import japsa.seq.Sequence;
  */
 public class ProfilePFSM extends ProbFSM{
 	public ProfilePFSM(Sequence seq){
-
+	
 	}
 }
