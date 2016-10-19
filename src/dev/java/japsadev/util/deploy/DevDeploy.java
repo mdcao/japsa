@@ -55,6 +55,7 @@ import japsadev.tools.NanoporeFast5ReaderCmd;
 import japsadev.tools.PanCoreGeneCmd;
 import japsadev.tools.ProfileDPCmd;
 import japsadev.tools.RemoveNsCmd;
+import japsadev.tools.RepeatPrimerCmd;
 import japsadev.tools.ResGeneGenomesCmd;
 import japsadev.tools.SampleCmd;
 import japsadev.tools.TestSampleCmd;
@@ -73,7 +74,6 @@ import japsadev.tools.work.MethylationAnalysisCmd;
 import japsadev.tools.work.NpReadAnalysys;
 import japsadev.tools.work.PlasmaAnalysisCmd;
 import japsadev.tools.work.PlasmaAnalysisCrossCorrelationCmd;
-import japsadev.tools.work.RepeatPrimers;
 import japsadev.tools.work.TreeHetLinageCmd;
 
 import java.io.File;
@@ -109,7 +109,7 @@ public class DevDeploy {
 		tools.add(VNTRLongReads.class);			
 
 		
-		tools.add(RepeatPrimers.class);		
+		tools.add(new RepeatPrimerCmd());		
 		
 		tools.add(new KmerAnalysisCmd());		
 		tools.add(new ProfileDPCmd());	

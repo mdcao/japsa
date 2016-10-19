@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsadev.tools.work;
+package japsadev.tools;
 
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.Alphabet;
@@ -50,24 +50,31 @@ import java.util.HashMap;
  * @author minhduc
  * 
  */
-@Deployable(scriptName = "jsa.dev.primerTR", scriptDesc = "Design primers for repeats. Each primer is added 30 bases for mapping")
-public class RepeatPrimers {
+@Deployable(scriptName = "jsa.dev.primerTR", 
+scriptDesc = "Design primers for repeats. Each primer is added 30 bases for mapping")
+public class RepeatPrimerCmd extends CommandLine{
+	public RepeatPrimerCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+		addString("input", null, "Name of the input file, - for standard input", true);
+		addString("tr", null, "Name of the tandem repeat file", true);
+		addInt("flank", 300, "Length of flanking regions");
+		addInt("pad", 30,	 "Pad to the primers for more specific mappings");
+		
+		addString("primer_exe", "primer3_core", "Path to primer3  ");
+		addString("bwa_exe", "bwa", "Path to bwa for checking");
+		
+		
+		addStdHelp();		
+	} 
+
 	public static void main(String[] args) throws Exception {
-
-		/*********************** Setting up script ****************************/
-		Deployable annotation = RepeatPrimers.class
-				.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options]",
-				annotation.scriptDesc());
-
-		cmdLine.addStdInputFile();
-		cmdLine.addString("tr", null, "Name of the tandem repeat file", true);
-		cmdLine.addInt("flanking", 300, "Length of flanking regions");
-		cmdLine.addInt("pad", 30,
-				"Pad to the primers for more specific mappings");
-
-		args = cmdLine.stdParseLine_old(args);
+		/*********************** Setting up script ****************************/		
+		CommandLine cmdLine = new RepeatPrimerCmd();		
+		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 
 		String input = cmdLine.getStringVal("input");
@@ -105,7 +112,7 @@ public class RepeatPrimers {
 			}
 			if (seq == null) {
 				throw new RuntimeException("Sequence " + tr.getChr()
-						+ " not found");
+				+ " not found");
 			}
 
 			int start = tr.getStart() - flanking;
@@ -177,7 +184,7 @@ public class RepeatPrimers {
 			} else if (toks[0].equals("PRIMER_LEFT_" + index)) {
 				int x = toks[1].indexOf(',');
 				leftPos = seqOffset + Integer.parseInt(toks[1].substring(0, x))
-						- 1;
+				- 1;
 			} else if (toks[0].equals("PRIMER_RIGHT_" + index)) {
 				int x = toks[1].indexOf(',');
 				rightPos = seqOffset
