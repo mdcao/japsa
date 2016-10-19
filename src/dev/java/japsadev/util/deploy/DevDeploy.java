@@ -62,7 +62,6 @@ import japsadev.tools.VNTRDepthAnalyserCmd;
 import japsadev.tools.VNTRDepthSumCmd;
 import japsadev.tools.VNTRLongReads;
 import japsadev.tools.VNTRLongReadsHmmer;
-import japsadev.tools.VNTRSelectCmd;
 import japsadev.tools.misc.GetN50;
 import japsadev.tools.work.BuildMLSTTreeCmd;
 import japsadev.tools.work.BuildXMTreeCmd;
@@ -136,7 +135,7 @@ public class DevDeploy {
 		tools.add(new CaptureProbeDesignCmd());
 		tools.add(new ConvertProbeCmd());
 		tools.add(new NanoporeFast5ReaderCmd());
-		tools.add(new VNTRSelectCmd());
+		//tools.add(new VNTRSelectCmd());
 		
 		
 		//new 
