@@ -318,6 +318,13 @@ public class Graph {
     public void reduce(Path p){
     	//TODO: reduce a graph by grouping a Path into a Vertex
     }
+    /**
+     * 
+     * @param v Vertex to be recovered
+     */
+    public void revert(Vertex v){
+    	//TODO: revert to initial status by extracting a complex vertex into its initial components
+    }
 }
 
 
