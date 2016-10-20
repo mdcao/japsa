@@ -6,22 +6,26 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 
 public class Path implements Comparable<Path>{
+	public static int kmer=127;
 	ArrayList<Node> nodes;
-	Graph graph;
+	//Graph graph;
 	int length, deviation; //how this path differ to long read data (todo: by multiple-alignment??)
 	public Path(){
 		this.nodes=new ArrayList<Node>();
-		graph=new Graph();
+		//graph=new Graph();
 		length=0;
 		deviation=Integer.MAX_VALUE;
 	}
 	
-	public Path(Graph graph){
-		this();
-		associate(graph);
-	} 
+//	public Path(Graph graph){
+//		this();
+//		associate(graph);
+//	} 
+	public static void setK(int kmer){
+		Path.kmer=kmer;
+	}
 	public Path(Path p){
-		this(p.graph);
+		//this(p.graph);
 		for(Node node:p.nodes)
 			this.nodes.add(node);
 		this.length=p.length;
@@ -31,7 +35,7 @@ public class Path implements Comparable<Path>{
 	 * For example: 1+,2-,3+
 	 */
 	public Path(Graph graph, String paths){
-		this(graph);
+		//this(graph);
 		paths=paths.replace(";", ""); //optimized it!
 		String[] comps = paths.split(",");
 		for(int i=0; i<comps.length; i++){
@@ -55,15 +59,15 @@ public class Path implements Comparable<Path>{
 		}
 	}
 	
-	public void associate(Graph g){
-		graph=g;
-	}
+//	public void associate(Graph g){
+//		graph=g;
+//	}
 	
 	public void addNode(Vertex v, boolean dir){
 		if(nodes.isEmpty())
 			length=v.getSequence().length();
 		else
-			length+=v.getSequence().length()-graph.getKmerSize();
+			length+=v.getSequence().length()-kmer;
 		
 		nodes.add(new Node(v,dir));
 	}
@@ -81,7 +85,8 @@ public class Path implements Comparable<Path>{
 	}
 	
 	public Path rc(){
-		Path retval=new Path(graph);
+		//Path retval=new Path(graph);
+		Path retval=new Path();
 		for(Node node:nodes){
 			retval.nodes.add(0, node.getRC());
 		}
@@ -100,7 +105,7 @@ public class Path implements Comparable<Path>{
 	}
 	 public Node removeLast(){
 		 Node retval=nodes.remove(nodes.size()-1);
-		 length-=retval.getSeq().length()-graph.getKmerSize();
+		 length-=retval.getSeq().length()-kmer;
 		 return retval;
 	 }
 	 
@@ -109,7 +114,7 @@ public class Path implements Comparable<Path>{
 
 		 for(int i=0;i<nodes.size();i++){
 			 Node aNode=nodes.get(i);
-			 seq.append(aNode.getSeq().subSequence(0, (i==nodes.size()-1?aNode.getSeq().length():aNode.getSeq().length()-graph.getKmerSize())));
+			 seq.append(aNode.getSeq().subSequence(0, (i==nodes.size()-1?aNode.getSeq().length():aNode.getSeq().length()-kmer)));
 		 }
 		 
 		 return seq.toSequence();

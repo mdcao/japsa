@@ -28,7 +28,7 @@ public class Graph {
     public Graph(){
         this.vertices = new HashMap<String, Vertex>();
         this.edges = new HashMap<Integer, Edge>();
-        this.kmer=127;//default kmer size used by SPAdes to assembly MiSeq data
+        setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
     }
     
     
@@ -99,7 +99,7 @@ public class Graph {
         for(Vertex v: vertices){
             this.vertices.put(v.getLabel(), v);
         }
-        this.kmer=127;//default kmer size used by SPAdes to assembly MiSeq data
+        setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
 
     }
     
@@ -108,6 +108,7 @@ public class Graph {
     }
     public void setKmerSize(int kmer){
     	this.kmer=kmer;
+    	Path.setK(kmer);
     }
     /**
      * This method adds am edge between Vertices one and two
@@ -268,7 +269,7 @@ public class Graph {
      */
     public ArrayList<Path> DFS(Node source, Node dest, int distance){
     	System.out.println("Looking for path between " + source.toString() + " to " + dest.toString() + " with distance " + distance);
-    	Path 	tmp = new Path(this);
+    	Path 	tmp = new Path();
     	ArrayList<Path>	retval = new ArrayList<Path>();
     	tmp.addNode(source);  	
     	
@@ -289,8 +290,8 @@ public class Graph {
 
     			if(e.getTwo()==dest.getVertex() && e.getDTwo()==dest.getDirection() && Math.abs(distance+getKmerSize()) < TOLERATE){
 
-    		    	Path 	curPath=curResult.isEmpty()?new Path(this):curResult.get(0), //the best path saved among all possible paths from the list curResult
-    		    			tmpPath=new Path(this);
+    		    	Path 	curPath=curResult.isEmpty()?new Path():curResult.get(0), //the best path saved among all possible paths from the list curResult
+    		    			tmpPath=new Path();
     		    	tmpPath.setComp(path.getComp());
     		    	tmpPath.setDeviation(Math.abs(distance+getKmerSize()));
     		    	if(	Math.abs(distance+getKmerSize()) < curPath.getDeviation() )
@@ -309,6 +310,13 @@ public class Graph {
     			path.removeLast();
     		}
     	}
+    }
+    /**
+     * 
+     * @param p Path to group into a virtually vertex
+     */
+    public void reduce(Path p){
+    	//TODO: reduce a graph by grouping a Path into a Vertex
     }
 }
 

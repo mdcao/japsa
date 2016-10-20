@@ -18,10 +18,11 @@ public class Vertex {
     private ArrayList<Edge> neighborhood;
     private String fullName, label;
     private Sequence seq=null;
-    
+    //a sub-graph (path) is equivalent to a Vertex recursively
+    private Path components=null;
     /**
      * 
-     * @param label The unique label associated with this Vertex
+     * @param name The unique label associated with this Vertex
      */
     public Vertex(String name){
     	this.fullName=name;
@@ -33,7 +34,11 @@ public class Vertex {
     public Vertex(String name, Sequence seq){
         this(name);
         this.seq = seq;
-
+    }
+    
+    public Vertex(Path p){
+    	this(p.getID());
+    	components=p;
     }
     /**
      * 
