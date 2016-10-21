@@ -292,7 +292,7 @@ public class Graph {
 
     		    	Path 	curPath=curResult.isEmpty()?new Path():curResult.get(0), //the best path saved among all possible paths from the list curResult
     		    			tmpPath=new Path();
-    		    	tmpPath.setComp(path.getComp());
+    		    	tmpPath.setComp(path.getNodes());
     		    	tmpPath.setDeviation(Math.abs(distance+getKmerSize()));
     		    	if(	Math.abs(distance+getKmerSize()) < curPath.getDeviation() )
     		    		curResult.add(0, tmpPath);
@@ -313,17 +313,67 @@ public class Graph {
     }
     /**
      * 
-     * @param p Path to group into a virtually vertex
+     * @param p Path to be grouped as a virtually vertex
      */
     public void reduce(Path p){
-    	//TODO: reduce a graph by grouping a Path into a Vertex
+    	Vertex comp=new Vertex(p);
+    	Node 	start = p.getStart(),
+    			end = p.getEnd();
+    	//set neighbors of the grouped Vertex
+    	for(Edge e:start.getVertex().getNeighbors()){
+    		if(e.getDOne()!=start.getDirection())
+    			comp.addNeighbor(e);
+    	}
+    	for(Edge e:end.getVertex().getNeighbors()){
+    		if(e.getDOne()!=end.getDirection())
+    			comp.addNeighbor(e);
+    	}
+    	//remove unique nodes on p
+    	for(Node n:p.getNodes()){
+    		if(n.getVertex().isUnique())
+    			removeVertex(n.getVertex().getLabel());
+    	}
+    	//add the new composite Vertex to the graph
+    	addVertex(comp, true);
+    	
+    	//TODO: remove bubbles...
     }
     /**
      * 
-     * @param v Vertex to be recovered
+     * @param v Vertex to be reverted (1-level reverting)
      */
     public void revert(Vertex v){
     	//TODO: revert to initial status by extracting a complex vertex into its initial components
+    	Path p=v.getSubComps();
+    	if(!containsVertex(v)||p==null) return;
+    	//add back all vertices first
+    	for(Node n:p.getNodes())
+    		addVertex(n.getVertex(), false);
+    	//then add back all neighbor edges of this composite vertex
+    	for(Edge e:v.getNeighbors())
+    		addEdge(v,e.getTwo(),e.getDOne(),e.getDTwo());
+    	//finally add back all edges from the path
+    	Node prev=p.getStart();
+    	for(Node cur:p.getNodes()){
+    		if(cur==p.getStart())
+    			continue;
+    		else{
+    			addEdge(prev.getVertex(),cur.getVertex(),prev.getDirection(),cur.getDirection());
+    			prev=cur;
+    		}
+    	}
+    	
+    	//remove the original composite vertex
+    	removeVertex(v.getLabel());
+    }
+    public void printStats(){
+    	System.out.println(vertices.size() + " vertices:");
+    	for(String label:vertices.keySet())
+    		System.out.print(label+", ");
+    	System.out.println(edges.size() + " edges:");
+    	for(Edge e:edges.values()){
+    		System.out.print(e.toString()+", ");
+    	}
     }
 }
 

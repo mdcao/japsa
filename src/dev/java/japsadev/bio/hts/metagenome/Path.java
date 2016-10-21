@@ -75,7 +75,7 @@ public class Path implements Comparable<Path>{
 		addNode(aNode.getVertex(), aNode.getDirection());
 	}
 	
-	public ArrayList<Node> getComp(){
+	public ArrayList<Node> getNodes(){
 		return nodes;
 	}
 	public void setComp(ArrayList<Node> nodes){
@@ -144,6 +144,18 @@ public class Path implements Comparable<Path>{
 		this.deviation=deviation;
 	}
 
+	/**
+	 * 
+	 * @return average depth of this path
+	 */
+	public double averageCov(){
+		double res=0;
+		for(Node n:nodes){
+			Vertex v=n.getVertex();
+			res+=v.getSequence().length()*v.getCoverage()/length;
+		}
+		return res;
+	}
 	@Override
 	public int compareTo(Path o) {
 		// TODO Auto-generated method stub

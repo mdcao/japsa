@@ -149,7 +149,7 @@ public class Edge implements Comparable<Edge> {
      * @return String A String representation of this Edge
      */
     public String toString(){
-        return "({" + one + (dOne?"":"'") + ", " + two + (dTwo?"":"'") + "}, " + weight + ")";
+        return "({" + one + (dOne?">":"<") + ", " + two + (dTwo?">":"<") + "}, " + weight + ")";
     }
     
     /**

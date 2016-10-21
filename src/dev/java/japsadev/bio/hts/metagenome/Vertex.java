@@ -17,6 +17,7 @@ public class Vertex {
 
     private ArrayList<Edge> neighborhood;
     private String fullName, label;
+    private double coverage;
     private Sequence seq=null;
     //a sub-graph (path) is equivalent to a Vertex recursively
     private Path components=null;
@@ -26,7 +27,8 @@ public class Vertex {
      */
     public Vertex(String name){
     	this.fullName=name;
-        this.label=getID(name);
+        this.label=extractID(name);
+        this.coverage=extractCoverage(name);
         this.neighborhood = new ArrayList<Edge>();
         this.seq=new Sequence(Alphabet.DNA5(), 0);
     }
@@ -39,13 +41,41 @@ public class Vertex {
     public Vertex(Path p){
     	this(p.getID());
     	components=p;
+    	coverage=p.averageCov();
     }
     /**
      * 
+     * @return If this vertex is unique (only based on its degree)
+     */
+    public boolean isUnique(){
+    	return (getNeighborCount() <= 2);
+    }
+    public Path getSubComps(){
+    	return components;
+    }
+    /**
+     * Extract ID from name: EDGE_xx_length_yy_cov_zz;
      * @param name The name of Edge in assembly graph that correspond to this Vertex
      */
-    private String getID(String name){
+    private String extractID(String name){
     	return name.split("_")[1];
+    }
+    /**
+     * Extract coverage from name: EDGE_xx_length_yy_cov_zz;
+     * @param name The name of Edge in assembly graph that correspond to this Vertex
+     * @return coverage value
+     */
+    private double extractCoverage(String name){
+    	double res=1.0;
+    	try{
+    	 res=Double.parseDouble(name.split("_")[5]);
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	return res;
+    }
+    public double getCoverage(){
+    	return coverage;
     }
     /**
      * This method adds an Edge to the incidence neighborhood of this graph iff
