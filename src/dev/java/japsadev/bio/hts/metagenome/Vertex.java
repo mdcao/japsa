@@ -21,6 +21,13 @@ public class Vertex {
     private Sequence seq=null;
     //a sub-graph (path) is equivalent to a Vertex recursively
     private Path components=null;
+    public Vertex(){
+    	fullName="";
+    	label="";
+    	coverage=0;
+        this.neighborhood = new ArrayList<Edge>();
+        this.seq=new Sequence(Alphabet.DNA5(), 0);
+    }
     /**
      * 
      * @param name The unique label associated with this Vertex
@@ -39,7 +46,8 @@ public class Vertex {
     }
     
     public Vertex(Path p){
-    	this(p.getID());
+    	this();
+    	fullName=label=p.getID();
     	components=p;
     	coverage=p.averageCov();
     }

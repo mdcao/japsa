@@ -25,6 +25,7 @@ public class Path implements Comparable<Path>{
 		Path.kmer=kmer;
 	}
 	public Path(Path p){
+		this();
 		//this(p.graph);
 		for(Node node:p.nodes)
 			this.nodes.add(node);
@@ -35,6 +36,7 @@ public class Path implements Comparable<Path>{
 	 * For example: 1+,2-,3+
 	 */
 	public Path(Graph graph, String paths){
+		this();
 		//this(graph);
 		paths=paths.replace(";", ""); //optimized it!
 		String[] comps = paths.split(",");

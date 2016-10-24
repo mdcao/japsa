@@ -317,25 +317,31 @@ public class Graph {
      */
     public void reduce(Path p){
     	Vertex comp=new Vertex(p);
+    	//add the new composite Vertex to the graph
+    	addVertex(comp, true);
+    	//remove unique nodes on p
+    	ArrayList<String> tobeRemoved=new ArrayList<String>();
+    	for(Node n:p.getNodes()){
+    		if(n.getVertex().isUnique())
+    			tobeRemoved.add(n.getVertex().getLabel());
+    	}
+
     	Node 	start = p.getStart(),
     			end = p.getEnd();
     	//set neighbors of the grouped Vertex
     	for(Edge e:start.getVertex().getNeighbors()){
-    		if(e.getDOne()!=start.getDirection())
-    			comp.addNeighbor(e);
+    		if(e.getDOne()!=start.getDirection()){
+    			//comp.addNeighbor(e);
+    			addEdge(comp,e.getTwo(),e.getDOne(),e.getDTwo());
+    		}
     	}
     	for(Edge e:end.getVertex().getNeighbors()){
     		if(e.getDOne()!=end.getDirection())
-    			comp.addNeighbor(e);
+    			//comp.addNeighbor(e);
+    			addEdge(comp,e.getTwo(),e.getDOne(),e.getDTwo());
     	}
-    	//remove unique nodes on p
-    	for(Node n:p.getNodes()){
-    		if(n.getVertex().isUnique())
-    			removeVertex(n.getVertex().getLabel());
-    	}
-    	//add the new composite Vertex to the graph
-    	addVertex(comp, true);
-    	
+    	for(String lab:tobeRemoved)
+    		removeVertex(lab);
     	//TODO: remove bubbles...
     }
     /**
@@ -370,10 +376,13 @@ public class Graph {
     	System.out.println(vertices.size() + " vertices:");
     	for(String label:vertices.keySet())
     		System.out.print(label+", ");
+    	System.out.println();
     	System.out.println(edges.size() + " edges:");
     	for(Edge e:edges.values()){
     		System.out.print(e.toString()+", ");
     	}
+    	System.out.println();
+
     }
 }
 
