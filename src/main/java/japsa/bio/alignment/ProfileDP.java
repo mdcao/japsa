@@ -144,15 +144,22 @@ public class ProfileDP {
 			String hashKey;
 			EmissionState nextState;
 			double cost;
+			
+			int iterAdvance = 0;				
+			//if it is about the enter the repeat
+			if (currentState.profilePos + 1 == repStart){
+				iterAdvance = 1;
+			}
 
 			//1. consider deletion if profile has something to offer			
 			if (currentState.profilePos + 1 < profileSeq.length()){
 				cost = currentState.score + delCost;
+				
 				if (cost < retState.score){ 
-					hashKey= EmissionState.hashKey(currentState.seqPos, currentState.profilePos + 1, currentState.iter);
+					hashKey= EmissionState.hashKey(currentState.seqPos, currentState.profilePos + 1, currentState.iter + iterAdvance);
 					nextState = hash.get(hashKey);
 					if (nextState == null){
-						nextState = new EmissionState(currentState.seqPos, currentState.profilePos + 1, currentState.iter);
+						nextState = new EmissionState(currentState.seqPos, currentState.profilePos + 1, currentState.iter + iterAdvance);
 						nextState.score = cost;
 						hash.put(hashKey, nextState);
 						lastState.next = nextState;
@@ -182,6 +189,7 @@ public class ProfileDP {
 			if (currentState.seqPos + 1 < seq.length()){
 				cost = currentState.score + insCost;
 				if (cost < retState.score){
+					//note: this does not advance on the profile, thus no need to add iterAdvance
 					hashKey= EmissionState.hashKey(currentState.seqPos + 1, currentState.profilePos, currentState.iter);
 					nextState = hash.get(hashKey);
 					if (nextState == null){
@@ -214,10 +222,10 @@ public class ProfileDP {
 			if (currentState.seqPos + 1 < seq.length() && currentState.profilePos + 1 < profileSeq.length()){
 				cost = currentState.score + matCost + (seq.getBase(currentState.seqPos + 1) == profileSeq.getBase(currentState.profilePos + 1)? matchCost:misMatchCost);
 				if (cost < retState.score){
-					hashKey= EmissionState.hashKey(currentState.seqPos + 1, currentState.profilePos +1, currentState.iter);
+					hashKey= EmissionState.hashKey(currentState.seqPos + 1, currentState.profilePos +1, currentState.iter + iterAdvance);
 					nextState = hash.get(hashKey);
 					if (nextState == null){
-						nextState = new EmissionState(currentState.seqPos + 1, currentState.profilePos+1, currentState.iter);
+						nextState = new EmissionState(currentState.seqPos + 1, currentState.profilePos+1, currentState.iter + iterAdvance);
 						nextState.score = cost;
 						hash.put(hashKey, nextState);
 						lastState.next = nextState;
@@ -254,6 +262,9 @@ public class ProfileDP {
 				}
 			}//match
 
+			
+			//Consider jumping to the beginning of the rep
+			//Note I dont need iterAdvance here (it is 0 anyway)
 			if (currentState.profilePos == repEnd){
 				cost = currentState.score + delCost;
 				if (cost < retState.score){ 

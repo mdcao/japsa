@@ -188,8 +188,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				start = 1;
 
 			int hmmFlank = flanking;
-			int hmmPad = 
-					(int)((str.getUnitNo() - Math.floor(str.getUnitNo())) * str.getPeriod()) ;
+			double fraction = str.getUnitNo() - Math.floor(str.getUnitNo());			
+			int hmmPad = (int)(fraction * str.getPeriod()) ;
 
 			//System.out.println("###" + str.getPeriod() + " " + str.getUnitNo() + "   " + hmmPad);			
 			Sequence hmmSeq = new Sequence(dna, hmmFlank * 2 + hmmPad + str.getPeriod());
@@ -225,7 +225,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				EmissionState bestState = dp.align(refRepeat);
 				double alignScore = bestState.getScore();
 				//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
-				int bestIter = bestState.getIter();				
+				double bestIter = bestState.getIter() + fraction;				
 
 				/*********************************************************/
 				intArray.clear();
@@ -250,8 +250,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				}					
 
 				double costL = 0, costR = 0;
-				
-				
+
+
 				for (int x = intArray.size() - 1; x >=0; x--){
 					int pos = intArray.get(x);
 					if (pos < hmmFlank + hmmPad)
@@ -261,8 +261,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 					else
 						baseRep ++;
 
-					
-					
+
+
 					outOS.print(Alphabet.DNA().int2char(byteArray.get(x)));
 					//
 					if (x <intArray.size() - 1  && intArray.get(x) <  intArray.get(x+1)){
@@ -331,7 +331,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				EmissionState bestState = dp.align(readSeq);
 				double alignScore = bestState.getScore();
 				//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
-				int bestIter = bestState.getIter();
+				double bestIter = bestState.getIter() + fraction;
 
 				/*******************************************************************/				
 				intArray.clear();
@@ -357,10 +357,10 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 				double costL = 0, costR = 0;
 				int baseL = 0, baseR = 0, baseRep = 0;
-				
+
 				for (int x = intArray.size() - 1; x >=0; x--){
 					outOS.print(Alphabet.DNA().int2char(byteArray.get(x)));
-					
+
 					int pos = intArray.get(x);
 					if (pos < hmmFlank + hmmPad)
 						baseL ++;
