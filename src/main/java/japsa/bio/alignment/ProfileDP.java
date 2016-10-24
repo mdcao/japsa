@@ -119,6 +119,10 @@ public class ProfileDP {
 		matchCost  = - JapsaMath.log2(matchProb);
 		misMatchCost = -JapsaMath.log2(misMatchProb)- JapsaMath.log2(1.0/3.0);;
 	}
+	
+	public int getProfileLength(){
+		return profileSeq.length();
+	}
 	/**************************************************/
 
 	public EmissionState align(Sequence seq){
