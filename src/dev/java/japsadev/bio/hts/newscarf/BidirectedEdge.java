@@ -4,7 +4,7 @@ import org.graphstream.graph.implementations.AbstractEdge;
 import org.graphstream.graph.implementations.AbstractNode;
 
 public class BidirectedEdge extends AbstractEdge{
-	protected boolean dir0, dir1;
+	protected boolean dir0, dir1;//true: outward, false: inward
 	
 	protected BidirectedEdge(String id, AbstractNode source, AbstractNode dst, boolean dir0, boolean dir1) {
 		super(id, source, dst, false);
