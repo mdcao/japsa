@@ -442,11 +442,11 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 		//move to out of the loop
 		outOS.print("<-----------------RIGHT " + costR
-				+  " " + stateR
+				+  " " +  stateR
 				+  " " + (stateR == 0?"inf": "" + (costR/stateR))
-				+  " " + baseR
+				+  " " +  baseR
 				+  " " + (baseR == 0?"inf": "" + (costR/baseR))
-				+  " " + bSeqR
+				+  " " +  bSeqR
 				+  " " + (bSeqR == 0?"inf": "" + (costR/bSeqR))						
 				);
 		

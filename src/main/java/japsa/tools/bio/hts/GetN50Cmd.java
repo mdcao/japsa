@@ -78,3 +78,13 @@ public class GetN50Cmd extends CommandLine{
 		System.out.println(n50 + "\t" + seqs.size());
 	}	
 }
+
+/*RST*
+-----------------------------------------
+*jsa.hts.n50*: Compute N50 of an assembly 
+-----------------------------------------
+
+<usage> 
+
+*RST*/
+
