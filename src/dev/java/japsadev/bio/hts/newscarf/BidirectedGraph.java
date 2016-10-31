@@ -107,16 +107,18 @@ public class BidirectedGraph extends AdjacencyListGraph{
 			name=name.replaceAll("[^a-zA-Z0-9_.]", "").trim(); //EDGE_X_length_Y_cov_Z
 			
 			//FIXME: constructor is invoked by name but hashmap is based on label!!!
-			Vertex current=new Vertex(name);
-			if(getVertex(current.getLabel())!=null)
-				current=getVertex(current.getLabel());
-				
-			addVertex(current, false);
+//			Vertex current=new Vertex(name);
+//			if(getVertex(current.getLabel())!=null)
+//				current=getVertex(current.getLabel());
+//				
+//			addVertex(current, false);
+			BidirectedNode node = addNode(name.split("_")[1]);
+			node.setAttribute("name", name);
 			
 			if(dir1){
 				seq.setName(name);
-				current.setSequence(seq);
-				//System.out.println(current);
+				//current.setSequence(seq);
+				node.setAttribute("seq", seq);
 			}
 			if (adjList.length > 1){
 				String[] nbList = adjList[1].split(",");
@@ -126,13 +128,14 @@ public class BidirectedGraph extends AdjacencyListGraph{
 					boolean dir2=neighbor.contains("'")?false:true;
 					neighbor=neighbor.replaceAll("[^a-zA-Z0-9_.]", "").trim();
 
-					Vertex nbVertex=new Vertex(neighbor);
-					if(getVertex(nbVertex.getLabel())!=null)
-						nbVertex=getVertex(nbVertex.getLabel());
-	
-					addVertex(nbVertex, false);
-					
-					addEdge(current, nbVertex, dir1, dir2);
+//					Vertex nbVertex=new Vertex(neighbor);
+//					if(getVertex(nbVertex.getLabel())!=null)
+//						nbVertex=getVertex(nbVertex.getLabel());
+//	
+//					addVertex(nbVertex, false);
+//					
+//					addEdge(current, nbVertex, dir1, dir2);
+					addEdge(new BidirectedEdge(id, source, dst, dir0, dir1));
 				}
 			}
 			

@@ -12,7 +12,7 @@ import org.graphstream.graph.Edge;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.*;
 /**
- * Nodes used with {@link AdjacencyListGraph}
+ * Similar to {@link AdjacencyListNode}
  * 
  */
 public class BidirectedNode extends AbstractNode {
@@ -138,8 +138,8 @@ public class BidirectedNode extends AbstractNode {
 			i = oStart;
 		while (edges[i] != edge)
 			i++;
-
-		removeEdge(i);
+		if(i < degree) //remove iff edge is found
+			removeEdge(i);
 	}
 
 	@Override
@@ -215,14 +215,14 @@ public class BidirectedNode extends AbstractNode {
 
 	protected class EdgeIterator<T extends Edge> implements Iterator<T> {
 		protected int iPrev, iNext, iEnd;
-		// true: in, false: out
-		protected EdgeIterator(boolean ori) {
+		//0:in, 1:out, other(2):all
+		protected EdgeIterator(int ori) {
 			iPrev = -1;
 			iNext = 0;
 			iEnd = degree;
-			if (ori)
+			if (ori==0)
 				iEnd = oStart;
-			else
+			else if(ori==1)
 				iNext = oStart;
 		}
 
@@ -243,8 +243,7 @@ public class BidirectedNode extends AbstractNode {
 				throw new IllegalStateException();
 			AbstractEdge e = edges[iPrev];
 			// do not call the callback because we already know the index
-			graph.removeEdge(e, true, e.source != AdjacencyListNode.this,
-					e.target != AdjacencyListNode.this);
+			graph.removeEdge(e);
 			removeEdge(iPrev);
 			iNext = iPrev;
 			iPrev = -1;
@@ -254,16 +253,16 @@ public class BidirectedNode extends AbstractNode {
 
 	@Override
 	public <T extends Edge> Iterator<T> getEdgeIterator() {
-		return new EdgeIterator<T>(IO_EDGE);
+		return new EdgeIterator<T>(2);
 	}
 
 	@Override
 	public <T extends Edge> Iterator<T> getEnteringEdgeIterator() {
-		return new EdgeIterator<T>(I_EDGE);
+		return new EdgeIterator<T>(0);
 	}
 
 	@Override
 	public <T extends Edge> Iterator<T> getLeavingEdgeIterator() {
-		return new EdgeIterator<T>(O_EDGE);
+		return new EdgeIterator<T>(1);
 	}
 }
