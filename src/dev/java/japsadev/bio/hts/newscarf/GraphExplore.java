@@ -2,42 +2,31 @@ package japsadev.bio.hts.newscarf;
 
 import java.util.Iterator;
 import org.graphstream.graph.*;
-import org.graphstream.graph.implementations.*;
-
 public class GraphExplore {
     public static void main(String args[]) {
-        new GraphExplore();
+    	new GraphExplore();
+
     }
 
-    public GraphExplore() {
+    public GraphExplore(){
         //Graph graph = new SingleGraph("tutorial 1");
     	System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
     	
-    	Graph graph= new MultiGraph("tutorial 1");
+    	BidirectedGraph graph= new BidirectedGraph();
         graph.addAttribute("ui.quality");
         graph.addAttribute("ui.antialias");
         graph.addAttribute("ui.stylesheet", styleSheet);
-        graph.setAutoCreate(true);
-        graph.setStrict(false);
         graph.display();
+        
+        graph.loadFromFile("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/assembly_graph.fastg");
 
-        
-        Edge 	ab=graph.addEdge("AB", "A", "B"),
-        		ab2=graph.addEdge("AB2", "A", "B");      
-  
-        //ab.setAttribute("ui.style", "text-offset: -10;"); 
-        ab.addAttribute("ui.label", ab.getId());    
-        
-        ab2.addAttribute("ui.label", ab2.getId());
-        
-        graph.addEdge("BC", "B", "C");
-        graph.addEdge("CA", "C", "A");
-        graph.addEdge("AD", "A", "D");
-        graph.addEdge("DE", "D", "E");
-        graph.addEdge("DF", "D", "F");
-        graph.addEdge("EF", "E", "F");
-        
         System.out.println(graph.getEdgeCount());
+        BidirectedNode n128 = graph.getNode("128");
+        Iterator<BidirectedEdge> ite = n128.getEdgeIterator();
+        while(ite.hasNext()){
+        	System.out.println(ite.next());
+        }
+        
         for (Node node : graph) {
             node.addAttribute("ui.label", node.getId());
             node.setAttribute("ui.style", "text-offset: -10;"); 

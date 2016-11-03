@@ -138,7 +138,7 @@ public class BidirectedNode extends AbstractNode {
 			i = oStart;
 		while (edges[i] != edge)
 			i++;
-		if(i < degree) //remove iff edge is found
+		if(i < degree) //only remove iff edge is found
 			removeEdge(i);
 	}
 
@@ -192,7 +192,7 @@ public class BidirectedNode extends AbstractNode {
 		return (T) edges[oStart + i];
 	}
 
-	// I must override these stupid functions, let's just return random edge among 4 types
+	// FIXME: I must override these stupid functions, let's just return random edge among 4 types!!!
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Edge> T getEdgeBetween(Node node) {
