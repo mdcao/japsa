@@ -18,7 +18,7 @@ public class GraphExplore {
         graph.addAttribute("ui.stylesheet", styleSheet);
         graph.display();
         
-        graph.loadFromFile("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/assembly_graph.fastg");
+        graph.loadFromFile("/home/hoangnguyen/workspace/data/spades/EcK12S-careful/assembly_graph.fastg");
 
         System.out.println(graph.getEdgeCount());
         BidirectedNode n128 = graph.getNode("128");

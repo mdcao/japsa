@@ -1,5 +1,8 @@
 package japsadev.bio.hts.newscarf;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.graphstream.graph.implementations.AbstractEdge;
 import org.graphstream.graph.implementations.AbstractNode;
 
@@ -11,10 +14,43 @@ public class BidirectedEdge extends AbstractEdge{
 		this(source,dst,dir0,dir1);
 	}
 	protected BidirectedEdge(AbstractNode source, AbstractNode dst, boolean dir0, boolean dir1) {
-		super(createID(source,dst,dir0,dir1), source, dst, false);
-		// TODO Auto-generated constructor stub
-		this.dir0=dir0;
-		this.dir1=dir1;
+		this(createID(source,dst,dir0,dir1), source, dst);
+	}
+	
+	/* param id must have the form %d[o/i]%d[o/i]
+	 * the constructor will translate the id to the direction property 
+	 * of the bidirected edge
+	 */
+	protected BidirectedEdge(String id, AbstractNode source, AbstractNode dst){
+		super(id, source, dst, false);
+        String pattern = "\\b(\\d+)([oi])(\\d+)([oi])\\b";
+
+        // Create a Pattern object
+        Pattern r = Pattern.compile(pattern);
+
+        // Now create matcher object.
+        Matcher m = r.matcher(id);
+        String 	
+        		//srcID, dstID, 
+        		srcDir, dstDir;
+        if(m.find()){
+        	//srcID=m.group(1);
+        	srcDir=m.group(2);
+        	//dstID=m.group(3);
+        	dstDir=m.group(4);
+//        	if(srcID != source.getId() || dstID!= dst.getId()){
+//                	System.err.println("Conflict between ID and actual nodes' references!");
+//                	System.exit(1);
+//            }
+
+        	dir0=(srcDir=="o"?true:false);
+        	dir1=(dstDir=="o"?true:false);
+        } else{
+        	System.err.println("Illegal ID for a bidirected edge (id must have the form %d[o/i]%d[o/i])");
+        	System.exit(1);
+        }
+        
+
 	}
 	
 	public static String createID(AbstractNode source, AbstractNode dst, boolean dir0, boolean dir1){
@@ -25,6 +61,9 @@ public class BidirectedEdge extends AbstractEdge{
 		else
 			return String.format("%s%s", dstDes, srcDes);
 	}
+	
+	
+	
 	@Override
 	public String toString() {
 		return String.format("%s[%s%s%s%s]", getId(), source, (dir0?">":"<"), (dir1?"<":">"), target);

@@ -34,6 +34,7 @@ public class BidirectedGraph extends AbstractGraph{
 	protected int nodeCount;
 	protected int edgeCount;
 
+	private Method setIndex;
 	// *** Constructors ***
 	/**
 	 * Creates an empty graph.
@@ -69,10 +70,11 @@ public class BidirectedGraph extends AbstractGraph{
 
 		setEdgeFactory(new EdgeFactory<BidirectedEdge>() {
 			public BidirectedEdge newInstance(String id, Node src, Node dst, boolean directed) { //stupid??
-				return new BidirectedEdge(id, (AbstractNode)src, (AbstractNode)dst, true, true); //FIXME:cause trouble
+				return new BidirectedEdge(id, (AbstractNode)src, (AbstractNode)dst);
 			}
 		});
 		
+	
 		//setEdgeFactory(new BidirectedEdgeFactory());
 		
 		if (initialNodeCapacity < DEFAULT_NODE_CAPACITY)
@@ -87,6 +89,13 @@ public class BidirectedGraph extends AbstractGraph{
 		nodeArray = new AbstractNode[initialNodeCapacity];
 		edgeArray = new AbstractEdge[initialEdgeCapacity];
 		nodeCount = edgeCount = 0;
+		
+		try {
+			setIndex = AbstractElement.class.getDeclaredMethod("setIndex", int.class);
+			setIndex.setAccessible(true);
+		} catch (Exception  e) {
+			e.printStackTrace();
+		} 
 	}
 
 	/**
@@ -207,13 +216,9 @@ public class BidirectedGraph extends AbstractGraph{
 			edgeArray = tmp;
 		}
 		edgeArray[edgeCount] = edge;
-		Method setIndex;
 		try {
-			setIndex = this.getClass().getSuperclass().getSuperclass().getDeclaredMethod("setIndex",int.class);
-			setIndex.setAccessible(true);
 			setIndex.invoke(edge, edgeCount++);
-			//edge.setIndex(edgeCount++);
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException  e) {
+		} catch (Exception  e) {
 			e.printStackTrace();
 		} 
 
@@ -229,14 +234,9 @@ public class BidirectedGraph extends AbstractGraph{
 			nodeArray = tmp;
 		}
 		nodeArray[nodeCount] = node;
-		//node.setIndex(nodeCount++);
-		Method setIndex;
 		try {
-			setIndex = this.getClass().getSuperclass().getSuperclass().getDeclaredMethod("setIndex",int.class);
-			setIndex.setAccessible(true);
 			setIndex.invoke(node, nodeCount++);
-			//edge.setIndex(edgeCount++);
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException  e) {
+		} catch (Exception  e) {
 			e.printStackTrace();
 		} 
 	}
@@ -246,14 +246,9 @@ public class BidirectedGraph extends AbstractGraph{
 		edgeMap.remove(edge.getId());
 		int i = edge.getIndex();
 		edgeArray[i] = edgeArray[--edgeCount];
-		//edgeArray[i].setIndex(i);
-		Method setIndex;
 		try {
-			setIndex = this.getClass().getSuperclass().getSuperclass().getDeclaredMethod("setIndex",int.class);
-			setIndex.setAccessible(true);
 			setIndex.invoke(edgeArray[i], i);
-			//edge.setIndex(edgeCount++);
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException  e) {
+		} catch (Exception  e) {
 			e.printStackTrace();
 		} 
 		
@@ -265,14 +260,9 @@ public class BidirectedGraph extends AbstractGraph{
 		nodeMap.remove(node.getId());
 		int i = node.getIndex();
 		nodeArray[i] = nodeArray[--nodeCount];
-		//nodeArray[i].setIndex(i);
-		Method setIndex;
 		try {
-			setIndex = this.getClass().getSuperclass().getSuperclass().getDeclaredMethod("setIndex",int.class);
-			setIndex.setAccessible(true);
 			setIndex.invoke(nodeArray[i], i);
-			//edge.setIndex(edgeCount++);
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException  e) {
+		} catch (Exception  e) {
 			e.printStackTrace();
 		} 
 		nodeArray[nodeCount] = null;
