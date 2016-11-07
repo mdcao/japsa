@@ -17,7 +17,7 @@ import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 public class BidirectedGraph extends AdjacencyListGraph{
-    private int kmer;
+    static int kmer=127;
     static final int TOLERATE=500;
 
     // *** Constructors ***
@@ -156,10 +156,10 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		}
     }
 	
-    public int getKmerSize(){
-    	return this.kmer;
+    public static int getKmerSize(){
+    	return BidirectedGraph.kmer;
     }
-    public void setKmerSize(int kmer){
-    	this.kmer=kmer;
+    public static void setKmerSize(int kmer){
+    	BidirectedGraph.kmer=kmer;
     }
 }

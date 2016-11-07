@@ -1,6 +1,9 @@
 package japsadev.bio.hts.newscarf;
 
 import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.graphstream.graph.*;
 public class GraphExplore {
     public static void main(String args[]) {
@@ -33,6 +36,18 @@ public class GraphExplore {
         }
         
         //explore(graph.getNode("A"));
+    	
+//    	String pattern = "^\\[([0-9oi]*)\\]([oi])\\[([0-9oi]*)\\]([oi])$";
+//        // Create a Pattern object
+//        Pattern r = Pattern.compile(pattern);
+//        // Now create matcher object.
+//        String id="[3i56i324o67i]i[4o8i]o";
+//        Matcher m = r.matcher(id);
+//         	
+//        if(m.find()){
+//        	System.out.println(m.group(1)+"-"+m.group(2)+"-"+m.group(3)+"-"+m.group(4));
+//        } else
+//        	System.out.println("Fuck");
     }
 
     public void explore(Node source) {

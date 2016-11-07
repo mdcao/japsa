@@ -21,13 +21,14 @@ public class BidirectedEdge extends AbstractEdge{
 		this.dir1=dir1;
 	}
 	
-	/* param id must have the form %d[o/i]%d[o/i]
+	/* param id must have the form %s[o/i]%s[o/i]
 	 * the constructor will translate the id to the direction property 
 	 * of the bidirected edge
+	 * TODO: optimize this (avoid using pattern)
 	 */
 	protected BidirectedEdge(String id, AbstractNode source, AbstractNode dst){
 		super(id, source, dst, false);
-        String pattern = "\\b(\\d+)([oi])(\\d+)([oi])\\b";
+    	String pattern = "^\\[([0-9oi]*)\\]([oi])\\[([0-9oi]*)\\]([oi])$";
         // Create a Pattern object
         Pattern r = Pattern.compile(pattern);
         // Now create matcher object.
@@ -41,15 +42,15 @@ public class BidirectedEdge extends AbstractEdge{
         	dir0=(srcDir=="o"?true:false);
         	dir1=(dstDir=="o"?true:false);
         } else{
-        	System.err.println("Illegal ID for a bidirected edge (id must have the form %d[o/i]%d[o/i])");
+        	System.err.println("Illegal ID for a bidirected edge (id must recursively have the form id[o/i]id[o/i])");
         	System.exit(1);
         }
 
 	}
 		
 	public static String createID(AbstractNode source, AbstractNode dst, boolean dir0, boolean dir1){
-		String 	srcDes = source.getId()+(dir0 ? "o":"i"),
-				dstDes = dst.getId()+(dir1 ? "o":"i");
+		String 	srcDes = "["+source.getId()+"]"+(dir0 ? "o":"i"),
+				dstDes = "["+dst.getId()+"]"+(dir1 ? "o":"i");
 		if(srcDes.compareTo(dstDes)<0)
 			return String.format("%s%s", srcDes, dstDes);
 		else
@@ -60,7 +61,7 @@ public class BidirectedEdge extends AbstractEdge{
 	
 	@Override
 	public String toString() {
-		return String.format("%s[%s%s%s%s]", getId(), source, (dir0?">":"<"), (dir1?"<":">"), target);
+		return String.format("%s:%s-%s-%s-%s", getId(), source, (dir0?">":"<"), (dir1?"<":">"), target);
 	}
 	
 	public boolean getDir0(){
@@ -69,5 +70,8 @@ public class BidirectedEdge extends AbstractEdge{
 	public boolean getDir1(){
 		return dir1;
 	}
-	
+	public boolean getDir(AbstractNode node){
+		assert node==getSourceNode()||node==getTargetNode():"Node does not belong to this edge!";
+		return node==getSourceNode()?getDir0():getDir1();
+	}
 }
