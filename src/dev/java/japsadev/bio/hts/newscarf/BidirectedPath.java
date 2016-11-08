@@ -49,13 +49,17 @@ public class BidirectedPath extends Path{
 		BidirectedNode curNode = (BidirectedNode) getRoot();
 		if(getEdgeCount()<1)
 			return curNode.getId()+"+";
-		String retval="", curDir="";
+
+		String 	retval=curNode.getId(),
+				curDir=((BidirectedEdge) getEdgePath().get(0)).getDir(curNode)?"+":"-";
+		retval+=curDir;
 		for(Edge e:getEdgePath()){
-			retval+=curNode.getId();
-			curDir=((BidirectedEdge) e).getDir(curNode)?"+":"-";
-			retval+=curDir;
 			curNode=e.getOpposite(curNode);
+			retval+=curNode.getId();
+			curDir=((BidirectedEdge) e).getDir(curNode)?"-":"+"; //note that curNode is target node
+			retval+=curDir;
 		}
+
 		return retval.trim();
 	}
 	
@@ -67,16 +71,19 @@ public class BidirectedPath extends Path{
 				return curNode.getAttribute("seq");
 			
 			SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024,  this.toString());
+			Sequence curSeq = curNode.getAttribute("seq");
+			boolean curDir=((BidirectedEdge) getEdgePath().get(0)).getDir(curNode);
+			curSeq = curDir?curSeq:Alphabet.DNA.complement(curSeq);
 
-			boolean curDir=true;
+			seq.append(curSeq.subSequence(0, curSeq.length()-BidirectedGraph.getKmerSize()));
 			for(Edge e:getEdgePath()){
-				Sequence curSeq= curNode.getAttribute("seq");
-				curDir=((BidirectedEdge) e).getDir(curNode);
+				curNode=e.getOpposite(curNode);
+				curSeq= curNode.getAttribute("seq");
+				curDir=!((BidirectedEdge) e).getDir(curNode);
 				curSeq = curDir?curSeq:Alphabet.DNA.complement(curSeq);
 
 				seq.append(curSeq.subSequence(0, curSeq.length()-(curNode==peekNode()?
 						0:BidirectedGraph.getKmerSize())));
-				curNode=e.getOpposite(curNode);
 				
 			}
 		 return seq.toSequence();

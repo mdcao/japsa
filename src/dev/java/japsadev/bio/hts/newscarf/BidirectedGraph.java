@@ -3,6 +3,7 @@ package japsadev.bio.hts.newscarf;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,6 +17,7 @@ import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
+
 public class BidirectedGraph extends AdjacencyListGraph{
     static int kmer=127;
     static final int TOLERATE=500;
@@ -162,4 +164,63 @@ public class BidirectedGraph extends AdjacencyListGraph{
     public static void setKmerSize(int kmer){
     	BidirectedGraph.kmer=kmer;
     }
+    
+    /**
+     * 
+     * @param p Path to be grouped as a virtually vertex
+     */
+    public void reduce(BidirectedPath p){
+    	//add the new composite Node to the graph
+    	AbstractNode comp = addNode(p.getID());
+    	comp.addAttribute("path", p);
+    	comp.addAttribute("seq", p.spelling());
+    	//store unique nodes on p for removing
+    	ArrayList<String> tobeRemoved=new ArrayList<String>();
+    	for(Node n:p.getEachNode()){
+    		if(n.getDegree()<=2)
+    			tobeRemoved.add(n.getId());
+    	}
+    	
+    	BidirectedNode 	start = (BidirectedNode) p.getRoot(),
+    					end = (BidirectedNode) p.peekNode();
+    	boolean startDir = ((BidirectedEdge) p.getEdgePath().get(0)).getDir(start), 
+    			endDir = ((BidirectedEdge) p.peekEdge()).getDir(end);
+    	//set neighbors of the composite Node
+    	Iterator<Edge> startEdges = startDir?start.getEnteringEdgeIterator():start.getLeavingEdgeIterator(),
+    					endEdges = endDir?end.getEnteringEdgeIterator():end.getLeavingEdgeIterator();
+    	while(startEdges.hasNext()){
+    		BidirectedEdge e = (BidirectedEdge) startEdges.next();
+    		BidirectedNode opNode = e.getOpposite(start);
+    		boolean opDir = e.getDir(opNode);
+    		addEdge(BidirectedEdge.createID(start, opNode, startDir, opDir), comp, opNode);
+    	}
+    	
+    	while(endEdges.hasNext()){
+    		BidirectedEdge e = (BidirectedEdge) endEdges.next();
+    		BidirectedNode opNode = e.getOpposite(end);
+    		boolean opDir = e.getDir(opNode);
+    		addEdge(BidirectedEdge.createID(end, opNode, startDir, opDir), comp, opNode);
+    	}
+
+    	for(String lab:tobeRemoved)
+    		removeEdge(lab);
+    		
+    	//TODO: remove bubbles...
+    }
+    /**
+     * 
+     * @param v Node to be reverted (1-level reverting)
+     */
+    public void revert(AbstractNode v){
+    	//TODO: revert to initial status by extracting a complex vertex into its initial components
+    	Path p=v.getAttribute("path");
+    	if(p==null) return;
+    	
+    	//add back all neighbor edges of this composite vertex
+    	
+    	//add back all edges from the path
+    	
+    	//finally remove the composite node
+    	removeNode(v);
+    	}
 }
