@@ -361,16 +361,28 @@ public class NanoporeReaderWindow implements Runnable{
 
 
 		final JLabel lblMinReadLength = new JLabel("Min read length");
-		lblMinReadLength.setBounds(8, 83, 154, 15);
+		lblMinReadLength.setBounds(7, 83, 154, 15);
 		optionPanel.add(lblMinReadLength);
 
 		final JTextField txtMinLenth = new JTextField();
 		txtMinLenth.setText(reader.minLength+"");
-		txtMinLenth.setBounds(137, 77, 71, 21);
+		txtMinLenth.setBounds(137, 77, 80, 21);
 		optionPanel.add(txtMinLenth);
 
+		
+
+		//final JLabel lblGroup = new JLabel("Group");
+		//lblGroup.setBounds(7, 113, 154, 15);
+		//optionPanel.add(lblGroup);
+
+		//final JTextField txtGroup = new JTextField();
+		//txtGroup.setText(reader.group);
+		//txtGroup.setBounds(137, 107, 150, 21);
+		//optionPanel.add(txtGroup);
+			
+
 		final JPanel lPanel = new JPanel();
-		lPanel.setBounds(0, 521, 320, 55);
+		lPanel.setBounds(0, 541, 320, 55);
 		controlPanel.add(lPanel);
 		lPanel.setLayout(null);		
 
@@ -526,7 +538,7 @@ public class NanoporeReaderWindow implements Runnable{
 		/////////////////////////////////////////////////////////////
 		//Histogram
 		histoLengthDataSet=new DynamicHistogram();
-		histoLengthDataSet.prepareSeries("Read Length", 200, 0, 50000);
+		histoLengthDataSet.prepareSeries("Read Length", 500, 0, 40000);
 		//histoDataset.prepareSeries("2D", 50, 0, 50000);
 		//histoDataset.prepareSeries("template", 50, 0, 50000);
 		//histoDataset.prepareSeries("complement", 50, 0, 50000);		
@@ -656,6 +668,7 @@ public class NanoporeReaderWindow implements Runnable{
 				chckReads.setEnabled(false);
 				chckbxAddAUnicqu.setEnabled(false);
 				txtMinLenth.setEnabled(false);
+//				txtGroup.setEnabled(false);
 
 				btnStart.setEnabled(false);
 				btnStop.setEnabled(true);

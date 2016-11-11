@@ -173,4 +173,6 @@ install: pre-install
 uninstall:
 	@@java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsadev.util.deploy.DevDeploy --mode uninstall --libs $(subst $(SPACE),:, $(EXT_LIBS)) ${O_INS_DIR} && echo "Japsa uninstalled!"
 
+galaxy: jar
+	@@java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsadev.util.deploy.DevDeploy --mode galaxy && echo "Galaxy wrappers generated!"
 

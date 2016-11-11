@@ -112,7 +112,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.6-10a";
+	public static String VERSION = "1.6-11a";
 	public static final String FIELD_SEP = "\t";
 
 	public static boolean DEBUG = true;
@@ -518,6 +518,13 @@ public class Deploy {
 				}
 				System.out.println(" " + file.getCanonicalPath() + " created");
 				outJsaMain.printf(echoStr + "  %-23s  %s\n", annotation.scriptName(),	annotation.scriptDesc());
+
+				//CommandLine cmdTool = (CommandLine) obj;
+				//if (cmdTool.galaxy()){
+				//	String wrapper = cmdTool.generateGalaxyWrapper();
+				//	System.out.println(wrapper);
+				//}				
+
 			}//if
 			else{
 				System.err.println("Cannot generate script for " + obj + "  " + obj.getClass());
@@ -538,9 +545,60 @@ public class Deploy {
 	}
 
 
+	/**
+	 * 
+	 * @param masterScript
+	 * @throws IOException
+	 */
+	public static void setUpGalaxyScripts(ArrayList<Object> toolList) 
+			throws IOException{		
+		System.out.println("Set galaxy wrapper :");
+		PrintStream masterFile = new PrintStream(new File("galaxy"  + File.separator + "japsa.xml"));
+		masterFile.println("  <section id=\"japsa_tools\" name=\"Japsa Tools\">");
+		
+ 		for (Object obj : toolList) {
+			//A string separated
+			if ((obj instanceof String)){
+				continue;
+			}			
+			if (obj instanceof CommandLine){
+
+				CommandLine cmdTool = (CommandLine) obj;
+				if (cmdTool.galaxy()){
+
+					Class<?> tool = obj.getClass();	
+					Deployable annotation = (Deployable) tool.getAnnotation(Deployable.class);
+
+					String fileName = "japsa" + File.separator + annotation.scriptName().replace(".", "_") + ".xml";
+					File file = new File("galaxy"  + File.separator  + fileName);
+					String wrapper = cmdTool.generateGalaxyWrapper();
+
+					PrintStream ps = new PrintStream(file);
+					ps.println(wrapper);
+					ps.close();
+					
+					masterFile.println("    <tool file=\"" + fileName + "\" />");
+					
+					masterFile.println("  </section>");
+					
+
+					System.out.println(" " + file.getCanonicalPath() + " created");
+
+				}			
+			}
+		}		
+		masterFile.println("  </section>");
+		masterFile.close();
+		
+		System.out.println("Done galaxy \n");
+	}
+
+
+
+
 	public static boolean uninstallLibraries() throws IOException{		
 		guessJapsaPath();
-		
+
 		if (japsaPath.startsWith("~/")) {
 			japsaPath = System.getProperty("user.home") + japsaPath.substring(1);
 		}
@@ -578,10 +636,10 @@ public class Deploy {
 			if (!(obj instanceof CommandLine)){			
 				continue;
 			}				
-			
+
 			Class<?> tool = obj.getClass();
 			Deployable annotation = tool.getAnnotation(Deployable.class);
-			
+
 			File file = new File(japsaPath + File.separator +  "bin" + File.separator + annotation.scriptName());
 			System.out.println("rm " + file.getCanonicalPath());				
 			file.delete();
@@ -640,7 +698,10 @@ public class Deploy {
 			//japsaPath must have been set
 			if (uninstallLibraries())
 				uninstallScripts(tools, "jsa");			
-		} else {
+		}else if ("galaxy".equals(mode)) {		
+			setUpGalaxyScripts(tools);			
+		}
+		else {
 			System.err.println("Mode " + mode + " not recognised");
 			System.err.println(cmdLine.errors() + "\n" + "Usage: " + cmdLine.usage() + "\nOptions:\n" + cmdLine.options());
 			System.exit(-1);

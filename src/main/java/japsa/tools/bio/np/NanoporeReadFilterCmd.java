@@ -50,9 +50,9 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(
-	scriptName = "jsa.np.filter", 
-	scriptDesc = "Filter nanopore reads data from fastq file",
-	seeAlso = "jsa.np.npreader, jsa.util.streamServer, jsa.util.streamClient")
+		scriptName = "jsa.np.filter", 
+		scriptDesc = "Filter nanopore reads data from fastq file",
+		seeAlso = "jsa.np.npreader, jsa.util.streamServer, jsa.util.streamClient")
 public class NanoporeReadFilterCmd extends CommandLine{	
 	public NanoporeReadFilterCmd(){
 		super();
@@ -60,19 +60,61 @@ public class NanoporeReadFilterCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
-		addStdInputFile();
-		addStdOutputFile();
-		
-		addInt("lenMin", 0, "Minimum sequence length");
+		CommandLine.Option inputOpt =
+				addString("input", null, "Name of the input file, - for standard input", true);
+
+		CommandLine.Option outputOpt =
+				addString("output", null, "Name of the output file, - for standard output", true);
+
+		CommandLine.Option lenMinOpt =
+				addInt("lenMin", 0, "Minimum sequence length");
+
+		//CommandLine.Option lenMaxOpt =
 		addInt("lenMax", Integer.MAX_VALUE, "Minimum sequence length");
-		addDouble("qualMin", 0, "Minimum average quality");		
-		addDouble("qualMax", 1000, "Maximum average quality");
-		addBoolean("excl2D", false, "Exclude 2D reads");
-		addBoolean("exclTemp", false, "Exclude template reads");
-		addBoolean("exclComp", false, "Exclude complement reads");
+
+		CommandLine.Option qualMinOpt =
+				addInt("qualMin", 0, "Minimum average quality");
+
+		//CommandLine.Option qualMaxOpt =
+		addInt("qualMax", 1000, "Maximum average quality");
+
+		CommandLine.Option groupOpt =
+				addString("group", "", "Group need to be extracted, leave blank for selecting all groups");
+
+		CommandLine.Option excl2DOpt =
+				addBoolean("excl2D", false, "Exclude 2D reads");
+
+		CommandLine.Option exclTempOpt =
+				addBoolean("exclTemp", false, "Exclude template reads");
+
+		CommandLine.Option exclCompOpt =
+				addBoolean("exclComp", false, "Exclude complement reads");
+
+		//CommandLine.Option formatOpt =
 		addString("format", "fastq", "Format of the output file");
 
 		addStdHelp();
+
+
+		inputOpt.setGalaxySetting(new GalaxySetting("data", "fastqsanger",false));
+		groupOpt.setGalaxySetting(new GalaxySetting("text", null, false));
+
+		lenMinOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
+		//lenMaxOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
+		qualMinOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
+		//qualMaxOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
+
+		excl2DOpt.setGalaxySetting(new GalaxySetting("boolean", null,false));
+		exclTempOpt.setGalaxySetting(new GalaxySetting("boolean", null,false));
+		exclCompOpt.setGalaxySetting(new GalaxySetting("boolean", null,false));
+
+
+		GalaxySetting outputGalaxy = new GalaxySetting("data", "fastqsanger",true);
+		//outputGalaxy.setLabel
+		outputOpt.setGalaxySetting(outputGalaxy);
+
+
+		setGalaxy(annotation.scriptName());
 	} 
 
 	public static void main(String[] args) throws IOException {
@@ -83,13 +125,14 @@ public class NanoporeReadFilterCmd extends CommandLine{
 		String input = cmdLine.getStringVal("input");
 		int lenMin  = cmdLine.getIntVal("lenMin");
 		int lenMax  = cmdLine.getIntVal("lenMax");
-		double qualMin  = cmdLine.getDoubleVal("qualMin");
-		double qualMax  = cmdLine.getDoubleVal("qualMax");
+		int qualMin  = cmdLine.getIntVal("qualMin");
+		int qualMax  = cmdLine.getIntVal("qualMax");
 
 		boolean exclude2D =  cmdLine.getBooleanVal("excl2D");
 		boolean excludeTemplate =  cmdLine.getBooleanVal("exclTemp");
 		boolean excludeComplement =  cmdLine.getBooleanVal("exclComp");
 
+		String group = cmdLine.getStringVal("group").trim();
 
 		String format = cmdLine.getStringVal("format");
 
@@ -98,7 +141,7 @@ public class NanoporeReadFilterCmd extends CommandLine{
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
 
 		FastqReader reader = "-".equals(input)? (new FastqReader(System.in) ) 
-			: (new FastqReader(input));
+				: (new FastqReader(input));
 		FastqSequence seq;
 
 
@@ -138,6 +181,19 @@ public class NanoporeReadFilterCmd extends CommandLine{
 			if (exclude2D && seq.getName().contains("twodim"))
 				continue;
 
+			if (group.length() > 0){
+				String [] toks = seq.getName().split(" ");
+				boolean match = false;
+				for (String tok:toks){
+					if (tok.startsWith("group=")&&tok.substring(6).equals(group)){
+						match = true;
+						break;
+					}
+				}
+				if (!match)
+					continue;//while
+			}
+
 			//done all the fitlering
 			if (fastaOutput)
 				seq.writeFasta(sos);
@@ -162,4 +218,4 @@ quality. Examples of its usage can be found on jsa.np.npreader_.
 <usage>
 
 
-*RST*/
+ *RST*/

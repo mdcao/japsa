@@ -63,19 +63,49 @@ import java.util.List;
 public class CountReadInRegionCmd extends CommandLine{	
 	public CountReadInRegionCmd(){
 		super();
-		Deployable annotation = getClass().getAnnotation(Deployable.class);		
-		setUsage(annotation.scriptName() + " [options] <s1.bam> <s2.bam> <s3.bam> ...");
-		setDesc(annotation.scriptDesc());	
-		addString("bedFile", null, "Name of the regions file in bed format",true);
-		addString("output", "-", "Name of output file, - for from standard out.");
-		addInt("flanking", 0, "Size of the flanking regions, effectively expand the region by flanking");
-		addInt("qual", 0, "Minimum quality");		
+		Deployable annotation = getClass().getAnnotation(Deployable.class);
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+
+
+		CommandLine.Option bamFileOpt = 
+				addString("bamFile", null, "Name of the bam file",true);
+		bamFileOpt.setGalaxySetting(new GalaxySetting("data", "bam",false));
+		
+		//addExtraGalaxyCmd("ln -s $bamFile bamFile.bam &amp;&amp; ln -s $bamFile.metadata.bam_index bamFile.bai &amp;&amp;");
+
+		CommandLine.Option bedFileOpt = 
+				addString("bedFile", null, "Name of the regions file in bed format",true);		
+		bedFileOpt.setGalaxySetting(new GalaxySetting("data", "bed",false));
+
+				
+		CommandLine.Option outputOpt =
+				addString("output", "-", "Name of output file, - for from standard out.");
+		
+		GalaxySetting galaxyOutput = new GalaxySetting("data", "tabular",true); 
+		galaxyOutput.setLabel("countRead.txt");
+		outputOpt.setGalaxySetting(galaxyOutput);
+
+		addInt("flanking", 0, "Size of the flanking regions, effectively expand the region by flanking")
+		.setGalaxySetting(new GalaxySetting("integer", null,false));
+
+		addInt("qual", 0, "Minimum quality")
+		.setGalaxySetting(new GalaxySetting("integer", null,false));		
+
 		addInt("filterBits", 0, "Filter reads based on flag. Common values:\n 0    no filter\n 256  exclude secondary alignment \n 1024 exclude PCR/optical duplicates\n 2048 exclude supplementary alignments");
-		addBoolean("contained", false, "Count reads contained in the region");
-		addBoolean("overlap", false, "Count number of read overlap with the region");
-		addBoolean("span", false, "Count reads span the region");
+
+		addBoolean("contained", false, "Count reads contained in the region")
+		.setGalaxySetting(new GalaxySetting("boolean", null,false));
+
+		addBoolean("overlap", false, "Count number of read overlap with the region")
+		.setGalaxySetting(new GalaxySetting("boolean", null,false));
+
+		addBoolean("span", false, "Count reads span the region")
+		.setGalaxySetting(new GalaxySetting("boolean", null,false));
 
 		addStdHelp();		
+
+		setGalaxy(annotation.scriptName());
 	}  
 
 	public static void main(String[] args) throws IOException {
@@ -89,7 +119,8 @@ public class CountReadInRegionCmd extends CommandLine{
 			flanking = 0;
 
 		int qual = cmdLine.getIntVal("qual");
-		int filter = cmdLine.getIntVal("filterBits");		
+		int filter = cmdLine.getIntVal("filterBits");
+
 		boolean contained = cmdLine.getBooleanVal("contained");		
 		boolean overlap = cmdLine.getBooleanVal("overlap");
 		boolean span = cmdLine.getBooleanVal("span");
@@ -109,10 +140,19 @@ public class CountReadInRegionCmd extends CommandLine{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SequenceOutputStream os = SequenceOutputStream.makeOutputStream(output);
 
-		char sep = '\t';
+		String sep = "\t";
 
 		int notCount = 0;
+		//os.print("#CMD:" + cmdLine.fullCmd() + '\n');
 		os.print("#H:chrom\tID\tstart\tend");
+
+		/******************************************************************
+		 * This is to be removed later, will get back to list of bam files
+		 */
+
+		args = new String[1];
+		args[0] = cmdLine.getStringVal("bamFile");		
+		/******************  End of short cut  ***********************/
 
 		SamReader [] readers = new SamReader[args.length];
 		for (int i = 0; i < readers.length; i++){
@@ -132,12 +172,13 @@ public class CountReadInRegionCmd extends CommandLine{
 			if (sampleID == null){
 				sampleID = file.getName().replace(".sam", "").replace(".bam","");
 			}
-			if (contained)
-				os.print(sep + sampleID + "_contained");
-			
+
 			if (overlap)
 				os.print(sep + sampleID + "_overlap");
-			
+
+			if (contained)
+				os.print(sep + sampleID + "_contained");			
+
 			if (span)
 				os.print(sep + sampleID + "_span");
 		}
@@ -158,7 +199,7 @@ public class CountReadInRegionCmd extends CommandLine{
 				SAMRecordIterator iter = readers[i].query(str.getParent(), start, end, false);
 
 				int countOverlap = 0, countContained = 0, countSpan = 0;
-				
+
 				while (iter.hasNext()){
 					SAMRecord rec = iter.next();
 
@@ -172,31 +213,30 @@ public class CountReadInRegionCmd extends CommandLine{
 						continue;
 					}					
 					countOverlap ++;
-					
+
 					int alignmentStart = rec.getAlignmentStart();
 					int alignmentEnd = rec.getAlignmentEnd();
-					
+
 					if (alignmentStart >= start && alignmentEnd <= end)
 						countContained ++;
-					
+
 					if (alignmentStart < start && alignmentEnd > end)
 						countSpan ++;					
-					
+
 				}//while			
 				iter.close();			
-				
-				if (contained)
-					os.print(sep + countContained);
-				
+
 				if (overlap)
 					os.print(sep + countOverlap);
-				
+
+				if (contained)
+					os.print(sep + countContained);
+
 				if (span)
 					os.print(sep + countSpan);
-				
-				
-				os.print(sep);
-				os.print(countOverlap);
+
+				//os.print(sep);
+				//os.print(countOverlap);
 			}//for
 			os.print("\n");
 		}//for
@@ -206,16 +246,15 @@ public class CountReadInRegionCmd extends CommandLine{
 		os.close();
 		Logging.info("Ignore " + notCount + " reads");
 	}
-
 }
 /*RST*
 ------------------------------------------------
-*jsa.hts.countReads*: Count reads from bam files 
+ *jsa.hts.countReads*: Count reads from bam files 
 ------------------------------------------------
 
 
 <usage> 
 
-*RST*/
+ *RST*/
 
 

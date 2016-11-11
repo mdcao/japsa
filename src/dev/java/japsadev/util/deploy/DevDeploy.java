@@ -89,7 +89,7 @@ public class DevDeploy {
 	private static ArrayList<Object> tools = new ArrayList<Object>();
 	static {
 		//tools.add(new SampleCmd());
-		
+
 		tools.add(new DnaGraphToolCmd());
 		tools.add(new FixRastGFFCmd());
 		tools.add(new CaptureVNTR());		
@@ -99,22 +99,20 @@ public class DevDeploy {
 		tools.add(new GetFlankBlast());
 		tools.add(new PanCoreGeneCmd());
 		tools.add(new CombineProdigalCmd());
-		
+
 		tools.add(new String("Working commands"));
 		tools.add(new TreeHetLinageCmd());		
-		
+
 		tools.add(new FilterPEConcordance());		
-		
+
 		tools.add(VNTRLongReadsHmmer.class);
 		tools.add(VNTRLongReads.class);			
 
-		
 		tools.add(new RepeatPrimerCmd());		
-		
+
 		tools.add(new KmerAnalysisCmd());		
 		tools.add(new ProfileDPCmd());	
-		
-		
+
 		tools.add(new PlasmaAnalysisCmd());
 		tools.add(new MethylationAnalysisCmd());
 		tools.add(new MethylationAnalysis2Cmd());
@@ -122,7 +120,7 @@ public class DevDeploy {
 		tools.add(new RemoveNsCmd());
 		tools.add(new XMDistance2Cmd());
 		tools.add(new BuildMLSTTreeCmd());
-		
+
 		tools.add(new BuildXMTreeCmd());
 		tools.add(new FixNamesTreeCmd());
 		tools.add(new VNTRDepthAnalyserCmd());
@@ -137,8 +135,8 @@ public class DevDeploy {
 		tools.add(new ConvertProbeCmd());
 		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new VNTRSelectCmd());
-		
-		
+
+
 		//new 
 		//tools.add(new VNTRSelectCmd());
 		//
@@ -198,7 +196,13 @@ public class DevDeploy {
 				Deploy.uninstallScripts(Deploy.tools,"jsa");
 				Deploy.uninstallScripts(tools, "jsa.dev");
 			}
-		} else {
+		}
+		else if ("galaxy".equals(mode)) {
+			ArrayList<Object> fullList = (ArrayList<Object>)Deploy.tools.clone();
+			fullList.addAll(tools);			
+			Deploy.setUpGalaxyScripts(fullList);			
+		}
+		else {
 			System.err.println("Mode " + mode + " not recognised");
 			System.err.println(cmdLine.usageString());
 			System.exit(-1);

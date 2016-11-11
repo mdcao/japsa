@@ -36,6 +36,8 @@ package japsa.util;
 
 import java.util.ArrayList;
 
+import japsa.util.deploy.Deploy;
+
 /**
  * An implementation of commandLine utilities. This class was written based
  * heavily on code from David Powell
@@ -44,9 +46,8 @@ import java.util.ArrayList;
  */
 
 public class CommandLine {
-
 	/**
-	 * String describe the usage of the program (progname -i input -o output f1 f2 ...)
+	 * String describe the usage of the program (program -i input -o output f1 f2 ...)
 	 */
 	private String usage = "";
 	/**
@@ -200,40 +201,42 @@ public class CommandLine {
 		return res.toString();
 	}
 
-	private void addOption(String opt, char type, Object def, String help, boolean req) {
-		options.add(new Option(opt, type, def, help, req));
+	private Option addOption(String opt, char type, Object def, String help, boolean req) {
+		Option option = new Option(opt, type, def, help, req); 
+		options.add(option);
+		return option;
 	}
 
-	public void addBoolean(String opt, boolean def, String help, boolean req) {
-		addOption(opt, 'b', new Boolean(def), help, req);
+	public Option addBoolean(String opt, boolean def, String help, boolean req) {
+		return addOption(opt, 'b', new Boolean(def), help, req);
 	}
 
-	public void addInt(String opt, int def, String help, boolean req) {
-		addOption(opt, 'i', new Integer(def), help, req);
+	public Option addInt(String opt, int def, String help, boolean req) {
+		return addOption(opt, 'i', new Integer(def), help, req);
 	}
 
-	public void addDouble(String opt, double def, String help, boolean req) {
-		addOption(opt, 'f', new Double(def), help, req);
+	public Option addDouble(String opt, double def, String help, boolean req) {
+		return addOption(opt, 'f', new Double(def), help, req);
 	}
 
-	public void addString(String opt, String def, String help, boolean req) {
-		addOption(opt, 's', def, help, req);
+	public Option addString(String opt, String def, String help, boolean req) {
+		return addOption(opt, 's', def, help, req);
 	}	
 
-	public void addBoolean(String opt, boolean def, String help) {
-		addOption(opt, 'b', new Boolean(def), help, false);
+	public Option addBoolean(String opt, boolean def, String help) {
+		return addOption(opt, 'b', new Boolean(def), help, false);
 	}
 
-	public void addInt(String opt, int def, String help) {
-		addOption(opt, 'i', new Integer(def), help, false);
+	public Option addInt(String opt, int def, String help) {
+		return addOption(opt, 'i', new Integer(def), help, false);
 	}
 
-	public void addDouble(String opt, double def, String help) {
-		addOption(opt, 'f', new Double(def), help, false);
+	public Option addDouble(String opt, double def, String help) {
+		return addOption(opt, 'f', new Double(def), help, false);
 	}
 
-	public void addString(String opt, String def, String help) {
-		addOption(opt, 's', def, help, false);
+	public Option addString(String opt, String def, String help) {
+		return addOption(opt, 's', def, help, false);
 	}
 
 	public boolean optionSet(String opt) {
@@ -403,7 +406,7 @@ public class CommandLine {
 		for (Option option:options){
 			ret = ret + String.format("%20s = ",option.optName) + ((option.value == null)?"(null)":option.value) + "\n";			
 		}		
-		
+
 		return ret;
 	}
 	public String[] parseLine(String[] args) {
@@ -537,6 +540,190 @@ public class CommandLine {
 		addBoolean("help", false, "Display this usage and exit");
 	}
 
+	boolean galaxy = false;
+	String cmd = null;	
+	
+	public void setGalaxy(String cmd){
+		galaxy = true;
+		this.cmd = cmd;
+	}
+
+	public boolean galaxy(){
+		return galaxy;
+	}
+	
+	
+
+	public String generateGalaxyWrapper(){
+
+		String  inputs = " <inputs>\n";
+		String outputs = " <outputs>\n";
+
+		String wrapper =
+				"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +		      
+						"<tool id=\"" + cmd.replace("." , "_") +"\" name=\"" + cmd + "\" version=\"" + Deploy.VERSION + "\">\n" +
+						" <description>" + desc + "</description>\n" +
+						" <stdio>\n" +
+						"  <exit_code range =\"1:\" />\n" +
+						"  <exit_code range =\":-1\" />\n" +
+						" </stdio>\n";
+
+		wrapper = wrapper +
+				" <command>\n"  + cmd;	
+
+		for (Option option:options){
+			GalaxySetting galaxySetting = option.galaxySetting;
+			if (galaxySetting != null){
+				wrapper += " --" + option.optName + " $" + option.optName;
+				String params = galaxySetting.isOutput?
+						"  <data name=\""+ option.optName + "\""
+						:
+							"  <param name=\""+ option.optName + "\"";
+				if (galaxySetting.label != null){
+					params +=  " label=\"" + galaxySetting.label + "\"";
+				}else
+					params +=  " label=\"" + option.optHelp + "\"";
+
+				if (galaxySetting.format !=null){
+					params += " format=\"" + galaxySetting.format + "\"";					
+				}				
+
+				if (galaxySetting.help != null){
+					params +=  " help=\"" + galaxySetting.help + "\"";
+				}
+
+				if (!galaxySetting.isOutput){
+					if (option.optType == 'b'){
+						params += " type=\"boolean\" checked=\"" + option.defaultValue + "\" truevalue=\"true\" falsevalue=\"false\"";	
+					}else if (option.optType == 'i'){
+						params += " type=\"integer\" value=\"" + option.defaultValue +"\"";	
+					}				
+					else if (galaxySetting.type != null){
+						params += " type=\""+ galaxySetting.type  + "\"";
+					}
+				}
+
+				params += " />\n";
+
+
+				if (galaxySetting.isOutput){					
+					outputs = outputs + params;						 
+
+				}else{
+					inputs = inputs + params;
+				}
+			}
+		}
+		wrapper = wrapper + " </command>\n";
+		wrapper = wrapper + inputs + " </inputs>\n" + outputs + " </outputs>\n";
+		wrapper = wrapper + 
+				"  <help>\n" +
+				"**What it does**\n" +
+				desc + "\n" +
+				"  </help>\n";
+		wrapper = wrapper + 
+				"</tool>";
+
+		/************************************************************************		
+
+
+
+        <inputs>
+
+                <param name="title_col" type="data_column" data_ref="input" multiple="True" numerical="False" label="Title column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns"/>
+                <param name="seq_col" type="data_column" data_ref="input" numerical="False" label="Sequence column" />
+        </inputs>
+        <outputs>
+                <data name="output" format="fasta"/>
+        </outputs>
+        <tests>
+                <test>
+                        <param name="input" value="solexa.tabular" />
+                        <param name="title_col" value="1,2,3,4" />
+                        <param name="seq_col" value="5" />
+                        <output name="output" file="tabular_to_fasta_out1.fasta" />
+                </test>
+        </tests>
+        <help>
+
+		 **What it does**
+
+Converts tab delimited data into FASTA formatted sequences.
+
+-----------
+
+		 **Example**
+
+Suppose this is a sequence file produced by Illumina (Solexa) sequencer::
+
+        5       300     902     419     GACTCATGATTTCTTACCTATTAGTGGTTGAACATC
+        5       300     880     431     GTGATATGTATGTTGACGGCCATAAGGCTGCTTCTT
+
+Selecting **c3** and **c4** as the **Title column(s)** and **c5** as the **Sequence column** will result in::
+
+        &gt;902_419
+        GACTCATGATTTCTTACCTATTAGTGGTTGAACATC
+        &gt;880_431
+        GTGATATGTATGTTGACGGCCATAAGGCTGCTTCTT
+
+        </help>
+</tool>
+
+		/************************************************************************/
+
+
+		return wrapper;
+	}
+
+
+	/**
+	 * Representing option for galaxy
+	 * 
+	 * @author minhduc
+	 *
+	 */
+	public static class GalaxySetting{
+		//For use in galaxy wraper:		
+		String  format = null;//bam, text, etc
+		boolean isOutput = false;
+		String  type = null;
+		String  label = null;
+		String  help = null;
+
+		public GalaxySetting(String type, String format,  boolean isOutput){
+			this.format = format;
+			this.type = type;
+			this.isOutput = isOutput;
+		}
+
+
+		public GalaxySetting(String type, String format){
+			this (type,format,false);
+		}
+
+		/**
+		 * @return the galaxyFormat
+		 */
+		public String getGalaxyFormat() {
+			return format;
+		}
+		/**
+		 * @param galaxyFormat the galaxyFormat to set
+		 */
+		public void setGalaxyFormat(String format) {
+			this.format = format;
+		}	
+
+		public void setLabel(String label){
+			this.label = label;
+		}
+
+		public String getLabel(){
+			return label;
+		}
+
+
+	}
 	/**
 	 * Represent an option from the command line
 	 * @author minhduc
@@ -551,10 +738,7 @@ public class CommandLine {
 		boolean required;
 		boolean optionSet = false;
 
-		//For use in galaxy wraper:		
-		boolean galaxyUse = false;		
-		String  galaxyFormat = null;//bam, text, etc
-
+		private GalaxySetting galaxySetting = null;
 
 		public Option(String opt, char type, Object def, String help, boolean req) {
 			optName = opt;			
@@ -567,30 +751,14 @@ public class CommandLine {
 			this(opt, type, def,help,true);
 		}
 
+		public GalaxySetting getGalaxySetting(){
+			return galaxySetting;
+		}
+
+		public void setGalaxySetting(GalaxySetting galaxy){
+			galaxySetting = galaxy;
+		}
 		//
-		/**
-		 * @return the galaxyUse
-		 */
-		public boolean isGalaxyUse() {
-			return galaxyUse;
-		}
-		/**
-		 * @param galaxyUse the galaxyUse to set
-		 */
-		public void setGalaxyUse(boolean galaxyUse) {
-			this.galaxyUse = galaxyUse;
-		}
-		/**
-		 * @return the galaxyFormat
-		 */
-		public String getGalaxyFormat() {
-			return galaxyFormat;
-		}
-		/**
-		 * @param galaxyFormat the galaxyFormat to set
-		 */
-		public void setGalaxyFormat(String galaxyFormat) {
-			this.galaxyFormat = galaxyFormat;
-		}		
+
 	}	
 }
