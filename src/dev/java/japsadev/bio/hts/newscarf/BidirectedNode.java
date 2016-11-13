@@ -78,6 +78,12 @@ public class BidirectedNode extends AbstractNode {
 	}
 
 	protected void removeEdge(int i) {
+//		System.out.print("From node " + this.getId() + " remove edge number " + i);
+//		System.out.println(" from a list of edges: ");
+//		for(int j=0;j<edges.length;j++)
+//			if(edges[j]!=null)
+//				System.out.println("\t"+edges[j].getId());
+
 		//remove from the hashmap
 		AbstractNode opposite = edges[i].getOpposite(this);
 		List<BidirectedEdge> l = neighborMap.get(opposite);
@@ -138,8 +144,9 @@ public class BidirectedNode extends AbstractNode {
 			i = oStart;
 		while (edges[i] != edge)
 			i++;
-		if(i < degree) //only remove iff edge is found
+		if(i < degree){ //only remove iff edge is found
 			removeEdge(i);
+		}
 	}
 
 	@Override
@@ -243,11 +250,14 @@ public class BidirectedNode extends AbstractNode {
 				throw new IllegalStateException();
 			AbstractEdge e = edges[iPrev];
 			// do not call the callback because we already know the index
-			graph.removeEdge(e);
+			//graph.removeEdge(e);
+			((BidirectedGraph)graph).removeEdgeDup(e, true, e.getSourceNode() != BidirectedNode.this,
+					e.getTargetNode() != BidirectedNode.this);
 			removeEdge(iPrev);
 			iNext = iPrev;
 			iPrev = -1;
 			iEnd--;
+			
 		}
 	}
 

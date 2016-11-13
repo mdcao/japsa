@@ -45,7 +45,8 @@ public class BidirectedPath extends Path{
 		return rcPath;
 	}
 	
-	public String getID(){
+	public String getId(){
+		//need to make the Id unique for both sense and antisense spelling???
 		BidirectedNode curNode = (BidirectedNode) getRoot();
 		if(getEdgeCount()<1)
 			return curNode.getId()+"+";

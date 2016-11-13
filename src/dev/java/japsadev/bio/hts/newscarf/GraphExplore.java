@@ -1,9 +1,7 @@
 package japsadev.bio.hts.newscarf;
 
+import java.io.IOException;
 import java.util.Iterator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.graphstream.graph.*;
 public class GraphExplore {
     public static void main(String args[]) {
@@ -12,7 +10,6 @@ public class GraphExplore {
     }
 
     public GraphExplore(){
-        //Graph graph = new SingleGraph("tutorial 1");
     	System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
     	
     	BidirectedGraph graph= new BidirectedGraph();
@@ -36,7 +33,20 @@ public class GraphExplore {
         }
         
         //explore(graph.getNode("A"));
-    	
+        
+        /*
+         * Testing reduce function
+         */
+        try {
+			graph.readPathsFromSpades("/home/hoangnguyen/workspace/data/spades/EcK12S-careful/contigs.paths");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
+        /*
+         * Testing BidirectedEdge id pattern
+         */
 //    	String pattern = "^\\[([0-9oi]*)\\]([oi])\\[([0-9oi]*)\\]([oi])$";
 //        // Create a Pattern object
 //        Pattern r = Pattern.compile(pattern);
