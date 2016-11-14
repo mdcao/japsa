@@ -21,14 +21,14 @@ public class BidirectedEdge extends AbstractEdge{
 		this.dir1=dir1;
 	}
 	
-	/* param id must have the form %s[o/i]%s[o/i]
+	/* param id must have the form %s[o/i]%s[o/i], e.g. [1+2-]o[3]i
 	 * the constructor will translate the id to the direction property 
 	 * of the bidirected edge
-	 * TODO: optimize this (avoid using pattern)
+	 * TODO: read & do smt with the composite node id
 	 */
 	protected BidirectedEdge(String id, AbstractNode source, AbstractNode dst){
 		super(id, source, dst, false);
-    	String pattern = "^\\[([0-9oi]*)\\]([oi])\\[([0-9oi]*)\\]([oi])$";
+    	String pattern = "^\\[([0-9\\+\\-]*)\\]([oi])\\[([0-9\\+\\-]*)\\]([oi])$";
         // Create a Pattern object
         Pattern r = Pattern.compile(pattern);
         // Now create matcher object.
@@ -42,7 +42,7 @@ public class BidirectedEdge extends AbstractEdge{
         	dir0=(srcDir=="o"?true:false);
         	dir1=(dstDir=="o"?true:false);
         } else{
-        	System.err.println("Illegal ID for a bidirected edge (id must recursively have the form id[o/i]id[o/i])");
+        	System.err.println("Illegal ID for a bidirected edge (id must have the form node_id[o/i]node_id[o/i])");
         	System.exit(1);
         }
 

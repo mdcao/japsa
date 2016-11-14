@@ -180,6 +180,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				continue;
 			}else if(flag){
 				BidirectedPath path=new BidirectedPath(this, s);
+				System.out.println("Using path: " + path.getId());
 				this.reduce(path);
 			}	
 				
@@ -200,6 +201,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
      * @param p Path to be grouped as a virtually vertex
      */
     public void reduce(BidirectedPath p){
+    	//do nothing if the path has only one node
+    	if(p.getEdgeCount()<1)
+    		return;
     	//add the new composite Node to the graph
     	//compare id from sense & anti-sense to get the unique one
     	AbstractNode comp = addNode(p.getId().compareTo(p.getReversedComplemented().getId())>0?
@@ -207,8 +211,10 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	
     	comp.addAttribute("path", p);
     	comp.addAttribute("seq", p.spelling());
+        comp.addAttribute("ui.label", comp.getId());
+        comp.setAttribute("ui.style", "text-offset: -10;"); 
         comp.setAttribute("ui.class", "marked");
-        try { Thread.sleep(1000); } catch (Exception e) {}
+        try { Thread.sleep(100); } catch (Exception e) {}
 
     	//store unique nodes on p for removing
     	ArrayList<String> tobeRemoved=new ArrayList<String>();
@@ -216,7 +222,6 @@ public class BidirectedGraph extends AdjacencyListGraph{
     		if(isUnique(n))
     			tobeRemoved.add(n.getId());
     	}
-    	
     	BidirectedNode 	start = (BidirectedNode) p.getRoot(),
     					end = (BidirectedNode) p.peekNode();
     	boolean startDir = ((BidirectedEdge) p.getEdgePath().get(0)).getDir(start), 
@@ -228,14 +233,18 @@ public class BidirectedGraph extends AdjacencyListGraph{
     		BidirectedEdge e = (BidirectedEdge) startEdges.next();
     		BidirectedNode opNode = e.getOpposite(start);
     		boolean opDir = e.getDir(opNode);
-    		addEdge(BidirectedEdge.createID(start, opNode, false, opDir), comp, opNode);//always into start node
+    		Edge tmp=addEdge(BidirectedEdge.createID(comp, opNode, false, opDir), comp, opNode);//always into start node
+    		System.out.println("From " + start.getId() + ": " + tmp.getId() + " added!");
     	}
     	
     	while(endEdges.hasNext()){
     		BidirectedEdge e = (BidirectedEdge) endEdges.next();
     		BidirectedNode opNode = e.getOpposite(end);
     		boolean opDir = e.getDir(opNode);
-    		addEdge(BidirectedEdge.createID(end, opNode, true, opDir), comp, opNode);//always out of end node
+    		Edge tmp=addEdge(BidirectedEdge.createID(comp, opNode, true, opDir), comp, opNode);//always out of end node
+    	
+    		System.out.println("From " + end.getId() + ": " + tmp.getId() + " added!");
+
     	}
 
     	for(String nLabel:tobeRemoved){
