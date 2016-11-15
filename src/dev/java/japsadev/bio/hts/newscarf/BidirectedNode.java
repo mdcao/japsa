@@ -29,6 +29,7 @@ public class BidirectedNode extends AbstractNode {
 		INITIAL_EDGE_CAPACITY = initialEdgeCapacity;
 	}
 	//edges are bidirected, here are 4 sub-types (name based on direction of the arrow relative to the corresponding node):
+	//node that neighbor edges here will treat their root node as *left* node, the opposite node as *right* node
 	protected static final byte OO_EDGE = 0b00; // src-->--<--dst
 	protected static final byte OI_EDGE = 0b01; // src-->-->--dst
 	protected static final byte IO_EDGE = 0b10; // src--<--<--dst
@@ -51,17 +52,18 @@ public class BidirectedNode extends AbstractNode {
 	// *** Helpers ***
 
 	protected byte edgeType(BidirectedEdge e) {
-		//return (byte) (e.getDir1()?0:1 + (e.getDir0()?0:1)<<1); //cool but less efficient
-		if(e.getDir0())
-			if(e.getDir1())
-				return OI_EDGE;
-			else 
+		//return (byte) (e.getDir((AbstractNode) e.getOpposite(this))?0:1 + (e.getDir(this)?0:1)<<1); //cool but less efficient
+		BidirectedNode opposite = e.getOpposite(this);
+		if(e.getDir(this))
+			if(e.getDir(opposite))
 				return OO_EDGE;
-		else
-			if(e.getDir1())
-				return II_EDGE;
 			else 
-				return IO_EDGE;	
+				return OI_EDGE;
+		else
+			if(e.getDir(opposite))
+				return IO_EDGE;
+			else 
+				return II_EDGE;	
 	}
 
 	@SuppressWarnings("unchecked")
@@ -142,7 +144,7 @@ public class BidirectedNode extends AbstractNode {
 		int i = 0;
 		if (type <= OI_EDGE)
 			i = oStart;
-		while (edges[i] != edge)
+		while (i <= degree && edges[i] != edge)
 			i++;
 		if(i < degree){ //only remove iff edge is found
 			removeEdge(i);
@@ -231,6 +233,17 @@ public class BidirectedNode extends AbstractNode {
 				iEnd = oStart;
 			else if(ori==1)
 				iNext = oStart;
+			
+			System.out.println("Iterator " + ori + " of " + getId() + " from " + iNext + " to " + iEnd + " of");
+			for(int i=0;i<degree;i++){
+				System.out.println("\t"+edges[i]+" Type: " + edgeType(edges[i]));
+			}
+			
+			System.out.println("...is");
+			
+			for(int i=iNext;i<iEnd;i++){
+				System.out.println("\t"+edges[i]+" Type: " + edgeType(edges[i]));
+			}
 		}
 
 		public boolean hasNext() {

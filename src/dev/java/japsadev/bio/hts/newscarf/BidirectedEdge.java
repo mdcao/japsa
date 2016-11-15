@@ -26,21 +26,30 @@ public class BidirectedEdge extends AbstractEdge{
 	 * of the bidirected edge
 	 * TODO: read & do smt with the composite node id
 	 */
-	protected BidirectedEdge(String id, AbstractNode source, AbstractNode dst){
-		super(id, source, dst, false);
+	protected BidirectedEdge(String id, AbstractNode source, AbstractNode dest){
+		super(id, source, dest, false);
     	String pattern = "^\\[([0-9\\+\\-]*)\\]([oi])\\[([0-9\\+\\-]*)\\]([oi])$";
         // Create a Pattern object
         Pattern r = Pattern.compile(pattern);
         // Now create matcher object.
         Matcher m = r.matcher(id);
-        String 	
-        		//srcID, dstID, 
-        		srcDir, dstDir;
+        String 	leftID, rightID, 
+        		leftDir, rightDir;
         if(m.find()){
-        	srcDir=m.group(2);
-        	dstDir=m.group(4);
-        	dir0=(srcDir=="o"?true:false);
-        	dir1=(dstDir=="o"?true:false);
+        	leftID=m.group(1);
+        	leftDir=m.group(2);
+        	rightID=m.group(3);
+        	rightDir=m.group(4);
+        	if(source.getId().equals(leftID)){
+        		dir0=(leftDir.equals("o")?true:false);
+        		dir1=(rightDir.equals("o")?true:false);
+        	}else if(source.getId().equals(rightID)){
+        		dir0=(rightDir.equals("o")?true:false);
+        		dir1=(leftDir.equals("o")?true:false);
+        	}else{
+            	System.err.println("ID does not match");
+            	System.exit(1);
+            }
         } else{
         	System.err.println("Illegal ID for a bidirected edge (id must have the form node_id[o/i]node_id[o/i])");
         	System.exit(1);
@@ -64,12 +73,19 @@ public class BidirectedEdge extends AbstractEdge{
 		return String.format("%s:%s-%s-%s-%s", getId(), source, (dir0?">":"<"), (dir1?"<":">"), target);
 	}
 	
+	public void setDir0(boolean dir){
+		this.dir0=dir;
+	}
+	public void setDir1(boolean dir){
+		this.dir1=dir;
+	}
 	public boolean getDir0(){
 		return dir0;
 	}
 	public boolean getDir1(){
 		return dir1;
 	}
+	//TODO: include the case of tandem repeats
 	public boolean getDir(AbstractNode node){
 		assert node==getSourceNode()||node==getTargetNode():"Node does not belong to this edge!";
 		return node==getSourceNode()?getDir0():getDir1();

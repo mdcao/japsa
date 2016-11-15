@@ -97,7 +97,15 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		this.removeEdge(edge, graphCallback, sourceCallback, targetCallback);
 	
 	}
-	
+	protected BidirectedEdge addEdge(AbstractNode src, AbstractNode dst, boolean dir0, boolean dir1){
+		BidirectedEdge tmp = addEdge(BidirectedEdge.createID(src, dst, dir0, dir1), src, dst);
+		String s1=tmp.toString();
+		tmp.setDir0(dir0);
+		tmp.setDir1(dir1);
+		if(!s1.equals(tmp.toString()))
+			System.out.println(s1 + " ---> " + tmp);
+		return tmp;
+	}
 	/**********************************************************************************
 	 * ****************************Algorithms go from here*****************************
 	 */
@@ -145,10 +153,8 @@ public class BidirectedGraph extends AdjacencyListGraph{
 						String neighborID = neighbor.split("_")[1];
 						AbstractNode nbr = addNode(neighborID);
 						
-						BidirectedEdge e = new BidirectedEdge(node, nbr, dir0, dir1);
+						addEdge(node, nbr, dir0, dir1);
 						//e.addAttribute("ui.label", e.getId());
-						
-						addEdge(e.getId(), node, nbr);
 					}
 				}
 				
