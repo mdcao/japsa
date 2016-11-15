@@ -78,22 +78,46 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-
+		
+		CommandLine.Option referenceOpt =
 		addString("reference", null, "Name of the reference genome ", true);
 		///addStdInputFile();
+		CommandLine.Option bamFileOpt = 
 		addString("bamFile", null, "Name of the bam file", true);
+		
+		CommandLine.Option outputOpt =
 		addString("output", "-",
 				"Name of the output file, -  for stdout");
+		
+		CommandLine.Option xafFileOpt =
 		addString("xafFile", null, "Name of the regions file in xaf",
 				true);
+		
+		CommandLine.Option flankingOpt =
 		addInt("flanking", 30, "Size of the flanking regions");
+		
+		CommandLine.Option minQualOpt =
 		addInt("qual", 0, "Minimum quality");
+		
 		addInt("iteration", 1, "Number of iteration");
 		addInt("nploidy",2,
 				"The ploidy of the genome 1 =  happloid, 2 = diploid. Currenly only support up to 2-ploidy");
 		addString("prefix", "",
 				"Prefix of temporary files, if not specified, will be automatically generated");
 
+		///////////////Adding galaxy support/////////////
+		flankingOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
+		minQualOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
+		xafFileOpt.setGalaxySetting(new GalaxySetting("data", "tabular",false));
+		
+		GalaxySetting galaxyOutput = new GalaxySetting("data", "text",true); 
+		galaxyOutput.setLabel("countRead.txt");
+		outputOpt.setGalaxySetting(galaxyOutput);
+		bamFileOpt.setGalaxySetting(new GalaxySetting("data", "bam",false));
+		referenceOpt.setGalaxySetting(new GalaxySetting("data", "fasta",false));		
+		setGalaxy(annotation.scriptName());	
+		
+		
 		addStdHelp();		
 	} 
 

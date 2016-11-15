@@ -112,7 +112,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.6-11a";
+	public static String VERSION = "1.6-11b";
 	public static final String FIELD_SEP = "\t";
 
 	public static boolean DEBUG = true;
@@ -151,7 +151,6 @@ public class Deploy {
 		tools.add(new AlternativeAllelesCmd());
 		tools.add(new GetN50Cmd());
 		tools.add(new SpeciesMixtureCmd());
-
 
 		tools.add("Bacterial analysis:");
 		tools.add(new MLSTCmd());

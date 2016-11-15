@@ -136,7 +136,6 @@ public class DevDeploy {
 		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new VNTRSelectCmd());
 
-
 		//new 
 		//tools.add(new VNTRSelectCmd());
 		//
