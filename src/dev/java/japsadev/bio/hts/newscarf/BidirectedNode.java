@@ -234,16 +234,16 @@ public class BidirectedNode extends AbstractNode {
 			else if(ori==1)
 				iNext = oStart;
 			
-			System.out.println("Iterator " + ori + " of " + getId() + " from " + iNext + " to " + iEnd + " of");
-			for(int i=0;i<degree;i++){
-				System.out.println("\t"+edges[i]+" Type: " + edgeType(edges[i]));
-			}
-			
-			System.out.println("...is");
-			
-			for(int i=iNext;i<iEnd;i++){
-				System.out.println("\t"+edges[i]+" Type: " + edgeType(edges[i]));
-			}
+//			System.out.println("Iterator " + ori + " of " + getId() + " from " + iNext + " to " + iEnd + " of");
+//			for(int i=0;i<degree;i++){
+//				System.out.println("\t"+edges[i]+" Type: " + edgeType(edges[i]));
+//			}
+//			
+//			System.out.println("...is");
+//			
+//			for(int i=iNext;i<iEnd;i++){
+//				System.out.println("\t"+edges[i]+" Type: " + edgeType(edges[i]));
+//			}
 		}
 
 		public boolean hasNext() {

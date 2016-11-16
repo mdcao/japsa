@@ -99,11 +99,11 @@ public class BidirectedGraph extends AdjacencyListGraph{
 	}
 	protected BidirectedEdge addEdge(AbstractNode src, AbstractNode dst, boolean dir0, boolean dir1){
 		BidirectedEdge tmp = addEdge(BidirectedEdge.createID(src, dst, dir0, dir1), src, dst);
-		String s1=tmp.toString();
-		tmp.setDir0(dir0);
-		tmp.setDir1(dir1);
-		if(!s1.equals(tmp.toString()))
-			System.out.println(s1 + " ---> " + tmp);
+//		String s1=tmp.toString();
+//		//tmp.setDir0(dir0);
+//		//tmp.setDir1(dir1);
+//		if(!s1.equals(tmp.toString()))
+//			System.out.println(s1 + " ---> " + tmp);
 		return tmp;
 	}
 	/**********************************************************************************
@@ -187,7 +187,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
 			}else if(flag){
 				BidirectedPath path=new BidirectedPath(this, s);
 				System.out.println("Using path: " + path.getId());
-				this.reduce(path);
+				AbstractNode comp=this.reduce(path);
+				if(comp!=null) 
+					revert(comp);
 			}	
 				
 
@@ -206,10 +208,10 @@ public class BidirectedGraph extends AdjacencyListGraph{
      * 
      * @param p Path to be grouped as a virtually vertex
      */
-    public void reduce(BidirectedPath p){
+    public AbstractNode reduce(BidirectedPath p){
     	//do nothing if the path has only one node
     	if(p.getEdgeCount()<1)
-    		return;
+    		return null;
     	//add the new composite Node to the graph
     	//compare id from sense & anti-sense to get the unique one
     	AbstractNode comp = addNode(p.getId().compareTo(p.getReversedComplemented().getId())>0?
@@ -259,6 +261,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	}
     		
     	//TODO: remove bubbles...
+    	return comp;
     }
     /**
      * 
@@ -292,8 +295,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		}
 
     	//add back all edges from the path
-		for(Edge e:p.getEdgeSet())
-			addEdge(e.getId(), e.getSourceNode(), e.getTargetNode());
+		for(Edge e:p.getEdgeSet()){
+			addEdge(e.getId(), e.getSourceNode().getId(), e.getTargetNode().getId());
+		}
     	//finally remove the composite node
     	removeNode(v);
     	}
