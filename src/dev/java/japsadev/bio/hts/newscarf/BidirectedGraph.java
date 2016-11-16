@@ -3,14 +3,8 @@ package japsadev.bio.hts.newscarf;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
-
 import org.graphstream.graph.*;
 import org.graphstream.graph.implementations.*;
 
@@ -132,7 +126,6 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				
 				name=name.replaceAll("[^a-zA-Z0-9_.]", "").trim(); //EDGE_X_length_Y_cov_Z
 				
-				//FIXME: constructor is invoked by name but hashmap is based on label!!!
 				String nodeID = name.split("_")[1];
 				AbstractNode node = addNode(nodeID);
 				node.setAttribute("name", name);
@@ -186,10 +179,18 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				continue;
 			}else if(flag){
 				BidirectedPath path=new BidirectedPath(this, s);
-				System.out.println("Using path: " + path.getId());
-				AbstractNode comp=this.reduce(path);
-				if(comp!=null) 
-					revert(comp);
+				//System.out.println("Using path to reduce: " + path.getId());
+				//System.out.println("Before reduce => Node: " + getNodeCount() + " Edge: " + getEdgeCount());
+				
+				//AbstractNode comp=
+				this.reduce(path);
+
+//				if(comp!=null){
+//					System.out.println("Reverting node: " + comp.getId());
+//					revert(comp);
+//			        System.out.println("After revert => Node: " + getNodeCount() + " Edge: " + getEdgeCount());
+//
+//				}
 			}	
 				
 
@@ -241,22 +242,24 @@ public class BidirectedGraph extends AdjacencyListGraph{
     		BidirectedEdge e = (BidirectedEdge) startEdges.next();
     		BidirectedNode opNode = e.getOpposite(start);
     		boolean opDir = e.getDir(opNode);
-    		Edge tmp=addEdge(BidirectedEdge.createID(comp, opNode, false, opDir), comp, opNode);//always into start node
-    		System.out.println("From " + start.getId() + ": " + tmp.getId() + " added!");
+    		//Edge tmp=
+    		addEdge(BidirectedEdge.createID(comp, opNode, false, opDir), comp, opNode);//always into start node
+    		//System.out.println("From " + start.getId() + ": " + tmp.getId() + " added!");
     	}
     	
     	while(endEdges.hasNext()){
     		BidirectedEdge e = (BidirectedEdge) endEdges.next();
     		BidirectedNode opNode = e.getOpposite(end);
     		boolean opDir = e.getDir(opNode);
-    		Edge tmp=addEdge(BidirectedEdge.createID(comp, opNode, true, opDir), comp, opNode);//always out of end node
+    		//Edge tmp=
+    		addEdge(BidirectedEdge.createID(comp, opNode, true, opDir), comp, opNode);//always out of end node
     	
-    		System.out.println("From " + end.getId() + ": " + tmp.getId() + " added!");
+    		//System.out.println("From " + end.getId() + ": " + tmp.getId() + " added!");
 
     	}
 
     	for(String nLabel:tobeRemoved){
-    		System.out.println("About to remove " + nLabel);
+    		//System.out.println("About to remove " + nLabel);
     		removeNode(nLabel);
     	}
     		
@@ -280,23 +283,40 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	//add back all neighbor edges of this composite vertex
     	Iterator<Edge> 	startEdges = v.getEnteringEdgeIterator(),
 						endEdges = v.getLeavingEdgeIterator();
+    	//add back all nodes from the path
+		for(Node n:p.getNodeSet()){
+			if(getNode(n.getId())!=null)
+				continue;
+			Node tmp = addNode(n.getId());
+			tmp.addAttribute("seq", n.getAttribute("seq"));
+			tmp.addAttribute("name", n.getAttribute("name"));
+			tmp.addAttribute("path", n.getAttribute("path"));
+
+			//System.out.println("Adding back edge "+tmp.getId());
+		}
 		while(startEdges.hasNext()){
 			BidirectedEdge e = (BidirectedEdge) startEdges.next();
-			BidirectedNode opNode = e.getOpposite(start);
+			BidirectedNode opNode = e.getOpposite(v);
 			boolean opDir = e.getDir(opNode);
+			//Edge tmp = 
 			addEdge(BidirectedEdge.createID(start, opNode, !startDir, opDir), start, opNode);
+			//System.out.println("Adding back edge "+tmp.getId());
 		}
 		
 		while(endEdges.hasNext()){
 			BidirectedEdge e = (BidirectedEdge) endEdges.next();
-			BidirectedNode opNode = e.getOpposite(end);
+			BidirectedNode opNode = e.getOpposite(v);
 			boolean opDir = e.getDir(opNode);
+			//Edge tmp = 
 			addEdge(BidirectedEdge.createID(end, opNode, !endDir, opDir), end, opNode);
+			//System.out.println("Adding back edge "+tmp.getId());
 		}
 
     	//add back all edges from the path
 		for(Edge e:p.getEdgeSet()){
-			addEdge(e.getId(), e.getSourceNode().getId(), e.getTargetNode().getId());
+			//Edge tmp = 
+			addEdge(e.getId(), e.getSourceNode(), e.getTargetNode());
+			//System.out.println("Adding back edge "+tmp.getId());
 		}
     	//finally remove the composite node
     	removeNode(v);
