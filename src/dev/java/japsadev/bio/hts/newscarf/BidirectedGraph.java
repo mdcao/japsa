@@ -179,10 +179,10 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				continue;
 			}else if(flag){
 				BidirectedPath path=new BidirectedPath(this, s);
-				//System.out.println("Using path to reduce: " + path.getId());
-				//System.out.println("Before reduce => Node: " + getNodeCount() + " Edge: " + getEdgeCount());
+//				System.out.println("Using path to reduce: " + path.getId());
+//				System.out.println("Before reduce => Node: " + getNodeCount() + " Edge: " + getEdgeCount());
 				
-				//AbstractNode comp=
+//				AbstractNode comp=
 				this.reduce(path);
 
 //				if(comp!=null){
@@ -288,9 +288,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
 			if(getNode(n.getId())!=null)
 				continue;
 			Node tmp = addNode(n.getId());
-			tmp.addAttribute("seq", n.getAttribute("seq"));
-			tmp.addAttribute("name", n.getAttribute("name"));
-			tmp.addAttribute("path", n.getAttribute("path"));
+			tmp.addAttribute("seq", (japsa.seq.Sequence)n.getAttribute("seq"));
+			tmp.addAttribute("name", (String)n.getAttribute("name"));
+			tmp.addAttribute("path", (BidirectedPath)n.getAttribute("path"));
 
 			//System.out.println("Adding back edge "+tmp.getId());
 		}
@@ -315,7 +315,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	//add back all edges from the path
 		for(Edge e:p.getEdgeSet()){
 			//Edge tmp = 
-			addEdge(e.getId(), e.getSourceNode(), e.getTargetNode());
+			addEdge(e.getId(), e.getSourceNode().getId(), e.getTargetNode().getId());
 			//System.out.println("Adding back edge "+tmp.getId());
 		}
     	//finally remove the composite node
