@@ -69,7 +69,7 @@ Options
   --format=s      Format of sequence reads (fastq or fasta)
                   (default='fastq')
   --minLength=i   Minimum read length
-                  (default='0')
+                  (default='1')
   --number        Add a unique number to read name
                   (default='false')
   --stats         Generate a report of read statistics

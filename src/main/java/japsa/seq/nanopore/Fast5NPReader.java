@@ -183,17 +183,18 @@ public class Fast5NPReader{
 				String fullName = member.getFullName(); 
 				if (fullName.endsWith("Fastq")){
 					Object  data = ((H5ScalarDS) member).getData();
+					String group = fullName.split("/")[2];					
 					if (data != null){
 						//Logging.info("Read " + fullName);
 						String [] toks = ((String[]) data)[0].split("\n");						
 						if  (fullName.contains("BaseCalled_2D")){
-							toks[0] = toks[0].substring(1) + "_twodimentional" + " length=" + toks[1].length() ;
+							toks[0] = toks[0].substring(1) + "_twodimentional" + " length=" + toks[1].length() + " group=" + group;
 							seqList.add(new BaseCalledFastq(DNA.DNA16(), toks, BaseCalledFastq.TWODIM));
 						}else if (fullName.contains("BaseCalled_complement")){
-							toks[0] = toks[0].substring(1) + "_complement" + " length=" + toks[1].length() ;
+							toks[0] = toks[0].substring(1) + "_complement" + " length=" + toks[1].length() + " group=" + group ;
 							seqList.add(new BaseCalledFastq(DNA.DNA16(), toks, BaseCalledFastq.COMPLEMENT));
 						}else if (fullName.contains("BaseCalled_template")){
-							toks[0] = toks[0].substring(1) + "_template" + " length=" + toks[1].length();
+							toks[0] = toks[0].substring(1) + "_template" + " length=" + toks[1].length() + " group=" + group;
 							seqList.add(new BaseCalledFastq(DNA.DNA16(), toks, BaseCalledFastq.TEMPLATE));
 						}
 					}

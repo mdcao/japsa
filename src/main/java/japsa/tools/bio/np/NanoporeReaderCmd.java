@@ -66,6 +66,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		addString("output", "-","Name of the output file, - for stdout");
 		addString("streams", null,"Stream output to some servers, format \"IP:port,IP:port\" (no spaces)");
 		addString("format", "fastq","Format of sequence reads (fastq or fasta)");
+		//addString("group", "","Group of base-called to be extracted ()");
 		addInt("minLength", 1,"Minimum read length");
 		addBoolean("number", false,"Add a unique number to read name");
 		addBoolean("stats", false,"Generate a report of read statistics");

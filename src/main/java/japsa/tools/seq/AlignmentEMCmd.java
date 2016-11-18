@@ -60,7 +60,7 @@ public class AlignmentEMCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options] seq1 seq2");
 		setDesc(annotation.scriptDesc());
 		
-		//addBoolean("reverse",false,"Reverse sort order");	
+		addInt("iteration",5,"Number of iteration");			
 		
 		addStdHelp();		
 	} 
@@ -70,6 +70,8 @@ public class AlignmentEMCmd extends CommandLine{
 		CommandLine cmdLine = new AlignmentEMCmd();		
 		args = cmdLine.stdParseLine(args);	
 		
+		int itNum = cmdLine.getIntVal("iteration");
+		
 		
 		Alphabet dna = Alphabet.DNA();
 		if (args.length <2){
@@ -78,32 +80,54 @@ public class AlignmentEMCmd extends CommandLine{
 			System.exit(-1);
 		}
 		
-		Sequence mSeq = SequenceReader.getReader(args[0]).nextSequence(dna);
-		Sequence sSeq = SequenceReader.getReader(args[1]).nextSequence(dna);
+		SequenceReader readFile = SequenceReader.getReader(args[0]);
+		SequenceReader barcodeFile = SequenceReader.getReader(args[1]);
+		
+		//Sequence mSeq = SequenceReader.getReader(args[0]).nextSequence(dna);
+		//Sequence sSeq = SequenceReader.getReader(args[1]).nextSequence(dna);
 
-		ProbFSM eDp = new ProbThreeSM(mSeq);
-		
-		int itNum = 10;//number of iteration
-		
-		Emission retState = null;
-		for (int x = 0; x < itNum;x++){				
-			eDp.resetCount();
-			
-			retState = eDp.alignGenerative(sSeq);
-			double cost = retState.myCost;
-			System.out.println(eDp.updateCount(retState) + " states and " + cost + " bits " + sSeq.length() + "bp"  );			
-			eDp.reEstimate();
-			System.out.println("----------------------------------------------\n Total cost = " + cost);			
-			eDp.showProb();
-			System.out.println("=============================================");
+		SequenceOutputStream out = SequenceOutputStream.makeOutputStream("-");
+		Sequence readSeq = null, barcodeSeq = null;
+		while ((readSeq = readFile.nextSequence(dna)) != null){		
+			while ((barcodeSeq = barcodeFile.nextSequence(dna)) != null){
+				//forward run
+				ProbFSM eDp = new ProbThreeSM(readSeq);
+				Emission retState = null;				
+				
+				for (int x = 0; x < itNum;x++){				
+					eDp.resetCount();					
+					retState = eDp.alignGenerative(barcodeSeq);
+					double cost = retState.myCost;
+					System.out.println(eDp.updateCount(retState) + " states and " + cost + " bits " + barcodeSeq.length() + "bp"  );			
+					eDp.reEstimate();
+					System.out.println("----------------------------------------------\n Total cost = " + cost);			
+					eDp.showProb();
+					System.out.println("=============================================");
+				}				
+				
+				eDp.printAlignment(retState, barcodeSeq, out);
+				
+				barcodeSeq = Alphabet.DNA.complement(barcodeSeq);
+				eDp = new ProbThreeSM(readSeq);
+				retState = null;				
+				
+				for (int x = 0; x < itNum;x++){				
+					eDp.resetCount();					
+					retState = eDp.alignGenerative(barcodeSeq);
+					double cost = retState.myCost;
+					System.out.println(eDp.updateCount(retState) + " states and " + cost + " bits " + barcodeSeq.length() + "bp"  );			
+					eDp.reEstimate();
+					System.out.println("----------------------------------------------\n Total cost = " + cost);			
+					eDp.showProb();
+					System.out.println("=============================================");
+				}
+				eDp.printAlignment(retState, barcodeSeq, out);
+			}	
 		}
 		
-		SequenceOutputStream out = SequenceOutputStream.makeOutputStream("-");
-		eDp.printAlignment(retState, sSeq, out);
-		out.close();
+		out.close();	
 		
-		/***************************************************************/
-		
+		/***************************************************************/	
 	}
 }
 

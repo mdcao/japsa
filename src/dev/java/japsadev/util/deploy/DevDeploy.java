@@ -39,6 +39,7 @@ package japsadev.util.deploy;
 import japsa.tools.bio.phylo.XMDistance2Cmd;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deploy;
+import japsadev.misc.dnaPlatform.gui.DnaGraphToolCmd;
 import japsadev.tools.AnalyseCaptureCmd;
 import japsadev.tools.BreakPointAnalysisCmd;
 import japsadev.tools.CaptureProbeDesignCmd;
@@ -50,10 +51,12 @@ import japsadev.tools.FixRastGFFCmd;
 import japsadev.tools.GetFlankBlast;
 import japsadev.tools.KmerAnalysisCmd;
 import japsadev.tools.MyTestCmd;
+import japsadev.tools.NanoporeBarcodeCmd;
 import japsadev.tools.NanoporeFast5ReaderCmd;
 import japsadev.tools.PanCoreGeneCmd;
 import japsadev.tools.ProfileDPCmd;
 import japsadev.tools.RemoveNsCmd;
+import japsadev.tools.RepeatPrimerCmd;
 import japsadev.tools.ResGeneGenomesCmd;
 import japsadev.tools.SampleCmd;
 import japsadev.tools.TestSampleCmd;
@@ -61,6 +64,7 @@ import japsadev.tools.VNTRDepthAnalyserCmd;
 import japsadev.tools.VNTRDepthSumCmd;
 import japsadev.tools.VNTRLongReads;
 import japsadev.tools.VNTRLongReadsHmmer;
+import japsadev.tools.VNTRSelectCmd;
 import japsadev.tools.misc.GetN50;
 import japsadev.tools.work.BuildMLSTTreeCmd;
 import japsadev.tools.work.BuildXMTreeCmd;
@@ -71,9 +75,7 @@ import japsadev.tools.work.MethylationAnalysisCmd;
 import japsadev.tools.work.NpReadAnalysys;
 import japsadev.tools.work.PlasmaAnalysisCmd;
 import japsadev.tools.work.PlasmaAnalysisCrossCorrelationCmd;
-import japsadev.tools.work.RepeatPrimers;
 import japsadev.tools.work.TreeHetLinageCmd;
-import misc.dnaPlatform.gui.DnaGraphToolCmd;
 
 import java.io.File;
 import java.io.IOException;
@@ -88,7 +90,7 @@ public class DevDeploy {
 	private static ArrayList<Object> tools = new ArrayList<Object>();
 	static {
 		//tools.add(new SampleCmd());
-		
+
 		tools.add(new DnaGraphToolCmd());
 		tools.add(new FixRastGFFCmd());
 		tools.add(new CaptureVNTR());		
@@ -98,22 +100,20 @@ public class DevDeploy {
 		tools.add(new GetFlankBlast());
 		tools.add(new PanCoreGeneCmd());
 		tools.add(new CombineProdigalCmd());
-		
+
 		tools.add(new String("Working commands"));
 		tools.add(new TreeHetLinageCmd());		
-		
+
 		tools.add(new FilterPEConcordance());		
-		
+
 		tools.add(VNTRLongReadsHmmer.class);
 		tools.add(VNTRLongReads.class);			
 
-		
-		tools.add(RepeatPrimers.class);		
-		
+		tools.add(new RepeatPrimerCmd());		
+
 		tools.add(new KmerAnalysisCmd());		
 		tools.add(new ProfileDPCmd());	
-		
-		
+
 		tools.add(new PlasmaAnalysisCmd());
 		tools.add(new MethylationAnalysisCmd());
 		tools.add(new MethylationAnalysis2Cmd());
@@ -121,7 +121,7 @@ public class DevDeploy {
 		tools.add(new RemoveNsCmd());
 		tools.add(new XMDistance2Cmd());
 		tools.add(new BuildMLSTTreeCmd());
-		
+
 		tools.add(new BuildXMTreeCmd());
 		tools.add(new FixNamesTreeCmd());
 		tools.add(new VNTRDepthAnalyserCmd());
@@ -135,10 +135,11 @@ public class DevDeploy {
 		tools.add(new CaptureProbeDesignCmd());
 		tools.add(new ConvertProbeCmd());
 		tools.add(new NanoporeFast5ReaderCmd());
-		
+		tools.add(new VNTRSelectCmd());
+		tools.add(new NanoporeBarcodeCmd());
 		
 		//new 
-		//tools.add(new ConvertProbeCmd());
+		//tools.add(new NanoporeBarcodeCmd());
 		//
 
 	}
@@ -196,7 +197,13 @@ public class DevDeploy {
 				Deploy.uninstallScripts(Deploy.tools,"jsa");
 				Deploy.uninstallScripts(tools, "jsa.dev");
 			}
-		} else {
+		}
+		else if ("galaxy".equals(mode)) {
+			ArrayList<Object> fullList = (ArrayList<Object>)Deploy.tools.clone();
+			fullList.addAll(tools);			
+			Deploy.setUpGalaxyScripts(fullList);			
+		}
+		else {
 			System.err.println("Mode " + mode + " not recognised");
 			System.err.println(cmdLine.usageString());
 			System.exit(-1);

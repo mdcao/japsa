@@ -270,7 +270,7 @@ public class Fragment2TRVCmd extends CommandLine{
 				CompareTRVCmd.compareStr(ansList, trvList,0,10000);
 		}//for iFdx
 
-		String[] headers = {TandemRepeat.chrHd, TandemRepeat.startHd, TandemRepeat.endHd, 
+		String[] headers = {TandemRepeat.chromHd, TandemRepeat.startHd, TandemRepeat.endHd, 
 				TandemRepeat.periodHd, TandemRepeat.unitNoHd, TandemRepeatVariant.varHd, TandemRepeatVariant.confidenceHd, TandemRepeatVariant.meanHd, TandemRepeatVariant.stdHd};
 
 		out.write(("#H:" + headers[0]).getBytes());
@@ -396,7 +396,7 @@ public class Fragment2TRVCmd extends CommandLine{
 				CompareTRVCmd.compareStr(ansList, trvList,0,10000);
 		}//for iFdx
 
-		String[] headers = {TandemRepeat.chrHd, TandemRepeat.startHd, TandemRepeat.endHd, 
+		String[] headers = {TandemRepeat.chromHd, TandemRepeat.startHd, TandemRepeat.endHd, 
 				TandemRepeat.periodHd, TandemRepeat.unitNoHd, TandemRepeatVariant.varHd, TandemRepeatVariant.confidenceHd, TandemRepeatVariant.meanHd, TandemRepeatVariant.stdHd};
 
 		out.print("#H:" + headers[0]);

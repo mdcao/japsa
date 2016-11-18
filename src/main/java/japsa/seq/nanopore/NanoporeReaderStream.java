@@ -108,6 +108,7 @@ public class NanoporeReaderStream{
 	public boolean stats, number;
 	public String folder = null;
 	public int minLength = 1;
+	//public String group = "";
 	public boolean wait = true;
 	public boolean realtime = true;
 	public int interval = 1, age = 30000;
@@ -247,7 +248,6 @@ public class NanoporeReaderStream{
 		return true;
 	}
 /*****************************************************************************/
-
 	public boolean readFastq2(String fileName) throws JapsaException, IOException{
 		//Logging.info("Open " + fileName);
 		try{					
@@ -281,14 +281,9 @@ public class NanoporeReaderStream{
 								qualTemp.add(sumQual/fq.length());								
 							}
 						}
-
 					}
 				}
-
 			}
-
-
-
 
 			fileNumber ++;			
 		}catch (JapsaException e){
