@@ -44,15 +44,17 @@ public class BarCode {
 		SequenceReader reader = new FastaReader(dataFile);
 		Sequence seq;
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-			if(seq.length() < 500)
+			if(seq.length() < 500){
+				System.out.println("Ignore short sequence " + seq.getName());
 				continue;
+			}
 			//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
 			jaligner.Sequence 	t5 = new jaligner.Sequence("t5_"+seq.getName(), seq.subSequence(0, SCAN_WINDOW).toString()),
 								t3 = new jaligner.Sequence("t3_"+seq.getName(), seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()).toString()),
 								c5 = new jaligner.Sequence("c5_"+seq.getName(), (Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()))).toString()),
 								c3 = new jaligner.Sequence("c3_"+seq.getName(), (Alphabet.DNA.complement(seq.subSequence(0, SCAN_WINDOW))).toString());
 			String[] samples = new String[pop];
-			float[] tf = new float[pop],
+			final float[] tf = new float[pop],
 					tr = new float[pop],
 					cr = new float[pop],
 					cf = new float[pop];
@@ -91,14 +93,14 @@ public class BarCode {
 			Arrays.sort(trRank, new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(tr[o1], tf[o2]);
+					return Float.compare(tr[o1], tr[o2]);
 				}			
 			});
 			//sort the alignment scores between complement sequence and all forward barcode
 			Arrays.sort(cfRank, new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(cf[o1], tf[o2]);
+					return Float.compare(cf[o1], cf[o2]);
 				}			
 			});
 			//sort the alignment scores between complement sequence and all reverse barcode
@@ -112,25 +114,24 @@ public class BarCode {
 			Arrays.sort(tRank, new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(tf[o1]+tr[o1], tf[o2]+tr[o1]);
+					return Float.compare(tf[o1]+tr[o1], tf[o2]+tr[o2]);
 				}			
 			});
 			//sort the sum of alignment scores between complement sequence and all barcode pairs
 			Arrays.sort(cRank, new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(cf[o1]+cr[o1], cf[o2]+cr[o1]);
+					return Float.compare(cf[o1]+cr[o1], cf[o2]+cr[o2]);
 				}			
 			});
-			System.out.println(pop);
-			for(int i=0;i<pop;i++)
-				System.out.printf("%d - %d -%d -%d -%d -%d\n",tfRank[i], trRank[i], tRank[i], cfRank[i], crRank[i], cRank[i]);
+			
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
 				//if both ends of the same sequence report the best alignment with the barcodes
 				if(samples[tfRank[0]].equals(samples[trRank[0]])){
 					System.out.println("Template sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
 					//do smt
+
 				} else{
 					System.out.print("Template sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]);
 					System.out.println(": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
@@ -141,12 +142,14 @@ public class BarCode {
 				if(samples[cfRank[0]].equals(samples[crRank[0]])){
 					System.out.println("Complement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
 					//do smt
+
 				} else{
 					System.out.print("Complement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]]);
 					System.out.println(": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
 					//do smt
 				}
 			}
+
 		}
 		reader.close();
 	}
@@ -158,18 +161,6 @@ public class BarCode {
 			if(value==arr[i])
 				return i;
 		return retVal;
-	}
-	
-	public static void main(String[] args){
-		BarCode bc;
-		try {
-			bc = new BarCode("/home/s.hoangnguyen/Workspace/poreFUME/inputData/pb_39.fasta");
-			bc.clustering("/home/s.hoangnguyen/Workspace/poreFUME/inputData/n.fasta.protein.homolog.fasta");
-		} catch (IOException | MatrixLoaderException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-		
 	}
 	
 }
