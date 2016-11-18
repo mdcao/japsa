@@ -51,6 +51,7 @@ import japsadev.tools.FixRastGFFCmd;
 import japsadev.tools.GetFlankBlast;
 import japsadev.tools.KmerAnalysisCmd;
 import japsadev.tools.MyTestCmd;
+import japsadev.tools.NanoporeBarcodeCmd;
 import japsadev.tools.NanoporeFast5ReaderCmd;
 import japsadev.tools.PanCoreGeneCmd;
 import japsadev.tools.ProfileDPCmd;
@@ -135,9 +136,10 @@ public class DevDeploy {
 		tools.add(new ConvertProbeCmd());
 		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new VNTRSelectCmd());
-
+		tools.add(new NanoporeBarcodeCmd());
+		
 		//new 
-		//tools.add(new VNTRSelectCmd());
+		//tools.add(new NanoporeBarcodeCmd());
 		//
 
 	}
