@@ -1,6 +1,7 @@
 package japsadev.bio.hts.barcode;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 
@@ -83,71 +84,77 @@ public class BarCode {
 						tRank = tfRank.clone(),
 						cRank = tfRank.clone();
 			//sort the alignment scores between template sequence and all forward barcode
-			Arrays.sort(tfRank, new Comparator<Integer>() {
+			Arrays.sort(tfRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
 					return Float.compare(tf[o1], tf[o2]);
 				}			
-			});
+			}));
 			//sort the alignment scores between template sequence and all reverse barcode
-			Arrays.sort(trRank, new Comparator<Integer>() {
+			Arrays.sort(trRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
 					return Float.compare(tr[o1], tr[o2]);
 				}			
-			});
+			}));
 			//sort the alignment scores between complement sequence and all forward barcode
-			Arrays.sort(cfRank, new Comparator<Integer>() {
+			Arrays.sort(cfRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
 					return Float.compare(cf[o1], cf[o2]);
 				}			
-			});
+			}));
 			//sort the alignment scores between complement sequence and all reverse barcode
-			Arrays.sort(crRank, new Comparator<Integer>() {
+			Arrays.sort(crRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
 					return Float.compare(cr[o1], cr[o2]);
 				}			
-			});
+			}));
 			//sort the sum of alignment scores between template sequence and all barcode pairs
-			Arrays.sort(tRank, new Comparator<Integer>() {
+			Arrays.sort(tRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
 					return Float.compare(tf[o1]+tr[o1], tf[o2]+tr[o2]);
 				}			
-			});
+			}));
 			//sort the sum of alignment scores between complement sequence and all barcode pairs
-			Arrays.sort(cRank, new Comparator<Integer>() {
+			Arrays.sort(cRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
 					return Float.compare(cf[o1]+cr[o1], cf[o2]+cr[o2]);
 				}			
-			});
+			}));
 			
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
 				//if both ends of the same sequence report the best alignment with the barcodes
 				if(samples[tfRank[0]].equals(samples[trRank[0]])){
-					System.out.println("Template sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
+					System.out.println("\nTemplate sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
 					//do smt
 
 				} else{
-					System.out.print("Template sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]);
+					System.out.print("\nTemplate sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]);
 					System.out.println(": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
 					//do smt
 				}
+				for(int i=0;i<20;i++)
+					System.out.printf("\t%d:%.2f+%.2f=%.2f ",i,tf[tRank[i]],tr[tRank[i]],tf[tRank[i]]+tr[tRank[i]]);
+				System.out.println();
 			} else{
 				//if both ends of the same sequence report the best alignment with the barcodes
 				if(samples[cfRank[0]].equals(samples[crRank[0]])){
-					System.out.println("Complement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
+					System.out.println("\nComplement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
 					//do smt
 
 				} else{
-					System.out.print("Complement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]]);
+					System.out.print("\nComplement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]]);
 					System.out.println(": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
 					//do smt
 				}
+				for(int i=0;i<20;i++)
+					System.out.printf("\t%d:%.2f+%.2f=%.2f ",i,cf[cRank[i]],cr[cRank[i]],cf[cRank[i]]+cr[cRank[i]]);
+				System.out.println();
 			}
 
 		}
