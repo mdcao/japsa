@@ -87,7 +87,23 @@ public final class BarcodeAlignment {
 				{0.0,-3.0,6.0,-2.0},
 				{0.0,-1.0,-2.0,5.0}
 		};
+	
+	double openPenalty = 10;
+	double extendPenalty = 0.5;
+		
+	//	double openPenalty = 1;
+	//	double extendPenalty = 1;
 
+
+
+	//double [][] scores = {
+	//		{ 1,-1,-1,-1},
+	//		{-1, 1,-1,-1},
+	//		{-1,-1, 1,-1},
+	//		{-1,-1,-1, 1}			
+	//};
+		
+	
 	private int cellRow;
 	/**
 	 * Column of the cell
@@ -98,10 +114,7 @@ public final class BarcodeAlignment {
 	 */
 	private double cellScore;
 
-	double openPenalty = 10;
-	double extendPenalty = 0.5;
-
-
+	
 	public void setBarcodeSequence(Sequence seq){
 		barcodeSequence = seq;
 	}
