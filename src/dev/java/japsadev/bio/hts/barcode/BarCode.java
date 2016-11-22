@@ -10,6 +10,7 @@ import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
+import japsa.util.JapsaTimer;
 public class BarCode {
 	static final int SCAN_WINDOW=120; 
 	HashMap<String, SampleData> samplesMap;
@@ -46,7 +47,7 @@ public class BarCode {
 		Sequence seq;
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
 			if(seq.length() < 500){
-				System.out.println("Ignore short sequence " + seq.getName());
+				System.err.println("Ignore short sequence " + seq.getName());
 				continue;
 			}
 			//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
@@ -60,14 +61,26 @@ public class BarCode {
 					cr = new float[pop],
 					cf = new float[pop];
 			int count=0;
+			
+			//System.out.print("Outside");
+			JapsaTimer.systemInfo();			
 			for(String id:samplesMap.keySet()){
 				SampleData sample = samplesMap.get(id);
 				jaligner.Sequence 	fBarcode = new jaligner.Sequence("F_"+id, sample.getFBarcode().toString()),
 									rBarcode = new jaligner.Sequence("R_"+id, sample.getRBarcode().toString());
+				
 				jaligner.Alignment 	alignmentsTF = jaligner.SmithWatermanGotoh.align(t5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
 									alignmentsTR = jaligner.SmithWatermanGotoh.align(t3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
 									alignmentsCF = jaligner.SmithWatermanGotoh.align(c5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
 									alignmentsCR = jaligner.SmithWatermanGotoh.align(c3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
+				
+				System.err.print("Inside 1");
+				JapsaTimer.systemInfo();
+				
+				System.gc ();
+				System.err.print("Inside 2");
+				JapsaTimer.systemInfo();
+				
 				samples[count]=id;
 				tf[count]=alignmentsTF.getScore();
 				tr[count]=alignmentsTR.getScore();
