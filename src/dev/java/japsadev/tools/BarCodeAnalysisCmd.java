@@ -1,7 +1,8 @@
-package japsadev.bio.hts.barcode;
+package japsadev.tools;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+import japsadev.bio.hts.barcode.BarCode;
 
 @Deployable(
 		scriptName = "jsa.dev.barcode", 
@@ -20,14 +21,22 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		addStdHelp();
 	}
 	public static void main(String[] args){
+		CommandLine cmdLine = new BarCodeAnalysisCmd ();
+		args = cmdLine.stdParseLine(args);
+
+		String bcFile = cmdLine.getStringVal("bcFile");
+		String seqFile = cmdLine.getStringVal("seqFile");
+
+
+
 		BarCode bc;
 		try {
-			bc = new BarCode("/home/hoangnguyen/workspace/poreFUME/inputData/pb_39.fasta");
-			bc.clustering("/home/hoangnguyen/workspace/poreFUME/inputData/n.fasta.protein.homolog.fasta");
+			bc = new BarCode(bcFile);
+			bc.clustering(seqFile);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
-		
+
 	}
 }
