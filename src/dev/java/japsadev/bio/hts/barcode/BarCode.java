@@ -139,7 +139,7 @@ public class BarCode {
 					//do smt
 				}
 				for(int i=0;i<20;i++)
-					System.out.printf("\t%d:%.2f+%.2f=%.2f ",i,tf[tRank[i]],tr[tRank[i]],tf[tRank[i]]+tr[tRank[i]]);
+					System.out.printf("\t%s:%.2f+%.2f=%.2f ",samples[tRank[i]],tf[tRank[i]],tr[tRank[i]],tf[tRank[i]]+tr[tRank[i]]);
 				System.out.println();
 			} else{
 				//if both ends of the same sequence report the best alignment with the barcodes
@@ -153,7 +153,7 @@ public class BarCode {
 					//do smt
 				}
 				for(int i=0;i<20;i++)
-					System.out.printf("\t%d:%.2f+%.2f=%.2f ",i,cf[cRank[i]],cr[cRank[i]],cf[cRank[i]]+cr[cRank[i]]);
+					System.out.printf("\t%s:%.2f+%.2f=%.2f ",samples[tRank[i]],cf[cRank[i]],cr[cRank[i]],cf[cRank[i]]+cr[cRank[i]]);
 				System.out.println();
 			}
 
