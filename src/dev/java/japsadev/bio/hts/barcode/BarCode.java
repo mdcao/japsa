@@ -11,10 +11,11 @@ import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.JapsaTimer;
+import japsadev.bio.BarcodeAlignment;
 public class BarCode {
 	static final int SCAN_WINDOW=120; 
 	HashMap<String, SampleData> samplesMap;
-	
+
 	public BarCode(String barcodeFile) throws IOException{
 		samplesMap = new HashMap<String, SampleData>();
 		SequenceReader reader = new FastaReader(barcodeFile);
@@ -28,13 +29,13 @@ public class BarCode {
 				samplesMap.put(header[1], sample);
 			}
 			sample.setId(header[1]);
-			
+
 			if(header[0].equals("F"))
 				sample.setFBarcode(seq);
 			else if (header[0].equals("R"))
 				sample.setRBarcode(seq);
 			//TODO: how to set corresponding SPAdes contigs file???
-			
+
 		}
 		reader.close();
 	}
@@ -45,57 +46,81 @@ public class BarCode {
 		int pop = samplesMap.size();
 		SequenceReader reader = new FastaReader(dataFile);
 		Sequence seq;
+
+		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),20,"barcode");
+		Sequence tipSeq = new Sequence(Alphabet.DNA4(),SCAN_WINDOW,"tip");
+
+		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
 			if(seq.length() < 500){
 				System.err.println("Ignore short sequence " + seq.getName());
 				continue;
 			}
 			//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
+			Sequence st5 = seq.subSequence(0, SCAN_WINDOW);
+			Sequence st3 = seq.subSequence(seq.length()-SCAN_WINDOW,seq.length());
+
 			jaligner.Sequence 	t5 = new jaligner.Sequence("t5_"+seq.getName(), seq.subSequence(0, SCAN_WINDOW).toString()),
-								t3 = new jaligner.Sequence("t3_"+seq.getName(), seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()).toString()),
-								c5 = new jaligner.Sequence("c5_"+seq.getName(), (Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()))).toString()),
-								c3 = new jaligner.Sequence("c3_"+seq.getName(), (Alphabet.DNA.complement(seq.subSequence(0, SCAN_WINDOW))).toString());
+					t3 = new jaligner.Sequence("t3_"+seq.getName(), seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()).toString()),
+					c5 = new jaligner.Sequence("c5_"+seq.getName(), (Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()))).toString()),
+					c3 = new jaligner.Sequence("c3_"+seq.getName(), (Alphabet.DNA.complement(seq.subSequence(0, SCAN_WINDOW))).toString());
 			String[] samples = new String[pop];
 			final float[] tf = new float[pop],
 					tr = new float[pop],
 					cr = new float[pop],
 					cf = new float[pop];
 			int count=0;
-			
+
 			//System.out.print("Outside");
 			JapsaTimer.systemInfo();			
 			for(String id:samplesMap.keySet()){
 				SampleData sample = samplesMap.get(id);
+				Sequence fSeq = sample.getFBarcode();
+				Sequence rSeq = sample.getRBarcode();
+
 				jaligner.Sequence 	fBarcode = new jaligner.Sequence("F_"+id, sample.getFBarcode().toString()),
-									rBarcode = new jaligner.Sequence("R_"+id, sample.getRBarcode().toString());
-				
+						rBarcode = new jaligner.Sequence("R_"+id, sample.getRBarcode().toString());
+
 				jaligner.Alignment 	alignmentsTF = jaligner.SmithWatermanGotoh.align(t5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
-									alignmentsTR = jaligner.SmithWatermanGotoh.align(t3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
-									alignmentsCF = jaligner.SmithWatermanGotoh.align(c5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
-									alignmentsCR = jaligner.SmithWatermanGotoh.align(c3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
-				
+						alignmentsTR = jaligner.SmithWatermanGotoh.align(t3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
+						alignmentsCF = jaligner.SmithWatermanGotoh.align(c5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
+						alignmentsCR = jaligner.SmithWatermanGotoh.align(c3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
+
 				System.err.print("Inside 1");
 				JapsaTimer.systemInfo();
-				
+
 				System.gc ();
 				System.err.print("Inside 2");
 				JapsaTimer.systemInfo();
-				
+
 				samples[count]=id;
 				tf[count]=alignmentsTF.getScore();
 				tr[count]=alignmentsTR.getScore();
 				cf[count]=alignmentsCF.getScore();
 				cr[count++]=alignmentsCR.getScore();
+
+				System.out.println(alignmentsTF.getScore() + "  " +  alignmentsTR.getScore() + "  " + alignmentsCF.getScore() + " " + alignmentsCR.getScore());
+
+				barcodeAlignment.setBarcodeSequence(fSeq);				
+				barcodeAlignment.setReadSequence(st5);
+				double scoreTF = barcodeAlignment.align();
 				
+				barcodeAlignment.setBarcodeSequence(rSeq);				
+				barcodeAlignment.setReadSequence(st3);
+				double scoreTR = barcodeAlignment.align();			
+
+
+				System.out.println(scoreTF + "  " + scoreTR);
+
 			}
 			Integer[] 	tfRank = new Integer[pop];
 			for(int i=0;i<pop;i++)
 				tfRank[i]=i;
 			Integer[] 	trRank = tfRank.clone(),
-						cfRank = tfRank.clone(),
-						crRank = tfRank.clone(),
-						tRank = tfRank.clone(),
-						cRank = tfRank.clone();
+					cfRank = tfRank.clone(),
+					crRank = tfRank.clone(),
+					tRank = tfRank.clone(),
+					cRank = tfRank.clone();
 			//sort the alignment scores between template sequence and all forward barcode
 			Arrays.sort(tfRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
@@ -138,7 +163,7 @@ public class BarCode {
 					return Float.compare(cf[o1]+cr[o1], cf[o2]+cr[o2]);
 				}			
 			}));
-			
+
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
 				//if both ends of the same sequence report the best alignment with the barcodes
@@ -173,7 +198,7 @@ public class BarCode {
 		}
 		reader.close();
 	}
-	
+
 	//helper
 	int indexOf(Integer[] arr, int value){
 		int retVal=-1;
@@ -182,5 +207,5 @@ public class BarCode {
 				return i;
 		return retVal;
 	}
-	
+
 }
