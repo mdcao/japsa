@@ -63,7 +63,7 @@ public class GapCloserCmd extends CommandLine{
 
 		addString("seqFile", null, "Name of the assembly file (sorted by length)",true);
 		addString("bamFile", null, "Name of the bam file", true);
-		addString("spadesDir", null, "Name of the output folder by SPAdes (on development)");
+		addString("spadesDir", null, "Name of the output folder by SPAdes. Experimental.");
 		addString("prefix", "out", "Prefix for the output files");	
 		addString("genes", null , "Realtime annotation: name of annotated genes in GFF 3.0 format");
 		addString("resistGene", null , "Realtime annotation: name of antibiotic resistance gene fasta file");
