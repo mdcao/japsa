@@ -47,7 +47,7 @@ public class BarCode {
 		SequenceReader reader = new FastaReader(dataFile);
 		Sequence seq;
 
-		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),20,"barcode");
+		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),21,"barcode");
 		Sequence tipSeq = new Sequence(Alphabet.DNA4(),SCAN_WINDOW,"tip");
 
 		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
