@@ -42,6 +42,7 @@ import japsa.util.deploy.Deploy;
 import japsadev.misc.dnaPlatform.gui.DnaGraphToolCmd;
 import japsadev.tools.AnalyseCaptureCmd;
 import japsadev.tools.BarCodeAnalysisCmd;
+import japsadev.tools.BarCodeNPScarfCmd;
 import japsadev.tools.BreakPointAnalysisCmd;
 import japsadev.tools.CaptureProbeDesignCmd;
 import japsadev.tools.CaptureVNTR;
@@ -139,8 +140,9 @@ public class DevDeploy {
 		tools.add(new VNTRSelectCmd());
 		tools.add(new BarCodeAnalysisCmd());
 		tools.add(new NanoporeBarcodeCmd());
+		tools.add(new BarCodeNPScarfCmd());
 		//new 
-		//tools.add(new NanoporeBarcodeCmd());
+		//tools.add(new BarCodeNPScarfCmd());
 		//
 
 	}
