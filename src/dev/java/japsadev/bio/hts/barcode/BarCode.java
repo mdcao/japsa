@@ -10,7 +10,6 @@ import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
-import japsa.util.JapsaTimer;
 import japsadev.bio.BarcodeAlignment;
 public class BarCode {
 	static final int SCAN_WINDOW=60; 
@@ -66,7 +65,7 @@ public class BarCode {
 					crRank = new Integer[pop],
 					tRank = new Integer[pop],
 					cRank = new Integer[pop];
-		int readNum=0;								
+//		int readNum=0;								
 
 
 		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),21,"barcode");
@@ -75,7 +74,7 @@ public class BarCode {
 		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
 
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-			if(seq.length() < 500){
+			if(seq.length() < 300){
 				System.err.println("Ignore short sequence " + seq.getName());
 				continue;
 			}
@@ -87,9 +86,7 @@ public class BarCode {
 			c3 = Alphabet.DNA.complement(seq.subSequence(0, SCAN_WINDOW));
 
 			int count=0;
-
-			//System.out.print("Outside");
-			JapsaTimer.systemInfo();			
+		
 			for(String id:samplesMap.keySet()){
 				SampleData sample = samplesMap.get(id);
 				Sequence 	fBarcode = sample.getFBarcode(),
@@ -100,16 +97,8 @@ public class BarCode {
 //				alignmentsCF[count] = jaligner.SmithWatermanGotoh.align(c5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
 //				alignmentsCR[count] = jaligner.SmithWatermanGotoh.align(c3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
 
-
-				System.err.print("Inside 1");
-				JapsaTimer.systemInfo();
-
-				System.gc ();
-				System.err.print("Inside 2");
-				JapsaTimer.systemInfo();
-
 				samples[count]=id;
-				
+				//TODO: copy the content, not object
 				barcodeAlignment.setBarcodeSequence(fBarcode);
 				
 				barcodeAlignment.setReadSequence(t5);
@@ -172,9 +161,13 @@ public class BarCode {
 					return Double.compare(cf[o1]+cr[o1], cf[o2]+cr[o2]);
 				}			
 			}));
-
+			
+			if(Math.max(tf[tRank[0]]+tr[tRank[0]], cf[cRank[0]]+cr[cRank[0]]) <= 58){
+				System.out.println("\nUnknown sequence " + seq.getName());
+				continue;
+			}
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
-			if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
+			else if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
 				//if both ends of the same sequence report the best alignment with the barcodes
 				if(samples[tfRank[0]].equals(samples[trRank[0]])){
 					System.out.println("\nTemplate sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
@@ -185,6 +178,9 @@ public class BarCode {
 					System.out.println(": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
 					//do smt
 				}
+				for(int i=0;i<pop;i++)
+					System.out.printf("%dT:%.2f+%.2f=%.2f ", i,tr[tRank[i]], tf[tRank[i]], tr[tRank[i]] + tf[tRank[i]]);
+				System.out.println();
 
 
 			} else{
@@ -198,12 +194,11 @@ public class BarCode {
 					System.out.println(": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
 					//do smt
 				}
+				for(int i=0;i<pop;i++)
+					System.out.printf("%dC:%.2f+%.2f=%.2f ", i,cr[cRank[i]], cf[cRank[i]], cr[cRank[i]] + cf[cRank[i]]);
+				System.out.println();
 
 			}
-			//invoke garbage collection explicitly every 50 reads. TODO: implement self-stand Smith-Waterman alignment
-			readNum++;
-			if(readNum%50==0)
-				System.gc();
 		}
 		reader.close();
 	}
