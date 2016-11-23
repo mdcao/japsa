@@ -38,7 +38,7 @@ package japsadev.bio;
 import japsa.seq.Sequence;
 
 /**
- * Implement based on jalign from Ahmed Moustafa
+ * Implement based on jaligner from Ahmed Moustafa
  * See license below
  */
 
@@ -81,6 +81,7 @@ public final class BarcodeAlignment {
 	byte[] pointers;
 	short[] sizesOfVerticalGaps;
 	short[] sizesOfHorizontalGaps;
+	//BLOSSOM62
 	//double [][] scores = 
 	//	{{4.0,0.0,0.0,0.0},
 	//			{0.0,9.0,-3.0,-1.0}, 
@@ -88,13 +89,9 @@ public final class BarcodeAlignment {
 	//			{0.0,-1.0,-2.0,5.0}
 	//	};
 	
+	//poreFUME's scores
 	double openPenalty = 4.7;
 	double extendPenalty = 1.6;
-		
-	//	double openPenalty = 1;
-	//	double extendPenalty = 1;
-
-
 
 	double [][] scores = {
 			{  2.7, -4.5, -4.5, -4.5},

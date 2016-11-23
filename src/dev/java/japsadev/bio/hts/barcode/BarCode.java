@@ -10,11 +10,12 @@ import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
-import japsa.util.JapsaTimer;
 import japsadev.bio.BarcodeAlignment;
 public class BarCode {
-	static final int SCAN_WINDOW=120; 
+	static final int SCAN_WINDOW=60; 
 	HashMap<String, SampleData> samplesMap;
+	
+	String[] stt = {"First","Second","Third"};
 
 	public BarCode(String barcodeFile) throws IOException{
 		samplesMap = new HashMap<String, SampleData>();
@@ -47,125 +48,126 @@ public class BarCode {
 		SequenceReader reader = new FastaReader(dataFile);
 		Sequence seq;
 
+		Sequence t5, t3, c5, c3;
+		String[] samples = new String[pop];
+		final double[] 	tf = new double[pop],
+						tr = new double[pop],
+						cr = new double[pop],
+						cf = new double[pop];
+//		jaligner.Alignment[] 	alignmentsTF = new jaligner.Alignment[pop],
+//								alignmentsTR = new jaligner.Alignment[pop],
+//								alignmentsCF = new jaligner.Alignment[pop],
+//								alignmentsCR = new jaligner.Alignment[pop];
+								
+		Integer[] 	tfRank = new Integer[pop],
+					trRank = new Integer[pop],
+					cfRank = new Integer[pop],
+					crRank = new Integer[pop],
+					tRank = new Integer[pop],
+					cRank = new Integer[pop];
+//		int readNum=0;								
+
+
 		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),21,"barcode");
 		Sequence tipSeq = new Sequence(Alphabet.DNA4(),SCAN_WINDOW,"tip");
 
 		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
+
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-			if(seq.length() < 500){
+			if(seq.length() < 300){
 				System.err.println("Ignore short sequence " + seq.getName());
 				continue;
 			}
 			//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
-			Sequence st5 = seq.subSequence(0, SCAN_WINDOW);
-			Sequence st3 = seq.subSequence(seq.length()-SCAN_WINDOW,seq.length());
 
-			jaligner.Sequence 	t5 = new jaligner.Sequence("t5_"+seq.getName(), seq.subSequence(0, SCAN_WINDOW).toString()),
-					t3 = new jaligner.Sequence("t3_"+seq.getName(), seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()).toString()),
-					c5 = new jaligner.Sequence("c5_"+seq.getName(), (Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()))).toString()),
-					c3 = new jaligner.Sequence("c3_"+seq.getName(), (Alphabet.DNA.complement(seq.subSequence(0, SCAN_WINDOW))).toString());
-			String[] samples = new String[pop];
-			final float[] tf = new float[pop],
-					tr = new float[pop],
-					cr = new float[pop],
-					cf = new float[pop];
+			t5 = seq.subSequence(0, SCAN_WINDOW);
+			t3 = seq.subSequence(seq.length()-SCAN_WINDOW,seq.length());
+			c5 = Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()));
+			c3 = Alphabet.DNA.complement(seq.subSequence(0, SCAN_WINDOW));
+
 			int count=0;
-
-			//System.out.print("Outside");
-			JapsaTimer.systemInfo();			
+		
 			for(String id:samplesMap.keySet()){
 				SampleData sample = samplesMap.get(id);
-				Sequence fSeq = sample.getFBarcode();
-				Sequence rSeq = sample.getRBarcode();
+				Sequence 	fBarcode = sample.getFBarcode(),
+							rBarcode = sample.getRBarcode();
 
-				jaligner.Sequence 	fBarcode = new jaligner.Sequence("F_"+id, sample.getFBarcode().toString()),
-						rBarcode = new jaligner.Sequence("R_"+id, sample.getRBarcode().toString());
-
-				jaligner.Alignment 	alignmentsTF = jaligner.SmithWatermanGotoh.align(t5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
-						alignmentsTR = jaligner.SmithWatermanGotoh.align(t3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
-						alignmentsCF = jaligner.SmithWatermanGotoh.align(c5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f),
-						alignmentsCR = jaligner.SmithWatermanGotoh.align(c3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
-
-				System.err.print("Inside 1");
-				JapsaTimer.systemInfo();
-
-				System.gc ();
-				System.err.print("Inside 2");
-				JapsaTimer.systemInfo();
+//				alignmentsTF[count] = jaligner.SmithWatermanGotoh.align(t5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
+//				alignmentsTR[count] = jaligner.SmithWatermanGotoh.align(t3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
+//				alignmentsCF[count] = jaligner.SmithWatermanGotoh.align(c5, fBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
+//				alignmentsCR[count] = jaligner.SmithWatermanGotoh.align(c3, rBarcode, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
 
 				samples[count]=id;
-				tf[count]=alignmentsTF.getScore();
-				tr[count]=alignmentsTR.getScore();
-				cf[count]=alignmentsCF.getScore();
-				cr[count++]=alignmentsCR.getScore();
-
-				System.out.println(alignmentsTF.getScore() + "  " +  alignmentsTR.getScore() + "  " + alignmentsCF.getScore() + " " + alignmentsCR.getScore());
-
-				barcodeAlignment.setBarcodeSequence(fSeq);				
-				barcodeAlignment.setReadSequence(st5);
-				double scoreTF = barcodeAlignment.align();
+				//TODO: copy the content, not object
+				barcodeAlignment.setBarcodeSequence(fBarcode);
 				
-				barcodeAlignment.setBarcodeSequence(rSeq);				
-				barcodeAlignment.setReadSequence(st3);
-				double scoreTR = barcodeAlignment.align();			
+				barcodeAlignment.setReadSequence(t5);
+				tf[count]=barcodeAlignment.align();
+				barcodeAlignment.setReadSequence(c5);
+				cf[count]=barcodeAlignment.align();
+				
+				barcodeAlignment.setBarcodeSequence(rBarcode);
+				
+				barcodeAlignment.setReadSequence(t3);
+				tr[count]=barcodeAlignment.align();
+				barcodeAlignment.setReadSequence(c3);
+				cr[count]=barcodeAlignment.align();
+				count++;
 
-
-				System.out.println(scoreTF + "  " + scoreTR);
 
 			}
-			Integer[] 	tfRank = new Integer[pop];
 			for(int i=0;i<pop;i++)
-				tfRank[i]=i;
-			Integer[] 	trRank = tfRank.clone(),
-					cfRank = tfRank.clone(),
-					crRank = tfRank.clone(),
-					tRank = tfRank.clone(),
-					cRank = tfRank.clone();
+				tfRank[i]=trRank[i]=cfRank[i]=crRank[i]=tRank[i]=cRank[i]=i;
+
 			//sort the alignment scores between template sequence and all forward barcode
 			Arrays.sort(tfRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(tf[o1], tf[o2]);
+					return Double.compare(tf[o1], tf[o2]);
 				}			
 			}));
 			//sort the alignment scores between template sequence and all reverse barcode
 			Arrays.sort(trRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(tr[o1], tr[o2]);
+					return Double.compare(tr[o1], tr[o2]);
 				}			
 			}));
 			//sort the alignment scores between complement sequence and all forward barcode
 			Arrays.sort(cfRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(cf[o1], cf[o2]);
+					return Double.compare(cf[o1], cf[o2]);
 				}			
 			}));
 			//sort the alignment scores between complement sequence and all reverse barcode
 			Arrays.sort(crRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(cr[o1], cr[o2]);
+					return Double.compare(cr[o1], cr[o2]);
 				}			
 			}));
 			//sort the sum of alignment scores between template sequence and all barcode pairs
 			Arrays.sort(tRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(tf[o1]+tr[o1], tf[o2]+tr[o2]);
+					return Double.compare(tf[o1]+tr[o1], tf[o2]+tr[o2]);
 				}			
 			}));
 			//sort the sum of alignment scores between complement sequence and all barcode pairs
 			Arrays.sort(cRank, Collections.reverseOrder(new Comparator<Integer>() {
 				@Override 
 				public int compare(Integer o1, Integer o2){
-					return Float.compare(cf[o1]+cr[o1], cf[o2]+cr[o2]);
+					return Double.compare(cf[o1]+cr[o1], cf[o2]+cr[o2]);
 				}			
 			}));
-
+			
+			if(Math.max(tf[tRank[0]]+tr[tRank[0]], cf[cRank[0]]+cr[cRank[0]]) <= 58){
+				System.out.println("\nUnknown sequence " + seq.getName());
+				continue;
+			}
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
-			if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
+			else if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
 				//if both ends of the same sequence report the best alignment with the barcodes
 				if(samples[tfRank[0]].equals(samples[trRank[0]])){
 					System.out.println("\nTemplate sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
@@ -176,9 +178,11 @@ public class BarCode {
 					System.out.println(": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
 					//do smt
 				}
-				for(int i=0;i<20;i++)
-					System.out.printf("\t%s:%.2f+%.2f=%.2f ",samples[tRank[i]],tf[tRank[i]],tr[tRank[i]],tf[tRank[i]]+tr[tRank[i]]);
+				for(int i=0;i<pop;i++)
+					System.out.printf("%dT:%.2f+%.2f=%.2f ", i,tr[tRank[i]], tf[tRank[i]], tr[tRank[i]] + tf[tRank[i]]);
 				System.out.println();
+
+
 			} else{
 				//if both ends of the same sequence report the best alignment with the barcodes
 				if(samples[cfRank[0]].equals(samples[crRank[0]])){
@@ -190,11 +194,11 @@ public class BarCode {
 					System.out.println(": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
 					//do smt
 				}
-				for(int i=0;i<20;i++)
-					System.out.printf("\t%s:%.2f+%.2f=%.2f ",samples[tRank[i]],cf[cRank[i]],cr[cRank[i]],cf[cRank[i]]+cr[cRank[i]]);
+				for(int i=0;i<pop;i++)
+					System.out.printf("%dC:%.2f+%.2f=%.2f ", i,cr[cRank[i]], cf[cRank[i]], cr[cRank[i]] + cf[cRank[i]]);
 				System.out.println();
-			}
 
+			}
 		}
 		reader.close();
 	}
@@ -206,6 +210,36 @@ public class BarCode {
 			if(value==arr[i])
 				return i;
 		return retVal;
+	}
+	
+	//display jaligner.Alignment. TODO: convert to ours
+	public void printAlignment(jaligner.Alignment alignment){
+		String 	origSeq1 = alignment.getOriginalSequence1().getSequence(),
+				origSeq2 = alignment.getOriginalSequence2().getSequence(),
+				alnSeq1 = new String(alignment.getSequence1()),
+				alnSeq2 = new String(alignment.getSequence2());
+		int 	start1 = alignment.getStart1(),
+				start2 = alignment.getStart2(),
+				gap1 = alignment.getGaps1(),
+				gap2 = alignment.getGaps2();
+		
+		String seq1, seq2, mark;
+		if(start1>=start2){
+			seq1=origSeq1.substring(0, start1) + alnSeq1 + origSeq1.substring(start1+alnSeq1.length()-gap1);
+			String 	seq2Filler = start1==start2?"":String.format("%"+(start1-start2)+"s", ""),
+					markFiller = start1==0?"":String.format("%"+start1+"s", "");
+			seq2= seq2Filler + origSeq2.substring(0, start2) + alnSeq2 + origSeq2.substring(start2+alnSeq2.length()-gap2);
+			mark= markFiller+String.valueOf(alignment.getMarkupLine());
+		}else{
+			seq2=origSeq2.substring(0, start2) + alnSeq2 + origSeq2.substring(start2+alnSeq2.length()-gap2);
+			String 	markFiller = start2==0?"":String.format("%"+start2+"s", "");
+			seq1=String.format("%"+(start2-start1)+"s", "") + origSeq1.substring(0, start1) + alnSeq1 + origSeq1.substring(start1+alnSeq1.length()-gap1);
+			mark=markFiller+String.valueOf(alignment.getMarkupLine());
+		}
+		//System.out.println(alignment.getSummary());
+		System.out.println(seq1);
+		System.out.println(mark);
+		System.out.println(seq2);
 	}
 
 }
