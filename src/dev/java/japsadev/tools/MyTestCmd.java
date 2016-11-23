@@ -68,11 +68,6 @@ public class MyTestCmd extends CommandLine{
 		CommandLine cmdLine = new MyTestCmd();		
 		args = cmdLine.stdParseLine(args);
 		
-		Random rnd = new Random();
-		for (int i = 0; i < 100;i++){
-			int a = Math.max((int) Simulation.logLogisticSample(700, 6, rnd), 50);	
-			System.out.println(a);
-		}
 	}
 }
 
