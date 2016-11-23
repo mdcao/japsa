@@ -4,36 +4,33 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-
-import jaligner.matrix.MatrixLoaderException;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
+import japsa.util.Logging;
 import japsadev.bio.BarcodeAlignment;
 public class BarCode {
 	static final int SCAN_WINDOW=60; 
 	HashMap<String, SampleData> samplesMap;
 	
-	String[] stt = {"First","Second","Third"};
-
 	public BarCode(String barcodeFile) throws IOException{
 		samplesMap = new HashMap<String, SampleData>();
 		SequenceReader reader = new FastaReader(barcodeFile);
 		Sequence seq;
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-			//header must follow the format [FR]_id
-			String[] header = seq.getName().split("_");
-			SampleData sample = samplesMap.get(header[1]);
+			//header must follow the format [F/R]_id
+			String 	ori = seq.getName().substring(0, 1),
+					id = seq.getName().substring(2);
+			SampleData sample = samplesMap.get(id);
 			if(sample==null){
-				sample = new SampleData();
-				samplesMap.put(header[1], sample);
+				sample = new SampleData(id);
+				samplesMap.put(id, sample);
 			}
-			sample.setId(header[1]);
 
-			if(header[0].equals("F"))
+			if(ori.equals("F"))
 				sample.setFBarcode(seq);
-			else if (header[0].equals("R"))
+			else if (ori.equals("R"))
 				sample.setRBarcode(seq);
 			//TODO: how to set corresponding SPAdes contigs file???
 
@@ -43,9 +40,13 @@ public class BarCode {
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
 	 */
-	public void clustering(String dataFile) throws IOException, MatrixLoaderException{
+	public void clustering(String dataFile) throws IOException{
 		int pop = samplesMap.size();
-		SequenceReader reader = new FastaReader(dataFile);
+		SequenceReader reader;
+		if(dataFile.equals("-"))
+			reader = new FastaReader(System.in);
+		else
+			reader = new FastaReader(dataFile);
 		Sequence seq;
 
 		Sequence t5, t3, c5, c3;
@@ -74,7 +75,7 @@ public class BarCode {
 		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
 
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-			if(seq.length() < 300){
+			if(seq.length() < 200){
 				System.err.println("Ignore short sequence " + seq.getName());
 				continue;
 			}
@@ -163,42 +164,49 @@ public class BarCode {
 			}));
 			
 			if(Math.max(tf[tRank[0]]+tr[tRank[0]], cf[cRank[0]]+cr[cRank[0]]) <= 58){
-				System.out.println("\nUnknown sequence " + seq.getName());
+				Logging.info("Unknown sequence " + seq.getName());
 				continue;
 			}
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			else if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
 				//if both ends of the same sequence report the best alignment with the barcodes
 				if(samples[tfRank[0]].equals(samples[trRank[0]])){
-					System.out.println("\nTemplate sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
+					Logging.info("Template sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
 					//do smt
 
 				} else{
-					System.out.print("\nTemplate sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]);
-					System.out.println(": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
+					Logging.info("Template sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]+": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
 					//do smt
 				}
-				for(int i=0;i<pop;i++)
-					System.out.printf("%dT:%.2f+%.2f=%.2f ", i,tr[tRank[i]], tf[tRank[i]], tr[tRank[i]] + tf[tRank[i]]);
-				System.out.println();
+				samplesMap.get(samples[tRank[0]]).passRead(seq);
+//				for(int i=0;i<pop;i++)
+//					System.out.printf("%dT:%.2f+%.2f=%.2f ", i,tr[tRank[i]], tf[tRank[i]], tr[tRank[i]] + tf[tRank[i]]);
+//				System.out.println();
 
 
 			} else{
 				//if both ends of the same sequence report the best alignment with the barcodes
 				if(samples[cfRank[0]].equals(samples[crRank[0]])){
-					System.out.println("\nComplement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
+					Logging.info("Complement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
 					//do smt
 
 				} else{
-					System.out.print("\nComplement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]]);
-					System.out.println(": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
+					Logging.info("Complement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]] + ": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
 					//do smt
 				}
-				for(int i=0;i<pop;i++)
-					System.out.printf("%dC:%.2f+%.2f=%.2f ", i,cr[cRank[i]], cf[cRank[i]], cr[cRank[i]] + cf[cRank[i]]);
-				System.out.println();
+				samplesMap.get(samples[cRank[0]]).passRead(seq);
+//				for(int i=0;i<pop;i++)
+//					System.out.printf("%dC:%.2f+%.2f=%.2f ", i,cr[cRank[i]], cf[cRank[i]], cr[cRank[i]] + cf[cRank[i]]);
+//				System.out.println();
 
 			}
+		}
+		
+		for(SampleData sample:samplesMap.values()){
+			if(sample.terminate())
+				Logging.info("All done successfully!");
+			else
+				Logging.error("Cannot finish properly!");
 		}
 		reader.close();
 	}
