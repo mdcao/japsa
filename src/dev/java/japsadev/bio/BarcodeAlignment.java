@@ -81,27 +81,27 @@ public final class BarcodeAlignment {
 	byte[] pointers;
 	short[] sizesOfVerticalGaps;
 	short[] sizesOfHorizontalGaps;
-	double [][] scores = 
-		{{4.0,0.0,0.0,0.0},
-				{0.0,9.0,-3.0,-1.0}, 
-				{0.0,-3.0,6.0,-2.0},
-				{0.0,-1.0,-2.0,5.0}
-		};
+	//double [][] scores = 
+	//	{{4.0,0.0,0.0,0.0},
+	//			{0.0,9.0,-3.0,-1.0}, 
+	//			{0.0,-3.0,6.0,-2.0},
+	//			{0.0,-1.0,-2.0,5.0}
+	//	};
 	
-	double openPenalty = 10;
-	double extendPenalty = 0.5;
+	double openPenalty = 4.7;
+	double extendPenalty = 1.6;
 		
 	//	double openPenalty = 1;
 	//	double extendPenalty = 1;
 
 
 
-	//double [][] scores = {
-	//		{ 1,-1,-1,-1},
-	//		{-1, 1,-1,-1},
-	//		{-1,-1, 1,-1},
-	//		{-1,-1,-1, 1}			
-	//};
+	double [][] scores = {
+			{  2.7, -4.5, -4.5, -4.5},
+			{ -4.5,  2.7, -4.5, -4.5},
+			{ -4.5, -4.5,  2.7, -4.5},
+			{ -4.5, -4.5, -4.5,  2.7}			
+	};
 		
 	
 	private int cellRow;
