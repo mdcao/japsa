@@ -9,6 +9,7 @@ import htsjdk.samtools.ValidationStringency;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -16,7 +17,6 @@ import japsa.bio.np.RealtimeAnalysis;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
 //Simulate fastq realtime generator: jsa.np.timeEmulate -i <input> -output -
@@ -62,62 +62,80 @@ public class RealtimeScaffolding {
 				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
 		}else{
 			Logging.info("Starting bwa  at " + new Date());
-			ProcessBuilder pb = new ProcessBuilder(bwa, 
-					"mem",
-					"-t",
-					"" + bwaThread,
-					"-k11",
-					"-W20",
-					"-r10",
-					"-A1",
-					"-B1",
-					"-O1",
-					"-E1",
-					"-L0",
-					"-a",
-					"-Y",
-					"-K",
-					"20000",
-					bwaIndex,
-					"-"
-					);
 
-			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("bwa_output_log"))).start();
+			ProcessBuilder pb = inFile.equals("-")?
+					new ProcessBuilder(bwa, 
+							"mem",
+							"-t",
+							"" + bwaThread,
+							"-k11",
+							"-W20",
+							"-r10",
+							"-A1",
+							"-B1",
+							"-O1",
+							"-E1",
+							"-L0",
+							"-a",
+							"-Y",
+							"-K",
+							"20000",
+							bwaIndex,
+							"-"
+							).
+					redirectInput(Redirect.INHERIT):
+						new ProcessBuilder(bwa, 
+								"mem",
+								"-t",
+								"" + bwaThread,
+								"-k11",
+								"-W20",
+								"-r10",
+								"-A1",
+								"-B1",
+								"-O1",
+								"-E1",
+								"-L0",
+								"-a",
+								"-Y",
+								"-K",
+								"20000",
+								bwaIndex,
+								inFile
+								);
 
-			Logging.info("bwa started x");			
+					bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
 
-			SequenceReader seqReader = SequenceReader.getReader(inFile);
+					Logging.info("bwa started x");			
 
-			SequenceOutputStream 
-			outStrs = new SequenceOutputStream(bwaProcess.getOutputStream());
-			Logging.info("set up output from bwa");
+					//SequenceReader seqReader = SequenceReader.getReader(inFile);
 
-			//Start a new thread to feed the inFile into bwa input			
-			Thread thread = new Thread(){
-				public void run(){
-					Sequence seq;
-					Alphabet dna = Alphabet.DNA16();
-					try {
-						Logging.info("Thread to feed bwa started");
-						while ( (seq = seqReader.nextSequence(dna)) !=null){
-							seq.writeFasta(outStrs);
-						}
-						outStrs.close();//as well as signaling
-						seqReader.close();
-					} catch (IOException e) {						
+					//SequenceOutputStream 
+					//outStrs = new SequenceOutputStream(bwaProcess.getOutputStream());
+					//Logging.info("set up output from bwa");
 
-					}finally{
+					//Start a new thread to feed the inFile into bwa input			
+					//Thread thread = new Thread(){
+					//	public void run(){
+					//		Sequence seq;
+					//		Alphabet dna = Alphabet.DNA16();
+					//		try {
+					//			Logging.info("Thread to feed bwa started");
+					//			while ( (seq = seqReader.nextSequence(dna)) !=null){
+					//				seq.writeFasta(outStrs);
+					//			}
+					//			outStrs.close();//as well as signaling
+					//			seqReader.close();
+					//		} catch (IOException e) {						//
 
-					}
-				}
-			};
+					//		}finally{
 
-			Logging.info("thread starting");
-			thread.start();
-			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
+					//		}
+					//	}
+					//};
 
-			Logging.info("set up reader");
-			Logging.info("thread stated");
+					//thread.start();
+					reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
 
 		}
 		SAMRecordIterator iter = reader.iterator();
