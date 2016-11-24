@@ -61,6 +61,7 @@ public class RealtimeScaffolding {
 			else
 				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
 		}else{
+			Logging.info("Starting bwa  at " + new Date());
 			ProcessBuilder pb = new ProcessBuilder(bwa, 
 					"mem",
 					"-t",
@@ -76,38 +77,48 @@ public class RealtimeScaffolding {
 					"-a",
 					"-Y",
 					"-K",
-					"5000",
+					"20000",
 					bwaIndex,
 					"-"
 					);
 
-			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
-			Logging.info("bwa stated");	
-			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
+			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("bwa_output_log"))).start();
+
+			Logging.info("bwa started x");			
+
 			SequenceReader seqReader = SequenceReader.getReader(inFile);
+
 			SequenceOutputStream 
 			outStrs = new SequenceOutputStream(bwaProcess.getOutputStream());
-			
-			
+			Logging.info("set up output from bwa");
+
 			//Start a new thread to feed the inFile into bwa input			
 			Thread thread = new Thread(){
-			    public void run(){
-			    	Sequence seq;
-			    	Alphabet dna = Alphabet.DNA16();
-			    	try {
+				public void run(){
+					Sequence seq;
+					Alphabet dna = Alphabet.DNA16();
+					try {
+						Logging.info("Thread to feed bwa started");
 						while ( (seq = seqReader.nextSequence(dna)) !=null){
 							seq.writeFasta(outStrs);
 						}
 						outStrs.close();//as well as signaling
 						seqReader.close();
 					} catch (IOException e) {						
-						
+
 					}finally{
-						
+
 					}
-			    }
-			  };
-			  thread.start();
+				}
+			};
+
+			Logging.info("thread starting");
+			thread.start();
+			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
+
+			Logging.info("set up reader");
+			Logging.info("thread stated");
+
 		}
 		SAMRecordIterator iter = reader.iterator();
 
@@ -162,7 +173,7 @@ public class RealtimeScaffolding {
 		thread.join();
 		iter.close();
 		reader.close();
-		
+
 		if (bwaProcess != null){
 			bwaProcess.waitFor();
 		}
