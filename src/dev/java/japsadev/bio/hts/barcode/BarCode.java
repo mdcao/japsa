@@ -164,49 +164,43 @@ public class BarCode {
 			}));
 			
 			if(Math.max(tf[tRank[0]]+tr[tRank[0]], cf[cRank[0]]+cr[cRank[0]]) <= 58){
-				Logging.info("Unknown sequence " + seq.getName());
+				//Logging.info("Unknown sequence " + seq.getName());
 				continue;
 			}
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			else if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
-				//if both ends of the same sequence report the best alignment with the barcodes
-				if(samples[tfRank[0]].equals(samples[trRank[0]])){
-					Logging.info("Template sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
-					//do smt
-
-				} else{
-					Logging.info("Template sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]+": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
-					//do smt
-				}
+//				//if both ends of the same sequence report the best alignment with the barcodes
+//				if(samples[tfRank[0]].equals(samples[trRank[0]])){
+//					Logging.info("Template sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
+//					//do smt
+//
+//				} else{
+//					Logging.info("Template sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]+": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
+//					//do smt
+//				}
 				samplesMap.get(samples[tRank[0]]).passRead(seq);
-//				for(int i=0;i<pop;i++)
-//					System.out.printf("%dT:%.2f+%.2f=%.2f ", i,tr[tRank[i]], tf[tRank[i]], tr[tRank[i]] + tf[tRank[i]]);
-//				System.out.println();
 
 
 			} else{
-				//if both ends of the same sequence report the best alignment with the barcodes
-				if(samples[cfRank[0]].equals(samples[crRank[0]])){
-					Logging.info("Complement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
-					//do smt
-
-				} else{
-					Logging.info("Complement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]] + ": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
-					//do smt
-				}
+//				//if both ends of the same sequence report the best alignment with the barcodes
+//				if(samples[cfRank[0]].equals(samples[crRank[0]])){
+//					Logging.info("Complement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
+//					//do smt
+//
+//				} else{
+//					Logging.info("Complement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]] + ": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
+//					//do smt
+//				}
 				samplesMap.get(samples[cRank[0]]).passRead(seq);
-//				for(int i=0;i<pop;i++)
-//					System.out.printf("%dC:%.2f+%.2f=%.2f ", i,cr[cRank[i]], cf[cRank[i]], cr[cRank[i]] + cf[cRank[i]]);
-//				System.out.println();
 
 			}
 		}
 		
 		for(SampleData sample:samplesMap.values()){
 			if(sample.terminate())
-				Logging.info("All done successfully!");
+				Logging.info("All done successfully for sample " + sample.getId());
 			else
-				Logging.error("Cannot finish properly!");
+				Logging.error("Nothing done for sample " + sample.getId());
 		}
 		reader.close();
 	}

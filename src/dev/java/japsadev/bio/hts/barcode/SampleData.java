@@ -7,22 +7,23 @@ import japsa.bio.hts.scaffold.RealtimeScaffolding;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
+import japsa.util.Logging;
 
 public class SampleData {
 	String id;
 	SequenceOutputStream out;
 	//RealtimeScaffolding rtScaffold;
-	Process process;
+	Process process=null;
 	Sequence fBarcode, rBarcode;
 	
 	public SampleData(String id) throws IOException{
 		this.id = id;
-		//out = null;
-		//rtScaffold = null;
+//		out = null;
+//		rtScaffold = null;
 		fBarcode = rBarcode = new Sequence(Alphabet.DNA(), 100);
-		ProcessBuilder pb = new ProcessBuilder("./script.sh", id);
-		process  = pb.start();
-		out = new SequenceOutputStream(process.getOutputStream());
+//		ProcessBuilder pb = new ProcessBuilder("./script.sh", id);
+//		process  = pb.start();
+//		out = new SequenceOutputStream(process.getOutputStream());
 	}
 	
 	public SampleData(String id, OutputStream out, String sequenceFile, Sequence fBarcode, Sequence rBarcode) throws IOException, InterruptedException{
@@ -59,27 +60,30 @@ public class SampleData {
 		this.rBarcode = rBarcode;
 	}
 	
-	public void passRead(Sequence seq){
-		if(seq.length() > 300)
-			try {
-				//SequenceOutputStream out = new SequenceOutputStream(process.getOutputStream());
-				seq.writeFasta(out);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	public void passRead(Sequence seq) throws IOException{
+		if(process==null){
+			ProcessBuilder pb = new ProcessBuilder("./script.sh", id);
+			process  = pb.start();
+			out = new SequenceOutputStream(process.getOutputStream());
+			Logging.info("Process for sample " + getId() + " is started!");
+		}
+		
+		if(process.isAlive() && seq.length() > 300)
+			seq.writeFasta(out);
 		else
 			return;
 	}
 	public boolean terminate(){
-		int stat;
-		try {
-			out.close();
-			stat = process.waitFor();
-		} catch (InterruptedException | IOException e) {
-			// TODO Auto-generated catch block
-			stat=-1;
-			e.printStackTrace();
+		int stat=-1;
+		if(process!=null && process.isAlive()){
+			try {
+				out.close();
+				stat = process.waitFor();
+			} catch (InterruptedException | IOException e) {
+				// TODO Auto-generated catch block
+				stat=-1;
+				e.printStackTrace();
+			}
 		}
 		if(stat==0) return true;
 		else return false;
