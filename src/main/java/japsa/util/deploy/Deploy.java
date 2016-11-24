@@ -52,6 +52,7 @@ import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.hts.VNTRLongReadsCmd;
 import japsa.tools.bio.np.FastNanoporeReaderCmd;
 import japsa.tools.bio.np.GapCloserCmd;
+import japsa.tools.bio.np.GapCloserCmd2;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
 import japsa.tools.bio.np.RealtimeMLSTCmd;
@@ -112,7 +113,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.6-11b";
+	public static String VERSION = "1.6-11c";
 	public static final String FIELD_SEP = "\t";
 
 	public static boolean DEBUG = true;
@@ -169,6 +170,7 @@ public class Deploy {
 		tools.add(new RealtimeResistanceGeneCmd());
 		tools.add(new RegulateTimeCmd());		
 		tools.add(new GapCloserCmd());
+		tools.add(new GapCloserCmd2());
 
 		//tools.add(new SpeciesMixtureCmd());
 		//tools.add(new BaseMethylationCmd());
@@ -210,7 +212,7 @@ public class Deploy {
 		//
 
 
-		//tools.add(new FastNanoporeReaderCmd());
+		//tools.add(new GapCloserCmd2());
 	}	
 
 

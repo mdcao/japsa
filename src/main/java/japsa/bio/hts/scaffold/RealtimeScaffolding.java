@@ -16,6 +16,7 @@ import japsa.bio.np.RealtimeAnalysis;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
 //Simulate fastq realtime generator: jsa.np.timeEmulate -i <input> -output -
@@ -24,14 +25,25 @@ public class RealtimeScaffolding {
 	public ScaffoldGraphDFS graph;
 	int currentReadCount = 0;
 	long currentBaseCount = 0;	
-	
+
 	public RealtimeScaffolding(String seqFile, String genesFile, String resistFile, String isFile, String oriFile, String output)throws IOException, InterruptedException{
 		scaffolder = new RealtimeScaffolder(this, output);		
 		graph = new ScaffoldGraphDFS(seqFile, genesFile, resistFile, isFile, oriFile);
 	}
-	
-	public void scaffolding(String bamFile, int readNumber, int timeNumber, double minCov, int qual) 
-							throws IOException, InterruptedException{
+
+
+	/**
+	 * MDC tried to include BWA as part
+	 * @param bamFile
+	 * @param readNumber
+	 * @param timeNumber
+	 * @param minCov
+	 * @param qual
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public void scaffolding2(String inFile, int readNumber, int timeNumber, double minCov, int qual, String format, String bwa, int bwaThread, String bwaIndex) 
+			throws IOException, InterruptedException{
 		scaffolder.setReadPeriod(readNumber);
 		scaffolder.setTimePeriod(timeNumber * 1000);
 
@@ -39,7 +51,134 @@ public class RealtimeScaffolding {
 
 		//...
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader reader = null;
+
+		Process bwaProcess = null;
+
+		if (format.endsWith("am")){//bam or sam
+			if ("-".equals(inFile))
+				reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+			else
+				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
+		}else{
+			ProcessBuilder pb = new ProcessBuilder(bwa, 
+					"mem",
+					"-t",
+					"" + bwaThread,
+					"-k11",
+					"-W20",
+					"-r10",
+					"-A1",
+					"-B1",
+					"-O1",
+					"-E1",
+					"-L0",
+					"-a",
+					"-Y",
+					"-K",
+					"5000",
+					bwaIndex,
+					"-"
+					);
+
+			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+			Logging.info("bwa stated");	
+			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
+			SequenceReader seqReader = SequenceReader.getReader(inFile);
+			SequenceOutputStream 
+			outStrs = new SequenceOutputStream(bwaProcess.getOutputStream());
+			
+			
+			//Start a new thread to feed the inFile into bwa input			
+			Thread thread = new Thread(){
+			    public void run(){
+			    	Sequence seq;
+			    	Alphabet dna = Alphabet.DNA16();
+			    	try {
+						while ( (seq = seqReader.nextSequence(dna)) !=null){
+							seq.writeFasta(outStrs);
+						}
+						outStrs.close();//as well as signaling
+						seqReader.close();
+					} catch (IOException e) {						
+						
+					}finally{
+						
+					}
+			    }
+			  };
+			  thread.start();
+		}
+		SAMRecordIterator iter = reader.iterator();
+
+		String readID = "";
+		ReadFilling readFilling = null;
+		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
+
+		Thread thread = new Thread(scaffolder);
+		thread.start();	
+		while (iter.hasNext()) {
+			SAMRecord rec = iter.next();
+
+			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){		
+				if (!readID.equals(rec.getReadName())){
+					readID = rec.getReadName();
+					synchronized(this){
+						currentReadCount ++;
+						currentBaseCount += rec.getReadLength();
+					}
+				}
+				continue;		
+			}
+			AlignmentRecord myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
+
+			if (readID.equals(myRec.readID)) {				
+
+				if (myRec.useful){				
+					for (AlignmentRecord s : samList) {
+						if (s.useful){				
+							//...update with synchronized
+							synchronized(this.graph){
+								graph.addBridge(readFilling, s, myRec, minCov);
+								//Collections.sort(graph.bridgeList);
+							}
+						}
+					}
+				}
+			} else {
+				samList = new ArrayList<AlignmentRecord>();
+				readID = myRec.readID;	
+				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
+				synchronized(this){
+					currentReadCount ++;
+					currentBaseCount += rec.getReadLength();
+				}
+			}
+
+			samList.add(myRec);
+
+		}// while
+		scaffolder.stopWaiting();
+		thread.join();
+		iter.close();
+		reader.close();
 		
+		if (bwaProcess != null){
+			bwaProcess.waitFor();
+		}
+
+	}
+
+	public void scaffolding(String bamFile, int readNumber, int timeNumber, double minCov, int qual) 
+			throws IOException, InterruptedException{
+		scaffolder.setReadPeriod(readNumber);
+		scaffolder.setTimePeriod(timeNumber * 1000);
+
+		Logging.info("Scaffolding ready at " + new Date());
+
+		//...
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+
 		SamReader reader;
 		if ("-".equals(bamFile))
 			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
@@ -70,7 +209,7 @@ public class RealtimeScaffolding {
 			AlignmentRecord myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
 
 			if (readID.equals(myRec.readID)) {				
-	
+
 				if (myRec.useful){				
 					for (AlignmentRecord s : samList) {
 						if (s.useful){				
@@ -91,7 +230,7 @@ public class RealtimeScaffolding {
 					currentBaseCount += rec.getReadLength();
 				}
 			}
-				
+
 			samList.add(myRec);
 
 		}// while
@@ -116,7 +255,7 @@ public class RealtimeScaffolding {
 				ContigBridge.forceFilling();
 				analysis();
 			}
-			
+
 			try{
 				outOS.close();
 			}catch (Exception e){
@@ -129,7 +268,7 @@ public class RealtimeScaffolding {
 			long step = (lastTime - startTime)/1000;//convert to second	
 			scaffolding.graph.connectBridges();
 			int scfCount = 0,
-				cirCount = 0;
+					cirCount = 0;
 			for (int i = 0; i < scaffolding.graph.scaffolds.length;i++){
 				if (scaffolding.graph.scaffolds[i].size() > 0){
 					int len = scaffolding.graph.scaffolds[i].getLast().rightMost() - scaffolding.graph.scaffolds[i].getFirst().leftMost();
@@ -139,8 +278,8 @@ public class RealtimeScaffolding {
 						continue;
 					}
 					if (scaffolding.graph.contigs.get(i).head == i 
-						&& !ScaffoldGraph.isRepeat(scaffolding.graph.contigs.get(i))
-						&& len > ScaffoldGraph.maxRepeatLength)				
+							&& !ScaffoldGraph.isRepeat(scaffolding.graph.contigs.get(i))
+							&& len > ScaffoldGraph.maxRepeatLength)				
 						scfCount++;
 				}
 			}
@@ -150,7 +289,7 @@ public class RealtimeScaffolding {
 				scaffolding.graph.printSequences();
 				outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50 | \tBreaks (maxlen)\n");
 				outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + scfCount 
-							+ " |\t" + cirCount + " |\t" + scaffolding.graph.getN50() + " |\t" + scaffolding.graph.getGapsInfo());
+						+ " |\t" + cirCount + " |\t" + scaffolding.graph.getN50() + " |\t" + scaffolding.graph.getGapsInfo());
 
 				outOS.println();
 				outOS.flush();
@@ -164,6 +303,6 @@ public class RealtimeScaffolding {
 			// TODO Auto-generated method stub
 			return scaffolding.currentReadCount;
 		}
-		
+
 	}
 }
