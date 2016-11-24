@@ -2,7 +2,8 @@ package japsadev.tools;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
-import japsadev.bio.hts.barcode.BarCode;
+//import japsadev.bio.hts.barcode.BarCode;
+import japsadev.bio.hts.barcode.BarCodeAnalysis;
 
 @Deployable(
 		scriptName = "jsa.dev.barcode", 
@@ -29,9 +30,9 @@ public class BarCodeAnalysisCmd extends CommandLine{
 
 
 
-		BarCode bc;
+		BarCodeAnalysis bc;
 		try {
-			bc = new BarCode(bcFile);
+			bc = new BarCodeAnalysis(bcFile);
 			bc.clustering(seqFile);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
