@@ -1,9 +1,13 @@
 package japsadev.tools;
 
+import java.io.IOException;
+
+import jaligner.matrix.MatrixLoaderException;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 //import japsadev.bio.hts.barcode.BarCode;
 import japsadev.bio.hts.barcode.BarCodeAnalysis;
+import japsadev.bio.hts.barcode.BarCodeAnalysisVerbose;
 
 @Deployable(
 		scriptName = "jsa.dev.barcode", 
@@ -19,27 +23,25 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		addString("bcFile", null, "Barcode file",true);		
 		addString("seqFile", null, "Nanopore sequences file",true);
 		addString("scriptRun", null, "Invoke command script to run npScarf",true);
-
+		addBoolean("verbose", false, "Verbose mode to show alignments (blossom62)");
 		addStdHelp();
 	}
-	public static void main(String[] args){
+	public static void main(String[] args) throws IOException, InterruptedException, MatrixLoaderException{
 		CommandLine cmdLine = new BarCodeAnalysisCmd ();
 		args = cmdLine.stdParseLine(args);
 
 		String bcFile = cmdLine.getStringVal("bcFile");
 		String script = cmdLine.getStringVal("scriptRun");
 		String seqFile = cmdLine.getStringVal("seqFile");
+		Boolean v = cmdLine.getBooleanVal("verbose");
 
-
-
-		BarCodeAnalysis bc;
-		try {
-			bc = new BarCodeAnalysis(bcFile,script);
+		if(v){
+			BarCodeAnalysisVerbose bc = new BarCodeAnalysisVerbose(bcFile,script);
 			bc.clustering(seqFile);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-
+		}else{
+			BarCodeAnalysis bc = new BarCodeAnalysis(bcFile,script);
+			bc.clustering(seqFile);
+		}
+		
 	}
 }

@@ -9,7 +9,7 @@ import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 import japsadev.bio.BarcodeAlignment;
 public class BarCodeAnalysis {
-	static final int SCAN_WINDOW=60, SCORE_THRES=30; 
+	static final int SCAN_WINDOW=120, SCORE_THRES=30; 
 	ArrayList<Sequence> barCodes;
 	ArrayList<Sequence> barCodeComps;
 	Process[] processes;

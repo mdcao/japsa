@@ -107,61 +107,55 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	this("Assembly graph",true,false,1000,100000);
         setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
     }
-    public void loadFromFile(String graphFile){
+    public void loadFromFile(String graphFile) throws IOException{
         setAutoCreate(true);
         setStrict(false);
 		//1. next iterate over again to read the connections
-		SequenceReader reader;
-		try {
-			reader = new FastaReader(graphFile);
-			Sequence seq;
-			int shortestLen = 10000;
-			while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-				if(seq.length()<shortestLen)
-					shortestLen=seq.length();
-				
-				String[] adjList = seq.getName().split(":");
-				String name = adjList[0];
-				boolean dir0=name.contains("'")?false:true;
-				
-				name=name.replaceAll("[^a-zA-Z0-9_.]", "").trim(); //EDGE_X_length_Y_cov_Z
-				
-				String nodeID = name.split("_")[1];
-				AbstractNode node = addNode(nodeID);
-				node.setAttribute("name", name);
-				
-				if(dir0){
-					seq.setName(name);
-					//current.setSequence(seq);
-					node.setAttribute("seq", seq);
-				}
-				if (adjList.length > 1){
-					String[] nbList = adjList[1].split(",");
-					for(int i=0; i < nbList.length; i++){
-						String neighbor = nbList[i];
-						// note that the direction is read reversely in the dest node
-						boolean dir1=neighbor.contains("'")?true:false;
-						neighbor=neighbor.replaceAll("[^a-zA-Z0-9_.]", "").trim();
-						
-						String neighborID = neighbor.split("_")[1];
-						AbstractNode nbr = addNode(neighborID);
-						
-						addEdge(node, nbr, dir0, dir1);
-						//e.addAttribute("ui.label", e.getId());
-					}
-				}
-				
-			}
-
-			//rough estimation of kmer used
-			if((shortestLen-1) != getKmerSize())
-				setKmerSize(shortestLen-1);
+		SequenceReader reader = new FastaReader(graphFile);
+		Sequence seq;
+		int shortestLen = 10000;
+		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
+			if(seq.length()<shortestLen)
+				shortestLen=seq.length();
 			
-			reader.close();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			String[] adjList = seq.getName().split(":");
+			String name = adjList[0];
+			boolean dir0=name.contains("'")?false:true;
+			
+			name=name.replaceAll("[^a-zA-Z0-9_.]", "").trim(); //EDGE_X_length_Y_cov_Z
+			
+			String nodeID = name.split("_")[1];
+			AbstractNode node = addNode(nodeID);
+			node.setAttribute("name", name);
+			
+			if(dir0){
+				seq.setName(name);
+				//current.setSequence(seq);
+				node.setAttribute("seq", seq);
+			}
+			if (adjList.length > 1){
+				String[] nbList = adjList[1].split(",");
+				for(int i=0; i < nbList.length; i++){
+					String neighbor = nbList[i];
+					// note that the direction is read reversely in the dest node
+					boolean dir1=neighbor.contains("'")?true:false;
+					neighbor=neighbor.replaceAll("[^a-zA-Z0-9_.]", "").trim();
+					
+					String neighborID = neighbor.split("_")[1];
+					AbstractNode nbr = addNode(neighborID);
+					
+					addEdge(node, nbr, dir0, dir1);
+					//e.addAttribute("ui.label", e.getId());
+				}
+			}
+			
 		}
+
+		//rough estimation of kmer used
+		if((shortestLen-1) != getKmerSize())
+			setKmerSize(shortestLen-1);
+		
+		reader.close();
     }
     /*
      * Read paths from contigs.path and reduce the graph
