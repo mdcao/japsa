@@ -18,6 +18,7 @@ public class BarCodeAnalysisCmd extends CommandLine{
 
 		addString("bcFile", null, "Barcode file",true);		
 		addString("seqFile", null, "Nanopore sequences file",true);
+		addString("scriptRun", null, "Invoke command script to run npScarf",true);
 
 		addStdHelp();
 	}
@@ -26,13 +27,14 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		args = cmdLine.stdParseLine(args);
 
 		String bcFile = cmdLine.getStringVal("bcFile");
+		String script = cmdLine.getStringVal("scriptRun");
 		String seqFile = cmdLine.getStringVal("seqFile");
 
 
 
 		BarCodeAnalysis bc;
 		try {
-			bc = new BarCodeAnalysis(bcFile);
+			bc = new BarCodeAnalysis(bcFile,script);
 			bc.clustering(seqFile);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
