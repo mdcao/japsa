@@ -38,9 +38,12 @@ import japsa.bio.hts.scaffold.ContigBridge;
 import japsa.bio.hts.scaffold.RealtimeScaffolding;
 import japsa.bio.hts.scaffold.ScaffoldGraph;
 import japsa.bio.hts.scaffold.ScaffoldGraphDFS;
+import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 
@@ -101,13 +104,13 @@ public class GapCloserCmd2 extends CommandLine{
 		/***********************************************************************/
 		String prefix = cmdLine.getStringVal("prefix");
 		//String bamFile = cmdLine.getStringVal("bamFile");
-		
+
 		String input = cmdLine.getStringVal("input");
 		String bwaExe = cmdLine.getStringVal("bwaExe");
 		int bwaThread = cmdLine.getIntVal("bwaThread");
-		String format = cmdLine.getStringVal("format");
-		
-		
+		String format = cmdLine.getStringVal("format").toLowerCase();
+
+
 		String sequenceFile = cmdLine.getStringVal("seqFile"),
 				spadesFolder = cmdLine.getStringVal("spadesDir"),
 
@@ -119,9 +122,46 @@ public class GapCloserCmd2 extends CommandLine{
 
 		File 	graphFile = new File(spadesFolder+"/assembly_graph.fastg"),
 				pathFile = new File(spadesFolder+"/contigs.paths");
-		
-		
+
+
 		//TODO: need to validate bwa if fastq is the input		
+		if (format.startsWith("fastq") ||
+				format.startsWith("fasta") ||
+				format.startsWith("fq") ||
+				format.startsWith("fa")){
+			try{
+				ProcessBuilder pb = new ProcessBuilder(bwaExe).redirectErrorStream(true);
+				Process process =  pb.start();
+				BufferedReader bf = SequenceReader.openFile(process.getInputStream());
+				String line;
+				String version = "";
+				while ((line = bf.readLine())!=null){
+					if (line.startsWith("Version: ")){
+						version = line.substring(9).trim();
+						break;//while
+					}				
+				}	
+				bf.close();
+				if (version.length() == 0){
+					System.err.println(bwaExe + " is not the rith path to bwa. bwa is required");
+					System.exit(1);
+				}else{
+					if (!version.startsWith("0.7.1")){
+						System.err.println(" Require bwa of 0.7.11 or above");
+						System.exit(1);
+					}
+				}
+			}catch (IOException e){
+				System.err.println(e.getMessage());
+				System.exit(1);
+			}
+
+		}else if (format.startsWith("sam") || format.startsWith("bam")){
+			// no problem
+		}else{
+			System.err.println("I dont understand format " + format);
+			System.exit(1);
+		}
 
 		if(spadesFolder !=null && graphFile.exists() && pathFile.exists())
 			Logging.info("===> Use assembly graph and path from SPAdes!");
@@ -141,7 +181,7 @@ public class GapCloserCmd2 extends CommandLine{
 		//		"-t", String.valueOf(threads),
 		//		"-o", assemblyPath + "spades_output_" + sampleID
 		//		);
-				 
+
 
 		int 	//marginThres = cmdLine.getIntVal("marginThres"),
 		minContig = cmdLine.getIntVal("minContig"),
@@ -205,7 +245,7 @@ public class GapCloserCmd2 extends CommandLine{
 			if (cov <=0)
 				cov = ScaffoldGraph.estimatedCov;
 
-			graph.makeConnections(input, cov / 1.6, qual);
+			graph.makeConnections2(input, cov / 1.6, qual, format, bwaExe, bwaThread, sequenceFile);
 
 			graph.connectBridges();
 			if(prefix != null)

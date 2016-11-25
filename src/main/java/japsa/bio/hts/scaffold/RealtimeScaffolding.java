@@ -42,7 +42,7 @@ public class RealtimeScaffolding {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public void scaffolding2(String inFile, int readNumber, int timeNumber, double minCov, int qual, String format, String bwa, int bwaThread, String bwaIndex) 
+	public void scaffolding2(String inFile, int readNumber, int timeNumber, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) 
 			throws IOException, InterruptedException{
 		scaffolder.setReadPeriod(readNumber);
 		scaffolder.setTimePeriod(timeNumber * 1000);
@@ -62,80 +62,82 @@ public class RealtimeScaffolding {
 				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
 		}else{
 			Logging.info("Starting bwa  at " + new Date());
+			ProcessBuilder pb = null;
+			if ("-".equals(inFile)){
+				pb = new ProcessBuilder(bwaExe, 
+						"mem",
+						"-t",
+						"" + bwaThread,
+						"-k11",
+						"-W20",
+						"-r10",
+						"-A1",
+						"-B1",
+						"-O1",
+						"-E1",
+						"-L0",
+						"-a",
+						"-Y",
+						"-K",
+						"20000",
+						bwaIndex,
+						"-"
+						).
+						redirectInput(Redirect.INHERIT);
+			}else{
+				pb = new ProcessBuilder(bwaExe, 
+						"mem",
+						"-t",
+						"" + bwaThread,
+						"-k11",
+						"-W20",
+						"-r10",
+						"-A1",
+						"-B1",
+						"-O1",
+						"-E1",
+						"-L0",
+						"-a",
+						"-Y",
+						"-K",
+						"20000",
+						bwaIndex,
+						inFile
+						);
+			}
 
-			ProcessBuilder pb = inFile.equals("-")?
-					new ProcessBuilder(bwa, 
-							"mem",
-							"-t",
-							"" + bwaThread,
-							"-k11",
-							"-W20",
-							"-r10",
-							"-A1",
-							"-B1",
-							"-O1",
-							"-E1",
-							"-L0",
-							"-a",
-							"-Y",
-							"-K",
-							"20000",
-							bwaIndex,
-							"-"
-							).
-					redirectInput(Redirect.INHERIT):
-						new ProcessBuilder(bwa, 
-								"mem",
-								"-t",
-								"" + bwaThread,
-								"-k11",
-								"-W20",
-								"-r10",
-								"-A1",
-								"-B1",
-								"-O1",
-								"-E1",
-								"-L0",
-								"-a",
-								"-Y",
-								"-K",
-								"20000",
-								bwaIndex,
-								inFile
-								);
+			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
 
-					bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+			Logging.info("bwa started x");			
 
-					Logging.info("bwa started x");			
+			//SequenceReader seqReader = SequenceReader.getReader(inFile);
 
-					//SequenceReader seqReader = SequenceReader.getReader(inFile);
+			//SequenceOutputStream 
+			//outStrs = new SequenceOutputStream(bwaProcess.getOutputStream());
+			//Logging.info("set up output from bwa");
 
-					//SequenceOutputStream 
-					//outStrs = new SequenceOutputStream(bwaProcess.getOutputStream());
-					//Logging.info("set up output from bwa");
+			//Start a new thread to feed the inFile into bwa input			
+			//Thread thread = new Thread(){
+			//	public void run(){
+			//		Sequence seq;
+			//		Alphabet dna = Alphabet.DNA16();
+			//		try {
+			//			Logging.info("Thread to feed bwa started");
+			//			while ( (seq = seqReader.nextSequence(dna)) !=null){
+			//				seq.writeFasta(outStrs);
+			//			}
+			//			outStrs.close();//as well as signaling
+			//			seqReader.close();
+			//		} catch (IOException e) {						//
 
-					//Start a new thread to feed the inFile into bwa input			
-					//Thread thread = new Thread(){
-					//	public void run(){
-					//		Sequence seq;
-					//		Alphabet dna = Alphabet.DNA16();
-					//		try {
-					//			Logging.info("Thread to feed bwa started");
-					//			while ( (seq = seqReader.nextSequence(dna)) !=null){
-					//				seq.writeFasta(outStrs);
-					//			}
-					//			outStrs.close();//as well as signaling
-					//			seqReader.close();
-					//		} catch (IOException e) {						//
+			//		}finally{
 
-					//		}finally{
+			//		}
+			//	}
+			//};
 
-					//		}
-					//	}
-					//};
-
-					//thread.start();
-					reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
+			//thread.start();
+			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
 
 		}
 		SAMRecordIterator iter = reader.iterator();

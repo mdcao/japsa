@@ -13,6 +13,7 @@ import japsadev.bio.BarcodeAlignment;
 public class BarCodeAnalysis {
 	static final int SCAN_WINDOW=60, SCORE_THRES=58; 
 	ArrayList<Sequence> barCodes;
+	ArrayList<Sequence> barCodeComps;
 	Process[] processes;
 	int nSamples;
 	SequenceOutputStream[] streamToScaffolder, streamToFile;
@@ -20,14 +21,21 @@ public class BarCodeAnalysis {
 	public BarCodeAnalysis(String barcodeFile, String scriptFile) throws IOException{
 			barCodes = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
 			nSamples = barCodes.size();
+			
+			
+			
 			processes = new Process[nSamples];
 			streamToScaffolder = new SequenceOutputStream[nSamples];
 			//streamToFile = new SequenceOutputStream[nSamples];
 			
+			barCodeComps = new ArrayList<Sequence> (barCodes.size());
 			String id;
-			for(int i=0;i<nSamples;i++){
-				id = barCodes.get(i).getName();
-				System.out.println(i + " >" + id + ":" + barCodes.get(i));
+			for(int i=0;i<nSamples;i++){		
+				Sequence barCode = barCodes.get(i);
+				barCodeComps.add(Alphabet.DNA.complement(barCode));
+				
+				id = barCode.getName();
+				System.out.println(i + " >" + id + ":" + barCode);
 				
 				ProcessBuilder pb = new ProcessBuilder(scriptFile, id);
 				processes[i]  = pb.start();
@@ -73,26 +81,43 @@ public class BarCodeAnalysis {
 
 			t5 = seq.subSequence(0, SCAN_WINDOW);
 			t3 = seq.subSequence(seq.length()-SCAN_WINDOW,seq.length());
-			c5 = Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()));
-			c3 = Alphabet.DNA.complement(seq.subSequence(0, SCAN_WINDOW));
+			//c5 = Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()));
+			//c3 = Alphabet.DNA.complement(seq.subSequence(0, SCAN_WINDOW));
 
+			double bestScore = 0.0;
+			double bestIndex = nSamples;
 	
-			for(int i=0;i<nSamples;i++){
-				Sequence 	barcode = barCodes.get(i);
+			for(int i=0;i<nSamples; i++){
+				Sequence barcode = barCodes.get(i);
+				Sequence barcodeComp = barCodeComps.get(i);
 
-				barcodeAlignment.setBarcodeSequence(barcode);
+				barcodeAlignment.setBarcodeSequence(barcode);				
+				barcodeAlignment.setReadSequence(t5);				
+				tf[i]=barcodeAlignment.align();				
 				
-				barcodeAlignment.setReadSequence(t5);
-				tf[i]=barcodeAlignment.align();
-				barcodeAlignment.setReadSequence(c5);
+				barcodeAlignment.setBarcodeSequence(barcodeComp);
 				cf[i]=barcodeAlignment.align();
-						
+				
 				barcodeAlignment.setReadSequence(t3);
-				tr[i]=barcodeAlignment.align();
-				barcodeAlignment.setReadSequence(c3);
 				cr[i]=barcodeAlignment.align();
-
+				barcodeAlignment.setBarcodeSequence(barcode);
+				tr[i]=barcodeAlignment.align();
+				
+				//barcodeAlignment.setReadSequence(c3);
+				//cr[i]=barcodeAlignment.align();
+				
+				//This is for both end
+				//double myScore = Math.max(tf[i], tr[i]) + Math.max(cf[i], cr[i]);
+				
+				//but may be we can use onely one end
+				double myScore = Math.max(Math.max(tf[i], tr[i]), Math.max(cf[i], cr[i]));
+				if (myScore > bestScore){
+					bestScore = myScore;
+					bestIndex = i;
+				}
 			}
+			//Can you use this bestIndex instead?
+
 			for(int i=0;i<nSamples;i++)
 				tRank[i]=cRank[i]=i;
 
