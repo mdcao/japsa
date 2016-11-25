@@ -11,7 +11,7 @@ import japsa.util.Logging;
 
 public class SampleData {
 	String id;
-	SequenceOutputStream out;
+	SequenceOutputStream streamToScaffolder, streamToFile;
 	//RealtimeScaffolding rtScaffold;
 	Process process=null;
 	Sequence fBarcode, rBarcode;
@@ -21,6 +21,7 @@ public class SampleData {
 //		out = null;
 //		rtScaffold = null;
 		fBarcode = rBarcode = new Sequence(Alphabet.DNA(), 100);
+		streamToFile = SequenceOutputStream.makeOutputStream(id+".fasta");
 //		ProcessBuilder pb = new ProcessBuilder("./script.sh", id);
 //		process  = pb.start();
 //		out = new SequenceOutputStream(process.getOutputStream());
@@ -64,12 +65,14 @@ public class SampleData {
 		if(process==null){
 			ProcessBuilder pb = new ProcessBuilder("./script.sh", id);
 			process  = pb.start();
-			out = new SequenceOutputStream(process.getOutputStream());
+			streamToScaffolder = new SequenceOutputStream(process.getOutputStream());
 			Logging.info("Process for sample " + getId() + " is started!");
 		}
 		
-		if(process.isAlive() && seq.length() > 300)
-			seq.writeFasta(out);
+		if(process.isAlive() && seq.length() > 300){
+			seq.writeFasta(streamToScaffolder);
+			seq.writeFasta(streamToFile);
+		}
 		else
 			return;
 	}
@@ -77,7 +80,8 @@ public class SampleData {
 		int stat=-1;
 		if(process!=null && process.isAlive()){
 			try {
-				out.close();
+				streamToScaffolder.close();
+				streamToFile.close();
 				stat = process.waitFor();
 			} catch (InterruptedException | IOException e) {
 				// TODO Auto-generated catch block

@@ -1,5 +1,6 @@
 package japsadev.bio.hts.barcode;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,24 +15,39 @@ public class BarCode {
 	static final int SCAN_WINDOW=60; 
 	HashMap<String, SampleData> samplesMap;
 	
+	
 	public BarCode(String barcodeFile) throws IOException{
+		//ArrayList<Sequence> barCodes = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
+			
 		samplesMap = new HashMap<String, SampleData>();
 		SequenceReader reader = new FastaReader(barcodeFile);
 		Sequence seq;
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-			//header must follow the format [F/R]_id
-			String 	ori = seq.getName().substring(0, 1),
-					id = seq.getName().substring(2);
+			//poreFUME: header must follow the format [F/R]_id
+			//minion: just one sequence for both ends, header is id
+			String header =seq.getName();
+			String ori="", id;
+			if(header.indexOf("F_")==0 || header.indexOf("R_")==0){
+				ori = seq.getName().substring(0, 1);
+				id = seq.getName().substring(2);
+			}else
+				id = header;
+			
 			SampleData sample = samplesMap.get(id);
 			if(sample==null){
 				sample = new SampleData(id);
 				samplesMap.put(id, sample);
 			}
-
-			if(ori.equals("F"))
+			if(ori.isEmpty()){
+					sample.setFBarcode(seq);
+					sample.setRBarcode(seq);
+			}
+			else if(ori.equals("F"))
 				sample.setFBarcode(seq);
 			else if (ori.equals("R"))
 				sample.setRBarcode(seq);
+
+				
 			//TODO: how to set corresponding SPAdes contigs file???
 
 		}
@@ -169,28 +185,28 @@ public class BarCode {
 			}
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			else if(tf[tRank[0]]+tr[tRank[0]] > cf[cRank[0]]+cr[cRank[0]]){
-//				//if both ends of the same sequence report the best alignment with the barcodes
-//				if(samples[tfRank[0]].equals(samples[trRank[0]])){
-//					Logging.info("Template sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
-//					//do smt
-//
-//				} else{
-//					Logging.info("Template sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]+": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
-//					//do smt
-//				}
+				//if both ends of the same sequence report the best alignment with the barcodes
+				if(samples[tfRank[0]].equals(samples[trRank[0]])){
+					Logging.info("Template sequence " + seq.getName() + " 100% belongs to sample " + samples[tfRank[0]]);
+					//do smt
+
+				} else{
+					Logging.info("Template sequence " + seq.getName() + " might belongs to sample " + samples[tRank[0]]+": tfRank=" + indexOf(tfRank,tRank[0]) + " trRank=" + indexOf(trRank,tRank[0]));
+					//do smt
+				}
 				samplesMap.get(samples[tRank[0]]).passRead(seq);
 
 
 			} else{
-//				//if both ends of the same sequence report the best alignment with the barcodes
-//				if(samples[cfRank[0]].equals(samples[crRank[0]])){
-//					Logging.info("Complement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
-//					//do smt
-//
-//				} else{
-//					Logging.info("Complement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]] + ": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
-//					//do smt
-//				}
+				//if both ends of the same sequence report the best alignment with the barcodes
+				if(samples[cfRank[0]].equals(samples[crRank[0]])){
+					Logging.info("Complement sequence " + seq.getName() + " 100% belongs to sample " + samples[cfRank[0]]);
+					//do smt
+
+				} else{
+					Logging.info("Complement sequence " + seq.getName() + " might belongs to sample " + samples[cRank[0]] + ": cfRank=" + indexOf(cfRank,cRank[0]) + " crRank=" + indexOf(crRank,cRank[0]));
+					//do smt
+				}
 				samplesMap.get(samples[cRank[0]]).passRead(seq);
 
 			}
