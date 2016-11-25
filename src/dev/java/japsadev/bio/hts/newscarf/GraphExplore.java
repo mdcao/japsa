@@ -7,12 +7,12 @@ import java.util.regex.Pattern;
 
 import org.graphstream.graph.*;
 public class GraphExplore {
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException {
     	new GraphExplore();
 
     }
 
-    public GraphExplore(){
+    public GraphExplore() throws IOException{
     	System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
     	
     	BidirectedGraph graph= new BidirectedGraph();
