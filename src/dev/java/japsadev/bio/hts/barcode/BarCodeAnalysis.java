@@ -126,8 +126,12 @@ public class BarCodeAnalysis {
 			else {
 				Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
 				if(bestIndex<nSamples && processes[bestIndex]!=null && processes[bestIndex].isAlive()){
-					Logging.info("...writing to stream " + bestIndex);
-					seq.writeFasta(streamToScaffolder[bestIndex]);
+					if(bestIndex==0){
+						Logging.info("...skip to write to stream " + barCodes.get(0).getName());
+					}else{
+						Logging.info("...writing to stream " + bestIndex);
+						seq.writeFasta(streamToScaffolder[bestIndex]);
+					}
 				}
 			}
 
