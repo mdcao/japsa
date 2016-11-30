@@ -71,7 +71,8 @@ public class GapCloserCmd2 extends CommandLine{
 		addString("format", "fastq", "format of the input fastq or sam/bam");
 		addString("bwaExe", "bwa", "Path to bwa");
 		addInt("bwaThread", 4, "Theads used by bwa");
-
+		addBoolean("allReport", false, "Whether also report repeats and short sequences");
+		
 		addString("spadesDir", null, "Name of the output folder by SPAdes. Experimental.");
 		addString("prefix", "out", "Prefix for the output files");	
 		addString("genes", null , "Realtime annotation: name of annotated genes in GFF 3.0 format");
@@ -109,7 +110,6 @@ public class GapCloserCmd2 extends CommandLine{
 		String bwaExe = cmdLine.getStringVal("bwaExe");
 		int bwaThread = cmdLine.getIntVal("bwaThread");
 		String format = cmdLine.getStringVal("format").toLowerCase();
-
 
 		String sequenceFile = cmdLine.getStringVal("seqFile"),
 				spadesFolder = cmdLine.getStringVal("spadesDir"),
@@ -202,7 +202,7 @@ public class GapCloserCmd2 extends CommandLine{
 		ScaffoldGraph.maxRepeatLength = maxRepeat;		
 		//ScaffoldGraph.marginThres = marginThres;
 		ScaffoldGraph.verbose = cmdLine.getBooleanVal("verbose");
-
+		ScaffoldGraph.reportAll = cmdLine.getBooleanVal("allReport");
 
 		double cov = cmdLine.getDoubleVal("cov");
 		int qual = cmdLine.getIntVal("qual");

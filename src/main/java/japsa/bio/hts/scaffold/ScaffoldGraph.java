@@ -65,7 +65,9 @@ public class ScaffoldGraph{
 	public static int minContigLength = 300;
 	public static int minSupportReads = 1;
 	public static boolean verbose = false;
+	public static boolean reportAll = false;
 	public boolean annotation = false;
+
 
 	public String prefix = "out";					
 	public static double estimatedCov = 0;
@@ -932,9 +934,9 @@ public class ScaffoldGraph{
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
+				boolean reportCond = reportAll?true:(!isRepeat(contigs.get(i)) && len > maxRepeatLength);
 				if ((contigs.get(i).head == i 
-						&& !isRepeat(contigs.get(i))
-						&& len > maxRepeatLength
+						&& reportCond
 						)
 						|| scaffolds[i].closeBridge != null
 						)
@@ -951,9 +953,9 @@ public class ScaffoldGraph{
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
+				boolean reportCond = reportAll?true:(!isRepeat(contigs.get(i)) && len > maxRepeatLength);
 				if ((contigs.get(i).head == i 
-						&& !isRepeat(contigs.get(i))
-						&& len > maxRepeatLength
+						&& reportCond
 						)
 						|| scaffolds[i].closeBridge != null
 						)
