@@ -89,4 +89,5 @@ public class BidirectedPath extends Path{
 			}
 		 return seq.toSequence();
 	 }
+	 
 }

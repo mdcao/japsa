@@ -205,7 +205,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
      */
     public AbstractNode reduce(BidirectedPath p){
     	//do nothing if the path has only one node
-    	if(p.getEdgeCount()<1)
+    	if(p==null || p.getEdgeCount()<1)
     		return null;
     	//add the new composite Node to the graph
     	//compare id from sense & anti-sense to get the unique one
@@ -316,7 +316,32 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	removeNode(v);
     	}
     /*
+     * This function deduces a full path in this graph between 2 nodes aligned with a long read
+     */
+    public Path getClosestPath(BidirectedNode src, BidirectedNode dst, int distance){
+    	
+    	
+		return null;
+    	
+    }
+    /*
+     * Find a path based on list of Alignments
+     */
+	public BidirectedPath pathFinding(ArrayList<Alignment> sortedAlignments) {
+		// TODO Auto-generated method stub
+		System.out.println("=================================================");
+		for(Alignment alg:sortedAlignments)
+			System.out.println("\t"+alg.toString());
+		System.out.println("=================================================");
+
+		return null;
+	}
+	
+    /*
      * Important function: determine if a node is able to be removed or not
+     * TODO: re-implement it based on statistics of coverage also
+     * 1. pick the least coverage ones among a path as the base
+     * 2. global base
      */
     public static boolean isUnique(Node node){
     	boolean res = false;
@@ -327,4 +352,5 @@ public class BidirectedGraph extends AdjacencyListGraph{
     		
     	return res;
     }
+
 }

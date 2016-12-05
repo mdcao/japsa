@@ -7,8 +7,14 @@ import java.util.regex.Pattern;
 
 import org.graphstream.graph.*;
 public class GraphExplore {
-    public static void main(String args[]) throws IOException {
-    	new GraphExplore();
+	public static void main(String args[]) {
+    	try {
+			new GraphExplore();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 
     }
 
@@ -19,9 +25,9 @@ public class GraphExplore {
         graph.addAttribute("ui.quality");
         graph.addAttribute("ui.antialias");
         graph.addAttribute("ui.stylesheet", styleSheet);
-        //graph.display();
+        graph.display();
         
-        graph.loadFromFile("/home/hoangnguyen/workspace/data/spades/EcK12S-careful/assembly_graph.fastg");
+        graph.loadFromFile("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/assembly_graph.fastg");
 
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 
@@ -37,7 +43,7 @@ public class GraphExplore {
          * Testing reduce function
          */
         try {
-			graph.readPathsFromSpades("/home/hoangnguyen/workspace/data/spades/EcK12S-careful/contigs.paths");
+			graph.readPathsFromSpades("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/contigs.paths");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
