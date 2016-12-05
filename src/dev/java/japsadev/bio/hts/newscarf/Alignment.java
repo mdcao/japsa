@@ -113,7 +113,8 @@ public class Alignment implements Comparable<Alignment> {
 		if (
 				(readLeft < OVERHANG_THRES || refLeft < OVERHANG_THRES) &&
 				(readRight  < OVERHANG_THRES || refRight < OVERHANG_THRES) &&
-				score > BidirectedGraph.getKmerSize()
+				!sam.getNotPrimaryAlignmentFlag() && //TODO: should be separated as another attribute for further consideration??
+				score > BidirectedGraph.getKmerSize() //FIXME: 
 			)
 			useful = true;
 
@@ -130,14 +131,17 @@ public class Alignment implements Comparable<Alignment> {
 	}
 
 	public String toString() {
-		return node.getId()    
-				+ " " + refStart 
-				+ " " + refEnd
-				+ " " + ((Sequence) node.getAttribute("seq")).length()
-				+ " " + readStart 
-				+ " " + readEnd
-				+ " " + readLength				
-				+ " " + strand;
+		return node.getAttribute("name")  
+				+ ": " + refStart 
+				+ " -> " + refEnd
+				+ " / " + ((Sequence) node.getAttribute("seq")).length()
+				+ " map to "
+				+ readID
+				+ ": " + readStart 
+				+ " -> " + readEnd
+				+ " / " + readLength				
+				+ ", strand: " + (strand?"+":"-")
+				+ " useful: " + (useful?"yes":"no");
 	}
 	
 	/* (non-Javadoc)

@@ -56,8 +56,9 @@ public class HybridAssembler {
 				continue;
 			if (rec.getMappingQuality() < qual)
 				continue;
-
-			Alignment myRec = new Alignment(rec, graph.getNode(rec.getReferenceIndex()));
+			
+			String refID = rec.getReferenceName().split("_")[1];
+			Alignment myRec = new Alignment(rec, graph.getNode(refID));
 
 
 			//////////////////////////////////////////////////////////////////
@@ -65,13 +66,14 @@ public class HybridAssembler {
 			// Note that SAM file MUST be sorted based on readID (samtools sort -n)
 
 			//not the first occurrance				
-			if (!readID.equals("") && readID.equals(myRec.readID)) {		
+			if (!readID.equals("") && !readID.equals(myRec.readID)) {		
 				Collections.sort(samList);
 				p=graph.pathFinding(samList);
 				graph.reduce(p);
 				samList = new ArrayList<Alignment>();
-				readID = myRec.readID;	
-			}			
+				//readID = myRec.readID;	
+			}	
+			readID = myRec.readID;
 			samList.add(myRec);
 
 		}// while
@@ -86,9 +88,10 @@ public class HybridAssembler {
 
 	public static void main(String[] argv) throws IOException{
 		HybridAssembler hbAss = new HybridAssembler("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/assembly_graph.fastg");
-		//run bwa first on the edited assembly_graph.fastg by running:
+		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
 		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
-		hbAss.assembly("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful.sam", 0);
+		//TODO: need to make this easier
+		hbAss.assembly("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/bwa/EcK12S-careful.sam", 0);
 	}
 	
 }
