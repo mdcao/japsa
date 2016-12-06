@@ -3,11 +3,13 @@ package japsadev.bio.hts.newscarf;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
+import japsa.util.Logging;
 
 import java.util.List;
 
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Path;
+import org.graphstream.graph.implementations.AbstractNode;
 
 public class BidirectedPath extends Path{
 
@@ -89,5 +91,26 @@ public class BidirectedPath extends Path{
 			}
 		 return seq.toSequence();
 	 }
+	 /*
+	  * Add a path to the current path. The path to be added must start with the last node
+	  * of the current path.
+	  */
+	public void join(BidirectedPath bridge) {
+		if(bridge==null || bridge.size() <=1)
+			return;
+		if(bridge.getRoot() != peekNode()){
+			Logging.error("Cannot join path with disagreed first node " + bridge.getRoot().getId());
+			return;
+		}
+		if(((BidirectedEdge) bridge.getEdgePath().get(0)).getDir((AbstractNode) bridge.getRoot())
+			== ((BidirectedEdge) peekEdge()).getDir((AbstractNode) peekNode())){
+			Logging.error("Conflict direction from the first node " + bridge.getRoot().getId());
+			return;
+		}
+		
+		for(Edge e:bridge.getEdgePath()){
+			add(e);
+		}
+	}
 	 
 }

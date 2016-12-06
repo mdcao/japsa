@@ -5,9 +5,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Stack;
+
 import org.graphstream.graph.*;
 import org.graphstream.graph.implementations.*;
 
+import htsjdk.variant.variantcontext.GenotypeBuilder;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
@@ -265,7 +268,6 @@ public class BidirectedGraph extends AdjacencyListGraph{
      * @param v Node to be reverted (1-level reverting)
      */
     public void revert(AbstractNode v){
-    	//TODO: revert to initial status by extracting a complex vertex into its initial components
     	Path p=v.getAttribute("path");
     	if(p==null) return;
     	
@@ -318,8 +320,10 @@ public class BidirectedGraph extends AdjacencyListGraph{
     /*
      * This function deduces a full path in this graph between 2 nodes aligned with a long read
      */
-    public Path getClosestPath(BidirectedNode src, BidirectedNode dst, int distance){
-    	
+    public BidirectedPath getClosestPath(BidirectedNode src, BidirectedNode dst, int distance){
+    	//TODO: implement my own BFS
+    	//Iterator<BidirectedNode> bfs = src.getBreadthFirstIterator();
+    	//Stack<BidirectedNode> traceback = new Stack<BidirectedNode>();
     	
 		return null;
     	
@@ -328,13 +332,38 @@ public class BidirectedGraph extends AdjacencyListGraph{
      * Find a path based on list of Alignments
      */
 	public BidirectedPath pathFinding(ArrayList<Alignment> sortedAlignments) {
-		// TODO Auto-generated method stub
-		System.out.println("=================================================");
-		for(Alignment alg:sortedAlignments)
-			System.out.println("\t"+alg.toString());
-		System.out.println("=================================================");
+//		System.out.println("=================================================");
+//		for(Alignment alg:sortedAlignments)
+//			System.out.println("\t"+alg.toString());
+//		System.out.println("=================================================");
 
-		return null;
+		//now only considering useful alignments
+		ArrayList<Alignment> markers = new ArrayList<Alignment>();
+		for(Alignment alg:sortedAlignments)
+			if(alg.useful)
+				markers.add(alg);
+		
+		BidirectedPath 	retval = new BidirectedPath(),
+						bridge = new BidirectedPath();
+		if(markers.size() <= 1)
+			return null;
+		else{
+			Iterator<Alignment> ite = markers.iterator();
+			Alignment cur=ite.next(), next=ite.next();
+			while(true){
+				int distance = next.readAlignmentEnd()-cur.readAlignmentStart();
+				bridge = getClosestPath(cur.node, next.node, distance);
+				retval.join(bridge);
+				if(ite.hasNext()){
+					cur=next;
+					next=ite.next();
+					continue;
+				} else
+					break;
+			}
+		}
+		
+		return retval;
 	}
 	
     /*
