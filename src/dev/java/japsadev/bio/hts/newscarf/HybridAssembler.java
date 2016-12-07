@@ -58,40 +58,38 @@ public class HybridAssembler {
 				continue;
 			
 			String refID = rec.getReferenceName().split("_")[1];
-			Alignment myRec = new Alignment(rec, graph.getNode(refID));
-
+			Alignment myRec = new Alignment(rec, graph.getNode(refID)); //FIXME: optimize
 
 			//////////////////////////////////////////////////////////////////
 			// make list of alignments of the same (Nanopore) read. 
-			// Note that SAM file MUST be sorted based on readID (samtools sort -n)
 
 			//not the first occurrance				
 			if (!readID.equals("") && !readID.equals(myRec.readID)) {		
 				Collections.sort(samList);
 				p=graph.pathFinding(samList);
-				graph.reduce(p);
+				if(p!=null)
+					System.out.println("Path found: " + p.getId());
+				//graph.reduce(p);
 				samList = new ArrayList<Alignment>();
 				//readID = myRec.readID;	
 			}	
 			readID = myRec.readID;
-			samList.add(myRec);
+			samList.add(myRec); // FIXME: (optimize) insert sort here
 
 		}// while
 		iter.close();
 
 		//outOS.close();
 		reader.close();		
-
-		Logging.info("Sort list of bridges");		
-		//Collections.sort(bridgeList);		
+	
 	}
 
 	public static void main(String[] argv) throws IOException{
-		HybridAssembler hbAss = new HybridAssembler("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/assembly_graph.fastg");
+		HybridAssembler hbAss = new HybridAssembler("/home/hoangnguyen/workspace/data/spades/EcK12S-careful/assembly_graph.fastg");
 		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
 		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
 		//TODO: need to make this easier
-		hbAss.assembly("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/bwa/EcK12S-careful.sam", 0);
+		hbAss.assembly("/home/hoangnguyen/workspace/data/spades/bwa/EcK12S.sam", 0);
 	}
 	
 }

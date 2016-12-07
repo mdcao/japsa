@@ -5,16 +5,27 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 import japsa.util.Logging;
 
+
 import java.util.List;
 
 import org.graphstream.graph.Edge;
+import org.graphstream.graph.Node;
 import org.graphstream.graph.Path;
 import org.graphstream.graph.implementations.AbstractNode;
 
 public class BidirectedPath extends Path{
+	int deviation; //how this path differ to long read data (todo: by multiple-alignment??)
 
 	public BidirectedPath(){
 		super();
+	}
+	public BidirectedPath(BidirectedPath p){
+		super();
+		if(p!=null && !p.empty()){
+			setRoot(p.getRoot());
+			for(Edge e:p.getEdgePath())
+				add(e);
+		}
 	}
 	public BidirectedPath(BidirectedGraph graph, String paths){
 		super();
@@ -112,5 +123,35 @@ public class BidirectedPath extends Path{
 			add(e);
 		}
 	}
-	 
+	
+	public int getDeviation(){
+		return this.deviation;
+	}
+	public void setDeviation(int deviation){
+		this.deviation=deviation;
+	}
+
+	/**
+	 * 
+	 * @return average depth of this path
+	 */
+	public double averageCov(){
+		int len=0;
+		double res=0;
+		for(Node n:getNodePath()){
+			Sequence seq = (Sequence) n.getAttribute("seq");
+			double cov = Double.parseDouble(seq.getName().split("_")[5]);
+			len+=(n==getRoot())?seq.length():seq.length()-BidirectedGraph.getKmerSize();
+			res+=seq.length()*cov;
+		}
+		return res/len;
+	}
+	public int length() {
+		int retval = 0;
+		for(Node n:getNodePath()){
+			Sequence seq = (Sequence) n.getAttribute("seq");
+			retval+=(n==getRoot())?seq.length():seq.length()-BidirectedGraph.getKmerSize();		
+		}
+		return retval;
+	}
 }

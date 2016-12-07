@@ -5,12 +5,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Stack;
 
 import org.graphstream.graph.*;
 import org.graphstream.graph.implementations.*;
 
-import htsjdk.variant.variantcontext.GenotypeBuilder;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
@@ -321,91 +319,71 @@ public class BidirectedGraph extends AdjacencyListGraph{
     /*
      * This function deduces a full path in this graph between 2 nodes aligned with a long read
      */
-    protected BidirectedPath getClosestPath(BidirectedNode src, BidirectedNode dst, int distance){
-    	BidirectedPath traceback = new BidirectedPath();
-    	Stack<BidirectedNode> dfs = new Stack<BidirectedNode>();
-    	dfs.add(src);
-    	traceback.setRoot(src);
-    	boolean curDir=true; 
+    protected BidirectedPath getClosestPath(Alignment from, Alignment to, int distance){
+    	BidirectedNode srcNode = from.node,
+    					dstNode = to.node;
+    	System.out.println("Looking for path between " + srcNode.getId() + " to " + dstNode.getId() + " with distance " + distance);
+    	BidirectedPath 	tmp = new BidirectedPath();
+    	ArrayList<BidirectedPath>	retval = new ArrayList<BidirectedPath>();
+    	tmp.setRoot(srcNode);  	
     	
-    	ArrayList<BidirectedPath> allPaths = new ArrayList<BidirectedPath>();
-    	BidirectedNode currentNode, nextNode;
-    	BidirectedEdge currentEdge, nextEdge;
-    	Iterator<BidirectedEdge> ite; //neighbor edges from a certain node
-    	
-//    	//start DFS
-//    	while(!dfs.empty()){
-//    		currentNode = dfs.pop();
-//    		if(traceback.size() <= 1) //only root
-//    			ite = currentNode.getEdgeIterator();
-//    		else{
-//    			currentEdge = (BidirectedEdge) traceback.peekEdge();
-//    			curDir = currentEdge.getDir(currentNode);
-//    			ite=curDir?currentNode.getLeavingEdgeIterator():currentNode.getEnteringEdgeIterator();
-//    		}
-//    			
-//    		while(ite.hasNext()){
-//    			//browwwwwwwsing...
-//    			nextEdge = ite.next();
-//    			nextNode = nextEdge.getOpposite(currentNode);
-//    			dfs.push(nextNode);
-//    		}
-//    	}
-    	
-		return null;
+    	//traverse(tmp, dest, retval, distance+source.getSeq().length()+dest.getSeq().length());
+    	traverse(tmp, dstNode, retval, distance, from.strand, !to.strand);
+    	if(retval.size()==0)
+    		return null;
+    	else
+    		return retval.get(0);
     	
     }
-//    public void traverse(BidirectedPath path, BidirectedNode dest, ArrayList<BidirectedPath> curResult, int distance){
-//    	BidirectedNode currentNode=(BidirectedNode) path.peekNode();
-//    	BidirectedEdge currentEdge;
-//    	boolean curDir;
-//    	
-//    	Iterator<BidirectedEdge> ite;
-//    	if(path.size() <= 1) //only root
-//			ite = currentNode.getEdgeIterator();//re-check
-//		else{
-//			currentEdge = (BidirectedEdge) path.peekEdge();
-//			curDir = ((BidirectedEdge) currentEdge).getDir(currentNode);
-//			ite=curDir?currentNode.getLeavingEdgeIterator():currentNode.getEnteringEdgeIterator();
-//		}
-//    	
-//    	while(ite.hasNext()){
-//    		BidirectedEdge e = ite.next();
-//    		if(e.getDOne()==currentNode.getDirection()){
-//    			path.addNode(e.getTwo(), e.getDTwo());
-//
-//    			if(e.getTwo()==dest.getVertex() && e.getDTwo()==dest.getDirection() && Math.abs(distance+getKmerSize()) < TOLERATE){
-//
-//    		    	Path 	curPath=curResult.isEmpty()?new Path():curResult.get(0), //the best path saved among all possible paths from the list curResult
-//    		    			tmpPath=new Path();
-//    		    	tmpPath.setComp(path.getNodes());
-//    		    	tmpPath.setDeviation(Math.abs(distance+getKmerSize()));
-//    		    	if(	Math.abs(distance+getKmerSize()) < curPath.getDeviation() )
-//    		    		curResult.add(0, tmpPath);
-//    		    	else
-//    		    		curResult.add(tmpPath);
-//    				
-//    				System.out.println("Hit added: "+path+"(candidate deviation: "+Math.abs(distance+getKmerSize())+")");
-//    			}else{
-//    				int newDistance=distance-e.getTwo().getSequence().length()+getKmerSize();
-//    				if (newDistance+getKmerSize()<-TOLERATE){
-//    					System.out.println("Stop following path with distance "+newDistance+" already! : "+path);
-//    				}else
-//    					traverse(path, dest, curResult, newDistance);
-//    			}
-//    			path.removeLast();
-//    		}
-//    	}
-//    }
+    private void traverse(BidirectedPath path, BidirectedNode dst, ArrayList<BidirectedPath> curResult, int distance, boolean srcDir, boolean dstDir){
+    	BidirectedNode currentNode=(BidirectedNode) path.peekNode();
+    	BidirectedEdge currentEdge;
+    	boolean curDir;
+    	
+    	Iterator<BidirectedEdge> ite;
+    	if(path.size() <= 1) //only root
+			curDir=srcDir;//re-check
+		else{
+			currentEdge = (BidirectedEdge) path.peekEdge();
+			curDir = !((BidirectedEdge) currentEdge).getDir(currentNode);
+		}
+		ite=curDir?currentNode.getLeavingEdgeIterator():currentNode.getEnteringEdgeIterator();
+
+    	while(ite.hasNext()){
+    		BidirectedEdge e = ite.next();
+			path.add(e);
+
+			if(e.getOpposite(currentNode).equals(dst) && e.getDir(dst)!=dstDir && Math.abs(distance+getKmerSize()) < TOLERATE){
+
+		    	BidirectedPath 	curPath=curResult.isEmpty()?new BidirectedPath():curResult.get(0), //the best path saved among all possible paths from the list curResult
+		    					tmpPath=new BidirectedPath(path);
+		    	tmpPath.setDeviation(Math.abs(distance+getKmerSize()));
+		    	if(	Math.abs(distance+getKmerSize()) < curPath.getDeviation() )
+		    		curResult.add(0, tmpPath);
+		    	else
+		    		curResult.add(tmpPath);
+				
+				System.out.println("Hit added: "+path+"(candidate deviation: "+Math.abs(distance+getKmerSize())+")");
+			}else{
+				int newDistance=distance-((Sequence) e.getOpposite(currentNode).getAttribute("seq")).length()+getKmerSize();
+				if (newDistance+getKmerSize()<-TOLERATE){
+					System.out.println("Stop following path with distance "+newDistance+" already! : "+path);
+				}else
+					traverse(path, dst, curResult, newDistance, srcDir, dstDir);
+			}
+			path.popNode();
+    	
+    	}
+    }
     
     /*
      * Find a path based on list of Alignments
      */
 	public BidirectedPath pathFinding(ArrayList<Alignment> sortedAlignments) {
-//		System.out.println("=================================================");
-//		for(Alignment alg:sortedAlignments)
-//			System.out.println("\t"+alg.toString());
-//		System.out.println("=================================================");
+		System.out.println("=================================================");
+		for(Alignment alg:sortedAlignments)
+			System.out.println("\t"+alg.toString());
+		System.out.println("=================================================");
 
 		//now only considering useful alignments
 		ArrayList<Alignment> markers = new ArrayList<Alignment>();
@@ -413,17 +391,21 @@ public class BidirectedGraph extends AdjacencyListGraph{
 			if(alg.useful)
 				markers.add(alg);
 		
-		BidirectedPath 	retval = new BidirectedPath(),
-						bridge = new BidirectedPath();
+		BidirectedPath 	retval=null, bridge=null;
 		if(markers.size() <= 1)
 			return null;
 		else{
 			Iterator<Alignment> ite = markers.iterator();
 			Alignment cur=ite.next(), next=ite.next();
 			while(true){
-				int distance = next.readAlignmentEnd()-cur.readAlignmentStart();
-				bridge = getClosestPath(cur.node, next.node, distance);
-				retval.join(bridge);
+				int distance = next.readAlignmentEnd()-cur.readAlignmentEnd();//FIXME
+				bridge = getClosestPath(cur, next, distance);
+				
+				if(retval==null||retval.empty())
+					retval=new BidirectedPath(bridge);
+				else
+					retval.join(bridge);
+				
 				if(ite.hasNext()){
 					cur=next;
 					next=ite.next();
@@ -432,8 +414,10 @@ public class BidirectedGraph extends AdjacencyListGraph{
 					break;
 			}
 		}
-		
-		return retval;
+		if(retval.empty())
+			return null;
+		else
+			return retval;
 	}
 	
     /*
