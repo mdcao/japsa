@@ -84,12 +84,12 @@ public class HybridAssembler {
 	
 	}
 
-	public static void main(String[] argv) throws IOException{
-		HybridAssembler hbAss = new HybridAssembler("/home/hoangnguyen/workspace/data/spades/EcK12S-careful/assembly_graph.fastg");
-		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
-		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
-		//TODO: need to make this easier
-		hbAss.assembly("/home/hoangnguyen/workspace/data/spades/bwa/EcK12S.sam", 0);
-	}
+//	public static void main(String[] argv) throws IOException{
+//		HybridAssembler hbAss = new HybridAssembler("/home/hoangnguyen/workspace/data/spades/EcK12S-careful/assembly_graph.fastg");
+//		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
+//		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
+//		//TODO: need to make this easier
+//		hbAss.assembly("/home/hoangnguyen/workspace/data/spades/bwa/EcK12S.sam", 0);
+//	}
 	
 }

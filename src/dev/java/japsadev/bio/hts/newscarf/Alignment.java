@@ -8,7 +8,7 @@ import htsjdk.samtools.SAMRecord;
 import japsa.seq.Sequence;
 
 public class Alignment implements Comparable<Alignment> {
-	public final static int OVERHANG_THRES=1000; 
+	public final static int OVERHANG_THRES=500; 
 	
 	int score;
 
@@ -26,6 +26,8 @@ public class Alignment implements Comparable<Alignment> {
 	public int readLength = 0;		
 
 	public boolean strand = true;//positive
+	public boolean prime = true;//primary alignment
+	public boolean goodMargin = false;
 	public boolean useful = false;
 	//SAMRecord mySam;
 	
@@ -52,7 +54,7 @@ public class Alignment implements Comparable<Alignment> {
 	public Alignment(SAMRecord sam, BidirectedNode node) {
 //		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
 		readID = sam.getReadName();
-
+		prime=!sam.getNotPrimaryAlignmentFlag();
 		this.node = node;
 
 		refStart = sam.getAlignmentStart();
@@ -112,8 +114,12 @@ public class Alignment implements Comparable<Alignment> {
 
 		if (
 				(readLeft < OVERHANG_THRES || refLeft < OVERHANG_THRES) &&
-				(readRight  < OVERHANG_THRES || refRight < OVERHANG_THRES) &&
-				!sam.getNotPrimaryAlignmentFlag() && //TODO: should be separated as another attribute for further consideration??
+				(readRight  < OVERHANG_THRES || refRight < OVERHANG_THRES)
+			)
+			goodMargin=true;
+		
+		if(		goodMargin	&&
+				prime && //TODO: should be separated as another attribute for further consideration??
 				score > BidirectedGraph.getKmerSize() //FIXME: 
 			)
 			useful = true;
@@ -141,7 +147,8 @@ public class Alignment implements Comparable<Alignment> {
 				+ " -> " + readEnd
 				+ " / " + readLength				
 				+ ", strand: " + (strand?"+":"-")
-				+ " useful: " + (useful?"yes":"no");
+				+ ", prime: " + (prime?"yes":"no")
+				+ ", margin: " + (goodMargin?"good":"bad");
 	}
 	
 	/* (non-Javadoc)

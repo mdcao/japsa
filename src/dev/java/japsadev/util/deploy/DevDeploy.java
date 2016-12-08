@@ -56,6 +56,7 @@ import japsadev.tools.KmerAnalysisCmd;
 import japsadev.tools.MyTestCmd;
 import japsadev.tools.NanoporeBarcodeCmd;
 import japsadev.tools.NanoporeFast5ReaderCmd;
+import japsadev.tools.NewScarfCmd;
 import japsadev.tools.PanCoreGeneCmd;
 import japsadev.tools.ProfileDPCmd;
 import japsadev.tools.RemoveNsCmd;
@@ -143,6 +144,7 @@ public class DevDeploy {
 		tools.add(new NanoporeBarcodeCmd());
 		tools.add(new BarCodeNPScarfCmd());
 		tools.add(new BarCodeNPScarfCmd2());
+		tools.add(new NewScarfCmd());
 		//new 
 		//tools.add(new BarCodeNPScarfCmd2());
 		//

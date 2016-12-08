@@ -328,7 +328,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	tmp.setRoot(srcNode);  	
     	
     	//traverse(tmp, dest, retval, distance+source.getSeq().length()+dest.getSeq().length());
-    	traverse(tmp, dstNode, retval, distance, from.strand, !to.strand);
+    	traverse(tmp, dstNode, retval, distance, from.strand, to.strand);
     	if(retval.size()==0)
     		return null;
     	else
@@ -338,7 +338,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     private void traverse(BidirectedPath path, BidirectedNode dst, ArrayList<BidirectedPath> curResult, int distance, boolean srcDir, boolean dstDir){
     	BidirectedNode currentNode=(BidirectedNode) path.peekNode();
     	BidirectedEdge currentEdge;
-    	boolean curDir;
+    	boolean curDir;//direction to the next node, = ! previous'
     	
     	Iterator<BidirectedEdge> ite;
     	if(path.size() <= 1) //only root
@@ -353,8 +353,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     		BidirectedEdge e = ite.next();
 			path.add(e);
 
-			if(e.getOpposite(currentNode).equals(dst) && e.getDir(dst)!=dstDir && Math.abs(distance+getKmerSize()) < TOLERATE){
-
+			if(e.getOpposite(currentNode)==dst && e.getDir(dst)!=dstDir && Math.abs(distance+getKmerSize()) < TOLERATE){
 		    	BidirectedPath 	curPath=curResult.isEmpty()?new BidirectedPath():curResult.get(0), //the best path saved among all possible paths from the list curResult
 		    					tmpPath=new BidirectedPath(path);
 		    	tmpPath.setDeviation(Math.abs(distance+getKmerSize()));
@@ -363,11 +362,11 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		    	else
 		    		curResult.add(tmpPath);
 				
-				System.out.println("Hit added: "+path+"(candidate deviation: "+Math.abs(distance+getKmerSize())+")");
+				System.out.println("Hit added: "+path.getId()+"(candidate deviation: "+Math.abs(distance+getKmerSize())+")");
 			}else{
 				int newDistance=distance-((Sequence) e.getOpposite(currentNode).getAttribute("seq")).length()+getKmerSize();
 				if (newDistance+getKmerSize()<-TOLERATE){
-					System.out.println("Stop following path with distance "+newDistance+" already! : "+path);
+					System.out.println("Stop following path with distance "+newDistance+" already! : "+path.getId());
 				}else
 					traverse(path, dst, curResult, newDistance, srcDir, dstDir);
 			}
@@ -398,7 +397,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 			Iterator<Alignment> ite = markers.iterator();
 			Alignment cur=ite.next(), next=ite.next();
 			while(true){
-				int distance = next.readAlignmentEnd()-cur.readAlignmentEnd();//FIXME
+				int distance = next.readAlignmentStart()-cur.readAlignmentEnd();
 				bridge = getClosestPath(cur, next, distance);
 				
 				if(retval==null||retval.empty())
