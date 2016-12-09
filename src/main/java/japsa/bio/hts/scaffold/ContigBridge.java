@@ -1181,8 +1181,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 //					continue;
 
 				if (posReadEnd >= posReadFinal -1)
-					//continue;//I can break here, but want to get portionUsed of other contigs
-					break; //so do it!
+					break; 
 
 
 				if (record.readAlignmentEnd() <= posReadEnd)
@@ -1234,6 +1233,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 
 						
 						seqBuilder.append(contig.contigSequence.subSequence(refLeft - 1, refRight));
+						//count the appearance by 1 more
+						ScaffoldGraph.oneMore(contig);
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());
 
@@ -1259,6 +1260,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 						anno.add(feature);
 						
 						seqBuilder.append(Alphabet.DNA.complement(contig.contigSequence.subSequence(refRight - 1, refLeft)));
+						//count the appearance by 1 more
+						ScaffoldGraph.oneMore(contig);
+						
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());
 					}
@@ -1288,6 +1292,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 						anno.add(feature);
 						
 						seqBuilder.append(contig.contigSequence.subSequence(refLeft - 1, refRight));
+						//count the appearance by 1 more
+						ScaffoldGraph.oneMore(contig);
+						
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());
 					}else{//neg strand						
@@ -1312,6 +1319,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 						anno.add(feature);
 						
 						seqBuilder.append(Alphabet.DNA.complement(contig.contigSequence.subSequence(refRight - 1, refLeft)));
+						//count the appearance by 1 more
+						ScaffoldGraph.oneMore(contig);
+						
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());
 					}

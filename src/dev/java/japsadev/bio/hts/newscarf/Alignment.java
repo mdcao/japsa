@@ -8,7 +8,7 @@ import htsjdk.samtools.SAMRecord;
 import japsa.seq.Sequence;
 
 public class Alignment implements Comparable<Alignment> {
-	public final static int OVERHANG_THRES=500; 
+	public final static int OVERHANG_THRES=700; 
 	
 	int score;
 
@@ -119,7 +119,7 @@ public class Alignment implements Comparable<Alignment> {
 			goodMargin=true;
 		
 		if(		goodMargin	&&
-				prime && //TODO: should be separated as another attribute for further consideration??
+				//prime && //TODO: should be separated as another attribute for further consideration??
 				score > BidirectedGraph.getKmerSize() //FIXME: 
 			)
 			useful = true;
@@ -150,7 +150,12 @@ public class Alignment implements Comparable<Alignment> {
 				+ ", prime: " + (prime?"yes":"no")
 				+ ", margin: " + (goodMargin?"good":"bad");
 	}
-	
+	public static boolean isOverlap(Alignment alg1, Alignment alg2){
+		boolean retval=false;
+		
+		
+		return retval;
+	}
 	/* (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */

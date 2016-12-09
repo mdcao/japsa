@@ -67,7 +67,7 @@ public class ScaffoldGraph{
 	public static boolean verbose = false;
 	public static boolean reportAll = false;
 	public boolean annotation = false;
-
+	public static HashMap<Integer,Integer> countOccurence;
 
 	public String prefix = "out";					
 	public static double estimatedCov = 0;
@@ -117,7 +117,7 @@ public class ScaffoldGraph{
 
 		//2. Initialise scaffold graph
 		scaffolds = new Scaffold[contigs.size()];		
-
+		
 		for (int i = 0; i < contigs.size();i++){				
 			scaffolds[i] = new Scaffold(contigs.get(i));
 			//point to the head of the scaffold
@@ -929,21 +929,22 @@ public class ScaffoldGraph{
 
 	}
 	public synchronized void printSequences() throws IOException{
+		countOccurence=new HashMap<Integer,Integer>();
 		if(annotation){
 			SequenceOutputStream aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
-				boolean reportCond = reportAll?true:(!isRepeat(contigs.get(i)) && len > maxRepeatLength);
-				if ((contigs.get(i).head == i 
-						&& reportCond
-						)
-						|| scaffolds[i].closeBridge != null
-						)
-				{
-					if(verbose) 
-						System.out.println("Scaffold " + i + " estimated length " + len);
-					scaffolds[i].viewAnnotation(aout);
+
+				if(contigs.get(i).head == i || scaffolds[i].closeBridge != null){
+					if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short/repeat sequences here if required
+					{
+						if(verbose) 
+							System.out.println("Scaffold " + i + " estimated length " + len);
+						scaffolds[i].viewAnnotation(aout);
+					}
+
 				}
 			}
 			aout.close();
@@ -953,23 +954,38 @@ public class ScaffoldGraph{
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
-				boolean reportCond = reportAll?true:(!isRepeat(contigs.get(i)) && len > maxRepeatLength);
-				if ((contigs.get(i).head == i 
-						&& reportCond
-						)
-						|| scaffolds[i].closeBridge != null
-						)
-				{
+				
+				if(contigs.get(i).head == i || scaffolds[i].closeBridge != null){
+					if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short/repeat sequences here if required
+					{
 					if(verbose) 
 						System.out.println("Scaffold " + i + " estimated length " + len);
 
 					scaffolds[i].viewSequence(fout, jout);
+					}
 				}
 			}
 			fout.close();
 			jout.close();
 		}
 	}	
+	public static void oneMore(Contig ctg){
+		if(countOccurence.get(ctg.getIndex())==null)
+			countOccurence.put(ctg.getIndex(), 1);
+		else
+			countOccurence.put(ctg.getIndex(), countOccurence.get(ctg.getIndex())+1);
+	}
+	private boolean needMore(Contig ctg) {
+		// TODO Auto-generated method stub
+		Integer count = countOccurence.get(ctg.getIndex());
+		if(count==null) return true;
+		int estimatedOccurence = (int) Math.floor(ctg.coverage/estimatedCov);
+		if(estimatedOccurence <= Math.floor(.75*count))
+			return true;
+		else
+			return false;
+	}
 
 	public synchronized void printRT(long tpoint) throws IOException{
 		for (Contig contig:contigs){
