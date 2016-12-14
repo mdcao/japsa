@@ -68,7 +68,7 @@ public class HybridAssembler {
 				Collections.sort(samList);
 				p=graph.pathFinding(samList);
 				if(p!=null)
-					System.out.println("Path found: " + p.getId());
+					System.out.println("Final path found: " + p.getId());
 				//graph.reduce(p);
 				samList = new ArrayList<Alignment>();
 				//readID = myRec.readID;	
