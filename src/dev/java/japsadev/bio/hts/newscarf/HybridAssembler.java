@@ -65,7 +65,7 @@ public class HybridAssembler {
 
 			//not the first occurrance				
 			if (!readID.equals("") && !readID.equals(myRec.readID)) {		
-				Collections.sort(samList);
+				//Collections.sort(samList);
 				p=graph.pathFinding(samList);
 				if(p!=null)
 					System.out.println("Final path found: " + p.getId());

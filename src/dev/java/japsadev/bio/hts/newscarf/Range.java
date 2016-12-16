@@ -1,48 +1,75 @@
 package japsadev.bio.hts.newscarf;
 
-import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
-
 public class Range implements Comparable<Range>{
-	int start, end;
+	int left, right;
 	Range(){
-		start=end=0;
+		left=right=0;
 	}
-	Range(int from, int to){
-		this.start=from;
-		this.end=to;
+	Range(int left, int right){
+		this.left=left;
+		this.right=right;
 	}
 	
-	public String toString(){
-		return new String(start+" -> "+end);
+	public int getLeft(){
+		return left;
 	}
+	public int getRight(){
+		return right;
+	}
+	public void setLeft(int left){
+		this.left=left;
+	}
+	public void setRight(int right){
+		this.right=right;
+	}
+	
+	public boolean isHomo(Range other){
+		int order=compareTo(other);
+		if(order==0) return true;
+		
+		boolean retval=false;
+		Range 	ref=(order<0?this:other), 
+				qry=(order<0?other:this);
+		
+		if(ref.right-qry.left > 1.3*BidirectedGraph.getKmerSize())
+			retval=true;
+		else 
+			retval=(qry.right<=ref.right);
+		
+		return retval;
+	}
+	
+    public void verifyHomo(Range other){
+        if(!isHomo(other)){
+            throw new IllegalStateException("Other range shouldn't belongs to the same group!");
+        }
+    }
+    
 	@Override
 	public int compareTo(Range o) {
 		// TODO Auto-generated method stub
-		if(end-o.start < 1.2*BidirectedGraph.getKmerSize())
-			return -1;
-		else if(start-o.end>-1.2*BidirectedGraph.getKmerSize())
-			return 1;
-		else
-			return 0;
-	}
-	@Override
-	public boolean equals(Object obj){
-	    if (obj == null) {
-	        return false;
-	    }
-	    if (!Range.class.isAssignableFrom(obj.getClass())) {
-	        return false;
-	    }
-	    
-		return compareTo((Range)obj)==0;
-		
+		return left-o.left;
 	}
 	
-	@Override
-	public int hashCode() {
-	    int hash = 3;
-//	    hash = 53 * hash + (this.name != null ? this.name.hashCode() : 0);
-//	    hash = 53 * hash + this.age;
-	    return hash;
+	public String toString(){
+		return new String(left+" -> "+right);
 	}
+    @Override
+    public int hashCode() {
+    	int retval=3;
+    	retval=37*retval+left;
+    	retval=37*retval+right;
+        return retval;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+       if (!(obj instanceof Range))
+            return false;
+        if (obj == this)
+            return true;
+
+        Range rhs = (Range) obj;
+        return left==rhs.getLeft()&&right==rhs.getRight();
+    }
 }
