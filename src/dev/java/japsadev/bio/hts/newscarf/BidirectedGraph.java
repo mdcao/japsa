@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.graphstream.graph.*;
 import org.graphstream.graph.implementations.*;
@@ -18,7 +21,7 @@ import japsa.seq.SequenceReader;
 public class BidirectedGraph extends AdjacencyListGraph{
     static int kmer=127;
     static final int TOLERATE=500;
-
+    static final int D_LIMIT=100;
     // *** Constructors ***
 	/**
 	 * Creates an empty graph.
@@ -319,20 +322,29 @@ public class BidirectedGraph extends AdjacencyListGraph{
     /*
      * This function deduces a full path in this graph between 2 nodes aligned with a long read
      */
-    protected BidirectedPath getClosestPath(Alignment from, Alignment to, int distance){
+    protected ArrayList<BidirectedPath> getClosestPath(Alignment from, Alignment to, int distance){
     	BidirectedNode srcNode = from.node,
     					dstNode = to.node;
     	System.out.println("Looking for path between " + srcNode.getId() + " to " + dstNode.getId() + " with distance " + distance);
     	BidirectedPath 	tmp = new BidirectedPath();
-    	ArrayList<BidirectedPath>	retval = new ArrayList<BidirectedPath>();
+    	ArrayList<BidirectedPath>	possiblePaths = new ArrayList<BidirectedPath>(),
+    								retval = new ArrayList<BidirectedPath>();
     	tmp.setRoot(srcNode);  	
     	
     	//traverse(tmp, dest, retval, distance+source.getSeq().length()+dest.getSeq().length());
-    	traverse(tmp, dstNode, retval, distance, from.strand, to.strand);
-    	if(retval.size()==0)
+    	traverse(tmp, dstNode, possiblePaths, distance, from.strand, to.strand);
+    	//only get the best ones
+    	if(possiblePaths.isEmpty())
     		return null;
-    	else
-    		return retval.get(0);
+    	double bestScore=possiblePaths.get(0).getDeviation();
+    	for(int i=0;i<possiblePaths.size();i++){
+    		BidirectedPath p = possiblePaths.get(i);
+    		if(p.getDeviation() != bestScore)
+    			break;
+    		retval.add(p);
+    	}
+    	
+    	return retval;
     	
     }
     private void traverse(BidirectedPath path, BidirectedNode dst, ArrayList<BidirectedPath> curResult, int distance, boolean srcDir, boolean dstDir){
@@ -378,45 +390,78 @@ public class BidirectedGraph extends AdjacencyListGraph{
     /*
      * Find a path based on list of Alignments
      */
-	public BidirectedPath pathFinding(ArrayList<Alignment> sortedAlignments) {
+	public BidirectedPath pathFinding(ArrayList<Alignment> alignments) {
+		if(alignments.size()<=1)
+			return null;
+		
 		System.out.println("=================================================");
-		for(Alignment alg:sortedAlignments)
+		for(Alignment alg:alignments)
 			System.out.println("\t"+alg.toString());
 		System.out.println("=================================================");
-
-		//now only considering useful alignments
-		ArrayList<Alignment> markers = new ArrayList<Alignment>();
-		for(Alignment alg:sortedAlignments)
-			if(alg.useful)
-				markers.add(alg);
+		//First bin the alignments into different overlap regions			
+		//only considering useful alignments
+		HashMap<Range,Alignment> allAlignments = new HashMap<Range,Alignment>();
+		ArrayList<BidirectedPath> joinPaths = new ArrayList<BidirectedPath>();
 		
-		BidirectedPath 	retval=null, bridge=null;
-		if(markers.size() <= 1)
-			return null;
-		else{
-			Iterator<Alignment> ite = markers.iterator();
-			Alignment cur=ite.next(), next=ite.next();
-			while(true){
-				int distance = next.readAlignmentStart()-cur.readAlignmentEnd();
-				bridge = getClosestPath(cur, next, distance);
-				
-				if(retval==null||retval.empty())
-					retval=new BidirectedPath(bridge);
-				else
-					retval.join(bridge);
-				
-				if(ite.hasNext()){
-					cur=next;
-					next=ite.next();
-					continue;
-				} else
-					break;
+		for(Alignment alg:alignments){
+			if(alg.useful){
+				Range range = new Range(alg.readAlignmentStart(),alg.readAlignmentEnd());
+				allAlignments.put(range, alg);
 			}
 		}
-		if(retval.empty())
+		//now get all the bin in order
+		List<Range> baseRanges=new ArrayList<Range>(allAlignments.keySet());
+		List<List<Range>> rangeGroups = MetaRange.getOverlappingGroups(baseRanges);
+		
+		System.out.println("Binning ranges: ");
+	    for(List<Range> group : rangeGroups){
+	        System.out.println(group.toString());
+	    }
+
+		//iterate all alignments in adjacent bins to find correct path
+		ArrayList<Alignment> curGroup = new ArrayList<Alignment>(), 
+							nextGroup = new ArrayList<Alignment>();
+		List<Range> curRanges = rangeGroups.get(0);
+		for(Range r:curRanges)
+			curGroup.add(allAlignments.get(r));
+		
+		for(int i=1; i<rangeGroups.size();i++){
+			List<Range> nextRanges = rangeGroups.get(i);
+			nextGroup = new ArrayList<Alignment>();
+			
+			for(Range r:nextRanges)
+				nextGroup.add(allAlignments.get(r));
+			
+			ArrayList<BidirectedPath> allPaths = new ArrayList<BidirectedPath>();
+			for(Alignment curAlg:curGroup){
+				for(Alignment nextAlg:nextGroup){
+					int distance = nextAlg.readAlignmentStart()-curAlg.readAlignmentEnd();
+					if(distance<D_LIMIT){
+						ArrayList<BidirectedPath> bridges = getClosestPath(curAlg, nextAlg, distance);
+						if(bridges!=null)
+							allPaths.addAll(bridges);
+					}
+				}
+			}
+			//join all paths from previous to the new ones
+			if(joinPaths.isEmpty())
+				joinPaths=allPaths;
+			else{
+				for(BidirectedPath p:joinPaths)
+					for(BidirectedPath e:allPaths)
+						p.join(e);
+				
+				
+			}
+			curGroup=nextGroup;
+		}
+		
+		for(BidirectedPath path:joinPaths)
+			System.out.println("A member Path: " + path.toString() + " deviation: " + path.getDeviation());
+		if(joinPaths.isEmpty())
 			return null;
 		else
-			return retval;
+			return joinPaths.get(0);
 	}
 	
     /*
