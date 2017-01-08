@@ -261,7 +261,7 @@ public class HTSUtilities {
 		profile.mismatch = 0;
 		profile.refBase = 0;
 		profile.readBase = 0;//the number of bases from ref and read
-		
+
 		for (final CigarElement e : sam.getCigar().getCigarElements()) {
 			final int  length = e.getLength();
 			switch (e.getOperator()) {
@@ -338,6 +338,84 @@ public class HTSUtilities {
 
 	}
 
+
+	/**
+	 * Get the list of positions in reads corresponding the the positions in reference
+	 * @param refSeq
+	 * @param sam
+	 * @return
+	 */
+	public static int[] positionsInRead(SAMRecord sam, int [] refPositions){		
+		int readPos = 0;//start from 0					
+		int refPos = sam.getAlignmentStart();//convert to 0-based index		
+		int [] readPositions = new int[refPositions.length];
+		int index = 0;
+
+		while (index < refPositions.length && refPositions[index] <= refPos)
+			index ++;
+
+		if (index >= refPositions.length) 
+			return readPositions;		
+
+		for (final CigarElement e : sam.getCigar().getCigarElements()) {
+			//assert: refPositions[index] > refPos
+
+			final int  length = e.getLength();
+			switch (e.getOperator()) {
+			case H :
+				//nothing todo				
+				break; // ignore hard clips
+			case P :				
+				//pad is a kind of hard clipped ?? 					
+				break; // ignore pads	                
+			case S :
+				//soft clip: advance on the reference				
+				readPos += length;
+				break; // soft clip read bases	                	
+			case N : 
+				refPos += length;
+
+				//advance index
+				while (index < refPositions.length && refPositions[index] <= refPos)
+					index ++;
+
+				if (index >= refPositions.length) 
+					return readPositions;				
+				break;  // reference skip
+
+			case D ://deletion      	
+				refPos += length;
+				while (index < refPositions.length && refPositions[index] <= refPos){
+					readPositions[index] = readPos;					
+					index ++;					
+				}
+				if (index >= refPositions.length) 
+					return readPositions;				
+				break;
+			case I :	                	
+				readPos += length;
+				break;
+			case M :
+			case EQ:
+			case X:
+				while (index < refPositions.length && refPositions[index] <= refPos +length){
+					readPositions[index] = readPos + refPositions[index] - refPos;
+					index ++;					
+				}
+				if (index >= refPositions.length) 
+					return readPositions;		
+
+				readPos += length;
+				refPos  += length;
+				break;
+			default : throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
+			}//case
+		}//for			
+
+		return readPositions;
+
+	}
+
 	public static class IdentityProfile{
 		public int match, mismatch, baseIns, baseDel, numIns, numDel, refClipped, readClipped, refBase, readBase;
 
@@ -366,5 +444,25 @@ public class HTSUtilities {
 		}
 
 		return lengths[index];		
+	}
+	
+	public static double n50(ArrayList<Sequence> seqs, long genomeSize){
+		int [] lengths = new int[seqs.size()];
+		
+		for (int i = 0;i < lengths.length;i++){
+			int l = seqs.get(i).length();
+			lengths[i] = l;		
+		}		
+		Arrays.sort(lengths);
+
+		int index = lengths.length;
+		double contains = 0;
+		while (contains < genomeSize/2){
+			index --;
+			contains += lengths[index];
+		}
+
+		return lengths[index];		
 	}	
+
 }
