@@ -21,7 +21,9 @@ import japsa.seq.SequenceReader;
 public class BidirectedGraph extends AdjacencyListGraph{
     static int kmer=127;
     static final int TOLERATE=500;
-    static final int D_LIMIT=100;
+    static final int D_LIMIT=200;
+    static final double ER_LOWERBOUND=.5,
+    					ER_UPPERBOUND=1.5;
     // *** Constructors ***
 	/**
 	 * Creates an empty graph.
@@ -112,6 +114,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	this("Assembly graph",true,false,1000,100000);
         setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
     }
+    //TODO: read from ABySS assembly graph (graph of final contigs, not like SPAdes)
     public void loadFromFile(String graphFile) throws IOException{
         setAutoCreate(true);
         setStrict(false);
@@ -415,7 +418,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		
 		System.out.println("Binning ranges: ");
 	    for(List<Range> group : rangeGroups){
-	        System.out.println(group.toString());
+	        System.out.println(group);
 	    }
 
 		//iterate all alignments in adjacent bins to find correct path
@@ -433,6 +436,8 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				nextGroup.add(allAlignments.get(r));
 			
 			ArrayList<BidirectedPath> allPaths = new ArrayList<BidirectedPath>();
+			
+			
 			for(Alignment curAlg:curGroup){
 				for(Alignment nextAlg:nextGroup){
 					int distance = nextAlg.readAlignmentStart()-curAlg.readAlignmentEnd();
@@ -444,13 +449,16 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				}
 			}
 			//join all paths from previous to the new ones
+			//TODO:optimize it
 			if(joinPaths.isEmpty())
 				joinPaths=allPaths;
 			else{
+				System.out.println("=====Current list of paths: " + joinPaths);
+				System.out.println("=====Join to list of paths: " + allPaths);
+
 				for(BidirectedPath p:joinPaths)
 					for(BidirectedPath e:allPaths)
-						p.join(e);
-				
+						p.join(e);			
 				
 			}
 			curGroup=nextGroup;
