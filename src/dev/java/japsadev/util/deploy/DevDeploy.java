@@ -51,6 +51,7 @@ import japsadev.tools.CombineProdigalCmd;
 import japsadev.tools.ConvertProbeCmd;
 import japsadev.tools.FilterPEConcordance;
 import japsadev.tools.FixRastGFFCmd;
+import japsadev.tools.GapCloserCmd;
 import japsadev.tools.GetFlankBlast;
 import japsadev.tools.KmerAnalysisCmd;
 import japsadev.tools.MyTestCmd;
@@ -145,6 +146,7 @@ public class DevDeploy {
 		tools.add(new BarCodeNPScarfCmd());
 		tools.add(new BarCodeNPScarfCmd2());
 		tools.add(new NewScarfCmd());
+		tools.add(new GapCloserCmd());
 		//new 
 		//tools.add(new BarCodeNPScarfCmd2());
 		//
