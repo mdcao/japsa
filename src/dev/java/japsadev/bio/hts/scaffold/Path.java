@@ -1,24 +1,23 @@
 package japsadev.bio.hts.scaffold;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
-import japsadev.bio.hts.scaffold.Edge;
-import japsadev.bio.hts.scaffold.Graph;
-import japsadev.bio.hts.scaffold.Node;
-import japsadev.bio.hts.scaffold.Path;
-import japsadev.bio.hts.scaffold.Vertex;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 
 public class Path implements Comparable<Path>{
 	ArrayList<Node> nodes;
+	//ArrayList<Edge> edges;
 	Graph graph;
 	int length, deviation; //how this path differ to long read data (todo: by multiple-alignment??)
+	int gapLen;
 	public Path(){
 		this.nodes=new ArrayList<Node>();
+		//this.edges=new ArrayList<Edge>();
 		graph=new Graph();
-		length=0;
+		gapLen = length = 0;
 		deviation=Integer.MAX_VALUE;
 	}
 	
@@ -30,7 +29,11 @@ public class Path implements Comparable<Path>{
 		this(p.graph);
 		for(Node node:p.nodes)
 			this.nodes.add(node);
-		this.length=p.length;
+//		for(Edge edge:p.edges)
+//			this.edges.add(edge);
+		
+		this.length = p.length;
+		this.gapLen = p.gapLen;
 	}
 	/*
 	 * @param String: a path as in contigs.paths of SPAdes output
@@ -38,27 +41,28 @@ public class Path implements Comparable<Path>{
 	 */
 	public Path(Graph graph, String paths){
 		this(graph);
-		paths=paths.replace(";", ""); //optimized it!
-		String[] comps = paths.split(",");
-		for(int i=0; i<comps.length; i++){
-			String 	cur = comps[i];
-			boolean curDir = cur.contains("+")?true:false;
-			Vertex curComp = graph.getVertex(cur.substring(0,cur.length()-1));
-			if(curComp == null){
-				System.out.println("Could not find Vertex "+ cur.substring(0,cur.length()-1));
-				break;
-			}		
-			if(!nodes.isEmpty()){
-				Node lastNode = nodes.get(nodes.size()-1);
-				Edge curEdge=new Edge(lastNode.getVertex(), curComp, lastNode.getDirection(), curDir);
-				if(!graph.containsEdge(curEdge)){
-					System.out.println(curEdge + " doesn't exist in the graph!");
-					break;
-				}
-					
-			}
-			addNode(curComp, curDir);
-		}
+//		paths=paths.replace(";", ""); //optimized it!
+//		String[] comps = paths.split(",");
+//		for(int i=0; i<comps.length; i++){
+//			String 	cur = comps[i];
+//			boolean curDir = cur.contains("+")?true:false;
+//			Vertex curComp = graph.getVertex(cur.substring(0,cur.length()-1));
+//			if(curComp == null){
+//				System.out.println("Could not find Vertex "+ cur.substring(0,cur.length()-1));
+//				break;
+//			}		
+//			if(!nodes.isEmpty()){
+//				Node lastNode = nodes.get(nodes.size()-1);
+//				Edge curEdge=new Edge(lastNode.getVertex(), curComp, lastNode.getDirection(), curDir);
+//				if(!graph.containsEdge(curEdge)){
+//					System.out.println(curEdge + " doesn't exist in the graph!");
+//					break;
+//				}
+//					
+//			}
+//			addNode(curComp, curDir);
+//		}
+		StringHelper.addPathFromSPAdes(this, paths);
 	}
 	
 	public void associate(Graph g){
@@ -66,10 +70,16 @@ public class Path implements Comparable<Path>{
 	}
 	
 	public void addNode(Vertex v, boolean dir){
-		if(nodes.isEmpty())
-			length=v.getSequence().length();
-		else
-			length+=v.getSequence().length()-Graph.getKmerSize();
+		length+=v.getSequence().length();
+		if(!nodes.isEmpty()){
+			Node end = getEnd();
+			Edge e = graph.getEdge(end.v, v, end.dir, dir);
+			if(e!=null)
+				length+=e.getWeight();
+			
+			if(e.getWeight()>0)
+				gapLen+=e.getWeight();
+		}
 		
 		nodes.add(new Node(v,dir));
 	}
@@ -115,7 +125,28 @@ public class Path implements Comparable<Path>{
 
 		 for(int i=0;i<nodes.size();i++){
 			 Node aNode=nodes.get(i);
-			 seq.append(aNode.getSeq().subSequence(0, (i==nodes.size()-1?aNode.getSeq().length():aNode.getSeq().length()-Graph.getKmerSize())));
+			 
+			 if(i<nodes.size()-1){
+				 Node nextNode=nodes.get(i+1);
+				 Edge e = graph.getEdge(aNode.v, nextNode.v, aNode.dir, nextNode.dir);
+				 if(e==null){
+					 System.err.println("Graph doesn't contain edge from " + aNode + " to " + nextNode);
+					 break;
+				 }
+				 else if(e.getWeight()<=0)
+					 seq.append(aNode.getSeq().subSequence(0, aNode.getSeq().length()+e.getWeight()));
+				 
+				 else{
+					 char[] chars = new char[e.getWeight()];
+					 Arrays.fill(chars, 'N');
+					 Sequence gap = new Sequence(Alphabet.DNA16(), new String(chars), "gaps");
+					 seq.append(aNode.getSeq());
+					 seq.append(gap);
+				 }
+				 					 
+			 }else
+				 seq.append(aNode.getSeq());
+
 		 }
 		 
 		 return seq.toSequence();

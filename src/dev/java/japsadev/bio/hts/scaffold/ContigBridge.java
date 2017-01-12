@@ -48,14 +48,6 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 
-import japsadev.bio.hts.scaffold.AlignmentRecord;
-import japsadev.bio.hts.scaffold.Contig;
-import japsadev.bio.hts.scaffold.ContigBridge;
-import japsadev.bio.hts.scaffold.Node;
-import japsadev.bio.hts.scaffold.Path;
-import japsadev.bio.hts.scaffold.ReadFilling;
-import japsadev.bio.hts.scaffold.ScaffoldGraph;
-import japsadev.bio.hts.scaffold.ScaffoldVector;
 import japsa.bio.np.ErrorCorrection;
 
 /**

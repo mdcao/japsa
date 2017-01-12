@@ -9,11 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import japsadev.bio.hts.scaffold.Edge;
-import japsadev.bio.hts.scaffold.Node;
-import japsadev.bio.hts.scaffold.Path;
-import japsadev.bio.hts.scaffold.Vertex;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
@@ -50,89 +45,55 @@ public class Graph {
 		int shortestLen = 10000;
     	//SPAdes assembly graph is stored in a .fastg file
     	if(assembler==0b00){
-			SequenceReader reader = new FastaReader(graphFile);
-			Sequence seq;
-	
-			while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-				if(seq.length()<shortestLen)
-					shortestLen=seq.length();
-				
-				String[] adjList = seq.getName().split(":");
-				String name = adjList[0];
-				boolean dir1=name.contains("'")?false:true;
-				
-				name=name.replaceAll("[^a-zA-Z0-9_.]", "").trim();
-				
-				Vertex current=new Vertex(name);
-				if(getVertex(current.getLabel())!=null)
-					current=getVertex(current.getLabel());
-					
-				addVertex(current, false);
-				
-				if(dir1){
-					seq.setName(name);
-					current.setSequence(seq);
-					//System.out.println(current);
-				}
-				if (adjList.length > 1){
-					String[] nbList = adjList[1].split(",");
-					for(int i=0; i < nbList.length; i++){
-						// create list of bridges here (distance=-kmer overlapped)
-						String neighbor = nbList[i];
-						boolean dir2=neighbor.contains("'")?false:true;
-						neighbor=neighbor.replaceAll("[^a-zA-Z0-9_.]", "").trim();
-	
-						Vertex nbVertex=new Vertex(neighbor);
-						if(getVertex(nbVertex.getLabel())!=null)
-							nbVertex=getVertex(nbVertex.getLabel());
-		
-						addVertex(nbVertex, false);
-						
-						addEdge(current, nbVertex, dir1, dir2);
-					}
-				}
-				
-			}
-			reader.close();
+    		shortestLen = StringHelper.buildGraphFromFastg(graphFile, this);
+//			SequenceReader reader = new FastaReader(graphFile);
+//			Sequence seq;
+//	
+//			while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
+//				if(seq.length()<shortestLen)
+//					shortestLen=seq.length();
+//				
+//				String[] adjList = seq.getName().split(":");
+//				String name = adjList[0];
+//				boolean dir1=name.contains("'")?false:true;
+//				
+//				name=name.replaceAll("[^a-zA-Z0-9_.]", "").trim();
+//				
+//				Vertex current=new Vertex(name);
+//				if(getVertex(current.getLabel())!=null)
+//					current=getVertex(current.getLabel());
+//					
+//				addVertex(current, false);
+//				
+//				if(dir1){
+//					seq.setName(name);
+//					current.setSequence(seq);
+//					//System.out.println(current);
+//				}
+//				if (adjList.length > 1){
+//					String[] nbList = adjList[1].split(",");
+//					for(int i=0; i < nbList.length; i++){
+//						// create list of bridges here (distance=-kmer overlapped)
+//						String neighbor = nbList[i];
+//						boolean dir2=neighbor.contains("'")?false:true;
+//						neighbor=neighbor.replaceAll("[^a-zA-Z0-9_.]", "").trim();
+//	
+//						Vertex nbVertex=new Vertex(neighbor);
+//						if(getVertex(nbVertex.getLabel())!=null)
+//							nbVertex=getVertex(nbVertex.getLabel());
+//		
+//						addVertex(nbVertex, false);
+//						
+//						addEdge(current, nbVertex, dir1, dir2);
+//					}
+//				}
+//				
+//			}
+//			reader.close();
     	}
     	// ABySS: assembly graph is presented by a .dot file
     	else if(assembler==0b01){
-    		try(BufferedReader br = new BufferedReader(new FileReader(graphFile))) {
-    		    for(String line; (line = br.readLine()) != null; ) {
-    		        if(line.contains("edge")){
-//    		        	Pattern: edge [d=-127]
-    		        	String pattern = "^edge \\[d=-([0-9]*)\\]$";
-    		        	Pattern r = Pattern.compile(pattern);
-    		        	Matcher m = r.matcher(line);
-    		        	if(m.find()){
-    		        		System.out.println("Kmer (k-1 actually):" + m.group(1));
-    		        		setKmerSize(Integer.parseInt(m.group(1)));
-    		        	}
-    	
-    		        }
-    		        if(line.contains("->")){
-//   		        	String pattern = "^\\[([0-9\\+\\-]*)\\]([oi])\\[([0-9\\+\\-]*)\\]([oi])$";
-//    		          // Create a Pattern object
-//    		          Pattern r = Pattern.compile(pattern);
-//    		          // Now create matcher object.
-//    		          String id="[3]i[4+8+]o";
-//    		          Matcher m = r.matcher(id);
-//    		           	
-//    		          if(m.find()){
-//    		          	System.out.println(m.group(1)+"|"+m.group(2)+"|"+m.group(3)+"|"+m.group(4));
-//    		          } else
-//    		          	System.out.println("Fuck");
-    		        	String pattern = "^\"([0-9\\+\\-]*)\" -> \"([0-9\\+\\-]*)\" \\[d=-(0-9)*\\]$";
-    		        	Pattern r = Pattern.compile(pattern);
-    		        	Matcher m = r.matcher(line);
-    		        	if(m.find()){
-    		        		System.out.println("Read graph pattern: " + m.group(1) + " " + m.group(2) + " " + m.group(3));
-    		        		//do smt
-    		        	}
-    		        }	
-    		    }
-    		    // line is not visible here.
-    		}
+    		StringHelper.buildGraphFromDot(graphFile, this);
     	}
 		
 		//rough estimation of kmer used
@@ -162,11 +123,11 @@ public class Graph {
     public static int getKmerSize(){
     	return kmer;
     }
-    private static void setKmerSize(int k){
+    static void setKmerSize(int k){
     	kmer=k;
     }
     /**
-     * This method adds am edge between Vertices one and two
+     * This method adds an edge between Vertices one and two
      * and their corresponding direction of weight kmer, 
      * if no Edge between these Vertices already exists in the Graph.
      * 
@@ -190,7 +151,7 @@ public class Graph {
      * @param two The second Vertex of the Edge
      * @param d1 The direction on the side of vertex one
      * @param d2 The direction on the side of vertex two
-     * @param weight The weight of the Edge
+     * @param weight The weight of the Edge (distance between two end vertices)
      * @return true iff no Edge already exists in the Graph
      */
     public boolean addEdge(Vertex one, Vertex two, boolean d1, boolean d2, int weight){
@@ -226,7 +187,7 @@ public class Graph {
         		|| this.edges.containsKey(e.getReversedRead().hashCode());
     }
     
-    
+
     /**
      * This method removes the specified Edge from the Graph,
      * including as each vertex's incidence neighborhood.
@@ -259,6 +220,25 @@ public class Graph {
      */
     public Vertex getVertex(String label){
         return vertices.get(label);
+    }
+    
+    /**
+     * 
+     * @param one The first vertex to add
+     * @param two The second vertex to add
+     * @param d1 The direction on the side of vertex one
+     * @param d2 The direction on the side of vertex two
+     * @return Edge The Edge that connect the two end vertices in the graph
+     */
+    public Edge getEdge(Vertex one, Vertex two, boolean d1, boolean d2){
+        Edge e = new Edge(one, two, d1, d2);
+        if(edges.containsKey(e.hashCode())){
+            return edges.get(e.hashCode());
+        } else if(edges.containsKey(e.getReversedRead().hashCode()))
+        	return edges.get(e.getReversedRead().hashCode());
+        else 
+        	return null;
+   			
     }
     
     /**
@@ -323,7 +303,9 @@ public class Graph {
      * Find a path between two nodes within a given distance
      */
     public ArrayList<Path> DFS(Node source, Node dest, int distance){
-    	System.out.println("Looking for path between " + source.toString() + " to " + dest.toString() + " with distance " + distance);
+    	if(ScaffoldGraph.verbose)
+    		System.out.println("Looking for path between " + source.toString() + " to " + dest.toString() + " with distance " + distance);
+    	
     	Path 	tmp = new Path(this);
     	ArrayList<Path>	retval = new ArrayList<Path>();
     	tmp.addNode(source);  	
@@ -336,29 +318,31 @@ public class Graph {
     
     public void traverse(Path path, Node dest, ArrayList<Path> curResult, int distance){
     	Node source=path.getEnd();
-    	assert source!=null:"Path null fault!";
+    	//assert source!=null:"Path null fault!";
     	
     	ArrayList<Edge> nList = source.getVertex().getNeighbors();
     	for(Edge e:nList){
     		if(e.getDOne()==source.getDirection()){
     			path.addNode(e.getTwo(), e.getDTwo());
-
-    			if(e.getTwo()==dest.getVertex() && e.getDTwo()==dest.getDirection() && Math.abs(distance+getKmerSize()) < TOLERATE){
+    			int d = -e.getWeight();
+    			if(e.getTwo()==dest.getVertex() && e.getDTwo()==dest.getDirection() && Math.abs(distance+d) < TOLERATE){
 
     		    	Path 	curPath=curResult.isEmpty()?new Path(this):curResult.get(0), //the best path saved among all possible paths from the list curResult
     		    			tmpPath=new Path(this);
     		    	tmpPath.setComp(path.getComp());
-    		    	tmpPath.setDeviation(Math.abs(distance+getKmerSize()));
-    		    	if(	Math.abs(distance+getKmerSize()) < curPath.getDeviation() )
+    		    	tmpPath.setDeviation(Math.abs(distance+d));
+    		    	if(	Math.abs(distance+d) < curPath.getDeviation() )
     		    		curResult.add(0, tmpPath);
     		    	else
     		    		curResult.add(tmpPath);
-    				
-    				System.out.println("Hit added: "+path+"(candidate deviation: "+Math.abs(distance+getKmerSize())+")");
+    				if(ScaffoldGraph.verbose)
+    					System.out.println("Hit added: "+path+"(candidate deviation: "+Math.abs(distance+d)+")");
     			}else{
-    				int newDistance=distance-e.getTwo().getSequence().length()+getKmerSize();
-    				if (newDistance+getKmerSize()<-TOLERATE){
-    					System.out.println("Stop following path with distance "+newDistance+" already! : "+path);
+    				int newDistance=distance-e.getTwo().getSequence().length()+d;
+    				if (newDistance+d<-TOLERATE){
+    					if(ScaffoldGraph.verbose)
+    						System.out.println("Stop following path with distance "+newDistance+" already! : "+path);
+    					
     				}else
     					traverse(path, dest, curResult, newDistance);
     			}

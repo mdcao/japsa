@@ -34,8 +34,6 @@
 
 package japsadev.bio.hts.scaffold;
 
-import japsadev.bio.hts.scaffold.AlignmentRecord;
-import japsadev.bio.hts.scaffold.ReadFilling;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import java.util.ArrayList;

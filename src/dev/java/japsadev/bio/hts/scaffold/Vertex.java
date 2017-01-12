@@ -43,7 +43,11 @@ public class Vertex {
      * @param name The name of Edge in assembly graph that correspond to this Vertex
      */
     private String getID(String name){
-    	return name.split("_")[1];
+    	String[] toks = name.split("_");
+    	if(toks.length > 1)//SPAdes
+    		return toks[1];
+    	else
+    		return toks[0];
     }
     /**
      * This method adds an Edge to the incidence neighborhood of this graph iff

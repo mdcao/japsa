@@ -40,14 +40,7 @@ import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import japsadev.bio.hts.scaffold.AlignmentRecord;
-import japsadev.bio.hts.scaffold.Contig;
-import japsadev.bio.hts.scaffold.ContigBridge;
-import japsadev.bio.hts.scaffold.Graph;
-import japsadev.bio.hts.scaffold.Path;
-import japsadev.bio.hts.scaffold.ReadFilling;
-import japsadev.bio.hts.scaffold.Scaffold;
-import japsadev.bio.hts.scaffold.ScaffoldVector;
+
 import japsa.seq.Alphabet;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
