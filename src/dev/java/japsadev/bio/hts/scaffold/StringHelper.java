@@ -102,7 +102,7 @@ public class StringHelper {
 		for(String line; (line = br.readLine()) != null; ) {
 	        if(line.contains("edge")){
 	        	String[] toks = line.split("\\s");
-	        	int d = StringHelper.getDistanceFromDotFileBlock(toks[1]);
+	        	int d = getDistanceFromDotFileBlock(toks[1]);
 	        	if(d < 0)
 	        		Graph.setKmerSize(-d); //actually (k-1)mer in ABySS
 	        }
@@ -129,7 +129,7 @@ public class StringHelper {
 	        	}
 	        	
 	        	if(toks.length > 3) //distance available
-	        		graph.addEdge(sourceVertex, destVertex, sourceDir, destDir, -getDistanceFromDotFileBlock(toks[3]));
+	        		graph.addEdge(sourceVertex, destVertex, sourceDir, destDir, getDistanceFromDotFileBlock(toks[3]));
 	        	else
 	        		graph.addEdge(sourceVertex, destVertex, sourceDir, destDir);
 	        	

@@ -51,7 +51,7 @@ public class MetaRange extends Range{
     }
 
     /**
-     * This code is retrieved from a similar one in StackOverFlow: credits to augray :). 
+     * This code is retrieved from StackOverFlow: credits to augray :). 
      * From here on, the term "overlap" actually means ranges that 
      * belong to the same homo-group 
      * 

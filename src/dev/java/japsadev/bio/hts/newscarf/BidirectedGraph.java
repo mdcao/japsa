@@ -416,6 +416,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		List<Range> baseRanges=new ArrayList<Range>(allAlignments.keySet());
 		List<List<Range>> rangeGroups = MetaRange.getOverlappingGroups(baseRanges);
 		
+		if(rangeGroups.size() < 2)
+			return null;
+		
 		System.out.println("Binning ranges: ");
 	    for(List<Range> group : rangeGroups){
 	        System.out.println(group);
