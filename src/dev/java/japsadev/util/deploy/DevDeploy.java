@@ -64,6 +64,8 @@ import japsadev.tools.RemoveNsCmd;
 import japsadev.tools.RepeatPrimerCmd;
 import japsadev.tools.ResGeneGenomesCmd;
 import japsadev.tools.SampleCmd;
+import japsadev.tools.SelectReadsCmd;
+import japsadev.tools.StructuralVariationCmd;
 import japsadev.tools.TestSampleCmd;
 import japsadev.tools.VNTRDepthAnalyserCmd;
 import japsadev.tools.VNTRDepthSumCmd;
@@ -146,9 +148,14 @@ public class DevDeploy {
 		tools.add(new BarCodeNPScarfCmd());
 		tools.add(new BarCodeNPScarfCmd2());
 		tools.add(new NewScarfCmd());
+
 		tools.add(new GapCloserCmd());
+
+		tools.add(new SelectReadsCmd());
+		tools.add(new StructuralVariationCmd());
+
 		//new 
-		//tools.add(new BarCodeNPScarfCmd2());
+		//tools.add(new StructuralVariationCmd());
 		//
 
 	}

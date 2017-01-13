@@ -75,7 +75,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 				for (Sequence seq:family){
 					seq.writeFasta(sos);
 				}
-			}			
+			}		
 		}		
 		sos.close();
 	}
