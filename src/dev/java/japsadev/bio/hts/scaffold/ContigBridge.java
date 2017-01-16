@@ -146,7 +146,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	 * based on the transVector.
 	 * Only being invoked from Scaffold.viewSequence()?? Yes!
 	 */
-	public Connection updatePath(){
+	private Connection updatePath(){
 		ArrayList<Path> 	firstPathList=firstContig.getPaths(),
 							secondPathList=secondContig.getPaths(),
 							candidates=new ArrayList<Path>();
@@ -161,22 +161,23 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		if(bridgePath!=null)
 			return path2Connection(bridgePath);
 			
-
-		for(Path p1:firstPathList)
-			for(Path p2:secondPathList){
-				System.out.println("Trying to find path that connect " + firstContig.getName() + "("+ (firstContig.getRelDir()>0?"F":"R") + ")" + 
-									" to " + secondContig.getName() + "("+ (secondContig.getRelDir()>0?"F":"R") + ")");
-				System.out.print((firstContig.getRelDir()>0?p1:p1.rc()) + " =====> ");
-				System.out.println(secondContig.getRelDir()>0?p2:p2.rc());
-				
-
-				//because we go from left->right of a Scaffold when invoking Scaffold.viewSequence()
-				Node	tip1=firstContig.getRelDir()>0?p1.getEnd():p1.rc().getEnd(),
-						tip2=secondContig.getRelDir()>0?p2.getStart():p2.rc().getStart();
-				
-				// Find a path from tip1 -> tip2 with distance as close to d as possible
-				candidates.addAll(Contig.asGraph.DFS(tip1, tip2, d));
+		if(ScaffoldGraph.verbose){
+			System.out.println("Trying to find path that connect " + firstContig.getName() + "("+ (firstContig.getRelDir()>0?"F":"R") + ")" + 
+					" to " + secondContig.getName() + "("+ (secondContig.getRelDir()>0?"F":"R") + ")");
 		}
+		Node tip1, tip2;
+		if(firstContig.getRelDir()>0)
+			tip1 = firstPathList.get(firstPathList.size()-1).getEnd();
+		else
+			tip1 = firstPathList.get(0).rc().getEnd();
+		
+		if(secondContig.getRelDir()>0)
+			tip2 = secondPathList.get(0).getStart();
+		else
+			tip2 = secondPathList.get(secondPathList.size()-1).rc().getStart();
+		
+		candidates.addAll(Contig.asGraph.DFS(tip1, tip2, d));
+		
 		Collections.sort(candidates);
 
 		/**
@@ -271,7 +272,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		
 			
 		if(bestMatch==null){
-			System.out.println("Not found a stand-out path! Pick the first one.");
+			//System.out.println("Not found a stand-out path! Pick the first one.");
 			bridgePath=candidates.get(0);
 		}
 		
