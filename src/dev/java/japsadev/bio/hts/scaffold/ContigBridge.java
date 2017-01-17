@@ -147,9 +147,10 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	 * Only being invoked from Scaffold.viewSequence()?? Yes!
 	 */
 	private Connection updatePath(){
-		ArrayList<Path> 	firstPathList=firstContig.getPaths(),
-							secondPathList=secondContig.getPaths(),
-							candidates=new ArrayList<Path>();
+		//only go if assembly graph is specified!
+		if(Contig.asGraph == null)
+			return null;
+
 		int d=transVector.distance(firstContig, secondContig);
 
 		//if the distance is too long, we should wait for more long reads coming in
@@ -166,6 +167,12 @@ public class ContigBridge implements Comparable<ContigBridge>{
 					" to " + secondContig.getName() + "("+ (secondContig.getRelDir()>0?"F":"R") + ")");
 		}
 		Node tip1, tip2;
+		ArrayList<Path> 	firstPathList=firstContig.getPaths(),
+							secondPathList=secondContig.getPaths(),
+							candidates=new ArrayList<Path>();
+		System.out.println("First path list: " + firstPathList);
+		System.out.println("Second path list: " + secondPathList);
+		
 		if(firstContig.getRelDir()>0)
 			tip1 = firstPathList.get(firstPathList.size()-1).getEnd();
 		else
@@ -175,6 +182,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			tip2 = secondPathList.get(0).getStart();
 		else
 			tip2 = secondPathList.get(secondPathList.size()-1).rc().getStart();
+		
 		
 		candidates.addAll(Contig.asGraph.DFS(tip1, tip2, d));
 		

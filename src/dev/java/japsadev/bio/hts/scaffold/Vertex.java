@@ -47,7 +47,7 @@ public class Vertex {
     	if(toks.length > 1)//SPAdes
     		return toks[1];
     	else
-    		return toks[0];
+    		return name;
     }
     /**
      * This method adds an Edge to the incidence neighborhood of this graph iff

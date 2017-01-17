@@ -74,9 +74,10 @@ public class GapCloserCmd extends CommandLine{
 		addInt("bwaThread", 4, "Theads used by bwa");
 		addBoolean("long", false, "Whether report all sequences, including short/repeat contigs (default) or only long/unique/completed sequences.");
 		
-		addString("assembler", null, "Name of the assembler used for Illumina assembly: SPAdes (default) or ABySS.");
+		addString("assembler", "spades", "Name of the assembler used for Illumina assembly: SPAdes (default) or ABySS.");
 		addString("graphDir", null, "Name of the output folder by SPAdes/ABySS: assembly graph and paths will be used for better gap-filling.");
 		addString("prefix", "out", "Prefix for the output files");	
+		
 		addString("genes", null , "Realtime annotation: name of annotated genes in GFF 3.0 format");
 		addString("resistGene", null , "Realtime annotation: name of antibiotic resistance gene fasta file");
 		addString("insertSeq", null , "Realtime annotation: name of IS fasta file");
@@ -181,7 +182,7 @@ public class GapCloserCmd extends CommandLine{
 				File f = new File(graphFolder);
 				File[] matchingFiles = f.listFiles(new FilenameFilter() {
 				    public boolean accept(File dir, String name) {
-				        return name.endsWith("-contigs.dot");
+				        return name.endsWith("contigs.dot");
 				    }
 				});
 				if(matchingFiles.length != 1){
@@ -189,7 +190,7 @@ public class GapCloserCmd extends CommandLine{
 					graphFolder=null;
 				} else{
 					graphFile=matchingFiles[0];
-					Logging.info("===> Use assembly graph from short-read assembler: ABySS!");
+					Logging.info("===> Use assembly graph from short-read assembler ABySS: " + graphFile);
 				}
 				
 			}

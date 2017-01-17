@@ -178,6 +178,9 @@ public class ScaffoldGraph{
 	
 			}
 			pathReader.close();
+		} else if(assembler==0b01){ //for the case of ABySS: contig and vertex of assembly graph are the same
+			for(Contig ctg:contigs)
+				ctg.setPath(new Path(g,ctg.getName()+"+"));
 		}
 
 	}

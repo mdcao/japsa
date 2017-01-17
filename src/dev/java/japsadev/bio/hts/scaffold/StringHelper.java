@@ -106,34 +106,42 @@ public class StringHelper {
 	        	if(d < 0)
 	        		Graph.setKmerSize(-d); //actually (k-1)mer in ABySS
 	        }
-	        if(line.contains("->")){
+	        if(line.charAt(0)=='"'){
 	        	String[] toks = line.split("\\s");
-	        	if(toks.length < 3)
-	        		continue; //smt wrong actually!
-	        	//get rid of quote characters
-	        	String 	source = toks[0].replaceAll("\"", ""),
-	        			dest = toks[2].replaceAll("\"", "");
-	        	boolean sourceDir = source.contains("+")?true:false,
-	        			destDir = dest.contains("+")?true:false;
-	        	String 	sourceID = source.substring(0, source.length()-1),
-	        			destID = dest.substring(0, dest.length()-1);
-	        	Vertex 	sourceVertex = graph.getVertex(sourceID),
-	        			destVertex = graph.getVertex(destID);
-	        	
-	        	if(sourceVertex==null){
-					sourceVertex = new Vertex(sourceID);
-					graph.addVertex(sourceVertex, false);
-	        	}else if(destVertex==null){
-					destVertex = new Vertex(destID);
-					graph.addVertex(destVertex, false);
+	        	if(!line.contains("->")){
+	        		String node = toks[0].replaceAll("\"", "");
+	        		String vertexID = node.substring(0, node.length()-1);
+	        		graph.addVertex(new Vertex(vertexID), false);
 	        	}
-	        	
-	        	if(toks.length > 3) //distance available
-	        		graph.addEdge(sourceVertex, destVertex, sourceDir, destDir, getDistanceFromDotFileBlock(toks[3]));
-	        	else
-	        		graph.addEdge(sourceVertex, destVertex, sourceDir, destDir);
-	        	
-	        }	
+	        	else{
+		        	if(toks.length < 3)
+		        		continue; //smt wrong actually!
+		        	//get rid of quote characters
+		        	String 	source = toks[0].replaceAll("\"", ""),
+		        			dest = toks[2].replaceAll("\"", "");
+		        	boolean sourceDir = source.contains("+")?true:false,
+		        			destDir = dest.contains("+")?true:false;
+		        	String 	sourceID = source.substring(0, source.length()-1),
+		        			destID = dest.substring(0, dest.length()-1);
+		        	Vertex 	sourceVertex = graph.getVertex(sourceID),
+		        			destVertex = graph.getVertex(destID);
+		        	
+//		        	if(sourceVertex==null){
+//						sourceVertex = new Vertex(sourceID);
+//						graph.addVertex(sourceVertex, false);
+//		        	}
+//		        	if(destVertex==null){
+//						destVertex = new Vertex(destID);
+//						graph.addVertex(destVertex, false);
+//		        	}
+		        	
+		        	if(toks.length > 3) //distance available
+		        		graph.addEdge(sourceVertex, destVertex, sourceDir, destDir, getDistanceFromDotFileBlock(toks[3]));
+		        	else
+		        		graph.addEdge(sourceVertex, destVertex, sourceDir, destDir);
+		        	
+		        }	
+	        }
 	    }
 
 		br.close();
