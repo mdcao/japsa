@@ -77,7 +77,7 @@ public final class Scaffold extends LinkedList<Contig>{
 	}	
 
 
-	public void setCloseBridge(ContigBridge bridge){
+	public synchronized void setCloseBridge(ContigBridge bridge){
 		assert bridge.firstContig.getIndex() == this.getLast().getIndex():"Closed bridge: " + bridge.hashKey + " <-> " +this.getLast().getIndex();
 		closeBridge = bridge;
 		circle = ScaffoldVector.composition(this.getLast().getVector(), ScaffoldVector.reverse(this.getFirst().getVector())); //first->last
@@ -181,13 +181,16 @@ public final class Scaffold extends LinkedList<Contig>{
 
 	}
 	//reset prevScore or nextScore to 0 according to removed bridges.
-	public void trim(){
+	public synchronized void trim(){
 		if(ScaffoldGraph.verbose)
 			System.out.println("Trimming scaffold: " + scaffoldIndex);
+		
 		if(closeBridge != null || this.isEmpty())
 			return;
 		//from right
 		Contig rightmost = this.peekLast();
+		if(rightmost==null)
+			return;
 		while(ScaffoldGraph.isRepeat(rightmost) && this.size()>=1){
 			if(ScaffoldGraph.verbose)
 				System.out.println("...removing contig " + rightmost.getIndex());	
@@ -250,7 +253,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		}
 
 	}
-	public void setHead(int head){
+	public synchronized void setHead(int head){
 		scaffoldIndex = head;
 		for (Contig ctg:this)
 			ctg.head = head;
@@ -262,7 +265,7 @@ public final class Scaffold extends LinkedList<Contig>{
 	/**
 	 * @param start the start to set
 	 */	
-	public void view(){
+	public synchronized void view(){
 		System.out.println("========================== START =============================");
 		Iterator<ContigBridge> bridIter = bridges.iterator();
 		if(closeBridge!=null){
@@ -296,23 +299,10 @@ public final class Scaffold extends LinkedList<Contig>{
 
 	public synchronized void viewSequence(SequenceOutputStream fout, SequenceOutputStream jout) throws IOException{		
 
-
-		System.out.println("========================== START =============================");
-		if(closeBridge!=null){
-			System.out.println("Close bridge: " + closeBridge.hashKey + " Circularized vector: " + circle);
+		if(ScaffoldGraph.verbose){
+			view();
+			System.out.println("Size = " + size() + " sequence");
 		}
-		Iterator<ContigBridge> bridIter = bridges.iterator();
-		for (Contig ctg:this){				
-			System.out.printf("  contig %3d  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s ",ctg.getIndex(), ctg.leftMost(),ctg.rightMost(), ctg.getName());
-
-			if (bridIter.hasNext()){
-				ContigBridge bridge = bridIter.next();
-				System.out.printf("gaps =  %d\n", bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));					
-			}else
-				System.out.println();
-		}
-
-		System.out.println("Size = " + size() + " sequence");
 		
 		// Synchronize positions of 2 contigs (myVector) of a bridge based on the real list of contigs
 		// TODO: do the same with viewAnnotation()
@@ -477,8 +467,9 @@ public final class Scaffold extends LinkedList<Contig>{
 		//count the appearance by 1 more
 		ScaffoldGraph.oneMore(leftContig);
 		
-		if (bestCloseConnection != null){	
-			System.out.printf("Append bridge %d -- %d\n",closeBridge.firstContig.index,  closeBridge.secondContig.index);
+		if (bestCloseConnection != null){
+			if(ScaffoldGraph.verbose)
+				System.out.printf("Append bridge %d -- %d\n",closeBridge.firstContig.index,  closeBridge.secondContig.index);
 			/* uncomment for longread-based */
 			bestCloseConnection.filling(seq, anno);	
 			/* uncomment for illumina-based */
@@ -486,7 +477,6 @@ public final class Scaffold extends LinkedList<Contig>{
 //				bestCloseConnection.filling(seq, anno);	
 		}
 
-		System.out.println("============================ END ===========================");
 		len = seq.length();
 		JapsaAnnotation.write(seq.toSequence(), anno, jout); 
 		seq.writeFasta(fout);

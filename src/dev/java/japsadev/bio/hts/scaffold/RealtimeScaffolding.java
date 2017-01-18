@@ -298,8 +298,8 @@ public class RealtimeScaffolding {
 		protected void analysis() {
 			long step = (lastTime - startTime)/1000;//convert to second	
 			scaffolding.graph.connectBridges();
-			int scfCount = 0,
-					cirCount = 0;
+			int	scfCount = 0,
+				cirCount = 0;
 			for (int i = 0; i < scaffolding.graph.scaffolds.length;i++){
 				if (scaffolding.graph.scaffolds[i].size() > 0){
 					int len = scaffolding.graph.scaffolds[i].getLast().rightMost() - scaffolding.graph.scaffolds[i].getFirst().leftMost();

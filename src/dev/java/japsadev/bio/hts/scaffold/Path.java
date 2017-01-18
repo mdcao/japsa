@@ -6,6 +6,7 @@ import java.util.Arrays;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
+import japsa.util.Logging;
 
 public class Path implements Comparable<Path>{
 	ArrayList<Node> nodes;
@@ -133,8 +134,14 @@ public class Path implements Comparable<Path>{
 					 System.err.println("Graph doesn't contain edge from " + aNode + " to " + nextNode);
 					 break;
 				 }
-				 else if(e.getWeight()<=0)
-					 seq.append(aNode.getSeq().subSequence(0, aNode.getSeq().length()+e.getWeight()));
+				 else if(e.getWeight()<=0){
+					 int lenLeft = aNode.getSeq().length()+e.getWeight();
+					 if(lenLeft > 0)
+						 seq.append(aNode.getSeq().subSequence(0, lenLeft));
+					 else if(ScaffoldGraph.verbose)
+						 Logging.info( "Ignore " + aNode.toString() + " and " + nextNode.toString() + " overlap: " + lenLeft 
+								 		+ "/" + aNode.getSeq().length() );
+				 }
 				 
 				 else{
 					 char[] chars = new char[e.getWeight()];

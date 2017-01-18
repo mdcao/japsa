@@ -182,7 +182,9 @@ public class ScaffoldGraph{
 			for(Contig ctg:contigs)
 				ctg.setPath(new Path(g,ctg.getName()+"+"));
 		}
-
+		
+		if(ScaffoldGraph.verbose)
+			Logging.info("Short read assembler " + (assembler==0b00?"SPAdes":"ABySS") + " kmer=" + Graph.getKmerSize());
 	}
 
 	public Contig getSPadesContig(String name){
@@ -963,7 +965,7 @@ public class ScaffoldGraph{
 
 				if(contigs.get(i).head == i || scaffolds[i].closeBridge != null){
 					if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
-							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short/repeat sequences here if required
+							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required
 					{
 						if(verbose) 
 							System.out.println("Scaffold " + i + " estimated length " + len);
@@ -975,7 +977,7 @@ public class ScaffoldGraph{
 			aout.close();
 		} else{
 			SequenceOutputStream 	fout = SequenceOutputStream.makeOutputStream(prefix+".fin.fasta"),
-					jout = SequenceOutputStream.makeOutputStream(prefix+".fin.japsa");
+									jout = SequenceOutputStream.makeOutputStream(prefix+".fin.japsa");
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
@@ -1067,7 +1069,7 @@ public class ScaffoldGraph{
 	}	
 	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a milestone.
 	public static boolean isRepeat(Contig ctg){
-		//for the case of AbySS when no coverage information of contigs is found
+		//for the case when no coverage information of contigs is found
 		if(estimatedCov == 1.0 && ctg.getCoverage() == 1.0){
 			if(ctg.length() > maxRepeatLength)
 				return false;

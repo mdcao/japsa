@@ -326,8 +326,15 @@ Input
 
 	jsa.np.npscarf -seq <*draft*> -input <*nanopore*>
 
-<*draft*> input is the FASTA file containing the pre-assemblies. Normally this 
-is the output from running SPAdes on Illumina MiSeq paired end reads.
+<*draft*> input is the FASTA file containing the pre-assemblies. We support outputs 
+from running SPAdes (for small genomes, e.g. microbial) or ABySS (for large eukaryotic 
+genomes) on Illumina MiSeq paired end reads. 
+The assembler used to generate the pre-assemblies can be specified using option:
+
+ 	--assembler <*assembler*> 
+
+The default <*assembler*> is SPAdes. 
+Input from another non-supported short-read assemblers could be used with your own risk.
 
 <*nanopore*> is either the long reads in FASTA/FASTQ file or SAM/BAM formated alignments 
 between them to <*draft*> file. We use BWA-MEM as the recommended aligner 
@@ -336,8 +343,10 @@ with the fixed parameter set as follow::
 	bwa mem -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y <*draft*> <*nanopore*> > <*bam*>
 	
 The input file format is specified by option --format. The default is FASTA/FASTQ in which 
-the path to BWA version 0.7.11 or newer is required. Remember to always *INDEXING* the 
-reference before running BWA::
+the path to BWA version 0.7.11 or newer is required. If SAM/BAM is provided as input instead,
+then do not worry about the aligner. 
+
+	Note: Remember to always *INDEXING* the reference before running BWA::
 	
 	bwa index <*draft*>
 	
@@ -346,8 +355,8 @@ reference before running BWA::
 Output
 =======
  *npScarf* output is specified by *-prefix* option. The default prefix is \'out\'.
-Normally the tool generate two files: *prefix*.fin.fasta and *prefix*.fin.japsa which 
-indicate the result scaffolders in FASTA and JAPSA format.
+Normally the tool generates two files: *prefix*.fin.fasta and *prefix*.fin.japsa which 
+indicate the result contigs in FASTA and JAPSA format.
 
 In realtime mode, if any annotation analysis is enabled, a file named 
  *prefix*.anno.japsa is generated instead. This file contains features detected after
@@ -405,11 +414,11 @@ and/or plasmid identifying respectively::
 
 Assembly graph
 ==============
- *npScarf* can read the assembly graph info from SPAdes to make the results more precise.
+ *npScarf* can read the assembly graph info from SPAdes/AbySS to make the results more precise.
 The results might be slightly deviate from the old version in term of number of final contigs::
 
-    jsa.np.npscarf --spadesFolder=<SPAdes_output_directory> <options...>
+    jsa.np.npscarf --graphDir=<output_directory> <options...>
 
-where SPAdes_output_directory indicates the result folder of SPAdes, containing files such as contigs.fasta, 
-contigs.paths and assembly_graph.fastg.
+where output_directory indicates the result folder of SPAdes/ABySS, containing files such as contigs.fasta, 
+contigs.paths, assembly_graph.fastg in case of SPAdes and *-contigs.fa, *-contigs.dot if from ABySS.
  *RST*/
