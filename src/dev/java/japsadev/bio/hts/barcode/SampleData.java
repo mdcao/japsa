@@ -3,11 +3,11 @@ package japsadev.bio.hts.barcode;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import japsa.bio.hts.scaffold.RealtimeScaffolding;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.Logging;
+import japsadev.bio.hts.scaffold.RealtimeScaffolding;
 
 public class SampleData {
 	String id;
