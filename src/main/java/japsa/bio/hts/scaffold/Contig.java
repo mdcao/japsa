@@ -134,8 +134,7 @@ public class Contig{
 			double cutRate=(float) Math.abs(cutFeature.getLength())/Math.abs(feature.getLength());
 			if(cutRate > .9){
 				cutFeature.setScore(feature.getScore()*cutRate);
-				remainFeatures.add(cutFeature);
-				
+				remainFeatures.add(cutFeature);				
 			}
 		}
 		

@@ -106,6 +106,10 @@ public class SelectReadsCmd extends CommandLine{
 			SAMRecordIterator iter = reader.query(chrom, start, end,false);
 			while (iter.hasNext()){
 				SAMRecord record = iter.next();
+				if (record.getReadString().length() < 10){
+					System.out.println("== " + record.getReadName());
+					continue;//while
+				}
 				int  [] refPositions = {start, end}; 
 				int [] pos = HTSUtilities.positionsInRead(record, refPositions);
 				if (pos[0] == 0 || pos[1] == 0)
