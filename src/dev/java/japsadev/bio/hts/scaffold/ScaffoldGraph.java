@@ -488,9 +488,9 @@ public class ScaffoldGraph{
 			AlignmentRecord t = a;a=b;b=t;
 		}
 		// Rate of aligned lengths: ref/read (illumina contig/nanopore read)
-		double rate = 1.0 * (Math.abs(a.refEnd - a.refStart) + Math.abs(b.refEnd - b.refStart))
-				/
-				(Math.abs(a.readEnd - a.readStart) + Math.abs(b.readEnd - b.readStart));		
+		int 	alignedReadLen = Math.abs(a.readEnd - a.readStart) + Math.abs(b.readEnd - b.readStart),
+				alignedRefLen = Math.abs(a.refEnd - a.refStart) + Math.abs(b.refEnd - b.refStart);
+		double rate = 1.0 * alignedRefLen/alignedReadLen;		
 
 		//See if this is reliable
 		double score = Math.min(a.score, b.score);
@@ -512,12 +512,16 @@ public class ScaffoldGraph{
 			if(verbose) 
 				System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d)\n"
 						, a.contig.getName(), a.readID, a.readLength, gP, alignD);
-			a.contig.cirProb ++;							
+			if(		alignedReadLen*1.0/a.contig.length() < 1.1  
+				&& 	alignedReadLen*1.0/a.contig.length() > 0.9 )
+				a.contig.cirProb ++;			
+
 		}		
 		else{
 			a.contig.cirProb--;
 			b.contig.cirProb--;
 		}
+		
 		// overlap length on aligned read (<0 if not overlap)
 		int overlap = Math.min(	a.readAlignmentEnd() - b.readAlignmentStart(), b.readAlignmentEnd() - a.readAlignmentStart());				
 
@@ -1067,7 +1071,7 @@ public class ScaffoldGraph{
 
 
 	}	
-	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a milestone.
+	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a marker.
 	public static boolean isRepeat(Contig ctg){
 		//for the case when no coverage information of contigs is found
 		if(estimatedCov == 1.0 && ctg.getCoverage() == 1.0){

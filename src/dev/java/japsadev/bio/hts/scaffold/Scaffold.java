@@ -189,9 +189,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			return;
 		//from right
 		Contig rightmost = this.peekLast();
-		if(rightmost==null)
-			return;
-		while(ScaffoldGraph.isRepeat(rightmost) && this.size()>=1){
+		while(rightmost!=null && ScaffoldGraph.isRepeat(rightmost)){
 			if(ScaffoldGraph.verbose)
 				System.out.println("...removing contig " + rightmost.getIndex());	
 			this.removeLast();
@@ -223,7 +221,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		
 		//from left
 		Contig leftmost = this.peekFirst();
-		while(ScaffoldGraph.isRepeat(leftmost) && this.size()>=1){
+		while(leftmost!=null && ScaffoldGraph.isRepeat(leftmost)){
 			if(ScaffoldGraph.verbose)
 				System.out.println("...removing contig " + leftmost.getIndex());			
 			this.removeFirst();
@@ -272,7 +270,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			System.out.println("Close bridge: " + closeBridge.hashKey + " Circularized vector: " + circle);
 		}
 		for (Contig ctg:this){				
-			System.out.printf("  contig %3d  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s ",ctg.getIndex(), ctg.leftMost(),ctg.rightMost(), ctg.getName());
+			System.out.printf("  contig %3d  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s ",ctg.getName(), ctg.leftMost(),ctg.rightMost(), ctg.getName());
 			if (bridIter.hasNext()){
 				ContigBridge bridge = bridIter.next();
 				System.out.printf("    %d: %s\n", bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig), bridge.hashKey);					

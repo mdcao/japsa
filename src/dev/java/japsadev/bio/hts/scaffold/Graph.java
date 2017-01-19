@@ -3,6 +3,7 @@ package japsadev.bio.hts.scaffold;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
+import japsa.util.Logging;
 
 
 /**
@@ -31,7 +33,8 @@ public class Graph {
     private static int kmer;
 
     static final int TOLERATE=500;
-
+    static final int MAX_DEPTH=50; //limit depth to search for DFS
+    static final long MAX_TIME=10; //limit time in seconds to search for DFS
     
     public Graph(){
         this.vertices = new HashMap<String, Vertex>();
@@ -311,12 +314,24 @@ public class Graph {
     	tmp.addNode(source);  	
     	
     	//traverse(tmp, dest, retval, distance+source.getSeq().length()+dest.getSeq().length());
-    	traverse(tmp, dest, retval, distance);
+    	traverse(tmp, dest, retval, distance, 0, Instant.now().getEpochSecond());
 
     	return retval;
     }
     
-    public void traverse(Path path, Node dest, ArrayList<Path> curResult, int distance){
+    public void traverse(Path path, Node dest, ArrayList<Path> curResult, int distance, int depth, long time){
+    	//stop if go to far
+    	if(depth >= MAX_DEPTH){
+    		if(ScaffoldGraph.verbose)
+				Logging.info("Stop following path with depth "+depth+" already! : "+path);	
+    		return;
+    	}
+    	if(Instant.now().getEpochSecond()-time>=MAX_TIME){
+    		if(ScaffoldGraph.verbose)
+    			Logging.info("Stop searching due to overtime!");	
+    		return;
+    	}
+    	
     	Node source=path.getEnd();
     	//assert source!=null:"Path null fault!";
     	
@@ -341,10 +356,10 @@ public class Graph {
     				int newDistance=distance-e.getTwo().getSequence().length()+d;
     				if (newDistance+d<-TOLERATE){
     					if(ScaffoldGraph.verbose)
-    						System.out.println("Stop following path with distance "+newDistance+" already! : "+path);
+    						Logging.info("Stop following path with distance "+newDistance+" already! : "+path);
     					
     				}else
-    					traverse(path, dest, curResult, newDistance);
+    					traverse(path, dest, curResult, newDistance, depth+1,time);
     			}
     			path.removeLast();
     		}

@@ -45,7 +45,7 @@ public class Contig{
 	double coverage = 1.0;
 	int head = -1; //point to the index of its head contig in the scaffold 
 	double prevScore=0, nextScore=0;
-	int cirProb = 0; //measure how likely the contig itself is circular
+	int cirProb = -1; //measure how likely the contig itself is circular
 
 	//for annotation
 	ArrayList<JapsaFeature> genes,				//genes list
