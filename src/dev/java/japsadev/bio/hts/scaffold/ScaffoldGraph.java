@@ -819,7 +819,7 @@ public class ScaffoldGraph{
 				}
 
 			}
-			scaffoldF = new Scaffold(contigs.get(headF));//????FIXME
+			scaffoldF = new Scaffold(contigs.get(headF));//????FIXME (is index matter when it comes to setHead???)
 		}
 		else if(secondDir == 1){
 			if(headF==headT){
