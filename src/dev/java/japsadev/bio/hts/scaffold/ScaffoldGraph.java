@@ -220,16 +220,20 @@ public class ScaffoldGraph{
 		for (int i = 0; i < scaffolds.length;i++){
 			if(scaffolds[i].isEmpty()) continue;
 			int len = scaffolds[i].length();
-			if ((contigs.get(i).head == i 
-					&& !isRepeat(contigs.get(i))
-					&& len > maxRepeatLength
-					)
-					|| scaffolds[i].closeBridge != null)
-			{
-				lengths[count] = len;
-				sum+=len;
-				count++;
-			}
+			
+//			if ((contigs.get(i).head == i 
+//					&& !isRepeat(contigs.get(i))
+//					&& len > maxRepeatLength
+//					)
+//					|| scaffolds[i].closeBridge != null)
+			if(contigs.get(i).head == i || scaffolds[i].closeBridge != null)
+				if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+						|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required	
+				{
+					lengths[count] = len;
+					sum+=len;
+					count++;
+				}
 		}
 
 		Arrays.sort(lengths);
@@ -501,7 +505,6 @@ public class ScaffoldGraph{
 		int gP = (alignP + (a.strand ? a.refStart:-a.refStart) - (b.strand?b.refStart:-b.refStart));
 		if (!a.strand)
 			gP = -gP;	
-		// TODO: gP == contig length -> plasmid contig
 		if (	a.contig.getIndex() == b.contig.getIndex() 
 				&& alignD > 0
 				&& (Math.abs(gP)*1.0 / a.contig.length()) < 1.1 
@@ -713,9 +716,9 @@ public class ScaffoldGraph{
 		ScaffoldVector trans = bridge.getTransVector();
 
 		int headF = contigF.head,
-				headT = contigT.head;
+			headT = contigT.head;
 		Scaffold 	scaffoldF = scaffolds[headF],
-				scaffoldT = scaffolds[headT];
+					scaffoldT = scaffolds[headT];
 		int	posT = scaffoldT.isEnd(contigT);
 		if (posT == 0){
 			if(verbose) 
@@ -760,7 +763,6 @@ public class ScaffoldGraph{
 					}
 					scaffoldF.setCloseBridge(getReversedBridge(bridge));
 					changeHead(scaffoldF, contigF);
-					//TODO shoud we separate scaffolds in scaffolds[] and others to avoid ambiguity
 				}
 			}else{
 				Contig 	ctg = scaffoldF.remove(index);
@@ -808,7 +810,7 @@ public class ScaffoldGraph{
 					}
 				}
 
-				//set the remaining
+				//set the remaining.FIXME
 				scaffoldT.trim();
 				if(scaffoldF.size() > 0){
 					scaffoldF.trim();
@@ -817,7 +819,7 @@ public class ScaffoldGraph{
 				}
 
 			}
-			scaffoldF = new Scaffold(contigs.get(headF));
+			scaffoldF = new Scaffold(contigs.get(headF));//????FIXME
 		}
 		else if(secondDir == 1){
 			if(headF==headT){
@@ -885,7 +887,7 @@ public class ScaffoldGraph{
 						ctg = scaffoldF.removeFirst();		
 					}	
 				}
-				//set the remaining
+				//set the remaining. FIXME
 				scaffoldT.trim();
 				if(scaffoldF.size() > 0){
 					scaffoldF.trim();
@@ -894,7 +896,7 @@ public class ScaffoldGraph{
 				}
 
 			}
-			scaffoldF = new Scaffold(contigs.get(headF));
+			scaffoldF = new Scaffold(contigs.get(headF));//???FIXME
 		}	
 		else
 			return false;
@@ -1007,15 +1009,17 @@ public class ScaffoldGraph{
 		else
 			countOccurence.put(ctg.getIndex(), countOccurence.get(ctg.getIndex())+1);
 	}
-	private boolean needMore(Contig ctg) {
-		// TODO Auto-generated method stub
+	
+	boolean needMore(Contig ctg) {
 		Integer count = countOccurence.get(ctg.getIndex());
 		if(count==null) return true;
-		int estimatedOccurence = (int) Math.floor(ctg.coverage/estimatedCov);
-		if(estimatedOccurence <= Math.floor(.75*count))
-			return true;
-		else
-			return false;
+		else return false; //if not occurred (Minh)
+		
+//		int estimatedOccurence = (int) Math.floor(ctg.coverage/estimatedCov);
+//		if(estimatedOccurence <= Math.floor(.75*count))
+//			return true;
+//		else
+//			return false;
 	}
 
 	public synchronized void printRT(long tpoint) throws IOException{
@@ -1104,10 +1108,6 @@ public class ScaffoldGraph{
 			return false;
 	}
 
-
-	public void connectBridges() {
-		//TODO: to be override by children classes
-	}
 
 
 }

@@ -297,30 +297,35 @@ public class RealtimeScaffolding {
 		@Override
 		protected void analysis() {
 			long step = (lastTime - startTime)/1000;//convert to second	
-			scaffolding.graph.connectBridges();
+			ScaffoldGraph sg = scaffolding.graph;
+			sg.connectBridges();
 			int	scfCount = 0,
 				cirCount = 0;
-			for (int i = 0; i < scaffolding.graph.scaffolds.length;i++){
-				if (scaffolding.graph.scaffolds[i].size() > 0){
-					int len = scaffolding.graph.scaffolds[i].getLast().rightMost() - scaffolding.graph.scaffolds[i].getFirst().leftMost();
-					if(scaffolding.graph.scaffolds[i].closeBridge != null){
+			for (int i = 0; i < sg.scaffolds.length;i++){
+				if (sg.scaffolds[i].size() > 0){
+					int len = sg.scaffolds[i].getLast().rightMost() - sg.scaffolds[i].getFirst().leftMost();
+					if(sg.scaffolds[i].closeBridge != null){
 						cirCount++;
 						scfCount++;
 						continue;
 					}
-					if (scaffolding.graph.contigs.get(i).head == i 
-							&& !ScaffoldGraph.isRepeat(scaffolding.graph.contigs.get(i))
-							&& len > ScaffoldGraph.maxRepeatLength)				
+					
+					if(sg.contigs.get(i).head == i)
+						if (	(!ScaffoldGraph.isRepeat(sg.contigs.get(i)) && len > ScaffoldGraph.maxRepeatLength) //here are the big ones
+								|| (ScaffoldGraph.reportAll && sg.needMore(sg.contigs.get(i)) && sg.contigs.get(i).coverage > .5*ScaffoldGraph.estimatedCov)) //short,repetitive sequences here if required
+//					if (sg.contigs.get(i).head == i 
+//							&& !ScaffoldGraph.isRepeat(sg.contigs.get(i))
+//							&& len > ScaffoldGraph.maxRepeatLength)				
 						scfCount++;
 				}
 			}
 			try {
 				// This function is for the sake of real-time annotation experiments being more readable
 				//scaffolding.graph.printRT(scaffolding.currentBaseCount);
-				scaffolding.graph.printSequences();
+				sg.printSequences();
 				outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50 | \tBreaks (maxlen)\n");
 				outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + scfCount 
-						+ " |\t" + cirCount + " |\t" + scaffolding.graph.getN50() + " |\t" + scaffolding.graph.getGapsInfo());
+						+ " |\t" + cirCount + " |\t" + sg.getN50() + " |\t" + sg.getGapsInfo());
 
 				outOS.println();
 				outOS.flush();

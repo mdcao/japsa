@@ -180,6 +180,10 @@ public final class Scaffold extends LinkedList<Contig>{
 		return marker;
 
 	}
+	/**
+	 * This function try to remove non-unique contigs from both ends of this scaffold,
+	 * usually applied after a break.
+	 */
 	//reset prevScore or nextScore to 0 according to removed bridges.
 	public synchronized void trim(){
 		if(ScaffoldGraph.verbose)
@@ -270,7 +274,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			System.out.println("Close bridge: " + closeBridge.hashKey + " Circularized vector: " + circle);
 		}
 		for (Contig ctg:this){				
-			System.out.printf("  contig %3d  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s ",ctg.getName(), ctg.leftMost(),ctg.rightMost(), ctg.getName());
+			System.out.printf("  contig %s  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s ",ctg.getName(), ctg.leftMost(),ctg.rightMost(), ctg.getName());
 			if (bridIter.hasNext()){
 				ContigBridge bridge = bridIter.next();
 				System.out.printf("    %d: %s\n", bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig), bridge.hashKey);					
