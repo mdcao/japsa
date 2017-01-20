@@ -29,10 +29,12 @@ Options
                   (default='0')
   --lenMax=i      Minimum sequence length
                   (default='2147483647')
-  --qualMin=d     Minimum average quality
-                  (default='0.0')
-  --qualMax=d     Maximum average quality
-                  (default='1000.0')
+  --qualMin=i     Minimum average quality
+                  (default='0')
+  --qualMax=i     Maximum average quality
+                  (default='1000')
+  --group=s       Group need to be extracted, leave blank for selecting all groups
+                  (default='')
   --excl2D        Exclude 2D reads
                   (default='false')
   --exclTemp      Exclude template reads

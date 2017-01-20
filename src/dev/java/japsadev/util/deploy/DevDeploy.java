@@ -54,7 +54,6 @@ import japsadev.tools.FixRastGFFCmd;
 import japsadev.tools.GapCloserCmd;
 import japsadev.tools.GetFlankBlast;
 import japsadev.tools.KmerAnalysisCmd;
-import japsadev.tools.MyTestCmd;
 import japsadev.tools.NanoporeBarcodeCmd;
 import japsadev.tools.NanoporeFast5ReaderCmd;
 import japsadev.tools.NewScarfCmd;
@@ -134,7 +133,6 @@ public class DevDeploy {
 		tools.add(new VNTRDepthAnalyserCmd());
 		tools.add(new VNTRDepthSumCmd());
 		tools.add(new FixFastqNameCmd());
-		tools.add(new MyTestCmd());
 		tools.add(new SampleCmd());
 		tools.add(new TestSampleCmd());
 		tools.add(new AnalyseCaptureCmd());
