@@ -1108,6 +1108,11 @@ public class ScaffoldGraph{
 			return false;
 	}
 
+	public void connectBridges() {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 
 }
