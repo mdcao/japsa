@@ -133,6 +133,82 @@ public class HTSUtilities {
 			return seq;
 		}
 	}
+	
+	
+	public static Sequence getReadPosition(SAMRecord rec, int startRef, int endRef){
+		byte[]  seqRead = rec.getReadBases();//
+		if (seqRead.length <= 1)
+			return null;
+
+		int startRead = -1, endRead = -1;
+
+		int refPos = rec.getAlignmentStart();
+		int readPos = 0;		
+		//currentRefPos <= startRead				
+
+		for (final CigarElement e : rec.getCigar().getCigarElements()) {
+			int length = e.getLength();
+			switch (e.getOperator()) {
+			case H:
+				break; // ignore hard clips
+			case P:
+				break; // ignore pads
+			case S:
+				readPos += e.getLength();								
+				break; // soft clip read bases
+			case N: // N ~ D
+			case D:
+				refPos += length;
+
+				if (startRead < 0  && refPos >= startRef){					
+					startRead = readPos;
+				}
+
+				if (endRead < 0  && refPos >= endRef){					
+					endRead = readPos;
+				}
+
+				break;// case
+			case I:				
+				readPos += length;						
+				break;
+
+			case M:
+			case EQ:
+			case X:				
+				if ((startRead < 0) && refPos + length >= startRef) {
+					startRead = readPos + startRef - refPos;					
+				}
+
+				if ((endRead < 0) && (refPos + length >= endRef)){
+					endRead = readPos + endRef - refPos;
+				}
+
+				refPos += length;
+				readPos += length;				
+				break;
+			default:
+				throw new IllegalStateException(
+						"Case statement didn't deal with cigar op: "
+								+ e.getOperator());
+			}// case
+			if (refPos >= endRef)
+				break;//for
+
+		}// for
+		if (startRead < 0 || endRead < 0){
+			Logging.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
+			return null;
+		}		
+
+		Alphabet alphabet = Alphabet.DNA16();
+		Sequence retSeq = new Sequence(alphabet, endRead - startRead + 1, rec.getReadName() + "/" + startRead + "_" + endRead);
+		for (int i = 0; i < retSeq.length();i++){
+			retSeq.setBase(i, alphabet.byte2index(seqRead[startRead + i]));			
+		}
+		return retSeq;
+
+	}
 
 	/**
 	 * Get the read subsequence that spans the gene. The method look at an alignment,

@@ -363,26 +363,7 @@ public class CommandLine {
 	}
 	public String usageString(){
 		return desc + "\n\n" + "Usage: " + usage() + "\nOptions:\n" + options();
-	}
-
-
-	@Deprecated
-	public String[] stdParseLine_old(String[] args) {
-		addStdHelp();		
-		/**********************************************************************/
-		String[] ret = parseLine(args);
-		if (getBooleanVal("help")){
-			System.out.println(usageString());			
-			System.exit(0);
-		}
-
-		if (errors != null) {
-			System.out.println(errorString());			
-			System.exit(-1);
-		}	
-		/**********************************************************************/
-		return ret;
-	}
+	}	
 
 	public String[] stdParseLine(String[] args) {				
 		/**********************************************************************/

@@ -34,11 +34,13 @@
  ****************************************************************************/
 package japsa.tools.bio.hts;
 
+import japsa.bio.alignment.MultipleAlignment;
 import japsa.bio.alignment.ProfileDP;
 import japsa.bio.alignment.ProfileDP.EmissionState;
 import japsa.bio.tr.TandemRepeat;
 import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.Alphabet;
+import japsa.seq.FastaReader;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
@@ -55,6 +57,8 @@ import japsa.xm.expert.MarkovExpert;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -78,27 +82,27 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		
+
 		CommandLine.Option referenceOpt =
-		addString("reference", null, "Name of the reference genome ", true);
+				addString("reference", null, "Name of the reference genome ", true);
 		///addStdInputFile();
 		CommandLine.Option bamFileOpt = 
-		addString("bamFile", null, "Name of the bam file", true);
-		
+				addString("bamFile", null, "Name of the bam file", true);
+
 		CommandLine.Option outputOpt =
-		addString("output", "-",
-				"Name of the output file, -  for stdout");
-		
+				addString("output", "-",
+						"Name of the output file, -  for stdout");
+
 		CommandLine.Option xafFileOpt =
-		addString("xafFile", null, "Name of the regions file in xaf",
-				true);
-		
+				addString("xafFile", null, "Name of the regions file in xaf",
+						true);
+
 		CommandLine.Option flankingOpt =
-		addInt("flanking", 30, "Size of the flanking regions");
-		
+				addInt("flanking", 30, "Size of the flanking regions");
+
 		CommandLine.Option minQualOpt =
-		addInt("qual", 0, "Minimum quality");
-		
+				addInt("qual", 0, "Minimum quality");
+
 		addInt("iteration", 1, "Number of iteration");
 		addInt("nploidy",2,
 				"The ploidy of the genome 1 =  happloid, 2 = diploid. Currenly only support up to 2-ploidy");
@@ -109,15 +113,15 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		flankingOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
 		minQualOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
 		xafFileOpt.setGalaxySetting(new GalaxySetting("data", "tabular",false));
-		
+
 		GalaxySetting galaxyOutput = new GalaxySetting("data", "text",true); 
 		galaxyOutput.setLabel("countRead.txt");
 		outputOpt.setGalaxySetting(galaxyOutput);
 		bamFileOpt.setGalaxySetting(new GalaxySetting("data", "bam",false));
 		referenceOpt.setGalaxySetting(new GalaxySetting("data", "fasta",false));		
 		setGalaxy(annotation.scriptName());	
-		
-		
+
+
 		addStdHelp();		
 	} 
 
@@ -189,7 +193,9 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 
 		Expert.setAlphabet(Alphabet.DNA4());
-		Random random = new Random();
+		//Random random = new Random();
+
+		ArrayList<Sequence> readSequences = new ArrayList<Sequence>(); 
 
 		//int _tIndex = 0;
 		while (xafReader.next() != null){	
@@ -264,6 +270,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 			int readIndex = 0;
 
+			readSequences.clear();
 			while (iter.hasNext()) {
 				SAMRecord rec = iter.next();
 				// Check qualilty
@@ -296,11 +303,14 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				readSeq.setName(polymerageRead + "_" + subRead);				
 				readSeq.writeFasta(os);
 
-				processRead(readSeq, dp, fraction,  hmmFlank, hmmPad, period,  outOS );
-
+				//processRead(readSeq, dp, fraction,  hmmFlank, hmmPad, period,  outOS );
+				readSequences.add(readSeq);
 			}// while
 			iter.close();
 			os.close();
+
+			ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);//-1 for 0-index, inclusive
+			processBatch(readSequences, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
 
 			outOS.print(trVar.toString(headers));
 			outOS.print('\n');
@@ -309,6 +319,214 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		reader.close();
 		outOS.close();
 	}
+
+	static private void processBatch(ArrayList<Sequence> readBatch, ProfileDP dpBatch, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
+
+		for (int round = 0; round < 5;round ++){
+			double myCost = 0;
+			int countIns = 0, countDel = 0, countMG = 0, countMB = 0;
+			for (Sequence readSeq:readBatch){
+				EmissionState bestState = dpBatch.align(readSeq);
+				//TODO: make a filter here: select only eligible alignment
+				double alignScore = bestState.getScore();
+				countIns += bestState.getCountIns();
+				countDel += bestState.getCountDel();
+				countMG += bestState.getCountMG();
+				countMB += bestState.getCountMB();				
+				//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
+				double bestIter = bestState.getIter() + fraction;
+				myCost += alignScore;
+			}//for readSeq
+			double sum = 3.0 + countMG + countMB + countIns + countDel;
+			double insP = (countIns + 1.0) /sum;
+			double delP = (countDel + 1.0) /sum;
+			double matP = (countMG + countMB + 1.0) /sum;
+			double matchP = (countMG + 1.0) / (countMG + countMB + 2.0);
+			double misMatchP = 1 - matchP;
+			System.out.printf("Total: %3d %3d %3d %3d %8.4f %8.4f %8.4f %8.4f\n", countMG, countMB, countIns, countDel,  insP, delP,  misMatchP,myCost);
+			dpBatch.setTransitionProbability(matP, insP, delP);
+			dpBatch.setMatchProbability(matchP);			
+		}//round
+
+		for (Sequence readSeq:readBatch){
+			MarkovExpert expert = new MarkovExpert(1);
+			double costM = 0;
+			for (int x = 0; x< readSeq.length();x++){
+				int base = readSeq.getBase(x);					
+				costM -= JapsaMath.log2(expert.update(base));
+			}	
+
+			double backGround = costM / readSeq.length() - 0.1;
+			boolean pass = true;
+			outOS.print("Markov " + costM + "\t" + (costM / readSeq.length()) + "\n");
+
+
+			EmissionState bestState = dpBatch.align(readSeq);
+			double alignScore = bestState.getScore();
+			//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
+			double bestIter = bestState.getIter() + fraction;
+			profilePositions.clear();
+			seqPositions.clear();
+			costGeneration.clear();
+			byteArray.clear();
+
+			EmissionState lastState = bestState;				
+			bestState = bestState.bwdState;
+
+			while (bestState != null){
+				profilePositions.add(bestState.profilePos);	
+				seqPositions.add(bestState.profilePos);
+				costGeneration.add(lastState.score - bestState.score);
+
+				if (bestState.seqPos == lastState.seqPos)
+					byteArray.add((byte)Alphabet.DNA.GAP);
+				else
+					byteArray.add(readSeq.getBase(lastState.seqPos));						
+
+				lastState = bestState;
+				bestState = bestState.bwdState;
+			}					
+
+			double costL = 0, costR = 0, costCurrentRep = 0, costRep = 0;
+			int stateL = 0, stateR = 0, stateCurrentRep = 0, stateRep = 0;
+			int baseL = 0, baseR = 0, baseCurrentRep = 0, baseRep = 0;
+			int bSeqL = 0, bSeqR = 0, bSeqCurrentRep = 0, bSeqRep = 0;
+
+			int lastProfilePos = -1, lastSeqPos = -1;
+
+			for (int x = profilePositions.size() - 1; x >=0; x--){
+				outOS.print(Alphabet.DNA().int2char(byteArray.get(x)));
+
+				int profilePos = profilePositions.get(x);
+				int seqPos = seqPositions.get(x);
+
+				if (profilePos < hmmFlank + hmmPad){
+					stateL ++;
+					costL += costGeneration.get(x);
+
+					if (lastProfilePos != profilePos)
+						baseL ++;
+
+					if (lastSeqPos != seqPos)
+						bSeqL ++;
+
+				}else if(profilePos > hmmFlank + hmmPad + period){
+					stateR ++;
+					costR += costGeneration.get(x);	
+
+					if (lastProfilePos != profilePos)
+						baseR ++;
+
+					if (lastSeqPos != seqPos)
+						bSeqR ++;
+				}else{
+					stateCurrentRep ++;
+					costCurrentRep += costGeneration.get(x);
+
+					stateRep ++;
+					costRep += costGeneration.get(x);
+
+					if (lastProfilePos != profilePos){
+						baseRep ++;
+						baseCurrentRep ++;
+					}
+
+					if (lastSeqPos != seqPos){
+						bSeqRep ++;
+						bSeqCurrentRep ++;
+					}
+
+				}
+
+				//end of a repeat cycle
+				if (profilePos < lastProfilePos){
+					outOS.print("<-----------------REP " + costCurrentRep  
+							+ " " + stateCurrentRep
+							+ " " + (stateCurrentRep == 0?"inf": "" + (costCurrentRep/stateCurrentRep))
+							+ " " + baseCurrentRep
+							+ " " + (baseCurrentRep == 0?"inf": "" + (costCurrentRep/baseCurrentRep))
+							+ " " + bSeqCurrentRep
+							+ " " + (bSeqCurrentRep == 0?"inf": "" + (costCurrentRep/bSeqCurrentRep))
+							);
+
+					if (costCurrentRep/bSeqCurrentRep > backGround){
+						pass = false;
+						outOS.print(" XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+					}
+
+					outOS.println();	 
+					costCurrentRep = 0;//restart
+					stateCurrentRep = 0;//restart
+					baseCurrentRep = 0;
+					bSeqCurrentRep = 0;
+				}
+
+				//left 
+				if (profilePos >= hmmFlank + hmmPad && lastProfilePos < hmmFlank + hmmPad){
+					outOS.print("<-----------------LEFT " + costL 
+							+  " " + stateL 
+							+  " " + (stateL == 0?"inf": "" + (costL/stateL))
+							+  " " + baseL
+							+  " " + (baseL == 0?"inf": "" + (costL/baseL))
+							+  " " + bSeqL
+							+  " " + (bSeqL == 0?"inf": "" + (costL/bSeqL))
+							);
+					if (costL/bSeqL > backGround){
+						pass = false;
+						outOS.print(" XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+					}
+
+					outOS.println();
+
+				}
+
+				//right
+				//if (profilePos < hmmFlank + hmmPad + period && lastProfilePos >= hmmFlank + hmmPad + period){				
+				//	outOS.print("<-----------------RIGHT " + costR
+				//			+  " " + stateR
+				//			+  " " + (stateR == 0?"inf": "" + (costR/stateR))
+				//			+  " " + baseR
+				//			+  " " + (baseR == 0?"inf": "" + (costR/baseR))
+				//			+  " " + bSeqR
+				//			+  " " + (bSeqR == 0?"inf": "" + (costR/bSeqR))						
+				//			);
+				//	outOS.println();
+				//}	
+				lastProfilePos = profilePos;
+				lastSeqPos = seqPos;	
+
+			}//for x
+
+			//move to out of the loop
+			outOS.print("<-----------------RIGHT " + costR
+					+  " " +  stateR
+					+  " " + (stateR == 0?"inf": "" + (costR/stateR))
+					+  " " +  baseR
+					+  " " + (baseR == 0?"inf": "" + (costR/baseR))
+					+  " " +  bSeqR
+					+  " " + (bSeqR == 0?"inf": "" + (costR/bSeqR))						
+					);
+
+			if (costR/bSeqR > backGround){
+				pass = false;
+				outOS.print(" XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+			}
+			//outOS.println();
+
+			outOS.println();
+			outOS.print ("L = " + (costL/(hmmFlank + hmmPad)) + " R = " + costR/(dpBatch.getProfileLength() - hmmFlank - hmmPad - period) + "\n");
+
+			/*****************************************************************/				
+			outOS.print("##" + readSeq.getName() +"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + costM + "\t" + costM / readSeq.length() + "\t"  + costL + "\t" + stateL + "\t" + costR + "\t" + stateR + "\t" + (alignScore - costL - costR) + "\t" + stateRep + "\t" + pass + '\n');			
+			outOS.print("==================================================================\n");	
+		}
+	}
+	/*******************************************************************/				
+
+	//double oldCost = bestState.score;
+
+
+
 
 	static private void processRead(Sequence readSeq, ProfileDP dp, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
 
@@ -322,9 +540,9 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		double backGround = costM / readSeq.length() - 0.1;
 		boolean pass = true;
 
-		
+
 		outOS.print("Markov " + costM + "\t" + (costM / readSeq.length()) + "\n");
-		
+
 		EmissionState bestState = dp.align(readSeq);
 		double alignScore = bestState.getScore();
 		//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
@@ -415,7 +633,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 						+ " " + bSeqCurrentRep
 						+ " " + (bSeqCurrentRep == 0?"inf": "" + (costCurrentRep/bSeqCurrentRep))
 						);
-				
+
 				if (costCurrentRep/bSeqCurrentRep > backGround){
 					pass = false;
 					outOS.print(" XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
@@ -442,9 +660,9 @@ public class VNTRLongReadsCmd  extends CommandLine {
 					pass = false;
 					outOS.print(" XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 				}
-				
+
 				outOS.println();
-				
+
 			}
 
 			//right
@@ -473,7 +691,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				+  " " +  bSeqR
 				+  " " + (bSeqR == 0?"inf": "" + (costR/bSeqR))						
 				);
-		
+
 		if (costR/bSeqR > backGround){
 			pass = false;
 			outOS.print(" XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
@@ -561,5 +779,125 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		}
 		return retSeq;
 
+	}
+
+	/**
+	 * 
+	 * @param seqList
+	 * @param start
+	 *            : the start index of the list (inclusive)
+	 * @param end
+	 *            : the end index of the list (exclusive)
+	 */
+	static int call(ArrayList<Sequence> seqList, int indexStart, int indexEnd) {
+		if (indexEnd <= indexStart)
+			return 0;	
+
+		// Get consensus
+		int gaps = 0;
+		Sequence nSeq = new Sequence(Alphabet.DNA6(), seqList.get(0).length(),
+				"consensus");
+		int[] votes = new int[6];
+		for (int i = 0; i < nSeq.length(); i++) {			
+			Arrays.fill(votes, 0);
+			for (int s = indexStart; s < indexEnd; s++) {
+				votes[seqList.get(s).symbolAt(i)]++;
+			}
+			byte best = 0;
+			for (byte b = 1; b < 6; b++)
+				if (votes[b] > votes[best])
+					best = b;
+
+			nSeq.setBase(i, best);
+			if (best == 5)
+				gaps++;
+		}// for
+		return gaps;
+	}
+
+	static int call(ArrayList<Sequence> seqList) {
+		return call(seqList,0,seqList.size());
+
+	}
+
+	static void aaa(Sequence seq, TandemRepeat str, int flanking, SamReader reader, int qual, String prefix,  int np) throws IOException, InterruptedException{
+		String cmd = "kalign -gpo 60 -gpe 10 -tgpe 0 -bonus 0 -q -i " + prefix
+				+ "i.fasta -o " + prefix + "o.fasta";
+
+		//cmd = "clustalo --force -i " + prefix + "i.fasta -o " + prefix
+		//			+ "o.fasta";
+
+
+		String chrom = str.getChr();
+		int start = str.getStart() - flanking;
+		int end = str.getEnd() + flanking;
+
+		if (start < 0) start = 0;
+		if (end > seq.length())
+			end = seq.length();
+
+		SAMRecordIterator iter 
+		= reader.query(chrom, start, end, false);
+
+
+		int maxAlign = 300;
+
+		MultipleAlignment ma = new MultipleAlignment(maxAlign, seq);
+		while (iter.hasNext()) {
+			SAMRecord rec = iter.next();
+			// Check qualilty
+			if (rec.getMappingQuality() < qual) {
+				continue;
+			}
+
+			// Only reads that fully span the repeat and flankings
+			if (rec.getAlignmentStart() > start)
+				continue;
+			if (rec.getAlignmentEnd() < end)
+				continue;
+
+			ma.addRead(rec);
+		}// while
+		iter.close();
+		// os.close();
+
+		double var = 0;
+		TandemRepeatVariant trVar = new TandemRepeatVariant();
+		trVar.setTandemRepeat(str);
+
+		if (ma.printFasta(start, end, prefix + "i.fasta") > 0) {
+			Logging.info("Running " + cmd);
+			Process process = Runtime.getRuntime().exec(cmd);
+			process.waitFor();
+			Logging.info("Done " + cmd);
+
+			SequenceReader hmmSeqReader 
+			= FastaReader.getReader(prefix	+ "i.fasta");
+			Sequence readSeq;	
+
+			SequenceReader msaReader
+			= FastaReader.getReader(prefix	+ "o.fasta");
+			ArrayList<Sequence> seqList = new ArrayList<Sequence>();
+			Sequence nSeq = null;
+			while ((nSeq = msaReader.nextSequence(Alphabet.DNA16())) != null) {
+				seqList.add(nSeq);
+			}				 
+			//str.getChr()+"_"+str.getStart()+"_"+str.getEnd();
+
+			if (np >= 2) {
+				trVar.setVar2(var);
+				trVar.addEvidence(seqList.size());
+			} else {// nploidy ==1
+				int llength = seqList.get(0).length();
+
+				int gaps = call(seqList);
+
+				var = (llength - gaps - end + start) * 1.0
+						/ str.getPeriod();
+
+				trVar.setVar(var);
+				trVar.addEvidence(seqList.size());
+			}
+		}// if
 	}
 }

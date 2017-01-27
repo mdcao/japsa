@@ -68,8 +68,7 @@ import japsadev.tools.StructuralVariationCmd;
 import japsadev.tools.TestSampleCmd;
 import japsadev.tools.VNTRDepthAnalyserCmd;
 import japsadev.tools.VNTRDepthSumCmd;
-import japsadev.tools.VNTRLongReads;
-import japsadev.tools.VNTRLongReadsHmmer;
+import japsadev.tools.VNTRLongReadsHmmerCmd;
 import japsadev.tools.VNTRSelectCmd;
 import japsadev.tools.misc.GetN50;
 import japsadev.tools.work.BuildMLSTTreeCmd;
@@ -112,8 +111,7 @@ public class DevDeploy {
 
 		tools.add(new FilterPEConcordance());		
 
-		tools.add(VNTRLongReadsHmmer.class);
-		tools.add(VNTRLongReads.class);			
+		tools.add(new VNTRLongReadsHmmerCmd());				
 
 		tools.add(new RepeatPrimerCmd());		
 

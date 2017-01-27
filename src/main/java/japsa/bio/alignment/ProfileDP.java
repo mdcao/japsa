@@ -58,7 +58,7 @@ public class ProfileDP {
 	double  matchProb,misMatchProb;
 
 	private double 	matCost, delCost, insCost;
-	
+
 	public double getMatCost() {
 		return matCost;
 	}
@@ -119,7 +119,7 @@ public class ProfileDP {
 		matchCost  = - JapsaMath.log2(matchProb);
 		misMatchCost = -JapsaMath.log2(misMatchProb)- JapsaMath.log2(1.0/3.0);;
 	}
-	
+
 	public int getProfileLength(){
 		return profileSeq.length();
 	}
@@ -148,7 +148,7 @@ public class ProfileDP {
 			String hashKey;
 			EmissionState nextState;
 			double cost;
-			
+
 			int iterAdvance = 0;				
 			//if it is about the enter the repeat
 			if (currentState.profilePos + 1 == repStart){
@@ -158,7 +158,7 @@ public class ProfileDP {
 			//1. consider deletion if profile has something to offer			
 			if (currentState.profilePos + 1 < profileSeq.length()){
 				cost = currentState.score + delCost;
-				
+
 				if (cost < retState.score){ 
 					hashKey= EmissionState.hashKey(currentState.seqPos, currentState.profilePos + 1, currentState.iter + iterAdvance);
 					nextState = hash.get(hashKey);
@@ -266,7 +266,7 @@ public class ProfileDP {
 				}
 			}//match
 
-			
+
 			//Consider jumping to the beginning of the rep
 			//Note I dont need iterAdvance here (it is 0 anyway)
 			if (currentState.profilePos == repEnd){

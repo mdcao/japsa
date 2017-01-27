@@ -679,6 +679,8 @@ public abstract class ProbFSM {
 			changeCost =  (changeProb > 0)? -JapsaMath.log2(changeProb):Double.MAX_VALUE;
 		}
 	}
+	
+	
 
 
 
