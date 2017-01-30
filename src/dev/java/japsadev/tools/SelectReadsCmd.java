@@ -55,7 +55,7 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(
 	scriptName = "jsa.dev.selectReadsMapToPosition",
-	scriptDesc = "Sample script description"
+	scriptDesc = "Select reads spanning repeats"
 	)
 public class SelectReadsCmd extends CommandLine{	
 	public SelectReadsCmd(){
