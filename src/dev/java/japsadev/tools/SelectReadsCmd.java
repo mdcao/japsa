@@ -41,6 +41,9 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.HTSUtilities;
 import japsa.util.deploy.Deployable;
@@ -85,6 +88,7 @@ public class SelectReadsCmd extends CommandLine{
 		
 		
 		for (String region:regionArray){
+			 
 			String[] toks = region.split(":");
 			
 			
@@ -101,6 +105,7 @@ public class SelectReadsCmd extends CommandLine{
 			int start = Integer.parseInt(toks[0]);
 			int end = Integer.parseInt(toks[1]);
 			
+			SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream(chrom + start + "_" + end + ".fasta");
 			
 			System.out.println(region + ":" + (end - start) + ":"); 
 			SAMRecordIterator iter = reader.query(chrom, start, end,false);
@@ -116,11 +121,14 @@ public class SelectReadsCmd extends CommandLine{
 					continue;
 				
 				String readSub = record.getReadString().substring(pos[0],pos[1]-1);
+				Sequence rs = new Sequence(Alphabet.DNA16(), readSub, record.getReadName());
 				
-				System.out.printf("%5d %s %s %s\n", readSub.length(),readSub.substring(0, 22),readSub.substring(readSub.length() - 24), readSub);			
+				rs.writeFasta(outFile);				
+				//System.out.printf("%5d %s %s %s\n", readSub.length(),readSub.substring(0, 22),readSub.substring(readSub.length() - 24), readSub);			
 				
 			}
 			iter.close();			
+			outFile.close();
 		}
 
 		reader.close();		

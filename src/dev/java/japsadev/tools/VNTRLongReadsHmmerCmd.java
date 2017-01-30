@@ -163,7 +163,7 @@ public class VNTRLongReadsHmmerCmd extends CommandLine{
 			_tIndex ++;
 			//for (TandemRepeat str : myList) {
 			TandemRepeat str = TandemRepeat.read(xafReader);
-			System.out.println(_tIndex + "  " + str.getChr());
+			System.out.println(_tIndex + "  " + str.getChr() + " " + str.getStart() + " " + str.getEnd());
 			if (str.getPeriod() <= 4)
 				continue;
 
@@ -364,8 +364,8 @@ public class VNTRLongReadsHmmerCmd extends CommandLine{
 
 			outOS.print(trVar.toString(headers));
 			outOS.print('\n');
-			// ma.printAlignment(start, end);
-			// ma.reduceAlignment(start, end). printAlignment(start, end);
+			ma.printAlignment(start, end);
+			ma.reduceAlignment(start, end). printAlignment(start, end);
 		}// for
 
 		reader.close();
