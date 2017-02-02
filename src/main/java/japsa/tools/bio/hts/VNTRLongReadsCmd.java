@@ -60,7 +60,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Random;
 
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
@@ -125,14 +124,11 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		addStdHelp();		
 	} 
 
-
-
 	static Alphabet dna = Alphabet.DNA16();
 	static IntArray profilePositions = new IntArray();
 	static IntArray seqPositions = new IntArray();		
 	static DoubleArray costGeneration = new DoubleArray();
 	static ByteArray byteArray = new ByteArray();
-
 
 
 	public static void main(String[] args) throws Exception,
@@ -141,8 +137,6 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		CommandLine cmdLine = new VNTRLongReadsCmd();
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
-		// Get options
-
 		int flanking = cmdLine.getIntVal("flanking");
 		if (flanking < 10)
 			flanking = 10;
@@ -191,17 +185,14 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));						
 
-
 		Expert.setAlphabet(Alphabet.DNA4());
-		//Random random = new Random();
 
 		ArrayList<Sequence> readSequences = new ArrayList<Sequence>(); 
 
-		//int _tIndex = 0;
 		while (xafReader.next() != null){	
-			//_tIndex ++;
 			TandemRepeat str = TandemRepeat.read(xafReader);
 
+			//start,end = the start and end of the region (including flanks)
 			int start = Integer.parseInt(xafReader.getField("start")) - flanking;			
 			int end = Integer.parseInt(xafReader.getField("end")) + flanking;
 			String chrom = xafReader.getField("chrom");					
@@ -210,8 +201,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				seq = genome.get(chrom);
 			}
 			if (seq == null){
-				xafReader.close();
-				//sos.close();
+				xafReader.close();				
 				Logging.exit("Chrom in line " + xafReader.lineNo() + " not found!!!", 1);
 			}
 
@@ -522,11 +512,6 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		}
 	}
 	/*******************************************************************/				
-
-	//double oldCost = bestState.score;
-
-
-
 
 	static private void processRead(Sequence readSeq, ProfileDP dp, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
 
