@@ -52,7 +52,7 @@ public class HTSUtilities {
 	 * Extract read between start and end (on ref)
 	 * @param record
 	 * @param readSequence
-	 * @param start
+	 * @param startState
 	 * @param end
 	 * @return
 	 */

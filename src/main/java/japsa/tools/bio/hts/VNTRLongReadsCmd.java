@@ -769,7 +769,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 	/**
 	 * 
 	 * @param seqList
-	 * @param start
+	 * @param startState
 	 *            : the start index of the list (inclusive)
 	 * @param end
 	 *            : the end index of the list (exclusive)

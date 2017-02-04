@@ -33,6 +33,7 @@
 
 package japsa.bio.alignment.ppfsm;
 
+import japsa.bio.alignment.ppfsm.state.MachineState;
 import japsa.seq.Sequence;
 
 /**
