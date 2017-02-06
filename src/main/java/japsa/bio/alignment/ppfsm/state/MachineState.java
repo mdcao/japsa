@@ -34,8 +34,8 @@
 package japsa.bio.alignment.ppfsm.state;
 
 import java.util.ArrayList;
-
 import japsa.bio.alignment.ppfsm.transition.Transition;
+
 
 /**
  * Implementation of a machine state for the profile FSM
@@ -43,188 +43,190 @@ import japsa.bio.alignment.ppfsm.transition.Transition;
  *
  */
 
-public abstract class MachineState {
-	//convention: 0=copy, 1=mismatch, 2=insert, 3=delete
-	protected Transition.CopyTransition   copyTransition = null;
-	protected Transition.DeleteTransition deleteTransition = null; 
-	protected Transition.InsertTransition insertTransition = null;
-	protected Transition.EndTransition    endTransition = null;
-	
-	ArrayList<Transition.FreeTransition> transitions = new ArrayList<Transition.FreeTransition>();	
-	String name;	
+public class MachineState {
+	//protected Transition.CopyTransition   copyTransition = null;
+	//protected Transition.DeleteTransition deleteTransition = null; 
+	//protected Transition.InsertTransition insertTransition = null;
+	//protected Transition.EndTransition    endTransition = null;
+
+	ArrayList<Transition> transitions = new ArrayList<Transition>();	
+	private String name;
+	private byte base;
 
 	public MachineState(String name) {
-		this.name = name;
+		this.setName(name);
+	}
+	
+	public MachineState(String name, byte base) {
+		this(name);
+		setBase(base);
 	}
 	/**
 	 * Add a non-standard transition
 	 * @param toState
 	 * @param cost
 	 */
-	public void addTransition(MachineState toState, double cost){
-		Transition.FreeTransition transition = new Transition.FreeTransition(toState, cost);
-		transitions.add(transition);
+	public void addTransition(Transition tran){		
+		transitions.add(tran);
 	}
-	
+
 	/**
 	 * Get non-standard transition
 	 * @return
 	 */
-	public ArrayList<Transition.FreeTransition> getTransitions(){
+	public ArrayList<Transition> getTransitions(){
 		return transitions;
-	}	
-	
-	/**
-	 * @return the copyTransition
-	 */
-	public Transition.CopyTransition getCopyTransition() {
-		return copyTransition;
-	}
-	/**
-	 * @return the deleteTransition
-	 */
-	public Transition.DeleteTransition getDeleteTransition() {
-		return deleteTransition;
-	}
-	/**
-	 * @return the insertTransition
-	 */
-	public Transition.InsertTransition getInsertTransition() {
-		return insertTransition;
-	}
-	
-	/**
-	 * @return the endTransition
-	 */
-	public Transition.EndTransition getEndTransition() {
-		return endTransition;
-	}
-	
-	public void setEndTransition(Transition.EndTransition endTransition) {
-		this.endTransition = endTransition;
-	}
-	
-	/**
-	 * Copy transition
-	 * @author minhduc
-	 *
-	 */
-	public static class CopyState extends MachineState{
-		byte base;
-		
-		public CopyState(String name, byte base) {
-			super(name);
-			this.base = base;
-		}		
-		/**
-		 * @return the base
-		 */
-		public byte getBase() {
-			return base;
-		}
-		/**
-		 * @param base the base to set
-		 */
-		public void setBase(byte base) {
-			this.base = base;
-		}
-		/**
-		 * @param copyTransition the copyTransition to set
-		 */
-		public void setCopyTransition(Transition.CopyTransition copyTransition) {
-			this.copyTransition = copyTransition;
-		}
-		/**
-		 * @param deleteTransition the deleteTransition to set
-		 */
-		public void setDeleteTransition(Transition.DeleteTransition deleteTransition) {
-			this.deleteTransition = deleteTransition;
-		}
-		/**
-		 * @param insertTransition the insertTransition to set
-		 */
-		public void setInsertTransition(Transition.InsertTransition insertTransition) {
-			this.insertTransition = insertTransition;
-		}
 	}
 
 	/**
-	 * Insert transition
-	 * @author minhduc
-	 *
+	 * @return the name
 	 */
-	public static class InsertState extends MachineState{		
-		public InsertState(String name) {
-			super(name);			
-		}		
-		/**
-		 * @param copyTransition the copyTransition to set
-		 */
-		public void setCopyTransition(Transition.CopyTransition copyTransition) {
-			this.copyTransition = copyTransition;
-		}		
-		/**
-		 * @param insertTransition the insertTransition to set
-		 */
-		public void setInsertTransition(Transition.InsertTransition insertTransition) {
-			this.insertTransition = insertTransition;
-		}
+	public String getName() {
+		return name;
 	}
-	
 	/**
-	 * Copy transition
-	 * @author minhduc
-	 *
+	 * @param name the name to set
 	 */
-	public static class DeleteState extends MachineState{
-		public DeleteState(String name) {
-			super(name);		
-		}		
-		
-		/**
-		 * @param copyTransition the copyTransition to set
-		 */
-		public void setCopyTransition(Transition.CopyTransition copyTransition) {
-			this.copyTransition = copyTransition;
-		}
-		/**
-		 * @param deleteTransition the deleteTransition to set
-		 */
-		public void setDeleteTransition(Transition.DeleteTransition deleteTransition) {
-			this.deleteTransition = deleteTransition;
-		}		
+	public void setName(String name) {
+		this.name = name;
 	}
-	
-	public static class StartState extends MachineState{
-		public StartState() {
-			super("S");		
-		}		
-		/**
-		 * @param copyTransition the copyTransition to set
-		 */
-		public void setCopyTransition(Transition.CopyTransition copyTransition) {
-			this.copyTransition = copyTransition;
-		}
-		/**
-		 * @param deleteTransition the deleteTransition to set
-		 */
-		public void setDeleteTransition(Transition.DeleteTransition deleteTransition) {
-			this.deleteTransition = deleteTransition;
-		}
 
-		/**
-		 * @param insertTransition the insertTransition to set
-		 */
-		public void setInsertTransition(Transition.InsertTransition insertTransition) {
-			this.insertTransition = insertTransition;
-		}
+	/**
+	 * @return the name
+	 */
+	public byte getBase() {
+		return base;
 	}
-	//EndState: has no transition
-	public static class EndState extends MachineState{
-		public EndState() {
-			super("E");		
-		}
+	/**
+	 * @param name the name to set
+	 */
+	public void setBase(byte base) {
+		this.base = base;
 	}
-	
-	
+
+
+
+	//	/**
+	//	 * Copy transition
+	//	 * @author minhduc
+	//	 *
+	//	 */
+	//	public static class CopyState extends MachineState{
+	//		byte base;
+	//		
+	//		public CopyState(String name, byte base) {
+	//			super(name);
+	//			this.base = base;
+	//		}		
+	//		/**
+	//		 * @return the base
+	//		 */
+	//		public byte getBase() {
+	//			return base;
+	//		}
+	//		/**
+	//		 * @param base the base to set
+	//		 */
+	//		public void setBase(byte base) {
+	//			this.base = base;
+	//		}
+	//		/**
+	//		 * @param copyTransition the copyTransition to set
+	//		 */
+	//		public void setCopyTransition(Transition.CopyTransition copyTransition) {
+	//			this.copyTransition = copyTransition;
+	//		}
+	//		/**
+	//		 * @param deleteTransition the deleteTransition to set
+	//		 */
+	//		public void setDeleteTransition(Transition.DeleteTransition deleteTransition) {
+	//			this.deleteTransition = deleteTransition;
+	//		}
+	//		/**
+	//		 * @param insertTransition the insertTransition to set
+	//		 */
+	//		public void setInsertTransition(Transition.InsertTransition insertTransition) {
+	//			this.insertTransition = insertTransition;
+	//		}
+	//	}
+	//
+	//	/**
+	//	 * Insert transition
+	//	 * @author minhduc
+	//	 *
+	//	 */
+	//	public static class InsertState extends MachineState{		
+	//		public InsertState(String name) {
+	//			super(name);			
+	//		}		
+	//		/**
+	//		 * @param copyTransition the copyTransition to set
+	//		 */
+	//		public void setCopyTransition(Transition.CopyTransition copyTransition) {
+	//			this.copyTransition = copyTransition;
+	//		}		
+	//		/**
+	//		 * @param insertTransition the insertTransition to set
+	//		 */
+	//		public void setInsertTransition(Transition.InsertTransition insertTransition) {
+	//			this.insertTransition = insertTransition;
+	//		}
+	//	}
+	//	
+	//	/**
+	//	 * Copy transition
+	//	 * @author minhduc
+	//	 *
+	//	 */
+	//	public static class DeleteState extends MachineState{
+	//		public DeleteState(String name) {
+	//			super(name);		
+	//		}		
+	//		
+	//		/**
+	//		 * @param copyTransition the copyTransition to set
+	//		 */
+	//		public void setCopyTransition(Transition.CopyTransition copyTransition) {
+	//			this.copyTransition = copyTransition;
+	//		}
+	//		/**
+	//		 * @param deleteTransition the deleteTransition to set
+	//		 */
+	//		public void setDeleteTransition(Transition.DeleteTransition deleteTransition) {
+	//			this.deleteTransition = deleteTransition;
+	//		}		
+	//	}
+	//	
+	//	public static class StartState extends MachineState{
+	//		public StartState() {
+	//			super("S");		
+	//		}		
+	//		/**
+	//		 * @param copyTransition the copyTransition to set
+	//		 */
+	//		public void setCopyTransition(Transition.CopyTransition copyTransition) {
+	//			this.copyTransition = copyTransition;
+	//		}
+	//		/**
+	//		 * @param deleteTransition the deleteTransition to set
+	//		 */
+	//		public void setDeleteTransition(Transition.DeleteTransition deleteTransition) {
+	//			this.deleteTransition = deleteTransition;
+	//		}
+	//
+	//		/**
+	//		 * @param insertTransition the insertTransition to set
+	//		 */
+	//		public void setInsertTransition(Transition.InsertTransition insertTransition) {
+	//			this.insertTransition = insertTransition;
+	//		}
+	//	}
+	//	//EndState: has no transition
+	//	public static class EndState extends MachineState{
+	//		public EndState() {
+	//			super("E");		
+	//		}
+	//	}
+
+
 }

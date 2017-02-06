@@ -33,9 +33,6 @@
 package japsa.bio.alignment.ppfsm.transition;
 
 import japsa.bio.alignment.ppfsm.state.MachineState;
-import japsa.bio.alignment.ppfsm.state.MachineState.CopyState;
-import japsa.bio.alignment.ppfsm.state.MachineState.DeleteState;
-import japsa.bio.alignment.ppfsm.state.MachineState.InsertState;
 
 /**
  * Transition between states
@@ -52,10 +49,14 @@ public abstract class Transition{
 	/**
 	 * The count of this transition
 	 */
-	int count = 1;
+	//int count = 1;	
+	int iterIncrease = 0;
+	protected final int numGenerate;
+	MachineState toState;
 
-
-	public Transition(){
+	public Transition(MachineState state, int numGenerate){
+		toState = state;
+		this.numGenerate = numGenerate;
 	}
 
 	/**
@@ -65,7 +66,21 @@ public abstract class Transition{
 		return cost;
 	}
 
+	public abstract double emissionCost(byte base);
 
+	/**
+	 * @return the iteration
+	 */
+	public int getIterIncrease() {
+		return iterIncrease;
+	}
+
+	/**
+	 * @param iteration the iteration to set
+	 */
+	public void setIterIncrease(int it) {
+		this.iterIncrease = it;
+	}
 
 	/**
 	 * @param cost the cost to set
@@ -74,20 +89,18 @@ public abstract class Transition{
 		this.cost = cost;
 	}
 
-	/**
-	 * @param toState the toState to set
-	 */
-	public abstract MachineState getState();
+	public MachineState getState() {
+		return toState;
+	}
 
 
 	public static class CopyTransition extends Transition{		
 		double copyCost;
 		double mismatchCost;
-		MachineState.CopyState toState;
+		//MachineState.CopyState toState;
 
-		public CopyTransition(MachineState.CopyState state, double copyCost, double mismatchCost) {
-			super();
-			this.toState = state;
+		public CopyTransition(MachineState state, double copyCost, double mismatchCost) {
+			super(state,1);			
 			this.copyCost = copyCost;
 			this.mismatchCost = mismatchCost;
 		}
@@ -98,105 +111,44 @@ public abstract class Transition{
 			else
 				return mismatchCost;
 		}
-
-		@Override
-		public MachineState getState() {
-			return toState;
-		}
-
-		public MachineState.CopyState getCopyState() {
-			return toState;
-		}		
 	}
 
 	public static class DeleteTransition extends Transition{		
-		double deleteCost;
-		MachineState.DeleteState toState;
+		double deleteCost;		
 
-		public DeleteTransition(MachineState.DeleteState state, double cost) {
-			super();
-			this.toState = state;
+		public DeleteTransition(MachineState state, double cost) {
+			super(state,0);
 			this.deleteCost = cost;
 		}
 
-		public double emissionCost() {			
+		public double emissionCost(byte base) {			
 			return deleteCost;
-		}
-
-		@Override
-		public MachineState getState() {
-			return toState;
-		}
-
-		public MachineState.DeleteState getDeleteState() {
-			return toState;
 		}		
 	}
 
 	public static class InsertTransition extends Transition{		
 		double insertCost;
-		MachineState.InsertState toState;
 
-		public InsertTransition(MachineState.InsertState state, double cost) {
-			super();
-			this.toState = state;
+		public InsertTransition(MachineState state, double cost) {
+			super(state,1);			
 			this.insertCost = cost;
 		}
 
 		public double emissionCost(byte base) {			
-			return insertCost;
+			return insertCost + 2;
 		}
-
-		@Override
-		public MachineState getState() {
-			return toState;
-		}
-
-		public MachineState.InsertState getInsertState() {
-			return toState;		
-		}		
+				
 	}
 
-	
-	public static class EndTransition extends Transition{		
-		MachineState.EndState toState;
-		public EndTransition(MachineState.EndState state) {
-			super();
-			this.toState = state;			
-		}
-
-		public double emissionCost() {			
-			return cost;
-		}
-
-		@Override
-		public MachineState getState() {
-			return toState;
-		}	
+	public static class FreeTransition extends Transition{
 		
-		public MachineState.EndState getEndState() {
-			return toState;		
-		}	
-	}	
-
-	
-	public static class FreeTransition extends Transition{		
-		double cost;
-		MachineState toState;
-
 		public FreeTransition(MachineState state, double cost) {
-			super();
-			this.toState = state;
+			super(state,0);
 			this.cost = cost;
 		}
 
-		public double emissionCost() {			
+		public double emissionCost(byte base) {			
 			return cost;
 		}
-
-		@Override
-		public MachineState getState() {
-			return toState;
-		}				
 	}
 }

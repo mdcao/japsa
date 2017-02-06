@@ -51,6 +51,7 @@ import japsa.tools.bio.hts.SelectReadSpanCmd;
 import japsa.tools.bio.hts.SpeciesMixtureCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.hts.VNTRLongReadsCmd;
+import japsa.tools.bio.hts.VNTRLongReadsV2Cmd;
 import japsa.tools.bio.np.FastNanoporeReaderCmd;
 import japsa.tools.bio.np.GapCloserCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
@@ -209,10 +210,13 @@ public class Deploy {
 		//jsa.xm
 		tools.add("Export Model compression");
 		tools.add(new ExpertModelCmd());
-		//
+		
+		
+		tools.add("==========Testing===============");
+		tools.add(new VNTRLongReadsV2Cmd());
 
 
-		//tools.add(new AddReadSequence2SamCmd());
+		//tools.add(new VNTRLongReadsV2Cmd());
 	}	
 
 
