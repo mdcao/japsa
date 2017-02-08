@@ -38,6 +38,7 @@ package japsa.util.deploy;
 //import japsa.bio.hts.HTSAlignmentParam;
 import japsa.tools.bio.bac.Genomes2ResistanceGeneCmd;
 import japsa.tools.bio.bac.MLSTCmd;
+import japsa.tools.bio.hts.AddReadSequence2SamCmd;
 import japsa.tools.bio.hts.AlignmentParamOptCmd;
 import japsa.tools.bio.hts.AlternativeAllelesCmd;
 import japsa.tools.bio.hts.BreakBamCmd;
@@ -50,8 +51,8 @@ import japsa.tools.bio.hts.SelectReadSpanCmd;
 import japsa.tools.bio.hts.SpeciesMixtureCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.hts.VNTRLongReadsCmd;
+import japsa.tools.bio.hts.VNTRLongReadsV2Cmd;
 import japsa.tools.bio.np.FastNanoporeReaderCmd;
-import japsa.tools.bio.np.GapCloserCmd;
 import japsa.tools.bio.np.GapCloserCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
@@ -152,6 +153,7 @@ public class Deploy {
 		tools.add(new AlternativeAllelesCmd());
 		tools.add(new GetN50Cmd());
 		tools.add(new SpeciesMixtureCmd());
+		tools.add(new AddReadSequence2SamCmd());
 
 		tools.add("Bacterial analysis:");
 		tools.add(new MLSTCmd());
@@ -208,10 +210,13 @@ public class Deploy {
 		//jsa.xm
 		tools.add("Export Model compression");
 		tools.add(new ExpertModelCmd());
-		//
+		
+		
+		tools.add("==========Testing===============");
+		tools.add(new VNTRLongReadsV2Cmd());
 
 
-		//tools.add(new GapCloserCmd2());
+		//tools.add(new VNTRLongReadsV2Cmd());
 	}	
 
 

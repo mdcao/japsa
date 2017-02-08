@@ -34,11 +34,9 @@
  ****************************************************************************/
 package japsadev.tools;
 
-import japsa.bio.alignment.ProfileDP;
-import japsa.bio.alignment.ProfileDP.EmissionState;
+import japsa.bio.alignment.MultipleAlignment;
 import japsa.bio.tr.TandemRepeat;
 import japsa.bio.tr.TandemRepeatVariant;
-
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.SequenceOutputStream;
@@ -49,10 +47,12 @@ import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -65,41 +65,44 @@ import htsjdk.samtools.ValidationStringency;
  * 
  */
 
-@Deployable(scriptName = "jsa.dev.longreads_oldversion", scriptDesc = "VNTR typing using long reads, old version. Pls check jsa.tr.longreads")
-public class VNTRLongReads {
-	static Alphabet dna = Alphabet.DNA16();
+@Deployable(scriptName = "jsa.dev.longreadsHmmer", scriptDesc = "VNTR typing using long reads using hmmer")
+public class VNTRLongReadsHmmerCmd extends CommandLine{
+	static Alphabet alphabet = Alphabet.DNA16();
 
-	public static void main(String[] args) throws Exception,
-	InterruptedException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = VNTRLongReads.class
-				.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options]",
-				annotation.scriptDesc());
+	public VNTRLongReadsHmmerCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());		
 
-		cmdLine.addStdInputFile();
-		cmdLine.addString("bamFile", null, "Name of the bam file", true);
-		cmdLine.addString("output", "-",
+		addStdInputFile();
+		addString("bamFile", null, "Name of the bam file", true);
+		addString("output", "-",
 				"Name of the output file, -  for stdout");
-		cmdLine.addString("xafFile", null, "Name of the regions file in xaf",
+		addString("xafFile", null, "Name of the regions file in xaf",
 				true);
-		cmdLine.addString("prefix", "",
+		addString("prefix", "",
 				"Prefix of temporary files, if not specified, will be automatically generated");
-		cmdLine.addInt("flanking", 30, "Size of the flanking regions");
-		cmdLine.addInt("qual", 0, "Minimum quality");
-		cmdLine.addInt(
+		addInt("flanking", 40, "Size of the flanking regions");
+		addInt("qual", 0, "Minimum quality");
+		addInt(
 				"nploidy",
 				2,
 				"The ploidy of the genome 1 =  happloid, 2 = diploid. Currenly only support up to 2-ploidy");
 
-		cmdLine.addString("msa", "kalign",
+		addString("msa", "kalign",
 				"Name of the msa method, support kalign and clustalo");
 		// cmdLine.addBoolean("contained", false,
 		// "true: Reads contained in the region; false: reads overlap with the region");
+		addStdHelp();
+	}
 
-		args = cmdLine.stdParseLine_old(args);
-		/**********************************************************************/
+	public static void main(String[] args) throws Exception,
+	InterruptedException {
+		/*********************** Setting up script ****************************/
+		CommandLine cmdLine = new VNTRLongReadsHmmerCmd();		
+		args = cmdLine.stdParseLine(args);	
+
 		// Get options
 
 		String prefix = cmdLine.getStringVal("prefix");
@@ -109,8 +112,8 @@ public class VNTRLongReads {
 		}
 
 		int flanking = cmdLine.getIntVal("flanking");
-		if (flanking < 20)
-			flanking = 20;
+		if (flanking < 0)
+			flanking = 0;
 
 		int qual = cmdLine.getIntVal("qual");
 
@@ -131,8 +134,8 @@ public class VNTRLongReads {
 					+ "o.fasta";
 		}
 
-		SequenceOutputStream outOS 
-		= SequenceOutputStream.makeOutputStream(cmdLine.getStringVal("output"));
+		SequenceOutputStream outOS = SequenceOutputStream
+				.makeOutputStream(cmdLine.getStringVal("output"));
 
 		String[] headers = TandemRepeatVariant.SIMPLE_HEADERS;
 		if (np > 1) {
@@ -144,46 +147,30 @@ public class VNTRLongReads {
 		String strFile = cmdLine.getStringVal("xafFile");
 
 		// TODO: make it multiple sequence
-		//Sequence seq = SequenceReader.getReader(cmdLine.getStringVal("input"))
-		//		.nextSequence(dna);
-
-		Logging.info("Read genome begins");
-		HashMap <String, Sequence> genome = new HashMap <String, Sequence>();
-		SequenceReader seqReader = SequenceReader.getReader(cmdLine.getStringVal("input"));
-		Sequence seq;
-		while ((seq = seqReader.nextSequence(dna)) != null){
-			genome.put(seq.getName(), seq);
-		}
-		seqReader.close();
-		Logging.info("Read genome done");
+		Sequence seq = SequenceReader.getReader(cmdLine.getStringVal("input"))
+				.nextSequence(alphabet);
 
 		/**********************************************************************/
+		//ArrayList<TandemRepeat> myList = TandemRepeat.readFromFile(
+		//		SequenceReader.openFile(strFile), new ArrayList<String>());
+
 
 		XAFReader xafReader = new XAFReader(strFile);
-
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader reader = SamReaderFactory.makeDefault().open(new File(cmdLine.getStringVal("bamFile")));	
 
 
-		//Random random = new Random();
-
-		//int _tIndex = 0;
-		while (xafReader.next() != null){	
-			//_tIndex ++;
+		int _tIndex = 0;
+		while (xafReader.next() != null){			
+			_tIndex ++;
+			//for (TandemRepeat str : myList) {
 			TandemRepeat str = TandemRepeat.read(xafReader);
+			System.out.println(_tIndex + "  " + str.getChr() + " " + str.getStart() + " " + str.getEnd());
+			if (str.getPeriod() <= 4)
+				continue;
 
-			int start = Integer.parseInt(xafReader.getField("start")) - flanking;			
-			int end = Integer.parseInt(xafReader.getField("end")) + flanking;
-			String chrom = xafReader.getField("chrom");					
-
-			if (seq == null || !seq.getName().equals(chrom)){
-				seq = genome.get(chrom);
-			}
-			if (seq == null){
-				xafReader.close();
-				//sos.close();
-				Logging.exit("Chrom in line " + xafReader.lineNo() + " not found!!!", 1);
-			}
+			int start = str.getStart() - flanking;
+			int end = str.getEnd() + flanking;
 
 			if (end > seq.length())
 				end = seq.length();
@@ -191,50 +178,18 @@ public class VNTRLongReads {
 			if (start < 1)
 				start = 1;
 
-			int hmmFlank = flanking;
-			int hmmPad = 
-					(int)((str.getUnitNo() - Math.floor(str.getUnitNo())) * str.getPeriod()) ;
-
-			//System.out.println("###" + str.getPeriod() + " " + str.getUnitNo() + "   " + hmmPad);			
-			Sequence hmmSeq = new Sequence(dna, hmmFlank * 2 + hmmPad + str.getPeriod());
-			int i = 0;
-
-			for (;i < hmmFlank + hmmPad + str.getPeriod(); i++)
-				hmmSeq.setBase(i, seq.getBase(str.getStart() - hmmFlank + i -1));
-
-			for (;i < hmmSeq.length();i++){
-				byte base = seq.getBase(str.getEnd() + i - (hmmFlank + hmmPad + str.getPeriod()) );//no need to -1
-				hmmSeq.setBase(i,base);				
-			}
-
-			ProfileDP dp = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);//-1 for 0-index, inclusive
-
-			//System.out.println("Lengths: " + hmmFlank + ", " + hmmPad + " " + str.getPeriod() + " " + hmmSeq.length() );			
-			//System.out.println("CHECKING BEGIN");
-
-			outOS.print("##"+str.getID()+"\n## ");
-			for (int x = 0; x < hmmSeq.length();x++){
-				outOS.print(hmmSeq.charAt(x));
-				if (x == hmmFlank + hmmPad -1 || x ==  hmmFlank + hmmPad + str.getPeriod() - 1)
-					outOS.print("==");
-			}
-			outOS.println();			
-			//for (int x = 0; x < 10; x++ ){			
-			//	Sequence genSeq = dp.generate(random.nextInt(5) + 5);
-			//	double alignScore = dp.align(genSeq);
-			//	System.out.println("Best myCost: " + alignScore + " vs " + genSeq.length() * 2 + " (" + alignScore/genSeq.length() +")");
-			//}
-			//System.out.println("CHECKING END");
-
-			SAMRecordIterator iter 
-			= reader.query(str.getParent(), start, end, false);
-
+			SAMRecordIterator iter = reader.query(str.getParent(), start, end,
+					false);
 
 			int maxAlign = 300;
-
 			MultipleAlignment ma = new MultipleAlignment(maxAlign, seq);
+
 			while (iter.hasNext()) {
 				SAMRecord rec = iter.next();
+				//FIXME: this should be handdled by making sure sequence reads present
+				if (rec.getReadLength() < 10)
+					continue;
+
 				// Check qualilty
 				if (rec.getMappingQuality() < qual) {
 					continue;
@@ -246,94 +201,147 @@ public class VNTRLongReads {
 				if (rec.getAlignmentEnd() < end)
 					continue;
 
-				ma.addRead(rec);
+
+				ma.addRead(rec);				
 			}// while
 			iter.close();
 			// os.close();
 
+			// seq.subSequence(start, end).writeFasta(prefix+"r.fasta");
 			double var = 0;
+			// double evidence = 0;
+
 			TandemRepeatVariant trVar = new TandemRepeatVariant();
 			trVar.setTandemRepeat(str);
 
-			if (ma.printFasta(start, end, prefix + "i.fasta") > 0) {
+			if (ma.printFasta(start, end, prefix + "i.fasta") >= 4) {
 				Logging.info("Running " + cmd);
 				Process process = Runtime.getRuntime().exec(cmd);
 				process.waitFor();
 				Logging.info("Done " + cmd);
 
-				SequenceReader hmmSeqReader 
-				= FastaReader.getReader(prefix	+ "i.fasta");
-				Sequence readSeq;
-
-				//IntArray intArray = new IntArray();
-				//DoubleArray doubleArray = new DoubleArray();
-				//ByteArray byteArray = new ByteArray(); 
-
-				while ((readSeq = hmmSeqReader.nextSequence(dna)) != null ){					
-					//System.out.println(readSeq.getName() + " : " + readSeq.length());
-
-					EmissionState bestState = dp.align(readSeq);
-					double alignScore = bestState.getScore();
-					//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
-					int bestIter = bestState.getIter();
-
-					outOS.print("==================================================================\n");
-					outOS.print("##" + readSeq.getName()+"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\n');
-
-					/*********************************************************
-					intArray.clear();
-					doubleArray.clear();
-					byteArray.clear();
-
-
-					//double oldCost = bestState.score;
-					Emission lastState = bestState;
-
-					bestState = bestState.bwdState;
-
-					while (bestState != null){
-						intArray.add(bestState.profilePos);						
-						doubleArray.add(lastState.score - bestState.score);
-						if (bestState.seqPos == lastState.seqPos)
-							byteArray.add((byte)Alphabet.DNA.GAP);
-						else
-							byteArray.add(readSeq.getBase(lastState.seqPos));						
-
-						lastState = bestState;
-						bestState = bestState.bwdState;
-					}					
-
-					double costL = 0, costR = 0;
-
-					for (int x = intArray.size() - 1; x >=0; x--){
-						outOS.print(Alphabet.DNA().int2char(byteArray.get(x)));						
-						 if (x <intArray.size() - 1  && intArray.get(x) <  + intArray.get(x+1)){
-							 outOS.println();	 
-						 }
-
-						if (intArray.get(x) < hmmFlank + hmmPad)
-							costL += doubleArray.get(x);
-						if (intArray.get(x) > hmmFlank + hmmPad + str.getPeriod())
-							costR += doubleArray.get(x);													
-					}
-					outOS.println();
-					outOS.print ("L = " + (costL/(hmmFlank + hmmPad)) + " R = " + costR/(hmmSeq.length() - hmmFlank - hmmPad - str.getPeriod()) + "\n");
-					outOS.print("==================================================================\n");
-					/*********************************************************/
-				}
-
-				SequenceReader msaReader
+				SequenceReader msaReader 
 				= FastaReader.getReader(prefix	+ "o.fasta");
 				ArrayList<Sequence> seqList = new ArrayList<Sequence>();
 				Sequence nSeq = null;
 				while ((nSeq = msaReader.nextSequence(Alphabet.DNA16())) != null) {
 					seqList.add(nSeq);
-				}				 
+				}
+
+				String target = "pacbio_" + str.getID(); 
 				//str.getChr()+"_"+str.getStart()+"_"+str.getEnd();
 
 				if (np >= 2) {
+					/*****************************************************************
+					//Logging.info("Run hmmsearcg " + "hmmsearch -o "+target+".hmmsearch " + target + ".hmm " + prefix + "i.fasta");
+					process = 
+							Runtime.getRuntime().exec("hmmsearch -o "+target+".hmmsearch " + target + ".hmm " + prefix + "i.fasta");
+					process.waitFor();
+					//Read hmm results
+
+					BufferedReader hmmReader = SequenceReader.openFile(target+".hmmsearch");
+					HashMap<String, ReadInstance> instances = new HashMap<String, ReadInstance>();
+
+					String hmmLine = "";					
+					while ((hmmLine = hmmReader.readLine()) != null){
+						String[] hmmToks = hmmLine.trim().split("  *");						
+						//Logging.info(hmmLine + " " +hmmToks.length);
+						if(hmmToks.length != 4)
+							continue;
+
+
+						if(!hmmToks[0].startsWith("SSS")){
+							continue;
+						}
+						try{
+							int hmmMatchStart = Integer.parseInt(hmmToks[3]),
+									hmmMatchEnd   = Integer.parseInt(hmmToks[1]);
+
+							ReadInstance inst = instances.get(hmmToks[0]);
+
+							if (inst == null){
+								inst = new ReadInstance(2, hmmToks[0]);
+								inst.increase(0, 1) ;
+								inst.increase(1,hmmMatchEnd - hmmMatchStart) ;							
+
+								instances.put(hmmToks[0], inst);
+							}else{
+								inst.increase(0, 1) ;
+								inst.increase(1,hmmMatchEnd - hmmMatchStart) ;	
+							}
+						}catch (Exception e){
+							Logging.warn("Problems: " + e.getMessage() +" " +hmmLine);
+						}
+					}
+					hmmReader.close();
+
+
+					HashSet<String> set1  = new HashSet<String> ();
+
+
+
+					Dataset data = new DefaultDataset();
+					for (ReadInstance inst:instances.values()){					    
+						data.add(inst);
+					}
+					if (data.size() > 1){
+						Clusterer km = new KMeans(2);
+						Dataset[] clusters = km.cluster(data);					
+
+						for (int i = 0; i < clusters[0].size();i++){
+							set1.add(clusters[0].get(i).toString());
+						}
+					}
+
+
+					ArrayList<Sequence> seqList1 = new ArrayList<Sequence>(),
+							seqList2 = new ArrayList<Sequence>();
+
+					for (Sequence s:seqList){
+						if (set1.contains(s.getName())){
+							seqList1.add(s);
+						}else{
+							seqList2.add(s);
+						}
+					}
+
+					int llength = seqList.get(0).length();
+
+
+					System.err.print("#Call :" + _tIndex + " 1:");
+					for (int s = 0; s < seqList1.size(); s++) {
+						System.err.print(seqList1.get(s).getName() + ",");
+					}
+					System.err.println();
+
+
+					System.err.print("#Call :" + _tIndex + " 2:");
+					for (int s = 0; s < seqList2.size(); s++) {
+						System.err.print(seqList2.get(s).getName() + ",");
+					}
+					System.err.println();
+
+
+					int gaps = call(seqList1);					
+
+					var = (llength - gaps - end + start) * 1.0
+							/ str.getPeriod();
+
+					trVar.setVar(var);
+
+					gaps = call(seqList2);					
+					var = (llength - gaps - end + start) * 1.0
+							/ str.getPeriod();
+
 					trVar.setVar2(var);
-					trVar.addEvidence(seqList.size());
+
+					trVar.addEvidence(seqList1.size());
+					trVar.addEvidence2(seqList2.size());
+
+					// trVar.setVar2(var);
+					// trVar.addEvidence(seqList.size());
+
+					 /*****************************************************************/
 				} else {// nploidy ==1
 					int llength = seqList.get(0).length();
 
@@ -345,27 +353,54 @@ public class VNTRLongReads {
 					trVar.setVar(var);
 					trVar.addEvidence(seqList.size());
 				}
+
 			}// if
 
-			//Process process = 
-			//		Runtime.getRuntime().exec("rm -f " + prefix + _tIndex + "i.fasta");
-			//process.waitFor();
+			Process process = 
+					Runtime.getRuntime().exec("rm -f " + prefix + _tIndex + "i.fasta");
+			process.waitFor();
 
-			//process = 
-			//	Runtime.getRuntime().exec("cp " + prefix + "i.fasta " + prefix + _tIndex + "i.fasta");
-			//process.waitFor();			
+			process = 
+					Runtime.getRuntime().exec("cp " + prefix + "i.fasta " + prefix + _tIndex + "i.fasta");
+			process.waitFor();			
 
 			outOS.print(trVar.toString(headers));
 			outOS.print('\n');
+			ma.printAlignment(start, end);
+			ma.reduceAlignment(start, end). printAlignment(start, end);
 		}// for
 
 		reader.close();
 		outOS.close();
+
 	}
+	/*****************************************************************
+	 * Temporary commented out for independence of javaml
+	 * 
+	static class ReadInstance extends DenseInstance{
+
+		private static final long serialVersionUID = 1L;
+		String readName;
+
+		public ReadInstance(int nAtt, String name) {
+			super(nAtt);
+			readName = name;
+		}		
+
+		public void increase(int attNo, double added){
+			put(attNo,value(attNo) + added);
+		}
+
+		public String toString(){
+			return readName;
+		}
+	}
+/*****************************************************************/
+
 	/**
 	 * 
 	 * @param seqList
-	 * @param start
+	 * @param startState
 	 *            : the start index of the list (inclusive)
 	 * @param end
 	 *            : the end index of the list (exclusive)

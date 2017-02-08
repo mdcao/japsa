@@ -32,7 +32,7 @@
  * 25/06/2014 - Minh Duc Cao: Started
  *  
  ****************************************************************************/
-package japsadev.tools;
+package japsa.bio.alignment;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -64,7 +64,7 @@ public class MultipleAlignment {
 
 	int seqIndex = 0;// point to the next avaibale one
 
-	MultipleAlignment(int nSeq, Sequence ref) {
+	public MultipleAlignment(int nSeq, Sequence ref) {
 		seqs = new Sequence[nSeq];
 		seqs[0] = ref;
 		seqIndex = 1;
