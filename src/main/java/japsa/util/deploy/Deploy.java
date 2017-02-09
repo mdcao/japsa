@@ -380,7 +380,7 @@ public class Deploy {
 
 				String [] fNix = {"libjhdf.so","libjhdf5.so"};
 				String [] fWindows = {"jhdf.dll","jhdf5.dll","libhdf.lib","libhdf5.lib"};
-				String [] fMac = {"libjhdf.a","libjhdf5.a"};
+				String [] fMac = {"libjhdf5.a"};
 				
 				String [] requires = isWindows ? fWindows:fNix;
 				if (isMac)
