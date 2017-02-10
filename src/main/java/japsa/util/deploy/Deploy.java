@@ -52,6 +52,7 @@ import japsa.tools.bio.hts.SpeciesMixtureCmd;
 import japsa.tools.bio.hts.VNTRDepthCmd;
 import japsa.tools.bio.hts.VNTRLongReadsCmd;
 import japsa.tools.bio.hts.VNTRLongReadsV2Cmd;
+import japsa.tools.bio.np.BarCodeAnalysisCmd;
 import japsa.tools.bio.np.FastNanoporeReaderCmd;
 import japsa.tools.bio.np.GapCloserCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
@@ -172,7 +173,7 @@ public class Deploy {
 		tools.add(new RealtimeResistanceGeneCmd());
 		tools.add(new RegulateTimeCmd());		
 		tools.add(new GapCloserCmd());
-
+		tools.add(new BarCodeAnalysisCmd());
 		//tools.add(new SpeciesMixtureCmd());
 		//tools.add(new BaseMethylationCmd());
 

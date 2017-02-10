@@ -1,4 +1,4 @@
-package japsadev.bio.hts.barcode;
+package japsa.bio.np.barcode;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,7 +7,7 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.Logging;
-import japsadev.bio.BarcodeAlignment;
+
 public class BarCodeAnalysis {
 	static final int SCAN_WINDOW=120, SCORE_THRES=30; 
 	public static boolean toPrint=false;
