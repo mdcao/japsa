@@ -4,7 +4,7 @@ Installation
 
 
 There are two methods to install Japsa in your computer. The first method
-(using pre-compiled package in JDK 1.6) is straight-forward and can be used for
+(using pre-compiled package in JDK 1.8) is straight-forward and can be used for
 any operating systems, including Windows. The second method (compile from source
 code) requires some extra tools (make and JDK) but may yield better runtime
 performance as the package will be compiled with the same version of the Java
@@ -43,7 +43,9 @@ agree with its suggestion, just type Enter. The questions are:
   HDFViewer (https://www.hdfgroup.org/products/java/release/download.html)
   installed, and enter the path to file *libjhdf5.so* (on Linux/Unix/Mac) or
   to *jhdf5.dll* (Windows). This is only required if you intend to use npReader(
-  jsa.np.f5reader).
+  jsa.np.f5reader). Note that we tested with hdfj version 2.10.1, which you can 
+  download from https://support.hdfgroup.org/ftp/HDF5/releases/HDF-JAVA/hdf-java-2.10.1/bin/
+  
 
 * *Path to JRI library:* Enter path to JRI library. This is required only for
   running real-time species typing (jsa.np.speciesTyping).

@@ -114,7 +114,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.7-01a";
+	public static String VERSION = "1.7-02a";
 	public static final String FIELD_SEP = "\t";
 
 	public static boolean DEBUG = true;
@@ -306,7 +306,10 @@ public class Deploy {
 	 * @throws IOException
 	 */
 	public static void setUpDirectory() throws IOException{
-		boolean isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;		
+		
+		boolean isWindows = System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;	
+		boolean isMac = System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0;	
+		
 		classPath = japsaJar;
 		Scanner scanner = new Scanner(System.in);
 		String line = null;
@@ -377,8 +380,11 @@ public class Deploy {
 
 				String [] fNix = {"libjhdf.so","libjhdf5.so"};
 				String [] fWindows = {"jhdf.dll","jhdf5.dll","libhdf.lib","libhdf5.lib"};
-
+				String [] fMac = {"libjhdf5.a"};
+				
 				String [] requires = isWindows ? fWindows:fNix;
+				if (isMac)
+					requires = fMac;
 
 				boolean pass = true;
 				for (String rLib:requires){
