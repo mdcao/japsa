@@ -35,11 +35,11 @@ package japsadev.tools;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+//
+//import javax.json.Json;
+//import javax.json.JsonArray;
+//import javax.json.JsonObject;
+//import javax.json.JsonReader;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -70,19 +70,19 @@ public class BAFrameworkCmd extends CommandLine {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		URL url = new URL("https://graph.facebook.com/search?q=java&type=post");
-		try (InputStream is = url.openStream();
-				JsonReader rdr = Json.createReader(is)) {
-
-			JsonObject obj = rdr.readObject();
-			JsonArray results = obj.getJsonArray("data");
-			for (JsonObject result : results.getValuesAs(JsonObject.class)) {
-				System.out.print(result.getJsonObject("from").getString("name"));
-				System.out.print(": ");
-				System.out.println(result.getString("message", ""));
-				System.out.println("-----------");
-			}
-		}
+//		URL url = new URL("https://graph.facebook.com/search?q=java&type=post");
+//		try (InputStream is = url.openStream();
+//				JsonReader rdr = Json.createReader(is)) {
+//
+//			JsonObject obj = rdr.readObject();
+//			JsonArray results = obj.getJsonArray("data");
+//			for (JsonObject result : results.getValuesAs(JsonObject.class)) {
+//				System.out.print(result.getJsonObject("from").getString("name"));
+//				System.out.print(": ");
+//				System.out.println(result.getString("message", ""));
+//				System.out.println("-----------");
+//			}
+//		}
 
 	}
 

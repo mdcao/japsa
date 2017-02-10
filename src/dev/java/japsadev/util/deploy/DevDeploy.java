@@ -58,7 +58,7 @@ import japsadev.tools.NanoporeBarcodeCmd;
 import japsadev.tools.NanoporeFast5ReaderCmd;
 import japsadev.tools.NewScarfCmd;
 import japsadev.tools.PanCoreGeneCmd;
-//import japsadev.tools.PhageAnalysisCmd;
+import japsadev.tools.PhageAnalysisCmd;
 import japsadev.tools.ProfileDPCmd;
 import japsadev.tools.RemoveNsCmd;
 import japsadev.tools.RepeatPrimerCmd;
@@ -150,7 +150,7 @@ public class DevDeploy {
 
 		tools.add(new SelectReadsCmd());
 		tools.add(new StructuralVariationCmd());
-//		tools.add(new PhageAnalysisCmd());
+		tools.add(new PhageAnalysisCmd());
 		
 		//new 
 		//tools.add(new PhageAnalysisCmd());
