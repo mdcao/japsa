@@ -70,8 +70,7 @@ public class ScaffoldGraph{
 	public boolean annotation = false;
 	public static byte assembler =0b00; // 0 for SPAdes, 1 for ABySS
 	
-	public static HashMap<Integer,Integer> countOccurence;
-
+	public static HashMap<Integer,Integer> countOccurence=new HashMap<Integer,Integer>();
 	public String prefix = "out";					
 	public static double estimatedCov = 0;
 	private static double estimatedLength = 0;
@@ -962,15 +961,16 @@ public class ScaffoldGraph{
 
 	}
 	public synchronized void printSequences() throws IOException{
-		countOccurence=new HashMap<Integer,Integer>();
+		//countOccurence=new HashMap<Integer,Integer>();
 		if(annotation){
 			SequenceOutputStream aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
 
-				if(contigs.get(i).head == i || scaffolds[i].closeBridge != null){
+				if(contigs.get(i).head == i ){
 					if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+							|| scaffolds[i].closeBridge != null //here are the circular ones
 							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required
 					{
 						if(verbose) 
@@ -988,29 +988,30 @@ public class ScaffoldGraph{
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
 				
-				if(contigs.get(i).head == i || scaffolds[i].closeBridge != null){
+				if(contigs.get(i).head == i){
 					if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+							|| scaffolds[i].closeBridge != null //here are the circular ones
 							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short/repeat sequences here if required
 					{
-					if(verbose) 
-						System.out.println("Scaffold " + i + " estimated length " + len);
-
-					scaffolds[i].viewSequence(fout, jout);
-					}
+						if(verbose) 
+							System.out.println("Scaffold " + i + " estimated length " + len);
+	
+						scaffolds[i].viewSequence(fout, jout);
+						}
 				}
 			}
 			fout.close();
 			jout.close();
 		}
 	}	
-	public static void oneMore(Contig ctg){
+	public synchronized static void oneMore(Contig ctg){
 		if(countOccurence.get(ctg.getIndex())==null)
 			countOccurence.put(ctg.getIndex(), 1);
 		else
 			countOccurence.put(ctg.getIndex(), countOccurence.get(ctg.getIndex())+1);
 	}
 	
-	boolean needMore(Contig ctg) {
+	synchronized boolean needMore(Contig ctg) {
 		Integer count = countOccurence.get(ctg.getIndex());
 		if(count==null) return true;
 		else return false; //if not occurred (Minh)
