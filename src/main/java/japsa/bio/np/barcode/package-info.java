@@ -5,4 +5,4 @@
  * @author s.hoangnguyen
  *
  */
-package japsadev.bio.hts.newscarf;
+package japsa.bio.np.barcode;

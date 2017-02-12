@@ -81,6 +81,11 @@ public class SequenceBuilder extends AbstractSequence {
 		byteSeq = bArray.toArray();
 		length = byteSeq.length;
 	}
+	
+	public SequenceBuilder(Sequence seq, int length){
+		this (seq.alphabet(), length);
+		append(seq);
+	}
 
 
 	/**

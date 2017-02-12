@@ -58,24 +58,27 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(scriptName = "jsa.dev.pairrepair", 
 scriptDesc = "Repair concordant pairs from multiple alignment (such as bwa mem -a). This bamfile should be sorted by read name (or from running as a single-threaded program).")
-public class PairedEndRepair {
+public class PairedEndRepair extends CommandLine{
+	public PairedEndRepair(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
+		
+		addString("bamFile", null, "Name of the s/bam file", true);		
+		addString("tr", null, "Name of TR file");
+		
+		addStdHelp();
+	}
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException {
-		/*********************** Setting up script ****************************/
-		Deployable annotation = PairedEndRepair.class
-				.getAnnotation(Deployable.class);
-		CommandLine cmdLine = new CommandLine("\nUsage: "
-				+ annotation.scriptName() + " [options]",
-				annotation.scriptDesc());
-
-		cmdLine.addString("bamFile", null, "Name of the s/bam file", true);
-		// cmdLine.addBoolean("call", false, "Do call?");
-		cmdLine.addString("tr", null, "Name of TR file");
-
-		args = cmdLine.stdParseLine_old(args);
+		/*********************** Setting up script ****************************/		
+		CommandLine cmdLine = new PairedEndRepair();		
+		args = cmdLine.stdParseLine(args);	
+		
 		/*********************** Setting up script ****************************/
 
 		String bamFile = cmdLine.getStringVal("bamFile");

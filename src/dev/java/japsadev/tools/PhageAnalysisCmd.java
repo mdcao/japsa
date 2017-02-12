@@ -54,87 +54,104 @@ import japsa.util.deploy.Deployable;
  * 
  */
 @Deployable(
-	scriptName = "jsa.dev.selectReadsMapToPosition",
-	scriptDesc = "Select reads spanning repeats"
+	scriptName = "jsa.dev.phageAnalysis",
+	scriptDesc = "Analysis phage dataset"
 	)
-public class SelectReadsCmd extends CommandLine{	
-	public SelectReadsCmd(){
+public class PhageAnalysisCmd extends CommandLine{	
+	public PhageAnalysisCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		
 		addString("input", null, "Name of the input file, - for standard input", true);
-		addString("regions", null, "The regions to extract format chr1:s1-e1,chr2:s2-e2 no spaces", true);
-		
+				
 		addStdHelp();		
 	} 
 
 	public static void main(String[] args) throws IOException {		
 
 		/*********************** Setting up script ****************************/		
-		CommandLine cmdLine = new SelectReadsCmd();		
+		CommandLine cmdLine = new PhageAnalysisCmd();		
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		
 		String input = cmdLine.getStringVal("input");
-		String regions = cmdLine.getStringVal("regions");
-		
-		
-		String [] regionArray =  regions.split(",");
 		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader reader = SamReaderFactory.makeDefault().open(new File(input));
 		
 		
-		for (String region:regionArray){
-			 
-			String[] toks = region.split(":");
-			
-			
-			if (toks.length < 1){
-				System.err.println("region need to be in format chrX:start-end");
-				System.exit(1);
+		int startFront = 1658;
+		int endFront = 1758;
+		
+		int startBack = 2635;
+		int endBack = 2735;
+					
+		SAMRecordIterator iter = reader.iterator();
+		int count = 0;
+		String currentName = "";
+		boolean direction = true;
+		int readFront = 0, readBack = 0;
+		SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream("out.fasta");
+		
+		while (iter.hasNext()){
+			count ++;
+			SAMRecord record = iter.next();
+			if (record.getReadString().length() < 10){
+				System.out.println("== " + record.getReadName());
+				continue;//while
 			}
-			String chrom = toks[0];
-			toks = toks[1].split("-");
-			if (toks.length < 1){
-				System.err.println("region need to be in format chrX:start-end");
-				System.exit(1);
+			
+			if (!record.getReadName().equals(currentName)){
+				currentName = record.getReadName();
+				direction = true;
+				readFront = 0;
+				readBack = 0;
 			}
-			int start = Integer.parseInt(toks[0]);
-			int end = Integer.parseInt(toks[1]);
-			
-			SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream(chrom + start + "_" + end + ".fasta");
-			
-			System.out.println(region + ":" + (end - start) + ":"); 
-			SAMRecordIterator iter = reader.query(chrom, start, end,false);
-			while (iter.hasNext()){
-				SAMRecord record = iter.next();
-				if (record.getReadString().length() < 10){
-					System.out.println("== " + record.getReadName());
-					continue;//while
-				}
-				int  [] refPositions = {start, end}; 
+			if (record.getAlignmentStart() <= startFront && record.getAlignmentEnd() >= endFront){
+				int  [] refPositions = {startFront, endFront}; 
 				int [] pos = HTSUtilities.positionsInRead(record, refPositions);
-				if (pos[0] == 0 || pos[1] == 0)
-					continue;
-				
-				String readSub = record.getReadString().substring(pos[0],pos[1]-1);
-				Sequence rs = new Sequence(Alphabet.DNA16(), readSub, record.getReadName());
-				
-				rs.writeFasta(outFile);				
-				//System.out.printf("%5d %s %s %s\n", readSub.length(),readSub.substring(0, 22),readSub.substring(readSub.length() - 24), readSub);			
-				
+				if (pos[0] > 0 || pos[1] > 0){
+					//System.out.printf("%5d %s %s %d %d %b\n", count, record.getReadName(), "FRONT", pos[0], pos[1], record.getReadNegativeStrandFlag());
+					readFront = pos[0];
+					if (readBack > 0 && direction == record.getReadNegativeStrandFlag()){
+						if (readBack < readFront){
+							System.err.printf("Bugger 1\n");							
+						}else{
+							String readSub = record.getReadString().substring(readFront,readBack);
+							Sequence rs = new Sequence(Alphabet.DNA16(), readSub, record.getReadName());
+							rs.writeFasta(outFile);													
+						}
+						direction = record.getReadNegativeStrandFlag();
+					}
+				}
+					
 			}
-			iter.close();			
-			outFile.close();
+			
+			if (record.getAlignmentStart() <= startBack && record.getAlignmentEnd() >= endBack){
+				int  [] refPositions = {startBack, endBack}; 
+				int [] pos = HTSUtilities.positionsInRead(record, refPositions);
+				if (pos[0] > 0 || pos[1] > 0){
+					//System.out.printf("%5d %s %s %d %d %b\n", count, record.getReadName(), "FRONT", pos[0], pos[1], record.getReadNegativeStrandFlag());
+					readBack = pos[0];
+					if (readFront > 0 && direction == record.getReadNegativeStrandFlag()){
+						if (readBack < readFront){
+							System.err.printf("Bugger 2\n");							
+						}else{
+							String readSub = record.getReadString().substring(readFront,readBack);
+							Sequence rs = new Sequence(Alphabet.DNA16(), readSub, record.getReadName());
+							rs.writeFasta(outFile);													
+						}
+						direction = record.getReadNegativeStrandFlag();
+					}
+				}				
+			}		
 		}
-
-		reader.close();		
-	
-	}
-	
+		iter.close();
+		outFile.close();
+		reader.close();
+	}	
 }
 
 

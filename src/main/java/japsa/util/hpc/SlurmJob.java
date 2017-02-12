@@ -28,61 +28,24 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 11/01/2012 - Minh Duc Cao: Revised 
- * 01/01/2013 - Minh Duc Cao, revised                                       
+ * 15Jan.,2017 - Minh Duc Cao: Created                                        
  ****************************************************************************/
+package japsa.util.hpc;
 
-package japsadev.tools;
-
-import java.io.IOException;
-import java.util.Random;
-
-import japsa.util.CommandLine;
-import japsa.util.Simulation;
-import japsa.util.deploy.Deployable;
-
+import java.util.ArrayList;
 
 /**
- * @author Minh Duc Cao
- * 
+ * This class acts as a driver to submit a job in slurm
+ * @author minhduc
+ *
  */
-@Deployable(
-	scriptName = "jsa.dev.mytest",
-	scriptDesc = "Sample script description"
-	)
-public class MyTestCmd extends CommandLine{	
-	public MyTestCmd(){
-		super();
-		Deployable annotation = getClass().getAnnotation(Deployable.class);		
-		setUsage(annotation.scriptName() + " [options]");
-		setDesc(annotation.scriptDesc());
-		
-//		addStdInputFile();
-		//addBoolean("reverse",false,"Reverse sort order");
-		addStdHelp();		
-	} 
+public class SlurmJob extends HPCJob{
 
-	public static void main(String[] args) throws IOException {		
-
-		/*********************** Setting up script ****************************/		
-		CommandLine cmdLine = new MyTestCmd();		
-		args = cmdLine.stdParseLine(args);
-		
+	@Override
+	public boolean submit() {		
+		return true;
 	}
+	
+	
+	
 }
-
-/*RST*
-
-
-
- 
-  
-  
-  
-  
-  
-  
-  
-  
-*RST*/
-  

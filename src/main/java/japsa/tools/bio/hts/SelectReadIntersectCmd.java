@@ -336,7 +336,7 @@ public class SelectReadIntersectCmd extends CommandLine{
 			
 			samWriter = new SAMTextWriter(new File("2_" + outFile));
 			samWriter.setSortOrder(SortOrder.unsorted, false);		
-			samWriter.writeHeader( samHeader.getTextHeader());
+			samWriter.writeHeader(samHeader.getTextHeader());
 
 			samIter = samReader.iterator();
 			while (samIter.hasNext()){

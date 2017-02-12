@@ -27,130 +27,114 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 05/01/2017 - Minh Duc Cao: Revised                                        
+/**************************     REVISION HISTORY    **************************
+ * 10/01/2017 - Minh Duc Cao: Created
  ****************************************************************************/
+package japsa.tools.bio.hts;
 
-package japsadev.tools;
-
-import java.io.File;
-import java.io.IOException;
-
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMTextWriter;
+import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
-import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
-import japsa.util.HTSUtilities;
+import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+
+import java.io.File;
+import java.io.IOException;
+
 
 
 /**
- * @author Minh Duc Cao
+ * Tools such as bwa does not store read sequence in the secondary alignments.
+ * This tool correct this. It is useful for select a region later on
  * 
+ * @author Minh Duc Cao (http://www.caominhduc.org/)
  */
 @Deployable(
-	scriptName = "jsa.dev.selectReadsMapToPosition",
-	scriptDesc = "Select reads spanning repeats"
-	)
-public class SelectReadsCmd extends CommandLine{	
-	public SelectReadsCmd(){
+		scriptName = "jsa.hts.fixsam",
+		scriptDesc = "Add read sequences to secondary alignment, applied only for"
+				+ "\nsam files by bwa without sorting."
+				+ "\nNote it does not support paired-end at this version")
+public class AddReadSequence2SamCmd extends CommandLine{	
+	public AddReadSequence2SamCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
-		setDesc(annotation.scriptDesc());
-		
+		setDesc(annotation.scriptDesc());		
+
 		addString("input", null, "Name of the input file, - for standard input", true);
-		addString("regions", null, "The regions to extract format chr1:s1-e1,chr2:s2-e2 no spaces", true);
-		
+		addString("output", null, "Name of output s/bam file. If output file is .bam, bam format is outputed", true);
+
 		addStdHelp();		
 	} 
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws IOException{
+		CommandLine cmdLine = new AddReadSequence2SamCmd();
+		args = cmdLine.stdParseLine(args);		
 
-	public static void main(String[] args) throws IOException {		
+		String output = cmdLine.getStringVal("output");
+		String inFile = cmdLine.getStringVal("input");
 
-		/*********************** Setting up script ****************************/		
-		CommandLine cmdLine = new SelectReadsCmd();		
-		args = cmdLine.stdParseLine(args);
-		/**********************************************************************/
-		
-		String input = cmdLine.getStringVal("input");
-		String regions = cmdLine.getStringVal("regions");
-		
-		
-		String [] regionArray =  regions.split(",");
-		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader reader = SamReaderFactory.makeDefault().open(new File(input));
-		
-		
-		for (String region:regionArray){
-			 
-			String[] toks = region.split(":");
-			
-			
-			if (toks.length < 1){
-				System.err.println("region need to be in format chrX:start-end");
-				System.exit(1);
-			}
-			String chrom = toks[0];
-			toks = toks[1].split("-");
-			if (toks.length < 1){
-				System.err.println("region need to be in format chrX:start-end");
-				System.exit(1);
-			}
-			int start = Integer.parseInt(toks[0]);
-			int end = Integer.parseInt(toks[1]);
-			
-			SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream(chrom + start + "_" + end + ".fasta");
-			
-			System.out.println(region + ":" + (end - start) + ":"); 
-			SAMRecordIterator iter = reader.query(chrom, start, end,false);
-			while (iter.hasNext()){
-				SAMRecord record = iter.next();
-				if (record.getReadString().length() < 10){
-					System.out.println("== " + record.getReadName());
-					continue;//while
-				}
-				int  [] refPositions = {start, end}; 
-				int [] pos = HTSUtilities.positionsInRead(record, refPositions);
-				if (pos[0] == 0 || pos[1] == 0)
+		SamReader 
+		samReader = "-".equals(inFile)?SamReaderFactory.makeDefault().open(SamInputResource.of(System.in)):
+			SamReaderFactory.makeDefault().open(new File(inFile));
+
+
+		SAMFileHeader samHeader = samReader.getFileHeader();
+
+		SAMTextWriter samWriter = null;
+		if ("-".equals(output)){
+			samWriter = new SAMTextWriter(System.out);
+		}else{
+			samWriter = new SAMTextWriter(new File(output));			
+		}			
+
+		samWriter.setSortOrder(SortOrder.unsorted, false);		
+		samWriter.writeHeader(samHeader.getTextHeader());
+
+		String readID = "";
+		String readSequence  = null;
+		String revSequence = null;
+		boolean firstFlag = true;
+
+		SAMRecordIterator samIter = samReader.iterator();
+		while (samIter.hasNext()){
+			SAMRecord sam = samIter.next();
+			if (!readID.equals(sam.getReadName())){				
+				readSequence = sam.getReadString();
+				if (readSequence.length() < 2){
+					Logging.error("Some thing wrong " + sam.getReadName());
 					continue;
-				
-				String readSub = record.getReadString().substring(pos[0],pos[1]-1);
-				Sequence rs = new Sequence(Alphabet.DNA16(), readSub, record.getReadName());
-				
-				rs.writeFasta(outFile);				
-				//System.out.printf("%5d %s %s %s\n", readSub.length(),readSub.substring(0, 22),readSub.substring(readSub.length() - 24), readSub);			
-				
-			}
-			iter.close();			
-			outFile.close();
-		}
-
-		reader.close();		
-	
+				}
+				readID = sam.getReadName();
+				revSequence = null;
+				firstFlag = sam.getReadNegativeStrandFlag();
+				readID = sam.getReadName();
+			}else if (sam.getReadString().length() < 2){
+				if (sam.getReadNegativeStrandFlag() == firstFlag)
+					sam.setReadString(readSequence);
+				else{
+					if (revSequence == null){
+						Sequence seq = new Sequence(Alphabet.DNA6(), readSequence, "somename");
+						revSequence = Alphabet.DNA16.complement(seq).toString();
+					}
+					sam.setReadString(revSequence);
+				}
+			}			
+			samWriter.writeAlignment(sam);
+		}//while
+		samReader.close();
+		samWriter.close();
 	}
-	
 }
-
-
-
-/*RST*
-
-
-
- 
-  
-  
-  
-  
-  
-  
-  
-  
-*RST*/
-  

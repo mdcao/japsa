@@ -19,6 +19,8 @@ Usage
 ~~~~~~~
 Options
 ~~~~~~~
+  --iteration=i   Number of iteration
+                  (default='5')
   --help          Display this usage and exit
                   (default='false')
 

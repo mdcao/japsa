@@ -44,9 +44,6 @@ import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import japsa.seq.Alphabet;
-import japsa.seq.Sequence;
-import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
@@ -95,7 +92,7 @@ public class StructuralVariationCmd extends CommandLine {
 		else
 			reader = SamReaderFactory.makeDefault().open(new File(input));
 
-		ArrayList<Sequence> refs = SequenceReader.readAll(reference, Alphabet.DNA16());
+		//ArrayList<Sequence> refs = SequenceReader.readAll(reference, Alphabet.DNA16());
 
 		SAMRecordIterator iter = reader.iterator();
 		String readID = "";		
@@ -118,14 +115,14 @@ public class StructuralVariationCmd extends CommandLine {
 				continue;		
 			}
 
-			AlignmentRec myRec = new AlignmentRec(rec, refs.get(rec.getReferenceIndex()));
+			AlignmentRec myRec = new AlignmentRec(rec, rec.getReferenceName());
 
 			if (readID.equals(myRec.readID)) {				
 			}else {
 				if (samList.size() > 1){
 					System.out.println(readID);
 					for (AlignmentRec aRec:samList){
-						System.out.printf("%8d %8d %6s %10d %10d %c %d\n",aRec.readStart, aRec.readEnd,aRec.sequence.getName(),aRec.refStart, aRec.refEnd, aRec.strand?'+':'-',aRec.score);	
+						System.out.printf("%8d %8d %8d %6s %10d %10d %c %d\n",aRec.readEnd - aRec.readStart, aRec.readStart, aRec.readEnd,aRec.sequenceName,aRec.refStart, aRec.refEnd, aRec.strand?'+':'-',aRec.score);	
 					}
 				}
 				samList.clear();
@@ -142,18 +139,18 @@ public class StructuralVariationCmd extends CommandLine {
 
 	public static class AlignmentRec{
 		String readID;
-		Sequence sequence;
+		String sequenceName;
 		int refStart, refEnd, readStart, readEnd;
 		public int readLength = 0;
 		public boolean strand = true;//positive				
 		ArrayList<CigarElement> alignmentCigars = new ArrayList<CigarElement>();
 		int score = 0;
 
-		public AlignmentRec(SAMRecord sam, Sequence seq) {
+		public AlignmentRec(SAMRecord sam, String seqName) {
 			//		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
 			readID = sam.getReadName();
 
-			sequence = seq;
+			sequenceName = seqName;
 
 			//mySam = sam;
 			refStart = sam.getAlignmentStart();

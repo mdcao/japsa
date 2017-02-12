@@ -54,11 +54,11 @@ import japsadev.tools.FixRastGFFCmd;
 import japsadev.tools.GapCloserCmd;
 import japsadev.tools.GetFlankBlast;
 import japsadev.tools.KmerAnalysisCmd;
-import japsadev.tools.MyTestCmd;
 import japsadev.tools.NanoporeBarcodeCmd;
 import japsadev.tools.NanoporeFast5ReaderCmd;
 import japsadev.tools.NewScarfCmd;
 import japsadev.tools.PanCoreGeneCmd;
+import japsadev.tools.PhageAnalysisCmd;
 import japsadev.tools.ProfileDPCmd;
 import japsadev.tools.RemoveNsCmd;
 import japsadev.tools.RepeatPrimerCmd;
@@ -69,8 +69,7 @@ import japsadev.tools.StructuralVariationCmd;
 import japsadev.tools.TestSampleCmd;
 import japsadev.tools.VNTRDepthAnalyserCmd;
 import japsadev.tools.VNTRDepthSumCmd;
-import japsadev.tools.VNTRLongReads;
-import japsadev.tools.VNTRLongReadsHmmer;
+import japsadev.tools.VNTRLongReadsHmmerCmd;
 import japsadev.tools.VNTRSelectCmd;
 import japsadev.tools.misc.GetN50;
 import japsadev.tools.work.BuildMLSTTreeCmd;
@@ -113,8 +112,7 @@ public class DevDeploy {
 
 		tools.add(new FilterPEConcordance());		
 
-		tools.add(VNTRLongReadsHmmer.class);
-		tools.add(VNTRLongReads.class);			
+		tools.add(new VNTRLongReadsHmmerCmd());				
 
 		tools.add(new RepeatPrimerCmd());		
 
@@ -134,7 +132,6 @@ public class DevDeploy {
 		tools.add(new VNTRDepthAnalyserCmd());
 		tools.add(new VNTRDepthSumCmd());
 		tools.add(new FixFastqNameCmd());
-		tools.add(new MyTestCmd());
 		tools.add(new SampleCmd());
 		tools.add(new TestSampleCmd());
 		tools.add(new AnalyseCaptureCmd());
@@ -153,9 +150,10 @@ public class DevDeploy {
 
 		tools.add(new SelectReadsCmd());
 		tools.add(new StructuralVariationCmd());
-
+		tools.add(new PhageAnalysisCmd());
+		
 		//new 
-		//tools.add(new StructuralVariationCmd());
+		//tools.add(new PhageAnalysisCmd());
 		//
 
 	}

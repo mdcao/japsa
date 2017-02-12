@@ -117,7 +117,7 @@ public class KmerAnalysisCmd extends CommandLine{
 					ProfileDP.EmissionState state = dp.align(rseq);
 					cost = state.getScore();
 					System.out.println(rseq.getName() + " " + x + ":" + cost + " " + cost*1.0/seq.length() + " " + state.getCountMB() + " mismatches " + state.getCountMG() + " matches " + state.getCountDel() + " del " + state.getCountIns() + " ins");
-					System.out.println("DPProfile cost " + state.getScore());
+					System.out.println("ProbFSM cost " + state.getScore());
 					dp.setTransitionProbability(state.getCountMB() + state.getCountMG(), state.getCountIns(), state.getCountDel());
 					dp.setMatchProbability(state.getCountMG() * 1.0 / (state.getCountMB() + state.getCountMG()));
 					

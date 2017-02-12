@@ -260,15 +260,15 @@ public class GapCloserCmd extends CommandLine{
 
 /*RST*
 ---------------------------------------------------------------------------------------
- *npScaffolder*: real-time scaffolder using SPAdes contigs and Nanopore sequencing reads
+ *npScarf*: real-time scaffolder using SPAdes contigs and Nanopore sequencing reads
 ---------------------------------------------------------------------------------------
 
- *npScaffolder* (jsa.np.npscarf) is a program that connect contigs from a draft genomes 
+ *npScarf* (jsa.np.npscarf) is a program that connect contigs from a draft genomes 
 to generate sequences that are closer to finish. These pipelines can run on a single laptop
 for microbial datasets. In real-time mode, it can be integrated with simple structural 
 analyses such as gene ordering, plasmid forming.
 
-npScaffolder is included in the `Japsa package <http://mdcao.github.io/japsa/>`_.
+*npScarf* is included in the `Japsa package <http://mdcao.github.io/japsa/>`_.
 
 <usage>
 
@@ -284,7 +284,7 @@ Input
 =====
  *npScarf* takes two files as required input::
 
-	jsa.np.npscarf -seq <*draft*> -input <*nanopore*>
+	jsa.np.npscarf -seq <draft> -input <nanopore>
 
 <*draft*> input is the FASTA file containing the pre-assemblies. Normally this 
 is the output from running SPAdes on Illumina MiSeq paired end reads.
@@ -293,15 +293,15 @@ is the output from running SPAdes on Illumina MiSeq paired end reads.
 between them to <*draft*> file. We use BWA-MEM as the recommended aligner 
 with the fixed parameter set as follow::
 
-	bwa mem -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y <*draft*> <*nanopore*> > <*bam*>
+	bwa mem -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y <draft> <nanopore> > <bam>
 	
 The input file format is specified by option --format. The default is FASTA/FASTQ in which 
 the path to BWA version 0.7.11 or newer is required. Remember to always *INDEXING* the 
 reference before running BWA::
 	
-	bwa index <*draft*>
+	bwa index <draft>
 	
-	Missing this step would break down the whole pipeline.
+Missing this step would break down the whole pipeline.
 
 Output
 =======
@@ -327,30 +327,30 @@ npReader is the module that provides such data from fast5 files returned from th
 base-calling cloud service Metrichor. Ones can run::
 
     jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \
-      jsa.np.npscarf --realtime -bwaExe=<path_to_BWA> -bwaThread=10 -input - -seq <*draft*> > log.out 2>&1
+      jsa.np.npscarf --realtime -bwaExe=<path_to_BWA> -bwaThread=10 -input - -seq <draft> > log.out 2>&1
     
 For the same purpose, you can also invoke BWA-MEM explicitly as in the old version of *npScarf*,
 In this case, option --format=SAM must be presented as follow:
       
     jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \
-      bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <*draft*> - 2> /dev/null | \ 
-      jsa.np.npscarf --realtime -input - -format=SAM -seq <*draft*> > log.out 2>&1
+      bwa mem -t 10 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -a -Y -K 3000 <draft> - 2> /dev/null | \ 
+      jsa.np.npscarf --realtime -input - -format=SAM -seq <draft> > log.out 2>&1
 
 or if you have the whole set of Nanopore long reads already and want to emulate the 
 streaming mode::
 
-    jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \
-      jsa.np.npscarf --realtime -bwaExe=<path_to_BWA> -bwaThread=10 -input - -seq <*draft*> > log.out 2>&1
+    jsa.np.timeEmulate -s 100 -i <nanopore> -output - | \
+      jsa.np.npscarf --realtime -bwaExe=<path_to_BWA> -bwaThread=10 -input - -seq <draft> > log.out 2>&1
 
 Note that jsa.np.timeEmulate based on the field *timestamp* located in the read name line to
 decide the order of streaming data. So if your input <*nanopore*> already contains the field,
 you have to sort it::
 
-    jsa.seq.sort -i <*nanopore*> -o <*nanopore-sorted*> -sortKey=timestamp
+    jsa.seq.sort -i <nanopore> -o <nanopore-sorted> -sortKey=timestamp
 
 or if your file does not have the *timestamp* data yet, you can manually make ones. For example::
 
-    cat <*nanopore*> | \
+    cat <nanopore> | \
        awk 'BEGIN{time=0.0}NR%4==1{printf "%s timestamp=%.2f\n", $0, time; time++}NR%4!=1{print}' \
        > <*nanopore-with-time*> 
 
@@ -360,8 +360,8 @@ The tool includes usecase for streaming annotation. Ones can provides database o
 resistance genes and/or Origin of Replication in FASTA format for the analysis of gene ordering
 and/or plasmid identifying respectively::
 
-    jsa.np.timeEmulate -s 100 -i <*nanopore*> -output - | \ 
-      jsa.np.npscarf --realtime -bwaExe=<path_to_bwa> -input - -seq <*draft*> -resistGene <*resistDB*> -oriRep <*origDB*> > log.out 2>&1
+    jsa.np.timeEmulate -s 100 -i <nanopore> -output - | \ 
+      jsa.np.npscarf --realtime -bwaExe=<path_to_bwa> -input - -seq <draft> -resistGene <resistDB> -oriRep <origDB> > log.out 2>&1
 
 Assembly graph
 ==============
