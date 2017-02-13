@@ -511,13 +511,12 @@ public class ScaffoldGraph{
 				&& a.readLength < 1.1* a.contig.length()
 				)
 		{
-			if(verbose) 
-				System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d)\n"
-						, a.contig.getName(), a.readID, a.readLength, gP, alignD);
-			if(		alignedReadLen*1.0/a.contig.length() < 1.1  
-				&& 	alignedReadLen*1.0/a.contig.length() > 0.9 )
+			if(	alignedReadLen*1.0/a.contig.length() > 0.7 ){ //need more than 70% alignment (error rate of nanopore read)
 				a.contig.cirProb ++;			
-
+				if(verbose) 
+					System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d) => circular score: %d\n"
+							, a.contig.getName(), a.readID, a.readLength, gP, alignD, a.contig.cirProb);
+			}
 		}		
 		else{
 			a.contig.cirProb--;
