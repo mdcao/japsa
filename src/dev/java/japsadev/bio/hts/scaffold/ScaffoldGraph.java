@@ -810,14 +810,14 @@ public class ScaffoldGraph{
 
 				//set the remaining.FIXME
 				scaffoldT.trim();
-				if(scaffoldF.size() > 0){
-					scaffoldF.trim();
-					addScf=scaffoldF.getFirst().getIndex();
+				scaffoldF.trim();
+				if(!scaffoldF.isEmpty()){
+					addScf=scaffoldF.getFirst().getIndex();//getFirst: NoSuchElementException
 					changeHead(scaffoldF, scaffoldF.getFirst());
-				}
+				}else
+					scaffoldF = new Scaffold(contigs.get(headF));
 
 			}
-			scaffoldF = new Scaffold(contigs.get(headF));//????FIXME (is index matter when it comes to setHead???)
 		}
 		else if(secondDir == 1){
 			if(headF==headT){
@@ -885,16 +885,16 @@ public class ScaffoldGraph{
 						ctg = scaffoldF.removeFirst();		
 					}	
 				}
-				//set the remaining. FIXME
+				//set the remaining
 				scaffoldT.trim();
-				if(scaffoldF.size() > 0){
-					scaffoldF.trim();
-					addScf=scaffoldF.getLast().getIndex();
+				scaffoldF.trim();
+				if(!scaffoldF.isEmpty()){
+					addScf=scaffoldF.getLast().getIndex(); //getLast: NoSuchElementException
 					changeHead(scaffoldF, scaffoldF.getLast());
-				}
+				}else 
+					scaffoldF = new Scaffold(contigs.get(headF));
 
 			}
-			scaffoldF = new Scaffold(contigs.get(headF));//???FIXME
 		}	
 		else
 			return false;
@@ -909,6 +909,7 @@ public class ScaffoldGraph{
 		return true;
 	}
 	//change head of scaffold scf to newHead
+	//TODO: tidy this!!!
 	public void changeHead(Scaffold scf, Contig newHead){	
 		if(isRepeat(newHead)){
 			if(verbose)
