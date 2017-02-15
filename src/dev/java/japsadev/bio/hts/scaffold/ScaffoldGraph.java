@@ -116,6 +116,7 @@ public class ScaffoldGraph{
 			
 			estimatedCov += mycov * seq.length();
 			estimatedLength += seq.length();
+			
 			ctg.setCoverage(mycov);
 
 			contigs.add(ctg);
@@ -125,8 +126,15 @@ public class ScaffoldGraph{
 		reader.close();
 
 		estimatedCov /= estimatedLength;
-		if(verbose) 
+		if(verbose){ 
 			System.out.println("Cov " + estimatedCov + " Length " + estimatedLength);
+			//turn off verbose mode if the genome is bigger than 100Mb. 
+			//TODO: tidy up the output to get rid of this!
+			if(estimatedLength > 100000000 || contigs.size() > 10000){
+				System.out.println("Verbose mode disabled due to complicated genome!");
+				verbose=false;
+			}
+		}
 
 		//2. Initialise scaffold graph
 		scaffolds = new Scaffold[contigs.size()];		
@@ -511,12 +519,12 @@ public class ScaffoldGraph{
 				&& a.readLength < 1.1* a.contig.length()
 				)
 		{
-			if(	alignedReadLen*1.0/a.contig.length() > 0.7 ){ //need more than 70% alignment (error rate of nanopore read)
+			if(	alignedReadLen*1.0/a.readLength > 0.8 ){ //need more than 80% alignment (error rate of nanopore read)
 				a.contig.cirProb ++;			
-				if(verbose) 
-					System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d) => circular score: %d\n"
-							, a.contig.getName(), a.readID, a.readLength, gP, alignD, a.contig.cirProb);
 			}
+			if(verbose) 
+				System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d) => circular score: %d\n"
+						, a.contig.getName(), a.readID, a.readLength, gP, alignD, a.contig.cirProb);
 		}		
 		else{
 			a.contig.cirProb--;
@@ -808,7 +816,7 @@ public class ScaffoldGraph{
 					}
 				}
 
-				//set the remaining.FIXME
+				//set the remaining.
 				scaffoldT.trim();
 				scaffoldF.trim();
 				if(!scaffoldF.isEmpty()){

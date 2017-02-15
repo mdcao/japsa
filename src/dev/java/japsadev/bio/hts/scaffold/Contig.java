@@ -199,7 +199,7 @@ public class Contig{
 	}
 	
 	public boolean isCircular(){
-		return (cirProb > 0);
+		return (cirProb > 1);
 	}
 	
 	public ScaffoldVector getVector(){
