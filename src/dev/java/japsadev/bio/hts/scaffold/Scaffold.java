@@ -66,11 +66,15 @@ public final class Scaffold extends LinkedList<Contig>{
 	 */
 	public Scaffold(int index){
 		super();
+		closeBridge=null;
+		circle=null;
 		scaffoldIndex = index;
 		bridges = new LinkedList<ContigBridge>(); 
 	}
 	public Scaffold(Contig myFContig){
 		super();
+		closeBridge=null;
+		circle=null;
 		scaffoldIndex = myFContig.index;
 		add(myFContig);//the first one		
 		bridges = new LinkedList<ContigBridge>(); 

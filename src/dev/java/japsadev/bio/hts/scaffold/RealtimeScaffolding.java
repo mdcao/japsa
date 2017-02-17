@@ -298,40 +298,23 @@ public class RealtimeScaffolding {
 		protected void analysis() {
 			long step = (lastTime - startTime)/1000;//convert to second	
 			ScaffoldGraph sg = scaffolding.graph;
-			sg.connectBridges();
-			int	scfCount = 0,
-				cirCount = 0;
-			for (int i = 0; i < sg.scaffolds.length;i++){
-				if (sg.scaffolds[i].size() > 0){
-					int len = sg.scaffolds[i].getLast().rightMost() - sg.scaffolds[i].getFirst().leftMost();
-					if(sg.scaffolds[i].closeBridge != null){
-						cirCount++;
-						scfCount++;
-						continue;
-					}
-					
-					if(sg.contigs.get(i).head == i)
-						if (	(!ScaffoldGraph.isRepeat(sg.contigs.get(i)) && len > ScaffoldGraph.maxRepeatLength) //here are the big ones
-								|| (ScaffoldGraph.reportAll && sg.needMore(sg.contigs.get(i)) && sg.contigs.get(i).coverage > .5*ScaffoldGraph.estimatedCov)) //short,repetitive sequences here if required
-//					if (sg.contigs.get(i).head == i 
-//							&& !ScaffoldGraph.isRepeat(sg.contigs.get(i))
-//							&& len > ScaffoldGraph.maxRepeatLength)				
-						scfCount++;
-				}
+			synchronized(sg){
+				sg.connectBridges();
+		
+				try {
+					// This function is for the sake of real-time annotation experiments being more readable
+					//scaffolding.graph.printRT(scaffolding.currentBaseCount);
+					sg.printSequences();
+					outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50 | \tBreaks (maxlen)\n");
+					outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + sg.getNumberOfContigs() 
+							+ " |\t" + sg.getNumberOfCirculars() + " |\t" + sg.getN50() + " |\t" + sg.getGapsInfo());
+	
+					outOS.println();
+					outOS.flush();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}			
 			}
-			try {
-				// This function is for the sake of real-time annotation experiments being more readable
-				//scaffolding.graph.printRT(scaffolding.currentBaseCount);
-				sg.printSequences();
-				outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50 | \tBreaks (maxlen)\n");
-				outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + scfCount 
-						+ " |\t" + cirCount + " |\t" + sg.getN50() + " |\t" + sg.getGapsInfo());
-
-				outOS.println();
-				outOS.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}			
 		}
 
 		@Override
