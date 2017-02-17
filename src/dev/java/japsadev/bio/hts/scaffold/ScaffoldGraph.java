@@ -1035,6 +1035,8 @@ public class ScaffoldGraph{
 			fout.close();
 			jout.close();
 		}
+		scfNum=currentNumberOfContigs;
+		cirNum=currentNumberOfCirculars;
 	}	
 	public synchronized static void oneMore(Contig ctg){
 		if(countOccurence.get(ctg.getIndex())==null)
