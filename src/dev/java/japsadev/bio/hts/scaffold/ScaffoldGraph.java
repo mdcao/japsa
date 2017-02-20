@@ -67,6 +67,7 @@ public class ScaffoldGraph{
 	public static int minSupportReads = 1;
 	public static boolean verbose = false;
 	public static boolean reportAll = false;
+	public static boolean eukaryotic = false;
 	public boolean annotation = false;
 	public static byte assembler =0b00; // 0 for SPAdes, 1 for ABySS
 	

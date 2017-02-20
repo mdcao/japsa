@@ -100,6 +100,9 @@ public final class Scaffold extends LinkedList<Contig>{
 	 * @return
 	 */
 	public int isEnd(Contig ctg){
+		if(this.isEmpty())
+			return 0;
+		
 		if (ctg.getIndex() == this.peekLast().getIndex())
 			return -1;
 		if (ctg.getIndex() == this.peekFirst().getIndex())

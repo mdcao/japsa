@@ -959,10 +959,10 @@ public class ScaffoldGraph{
 					if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
 							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short/repeat sequences here if required
 					{
-					if(verbose) 
-						System.out.println("Scaffold " + i + " estimated length " + len);
-
-					scaffolds[i].viewSequence(fout, jout);
+						if(verbose) 
+							System.out.println("Scaffold " + i + " estimated length " + len);
+	
+						scaffolds[i].viewSequence(fout, jout);
 					}
 				}
 			}

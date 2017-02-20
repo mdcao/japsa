@@ -73,7 +73,8 @@ public class GapCloserCmd extends CommandLine{
 		addString("bwaExe", "bwa", "Path to bwa");
 		addInt("bwaThread", 4, "Theads used by bwa");
 		addBoolean("long", false, "Whether report all sequences, including short/repeat contigs (default) or only long/unique/completed sequences.");
-		
+		addBoolean("eukaryotic", false, "Whether eukaryotic or bacterial (default) genomes");
+
 		addString("assembler", "spades", "Name of the assembler used for Illumina assembly: SPAdes (default) or ABySS.");
 		addString("graphDir", null, "Name of the output folder by SPAdes/ABySS: assembly graph and paths will be used for better gap-filling.");
 		addString("prefix", "out", "Prefix for the output files");	
@@ -82,7 +83,6 @@ public class GapCloserCmd extends CommandLine{
 		addString("resistGene", null , "Realtime annotation: name of antibiotic resistance gene fasta file");
 		addString("insertSeq", null , "Realtime annotation: name of IS fasta file");
 		addString("oriRep", null, "Realtime annotation: name of fasta file containing possible origin of replication");
-		//addInt("marginThres", 1000, "Margin threshold: to limit distance to the contig's ends of the alignment used in bridging."); 
 		addInt("minContig", 300, "Minimum contigs length that are used in scaffolding."); 
 		addInt("maxRepeat", 7500, "Maximum length of repeat in considering species."); 
 
@@ -201,18 +201,6 @@ public class GapCloserCmd extends CommandLine{
 			graphFolder=null;
 		}
 
-		//ProcessBuilder pb = new ProcessBuilder(bwaExe,  
-		//		"mem",
-		//		
-		//		"-k", "21,33,55,77,99,127", 
-		//		"--careful",
-		//		"--pe1-1", String.valueOf(sampleRecord.readFile1),
-		//		"--pe1-2", String.valueOf(sampleRecord.readFile2),
-		//		"-m", "60",
-		//		"-t", String.valueOf(threads),
-		//		"-o", assemblyPath + "spades_output_" + sampleID
-		//		);
-
 
 		int 	//marginThres = cmdLine.getIntVal("marginThres"),
 		minContig = cmdLine.getIntVal("minContig"),
@@ -228,12 +216,15 @@ public class GapCloserCmd extends CommandLine{
 			Logging.exit("Maximal possible repeat length has to be positive", 1);
 
 
-		ScaffoldGraph.minContigLength = minContig;
-		ScaffoldGraph.minSupportReads = minSupport;	
-		ScaffoldGraph.maxRepeatLength = maxRepeat;		
-		//ScaffoldGraph.marginThres = marginThres;
 		ScaffoldGraph.verbose = cmdLine.getBooleanVal("verbose");
 		ScaffoldGraph.reportAll = !cmdLine.getBooleanVal("long");
+		ScaffoldGraph.eukaryotic = cmdLine.getBooleanVal("eukaryotic");
+		
+		ScaffoldGraph.minContigLength = minContig;
+		ScaffoldGraph.minSupportReads = minSupport;	
+		ScaffoldGraph.maxRepeatLength = ScaffoldGraph.eukaryotic?Math.max(maxRepeat,10000):Math.max(maxRepeat, 7500);		
+		//ScaffoldGraph.marginThres = marginThres;
+
 
 		double cov = cmdLine.getDoubleVal("cov");
 		int qual = cmdLine.getIntVal("qual");
