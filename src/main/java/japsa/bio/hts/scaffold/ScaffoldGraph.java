@@ -261,7 +261,7 @@ public class ScaffoldGraph{
 	 * @throws InterruptedException 
 	 */
 	public void makeConnections2(String inFile, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) throws IOException, InterruptedException{
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 
 		SamReader reader = null;
