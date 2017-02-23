@@ -65,6 +65,7 @@ public class PhageAnalysisCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 		
 		addString("input", null, "Name of the input file, - for standard input", true);
+		addString("output", "out.fasta", "Name of the output file, - for standard input");		
 				
 		addStdHelp();		
 	} 
@@ -77,6 +78,8 @@ public class PhageAnalysisCmd extends CommandLine{
 		/**********************************************************************/
 		
 		String input = cmdLine.getStringVal("input");
+		String output = cmdLine.getStringVal("output");
+
 		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader reader = SamReaderFactory.makeDefault().open(new File(input));
@@ -93,7 +96,7 @@ public class PhageAnalysisCmd extends CommandLine{
 		String currentName = "";
 		boolean direction = true;
 		int readFront = 0, readBack = 0;
-		SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream("out.fasta");
+		SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream(output);
 		
 		while (iter.hasNext()){
 			count ++;
@@ -109,6 +112,7 @@ public class PhageAnalysisCmd extends CommandLine{
 				readFront = 0;
 				readBack = 0;
 			}
+			//FIXME: this can be improved
 			if (record.getAlignmentStart() <= startFront && record.getAlignmentEnd() >= endFront){
 				int  [] refPositions = {startFront, endFront}; 
 				int [] pos = HTSUtilities.positionsInRead(record, refPositions);
