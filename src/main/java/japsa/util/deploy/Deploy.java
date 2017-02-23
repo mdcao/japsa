@@ -422,8 +422,11 @@ public class Deploy {
 
 				String [] fNix = {"libjri.so"};
 				String [] fWindows = {"jri.dll","libjri.lib"};
+				String [] fMac = {};
 
 				String [] requires = isWindows?fWindows:fNix;
+				if (isMac)
+					requires = fMac;
 
 				boolean pass = true;
 				for (String rLib:requires){
