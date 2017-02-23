@@ -153,21 +153,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 						break;
 
 				}
-				//Rewritten the below with the above
-				//switch (type.toLowerCase()){
-				//	case "resistance genes":
-				//		ctg.resistanceGenes.add(feature);
-				//		break;
-				//	case "insertion sites":
-				//		ctg.insertSeq.add(feature);
-				//		break;
-				//	case "origin of replication":
-				//		ctg.oriRep.add(feature);
-				//		break;
-				//	default:
-				//		System.err.println(type + " has not yet included in our analysis!");
-				//		break;
-				//}
+
 			}
 			Collections.sort(ctg.resistanceGenes);
 			Collections.sort(ctg.insertSeq);
@@ -252,7 +238,6 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				if(!scaffolds[i].element().isCircular())
 					continue;
 			}
-			//1.a extend to the first
 			boolean closed = false;
 			/*****************************************************************/
 			////////////////////////////First try to extend to the end/////////////////////////////

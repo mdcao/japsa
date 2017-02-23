@@ -170,8 +170,6 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		ArrayList<Path> 	firstPathList=firstContig.getPaths(),
 							secondPathList=secondContig.getPaths(),
 							candidates=new ArrayList<Path>();
-		System.out.println("First path list: " + firstPathList);
-		System.out.println("Second path list: " + secondPathList);
 		
 		if(firstContig.getRelDir()>0)
 			tip1 = firstPathList.get(firstPathList.size()-1).getEnd();

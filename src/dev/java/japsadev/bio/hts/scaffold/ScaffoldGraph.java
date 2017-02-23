@@ -67,11 +67,11 @@ public class ScaffoldGraph{
 	public static int minSupportReads = 1;
 	public static boolean verbose = false;
 	public static boolean reportAll = false;
+	public static boolean eukaryotic = false;
 	public boolean annotation = false;
 	public static byte assembler =0b00; // 0 for SPAdes, 1 for ABySS
 	
-	public static HashMap<Integer,Integer> countOccurence;
-
+	public static HashMap<Integer,Integer> countOccurence=new HashMap<Integer,Integer>();
 	public String prefix = "out";					
 	public static double estimatedCov = 0;
 	private static double estimatedLength = 0;
@@ -84,6 +84,8 @@ public class ScaffoldGraph{
 	static HashMap<Integer, ArrayList<ContigBridge>> bridgesFromContig = new HashMap<Integer, ArrayList<ContigBridge>>();
 
 	Scaffold [] scaffolds; // DNA translator, previous image of sequence is stored for real-time processing
+	int scfNum, cirNum; // assembly statistics: number of contigs and circular ones.
+	
 	// Constructor for the graph with contigs FASTA file (contigs.fasta from SPAdes output)
 	public ScaffoldGraph(String sequenceFile) throws IOException{
 		//1. read in contigs
@@ -117,6 +119,7 @@ public class ScaffoldGraph{
 			
 			estimatedCov += mycov * seq.length();
 			estimatedLength += seq.length();
+			
 			ctg.setCoverage(mycov);
 
 			contigs.add(ctg);
@@ -126,8 +129,15 @@ public class ScaffoldGraph{
 		reader.close();
 
 		estimatedCov /= estimatedLength;
-		if(verbose) 
+		if(verbose){ 
 			System.out.println("Cov " + estimatedCov + " Length " + estimatedLength);
+			//turn off verbose mode if the genome is bigger than 100Mb. 
+			//TODO: tidy up the output to get rid of this!
+			if(estimatedLength > 100000000 || contigs.size() > 10000){
+				System.out.println("Verbose mode disabled due to complicated genome!");
+				verbose=false;
+			}
+		}
 
 		//2. Initialise scaffold graph
 		scaffolds = new Scaffold[contigs.size()];		
@@ -138,6 +148,8 @@ public class ScaffoldGraph{
 			contigs.get(i).head = i;
 		}//for
 
+		scfNum=contigs.size();
+		cirNum=0;
 
 	}//constructor
 
@@ -226,8 +238,9 @@ public class ScaffoldGraph{
 //					&& len > maxRepeatLength
 //					)
 //					|| scaffolds[i].closeBridge != null)
-			if(contigs.get(i).head == i || scaffolds[i].closeBridge != null)
+			if(contigs.get(i).head == i)
 				if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+						|| scaffolds[i].closeBridge != null //circular plasmid contigs
 						|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required	
 				{
 					lengths[count] = len;
@@ -292,7 +305,7 @@ public class ScaffoldGraph{
 	 * @throws InterruptedException 
 	 */
 	public void makeConnections2(String inFile, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) throws IOException, InterruptedException{
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 
 		SamReader reader = null;
@@ -512,13 +525,12 @@ public class ScaffoldGraph{
 				&& a.readLength < 1.1* a.contig.length()
 				)
 		{
-			if(verbose) 
-				System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d)\n"
-						, a.contig.getName(), a.readID, a.readLength, gP, alignD);
-			if(		alignedReadLen*1.0/a.contig.length() < 1.1  
-				&& 	alignedReadLen*1.0/a.contig.length() > 0.9 )
+			if(	alignedReadLen*1.0/a.readLength > 0.8 ){ //need more than 80% alignment (error rate of nanopore read)
 				a.contig.cirProb ++;			
-
+			}
+			if(verbose) 
+				System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d) => circular score: %d\n"
+						, a.contig.getName(), a.readID, a.readLength, gP, alignD, a.contig.cirProb);
 		}		
 		else{
 			a.contig.cirProb--;
@@ -810,16 +822,16 @@ public class ScaffoldGraph{
 					}
 				}
 
-				//set the remaining.FIXME
+				//set the remaining.
 				scaffoldT.trim();
-				if(scaffoldF.size() > 0){
-					scaffoldF.trim();
-					addScf=scaffoldF.getFirst().getIndex();
+				scaffoldF.trim();
+				if(!scaffoldF.isEmpty()){
+					addScf=scaffoldF.getFirst().getIndex();//getFirst: NoSuchElementException
 					changeHead(scaffoldF, scaffoldF.getFirst());
 				}
-
 			}
-			scaffoldF = new Scaffold(contigs.get(headF));//????FIXME (is index matter when it comes to setHead???)
+			//now since scaffoldF is empty due to changeHead(), re-initialize it!(do we need this??)
+			scaffoldF = new Scaffold(contigs.get(headF));
 		}
 		else if(secondDir == 1){
 			if(headF==headT){
@@ -887,16 +899,16 @@ public class ScaffoldGraph{
 						ctg = scaffoldF.removeFirst();		
 					}	
 				}
-				//set the remaining. FIXME
+				//set the remaining
 				scaffoldT.trim();
-				if(scaffoldF.size() > 0){
-					scaffoldF.trim();
-					addScf=scaffoldF.getLast().getIndex();
+				scaffoldF.trim();
+				if(!scaffoldF.isEmpty()){
+					addScf=scaffoldF.getLast().getIndex(); //getLast: NoSuchElementException
 					changeHead(scaffoldF, scaffoldF.getLast());
 				}
-
 			}
-			scaffoldF = new Scaffold(contigs.get(headF));//???FIXME
+			//now since scaffoldF is empty due to changeHead(), re-initialize it!(do we need this??)
+			scaffoldF = new Scaffold(contigs.get(headF));
 		}	
 		else
 			return false;
@@ -910,7 +922,9 @@ public class ScaffoldGraph{
 		}
 		return true;
 	}
-	//change head of scaffold scf to newHead
+	//change head of scaffold scf to newHead. 
+	//This should move the content of scf to scaffolds[newHead.idx], leaving scf=null afterward
+	//TODO: tidy this!!!
 	public void changeHead(Scaffold scf, Contig newHead){	
 		if(isRepeat(newHead)){
 			if(verbose)
@@ -941,6 +955,9 @@ public class ScaffoldGraph{
 			if(scf.closeBridge != null){
 				newScf.closeBridge = scf.closeBridge;
 				newScf.circle = scf.circle;
+				//then reset these factors
+				scf.closeBridge = null;
+				scf.circle = null;
 			}
 		}
 		else{
@@ -951,6 +968,9 @@ public class ScaffoldGraph{
 			if(scf.closeBridge != null){
 				newScf.closeBridge = getReversedBridge(scf.closeBridge);
 				newScf.circle = ScaffoldVector.reverse(scf.circle);
+				//then reset these factors
+				scf.closeBridge = null;
+				scf.circle = null;
 			}
 		}
 
@@ -962,22 +982,30 @@ public class ScaffoldGraph{
 
 	}
 	public synchronized void printSequences() throws IOException{
-		countOccurence=new HashMap<Integer,Integer>();
+		//countOccurence=new HashMap<Integer,Integer>();
+		int currentNumberOfContigs = 0,
+			currentNumberOfCirculars = 0;	
+		
 		if(annotation){
 			SequenceOutputStream aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
 
-				if(contigs.get(i).head == i || scaffolds[i].closeBridge != null){
-					if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+				if(contigs.get(i).head == i ){
+					if(scaffolds[i].closeBridge != null ){
+						currentNumberOfContigs++;
+						currentNumberOfCirculars++;					
+					}					
+					else if ((!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
 							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required
-					{
-						if(verbose) 
-							System.out.println("Scaffold " + i + " estimated length " + len);
-						scaffolds[i].viewAnnotation(aout);
-					}
-
+						currentNumberOfContigs++;
+					else
+						continue;
+					
+					if(verbose) 
+						System.out.println("Scaffold " + i + " estimated length " + len);
+					scaffolds[i].viewAnnotation(aout);
 				}
 			}
 			aout.close();
@@ -988,29 +1016,37 @@ public class ScaffoldGraph{
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
 				
-				if(contigs.get(i).head == i || scaffolds[i].closeBridge != null){
-					if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
-							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short/repeat sequences here if required
-					{
+				if(contigs.get(i).head == i){
+					if(scaffolds[i].closeBridge != null ){
+						currentNumberOfContigs++;
+						currentNumberOfCirculars++;					
+					}					
+					else if ((!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required
+						currentNumberOfContigs++;
+					else
+						continue;
+					
 					if(verbose) 
 						System.out.println("Scaffold " + i + " estimated length " + len);
 
 					scaffolds[i].viewSequence(fout, jout);
-					}
 				}
 			}
 			fout.close();
 			jout.close();
 		}
+		scfNum=currentNumberOfContigs;
+		cirNum=currentNumberOfCirculars;
 	}	
-	public static void oneMore(Contig ctg){
+	public synchronized static void oneMore(Contig ctg){
 		if(countOccurence.get(ctg.getIndex())==null)
 			countOccurence.put(ctg.getIndex(), 1);
 		else
 			countOccurence.put(ctg.getIndex(), countOccurence.get(ctg.getIndex())+1);
 	}
 	
-	boolean needMore(Contig ctg) {
+	synchronized boolean needMore(Contig ctg) {
 		Integer count = countOccurence.get(ctg.getIndex());
 		if(count==null) return true;
 		else return false; //if not occurred (Minh)
@@ -1113,6 +1149,11 @@ public class ScaffoldGraph{
 		
 	}
 
-
+	public int getNumberOfContigs(){
+		return scfNum;
+	}
+	public int getNumberOfCirculars(){
+		return cirNum;
+	}
 
 }
