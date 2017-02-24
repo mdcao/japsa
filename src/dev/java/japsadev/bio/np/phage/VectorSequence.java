@@ -33,6 +33,8 @@ public class VectorSequence {
 	SamReader reader = null;
 	SAMRecordIterator iter = null;
 	String currentName = "";
+
+	
 	public VectorSequence(String seqFile, String bwaExe, int e5, int s3) throws IOException{
 //		SequenceReader reader = SequenceReader.getReader(seqFile);
 //		plasmid = reader.nextSequence(Alphabet.DNA());
@@ -42,8 +44,8 @@ public class VectorSequence {
 		this.s3=s3;
 		this.e3=this.s3+FLANKING;
 //		reader.close();
-		File out = new File("/home/s.hoangnguyen/Projects/Phage/log.out");
-		bwaProcess  = new ProcessBuilder(bwaExe, 
+//		File out = new File("/home/s.hoangnguyen/Projects/Phage/log.out");
+		ProcessBuilder pb  = new ProcessBuilder(bwaExe, 
 				"mem",
 				"-t4",
 				"-k11",
@@ -58,55 +60,70 @@ public class VectorSequence {
 				"-Y",
 				plasmidFile,
 				"-"
-				)					
-				.redirectError(new File("/home/s.hoangnguyen/Projects/Phage/log.err"))
-				.redirectOutput(out) // this is the BWA output for *reader*
+				);
+		bwaProcess = pb.redirectError(Redirect.to(new File("/dev/null")))
+//				.redirectOutput(out) // this is the BWA output for *reader*
 //				.redirectInput(Redirect.INHERIT) //correspond to *toBWA*
 				.start();
 		toBWA = new SequenceOutputStream(bwaProcess.getOutputStream());
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-
-//		reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream())); // take the output from BWA
-		reader = SamReaderFactory.makeDefault().open(SamInputResource.of(out)); // take the output from BWA
-
-		iter = reader.iterator();
 	}
 	
 	public Sequence extractInsertSequence(Sequence read){
 		Sequence insert = null;
 		try {
-			//SequenceOutputStream stdout = new SequenceOutputStream(System.out);
-			synchronized(this){
-				read.writeFasta(toBWA);
-			}
+			read.writeFasta(toBWA);
 
-			//Logging.info("bwa started x");	
-//			SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
-			boolean direction = true;
-			int readFront = 0, readBack = 0;
+			Thread extracting = new Thread(){
+				public void run(){
+					try {
+						//SequenceOutputStream stdout = new SequenceOutputStream(System.out);
+						synchronized(this){
+							
+							if(bwaProcess.getInputStream().available()>0){
+								if(reader==null){
+									reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream())); // take the output from BWA
+		//							reader = SamReaderFactory.makeDefault().open(SamInputResource.of(out)); // take the output from BWA
+									iter = reader.iterator();
+								}
+	
+								boolean direction = true;
+								int readFront = 0, readBack = 0;
+	
+								while (iter.hasNext()){
+									SAMRecord record = iter.next();
+									if (record.getReadString().length() < 10){
+										System.out.println("== " + record.getReadName());
+										continue;//while
+									}
+									
+									if (!record.getReadName().equals(currentName)){
+										currentName = record.getReadName();
+										direction = true;
+										readFront = 0;
+										readBack = 0;
+									}
+									System.out.println("Read " + currentName + " length " + record.getReadLength() + ": (" + record.getAlignmentStart() + ", " + record.getAlignmentEnd() + ")");
+									
+								}
+							}
+							
+						}
 
-//			SAMRecordIterator iter = reader.iterator();
-			while (iter.hasNext()){
-				SAMRecord record = iter.next();
-				if (record.getReadString().length() < 10){
-					System.out.println("== " + record.getReadName());
-					continue;//while
-				}
-				
-				if (!record.getReadName().equals(currentName)){
-					currentName = record.getReadName();
-					direction = true;
-					readFront = 0;
-					readBack = 0;
-				}
-				System.out.println("Read " + currentName + " length " + record.getReadLength() + ": (" + record.getAlignmentStart() + ", " + record.getAlignmentEnd() + ")");
-				
-			}
-			//stdout.close();
-//			reader.close();
-		} catch (IOException e) {
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}		
+			};
+			extracting.start();
+			extracting.join();
+		} catch (IOException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
+		} catch (InterruptedException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
 		}
 		return insert;
 	}
@@ -114,11 +131,15 @@ public class VectorSequence {
 	public static void main(String[] args){
 		try {
 			VectorSequence vector = new VectorSequence("/home/s.hoangnguyen/Projects/Phage/plasmid.fasta","bwa",1658,2735);
-			SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta",Alphabet.DNA())
-			.stream()
-			.map(e -> vector.extractInsertSequence(e))
-			.forEach(e -> System.out.println(e==null));
-			
+//			SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta",Alphabet.DNA())
+//			.stream()
+//			.map(e -> vector.extractInsertSequence(e))
+//			.forEach(e -> System.out.println(e==null));
+			ArrayList<Sequence> list = SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/test.fasta",Alphabet.DNA());
+			for(Sequence e:list)
+				vector.extractInsertSequence(e);
+				
+				
 			if(vector.bwaProcess.isAlive()){
 				vector.reader.close();
 				vector.toBWA.close();
