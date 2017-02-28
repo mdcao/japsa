@@ -24,7 +24,7 @@ import japsadev.bio.hts.scaffold.AlignmentRecord;
 import japsadev.bio.hts.scaffold.ReadFilling;
 
 public class SequenceExtractor {
-	static final int FLANKING=100;
+	static final int FLANKING=200;
 	//Sequence plasmid;
 	String plasmidFile; //plasmid fasta/q file that are already indexed by bwa
 	int s5, e5,
@@ -180,6 +180,16 @@ public class SequenceExtractor {
 			prevRecord=currentRecord;
 
 		}// while
+		//last one
+		if(longestLeftFlankAlignment == 0 || longestRightFlankAlignment == 0 || start>=end){
+			System.out.println("Not applicable! Smt shjtty on read " + prevRecord.getReadName() + " length= " + prevRecord.getReadLength());
+		}else{
+			String readSub = prevRecord.getReadString().substring(start,end);
+			System.out.println("Detect insert sequence of length " + readSub.length());
+			Sequence rs = new Sequence(Alphabet.DNA16(), readSub, prevRecord.getReadName());
+			rs.writeFasta(outFile);	
+		}
+		
 		iter.close();
 		outFile.close();
 		reader.close();		
@@ -193,7 +203,7 @@ public class SequenceExtractor {
 		try {
 			SequenceExtractor vector = new SequenceExtractor("/home/s.hoangnguyen/Projects/Phage/plasmid.fasta", "bwa", 1658, 2735);
 			
-			vector.extractInsertSequence("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta", 0, "fasta", 2, "/home/s.hoangnguyen/Projects/Phage/insert.fasta");
+			vector.extractInsertSequence("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta", 0, "fasta", 2, "/home/s.hoangnguyen/Projects/Phage/insert-200.fasta");
 			
 //			ArrayList<Sequence> list = SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/test.fasta",Alphabet.DNA());
 //			for(Sequence e:list)
