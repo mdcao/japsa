@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.stream.Stream;
 
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
@@ -21,6 +20,8 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.HTSUtilities;
 import japsa.util.Logging;
+import japsadev.bio.hts.scaffold.AlignmentRecord;
+import japsadev.bio.hts.scaffold.ReadFilling;
 
 public class SequenceExtractor {
 	static final int FLANKING=100;
@@ -28,7 +29,6 @@ public class SequenceExtractor {
 	String plasmidFile; //plasmid fasta/q file that are already indexed by bwa
 	int s5, e5,
 		s3, e3;
-	String currentName = "";
 	String bwaExe = "bwa";
 	
 	public SequenceExtractor(String seqFile, String bwaExe, int e5, int s3) throws IOException{
@@ -37,87 +37,168 @@ public class SequenceExtractor {
 		this.s5=this.e5-FLANKING;
 		this.s3=s3;
 		this.e3=this.s3+FLANKING;
-
+		this.bwaExe = bwaExe;
 	}
 	
-	public Sequence extractInsertSequence(Sequence read){
-		Sequence insert = null;
-		
-		Thread bwa = new Thread(){
-			public void run(){
-		        Process bwaProcess = null;
-		        try {
-		    		ProcessBuilder pb  = new ProcessBuilder(bwaExe, 
-		    				"mem",
-		    				"-k11",
-		    				"-W20",
-		    				"-r10",
-		    				"-A1",
-		    				"-B1",
-		    				"-O1",
-		    				"-E1",
-		    				"-L0",
-		    				"-a",
-		    				"-Y",
-		    				plasmidFile,
-		    				"-"
-		    				);
-		    		bwaProcess = pb.redirectError(Redirect.to(new File("/dev/null"))).start();
-		    		SequenceOutputStream toBWA = new SequenceOutputStream(bwaProcess.getOutputStream());
-		    		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+	public void extractInsertSequence(String inFile, int qual, String format, int bwaThread, String output) throws IOException, InterruptedException{
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 
-		    		read.writeFasta(toBWA);
+		SamReader reader = null;
+		Process bwaProcess = null;
 
-		    		SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream())); // take the output from BWA
-		    		SAMRecordIterator iter = reader.iterator();
-		    		
-		    		boolean direction = true;
-		    		int readFront = 0, readBack = 0;
-					bwaProcess.waitFor();
+		if (format.endsWith("am")){//bam or sam
+			if ("-".equals(inFile))
+				reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+			else
+				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
+		}else{
+			Logging.info("Starting bwa  at " + new Date());
 
-					while (iter.hasNext()){
-						SAMRecord record = iter.next();
-						if (record.getReadString().length() < 10){
-							System.out.println("== " + record.getReadName());
-							continue;//while
-						}
-						
-						if (!record.getReadName().equals(currentName)){
-							currentName = record.getReadName();
-							direction = true;
-							readFront = 0;
-							readBack = 0;
-						}
-						System.out.println("Read " + currentName + " length " + record.getReadLength() + ": (" + record.getAlignmentStart() + ", " + record.getAlignmentEnd() + ")");
-						
-					}				
-					toBWA.close();
-					reader.close();
-		        }catch (IOException e) {
-		            e.printStackTrace();
-		        }catch (InterruptedException e) {
-		            return;
-		        }
-				
+			ProcessBuilder pb = null;
+			if ("-".equals(inFile)){
+				pb = new ProcessBuilder(bwaExe, 
+						"mem",
+						"-t",
+						"" + bwaThread,
+						"-k11",
+						"-W20",
+						"-r10",
+						"-A1",
+						"-B1",
+						"-O1",
+						"-E1",
+						"-L0",
+						"-a",
+						"-Y",
+//						"-K",
+//						"20000",
+						plasmidFile,
+						"-"
+						).
+						redirectInput(Redirect.INHERIT);
+			}else{
+				pb = new ProcessBuilder(bwaExe, 
+						"mem",
+						"-t",
+						"" + bwaThread,
+						"-k11",
+						"-W20",
+						"-r10",
+						"-A1",
+						"-B1",
+						"-O1",
+						"-E1",
+						"-L0",
+						"-a",
+						"-Y",
+//						"-K",
+//						"20000",
+						plasmidFile,
+						inFile
+						);
 			}
-		};
-		bwa.start();
+			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
 
+			//Logging.info("bwa started x");	
+			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
+		}
+
+
+		//SamReader reader;
+		//if ("-".equals(bamFile))
+		//	reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+		//else
+		//	reader = SamReaderFactory.makeDefault().open(new File(bamFile));	
+
+		SAMRecordIterator iter = reader.iterator();
+
+		String currentReadName = "";
+		int start = 0, end = 0,
+				longestLeftFlankAlignment = 0, longestRightFlankAlignment = 0;
+		SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream(output);
 		
-		return insert;
+		int count=0;
+		SAMRecord currentRecord= null, prevRecord = null;
+		while (iter.hasNext()) {
+			currentRecord = iter.next();
+			
+			if (currentRecord.getReadUnmappedFlag())
+				continue;
+			if (currentRecord.getMappingQuality() <= qual)
+				continue;
+			count++;
+			//not the first occurrance				
+			if (!currentReadName.equals("") && !currentReadName.equals(currentRecord.getReadName())) {	
+				if(longestLeftFlankAlignment == 0 || longestRightFlankAlignment == 0 || start>=end){
+					System.out.println("Not applicable! Smt shjtty on read " + prevRecord.getReadName() + " length= " + prevRecord.getReadLength());
+				}else{
+					String readSub = prevRecord.getReadString().substring(start,end);
+					System.out.println("Detect insert sequence of length " + readSub.length());
+					Sequence rs = new Sequence(Alphabet.DNA16(), readSub, prevRecord.getReadName());
+					rs.writeFasta(outFile);	
+				}
+				
+				//Reset all values
+				start = end = 0;
+				longestLeftFlankAlignment = longestRightFlankAlignment = 0;
+			} 
+			currentReadName = currentRecord.getReadName();
+			int alignmentLength = currentRecord.getAlignmentEnd()-currentRecord.getAlignmentStart();
+			System.out.printf("Reading: %5d %s length=%d %d %d %b\n", count, currentReadName, currentRecord.getReadLength(), currentRecord.getAlignmentStart(), currentRecord.getAlignmentEnd(), currentRecord.getReadNegativeStrandFlag());
+
+			//FIXME: this can be improved
+			if (currentRecord.getAlignmentStart() <= s5 && currentRecord.getAlignmentEnd() >= e5){
+				
+				if(alignmentLength > longestLeftFlankAlignment){
+					int [] refPositions = {s5,e5}; 
+					int [] pos = HTSUtilities.positionsInRead(currentRecord, refPositions);
+					System.out.printf("...considering %5d %s %s %d %d %b\n", count, currentReadName, "FRONT", pos[0], pos[1], currentRecord.getReadNegativeStrandFlag());
+					
+					if(pos[0] > s5*0.8 && pos[0] < s5*1.2){
+						start = pos[0];
+						longestLeftFlankAlignment = alignmentLength;
+					}else{
+						System.out.println("...ignored due to wrong left flank: " + pos[0] + " compared to expected value of " + s5);
+					}
+				}
+
+
+					
+			}
+			if (currentRecord.getAlignmentStart() <= s3 && currentRecord.getAlignmentEnd() >= e3){
+				
+				if(alignmentLength > longestRightFlankAlignment){
+					int [] refPositions = {s3,e3}; 
+					int [] pos = HTSUtilities.positionsInRead(currentRecord, refPositions);
+					System.out.printf("...considering %5d %s %s %d %d %b\n", count, currentReadName, "BACK", pos[0], pos[1], currentRecord.getReadNegativeStrandFlag());
+
+					end = pos[1];
+					longestRightFlankAlignment = alignmentLength;
+				}
+							
+			}	
+			prevRecord=currentRecord;
+
+		}// while
+		iter.close();
+		outFile.close();
+		reader.close();		
+		if (bwaProcess != null){
+			bwaProcess.waitFor();
+		}
+
 	}
 	
 	public static void main(String[] args){
 		try {
-			SequenceExtractor vector = new SequenceExtractor("/home/s.hoangnguyen/Projects/Phage/plasmid.fasta","bwa",1658,2735);
-//			SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta",Alphabet.DNA())
-//			.stream()
-//			.map(e -> vector.extractInsertSequence(e))
-//			.forEach(e -> System.out.println(e==null));
-			ArrayList<Sequence> list = SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/test.fasta",Alphabet.DNA());
-			for(Sequence e:list)
-				vector.extractInsertSequence(e);
-				
+			SequenceExtractor vector = new SequenceExtractor("/home/s.hoangnguyen/Projects/Phage/plasmid.fasta", "bwa", 1658, 2735);
+			
+			vector.extractInsertSequence("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta", 0, "fasta", 2, "/home/s.hoangnguyen/Projects/Phage/insert.fasta");
+			
+//			ArrayList<Sequence> list = SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/test.fasta",Alphabet.DNA());
+//			for(Sequence e:list)
+//				vector.extractInsertSequence(e);
+//				
 				
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block

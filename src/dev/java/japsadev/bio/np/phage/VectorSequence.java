@@ -33,7 +33,7 @@ public class VectorSequence {
 	SamReader reader = null;
 	SAMRecordIterator iter = null;
 	String currentName = "";
-
+	Thread extracting=null;
 	
 	public VectorSequence(String seqFile, String bwaExe, int e5, int s3) throws IOException{
 //		SequenceReader reader = SequenceReader.getReader(seqFile);
@@ -61,85 +61,69 @@ public class VectorSequence {
 				plasmidFile,
 				"-"
 				);
-		bwaProcess = pb.redirectError(Redirect.to(new File("/dev/null")))
-//				.redirectOutput(out) // this is the BWA output for *reader*
-//				.redirectInput(Redirect.INHERIT) //correspond to *toBWA*
-				.start();
+		bwaProcess = pb.redirectError(Redirect.to(new File("/dev/null"))).start();
 		toBWA = new SequenceOutputStream(bwaProcess.getOutputStream());
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+
+		extracting = new Thread(){
+			public void run(){
+				try {					
+						reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream())); // take the output from BWA
+						iter = reader.iterator();
+
+						boolean direction = true;
+						int readFront = 0, readBack = 0;
+
+						while (iter.hasNext()){
+							SAMRecord record = iter.next();
+							if (record.getReadString().length() < 10){
+								continue;//while
+							}
+							
+							if (!record.getReadName().equals(currentName)){
+								currentName = record.getReadName();
+								direction = true;
+								readFront = 0;
+								readBack = 0;
+							}
+							System.out.println("Read " + currentName + " length " + record.getReadLength() + ": (" + record.getAlignmentStart() + ", " + record.getAlignmentEnd() + ")");
+							
+						}
+					}catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}		
+		};
+		
 	}
 	
 	public Sequence extractInsertSequence(Sequence read){
 		Sequence insert = null;
-		try {
-			read.writeFasta(toBWA);
 
-			Thread extracting = new Thread(){
-				public void run(){
-					try {
-						//SequenceOutputStream stdout = new SequenceOutputStream(System.out);
-						synchronized(this){
-							
-							if(bwaProcess.getInputStream().available()>0){
-								if(reader==null){
-									reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream())); // take the output from BWA
-		//							reader = SamReaderFactory.makeDefault().open(SamInputResource.of(out)); // take the output from BWA
-									iter = reader.iterator();
-								}
-	
-								boolean direction = true;
-								int readFront = 0, readBack = 0;
-	
-								while (iter.hasNext()){
-									SAMRecord record = iter.next();
-									if (record.getReadString().length() < 10){
-										System.out.println("== " + record.getReadName());
-										continue;//while
-									}
-									
-									if (!record.getReadName().equals(currentName)){
-										currentName = record.getReadName();
-										direction = true;
-										readFront = 0;
-										readBack = 0;
-									}
-									System.out.println("Read " + currentName + " length " + record.getReadLength() + ": (" + record.getAlignmentStart() + ", " + record.getAlignmentEnd() + ")");
-									
-								}
-							}
-							
-						}
-
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}		
-			};
-			extracting.start();
-			extracting.join();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (InterruptedException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
+			try {
+				read.writeFasta(toBWA);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+		//TODO: how to return the insert sequence here out of above thread????	
 		return insert;
 	}
 	
 	public static void main(String[] args){
 		try {
 			VectorSequence vector = new VectorSequence("/home/s.hoangnguyen/Projects/Phage/plasmid.fasta","bwa",1658,2735);
-//			SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta",Alphabet.DNA())
-//			.stream()
-//			.map(e -> vector.extractInsertSequence(e))
-//			.forEach(e -> System.out.println(e==null));
-			ArrayList<Sequence> list = SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/test.fasta",Alphabet.DNA());
-			for(Sequence e:list)
-				vector.extractInsertSequence(e);
+			vector.extracting.start();
+			
+			SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta",Alphabet.DNA())
+			.stream()
+			.map(e -> vector.extractInsertSequence(e))
+			.forEach(e -> System.out.println(e==null));
 				
-				
+			vector.extracting.join();
+			
 			if(vector.bwaProcess.isAlive()){
 				vector.reader.close();
 				vector.toBWA.close();
