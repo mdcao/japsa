@@ -57,7 +57,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
-		addString("output", "output.dat",  "Output file");		
+		addString("output", "output.dat",  "Output file, - for standard output");		
 		addString("bamFile", null,  "The bam file",true);		
 		addString("indexFile", null,  "indexFile ",true);
 		
