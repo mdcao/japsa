@@ -47,6 +47,7 @@ import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.HTSUtilities;
 import japsa.util.deploy.Deployable;
+import japsadev.bio.np.phage.SequenceExtractor;
 
 
 /**
@@ -55,7 +56,7 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(
 	scriptName = "jsa.dev.phageAnalysis",
-	scriptDesc = "Analysis phage dataset"
+	scriptDesc = "Analysis phage dataset. Now only extract insert sequences..."
 	)
 public class PhageAnalysisCmd extends CommandLine{	
 	public PhageAnalysisCmd(){
@@ -64,8 +65,12 @@ public class PhageAnalysisCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		
-		addString("input", null, "Name of the input file, - for standard input", true);
+		addString("input", "-", "Name of the input file, - for standard input", true);
+		addString("format", "fasta", "Format of the input: SAM/BAM or FASTA/FASTQ");
+		addString("plasmid", null, "Name of a sample plasmid file in FASTA format", true);
 		addString("output", "out.fasta", "Name of the output file, - for standard input");		
+		
+		addString("bwaExe", "bwa", "Path to BWA mem.");	
 				
 		addStdHelp();		
 	} 
@@ -77,85 +82,27 @@ public class PhageAnalysisCmd extends CommandLine{
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		
-		String input = cmdLine.getStringVal("input");
-		String output = cmdLine.getStringVal("output");
-
-		
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader reader = SamReaderFactory.makeDefault().open(new File(input));
-		
-		
-		int startFront = 1658;
-		int endFront = 1758;
-		
-		int startBack = 2635;
-		int endBack = 2735;
-					
-		SAMRecordIterator iter = reader.iterator();
-		int count = 0;
-		String currentName = "";
-		boolean direction = true;
-		int readFront = 0, readBack = 0;
-		SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream(output);
-		
-		while (iter.hasNext()){
-			count ++;
-			SAMRecord record = iter.next();
-			if (record.getReadString().length() < 10){
-				System.out.println("== " + record.getReadName());
-				continue;//while
-			}
+		String 	input = cmdLine.getStringVal("input"),
+				format = cmdLine.getStringVal("format"),
+				plasmid = cmdLine.getStringVal("plasmid"),
+				bwaExe = cmdLine.getStringVal("bwaExe"),
+				output = cmdLine.getStringVal("output");
+		try {
+			SequenceExtractor vector = new SequenceExtractor(plasmid, bwaExe, 1658, 2735);
 			
-			if (!record.getReadName().equals(currentName)){
-				currentName = record.getReadName();
-				direction = true;
-				readFront = 0;
-				readBack = 0;
-			}
-			//FIXME: this can be improved
-			if (record.getAlignmentStart() <= startFront && record.getAlignmentEnd() >= endFront){
-				int  [] refPositions = {startFront, endFront}; 
-				int [] pos = HTSUtilities.positionsInRead(record, refPositions);
-				if (pos[0] > 0 || pos[1] > 0){
-					//System.out.printf("%5d %s %s %d %d %b\n", count, record.getReadName(), "FRONT", pos[0], pos[1], record.getReadNegativeStrandFlag());
-					readFront = pos[0];
-					if (readBack > 0 && direction == record.getReadNegativeStrandFlag()){
-						if (readBack < readFront){
-							System.err.printf("Bugger 1\n");							
-						}else{
-							String readSub = record.getReadString().substring(readFront,readBack);
-							Sequence rs = new Sequence(Alphabet.DNA16(), readSub, record.getReadName());
-							rs.writeFasta(outFile);													
-						}
-						direction = record.getReadNegativeStrandFlag();
-					}
-				}
-					
-			}
+			vector.extractInsertSequence(input, 0, format, 4, output);
 			
-			if (record.getAlignmentStart() <= startBack && record.getAlignmentEnd() >= endBack){
-				int  [] refPositions = {startBack, endBack}; 
-				int [] pos = HTSUtilities.positionsInRead(record, refPositions);
-				if (pos[0] > 0 || pos[1] > 0){
-					//System.out.printf("%5d %s %s %d %d %b\n", count, record.getReadName(), "FRONT", pos[0], pos[1], record.getReadNegativeStrandFlag());
-					readBack = pos[0];
-					if (readFront > 0 && direction == record.getReadNegativeStrandFlag()){
-						if (readBack < readFront){
-							System.err.printf("Bugger 2\n");							
-						}else{
-							String readSub = record.getReadString().substring(readFront,readBack);
-							Sequence rs = new Sequence(Alphabet.DNA16(), readSub, record.getReadName());
-							rs.writeFasta(outFile);													
-						}
-						direction = record.getReadNegativeStrandFlag();
-					}
-				}				
-			}		
+//			ArrayList<Sequence> list = SequenceReader.readAll("/home/s.hoangnguyen/Projects/Phage/test.fasta",Alphabet.DNA());
+//			for(Sequence e:list)
+//				vector.extractInsertSequence(e);
+//				
+				
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
-		iter.close();
-		outFile.close();
-		reader.close();
-	}	
+	}
+		
 }
 
 
