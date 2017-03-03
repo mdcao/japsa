@@ -38,6 +38,7 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
 import japsa.util.Logging;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
@@ -56,10 +57,11 @@ import org.rosuda.JRI.REXP;
 import org.rosuda.JRI.Rengine;
 
 /**
- * @author minhduc
+ * @author Minh Duc Cao, Son Hoang Nguyen
  *
  */
 public class RealtimeSpeciesTyping {
+	public static boolean JSON=false;
 	RealtimeSpeciesTyper typer;
 
 	/**
@@ -242,7 +244,9 @@ public class RealtimeSpeciesTyping {
 
 			Logging.info("REngine ready");
 			countsOS = SequenceOutputStream.makeOutputStream(output);
-			countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
+			if(!JSON)
+				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
+
 
 		}
 
@@ -279,16 +283,40 @@ public class RealtimeSpeciesTyping {
 			REXP tab  = rengine.eval("tab",true);  
 			double [][] results = tab.asDoubleMatrix();
 
+
+			if(JSON)
+				countsOS.print("{\n\t\"timestamp\": \"" + timeNow + "\",\n\t\"data\": [\n");
+
+			boolean toPrintComma=false;
 			for (int i = 0; i < results.length;i++){
 				if (results[i][0] <= 0.00001)
 					continue;
 
 				double mid = (results[i][0] + results[i][1])/2;
 				double err = mid - results[i][0];				  
-				countsOS.print(timeNow + "\t" + step + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + countArray.get(i));
+				if(!JSON)
+					countsOS.print(timeNow + "\t" + step + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_"," ") + "\t" + mid +"\t" + err + "\t" + typing.currentReadAligned + "\t" + countArray.get(i));
+				else {
+					if (toPrintComma)
+						countsOS.print(",");
+					countsOS.print("\t\t{"
+							+ "\n\t\t\t\"species\": \"" + speciesArray.get(i).replaceAll("_", " ") + "\""
+							+ ",\n\t\t\t\"step\": " + step
+							+ ",\n\t\t\t\"reads\": " + lastReadNumber
+							+ ",\n\t\t\t\"bases\": " + typing.currentBaseCount
+							+ ",\n\t\t\t\"prob\": " + mid
+							+ ",\n\t\t\t\"err\": " + err
+							+ ",\n\t\t\t\"tAligned\": " + typing.currentReadAligned
+							+ ",\n\t\t\t\"sAligned\": " + countArray.get(i)
+							+ "\n\t\t}");
+				}
+				toPrintComma=true;
+
 				countsOS.println();
 			}
 
+			if(JSON)
+				countsOS.print("\t]\n}\n");
 			countsOS.flush();
 			Logging.info(step+"  " + countArray.size());
 		}

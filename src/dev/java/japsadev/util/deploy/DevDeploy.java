@@ -57,7 +57,6 @@ import japsadev.tools.KmerAnalysisCmd;
 import japsadev.tools.NanoporeBarcodeCmd;
 import japsadev.tools.NanoporeFast5ReaderCmd;
 import japsadev.tools.NewScarfCmd;
-import japsadev.tools.PanCoreGeneCmd;
 import japsadev.tools.PhageAnalysisCmd;
 import japsadev.tools.ProfileDPCmd;
 import japsadev.tools.RemoveNsCmd;
@@ -103,8 +102,7 @@ public class DevDeploy {
 		tools.add(new NpReadAnalysys());		
 		tools.add(new GetN50());		
 		tools.add(new ResGeneGenomesCmd());
-		tools.add(new GetFlankBlast());
-		tools.add(new PanCoreGeneCmd());
+		tools.add(new GetFlankBlast());		
 		tools.add(new CombineProdigalCmd());
 
 		tools.add(new String("Working commands"));
@@ -150,10 +148,10 @@ public class DevDeploy {
 
 		tools.add(new SelectReadsCmd());
 		tools.add(new StructuralVariationCmd());
-		tools.add(new PhageAnalysisCmd());
+		tools.add(new PhageAnalysisCmd());		
 		
 		//new 
-		//tools.add(new PhageAnalysisCmd());
+		//tools.add(new AMRTrackerCmd());
 		//
 
 	}
