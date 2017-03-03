@@ -285,7 +285,7 @@ public class RealtimeSpeciesTyping {
 
 
 			if(JSON)
-				countsOS.print("{\n\ttimestamp: " + timeNow + ",\n\tdata: [\n");
+				countsOS.print("{\n\t\"timestamp\": \"" + timeNow + "\",\n\t\"data\": [\n");
 
 			boolean toPrintComma=false;
 			for (int i = 0; i < results.length;i++){
@@ -300,14 +300,14 @@ public class RealtimeSpeciesTyping {
 					if (toPrintComma)
 						countsOS.print(",");
 					countsOS.print("\t\t{"
-							+ "\n\t\t\tspecies: " + speciesArray.get(i).replaceAll("_", " ")
-							+ ",\n\t\t\tstep: " + step
-							+ ",\n\t\t\treads: " + lastReadNumber
-							+ ",\n\t\t\tbases: " + typing.currentBaseCount
-							+ ",\n\t\t\tprob: " + mid
-							+ ",\n\t\t\terr: " + err
-							+ ",\n\t\t\ttAligned: " + typing.currentReadAligned
-							+ ",\n\t\t\tsAligned: " + countArray.get(i)
+							+ "\n\t\t\t\"species\": \"" + speciesArray.get(i).replaceAll("_", " ") + "\""
+							+ ",\n\t\t\t\"step\": " + step
+							+ ",\n\t\t\t\"reads\": " + lastReadNumber
+							+ ",\n\t\t\t\"bases\": " + typing.currentBaseCount
+							+ ",\n\t\t\t\"prob\": " + mid
+							+ ",\n\t\t\t\"err\": " + err
+							+ ",\n\t\t\t\"tAligned\": " + typing.currentReadAligned
+							+ ",\n\t\t\t\"sAligned\": " + countArray.get(i)
 							+ "\n\t\t}");
 				}
 				toPrintComma=true;
