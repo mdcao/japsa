@@ -61,7 +61,7 @@ public class RealtimeScaffolding {
 			else
 				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
 		}else{
-			Logging.info("Starting bwa  at " + new Date());
+			Logging.info("Starting BWA at " + new Date());
 			ProcessBuilder pb = null;
 			if ("-".equals(inFile)){
 				pb = new ProcessBuilder(bwaExe, 
@@ -108,7 +108,7 @@ public class RealtimeScaffolding {
 
 			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
 
-			Logging.info("bwa started x");			
+			Logging.info("BWA started!");			
 
 			//SequenceReader seqReader = SequenceReader.getReader(inFile);
 
