@@ -67,6 +67,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 30,   "Minimum number of seconds between analyses");
 
+		addBoolean("web", false, "Whether to use Web visualization.");
+
 		addStdHelp();		
 	} 
 	/**
@@ -88,8 +90,9 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		int time       = cmdLine.getIntVal("time");		
 		double qual      = cmdLine.getDoubleVal("qual");				
 		boolean twoOnly      = cmdLine.getBooleanVal("twodonly");
+		RealtimeSpeciesTyping.JSON = cmdLine.getBooleanVal("web");
 
-		RealtimeSpeciesTyping paTyping = new RealtimeSpeciesTyping(indexFile, output);		
+		RealtimeSpeciesTyping paTyping = new RealtimeSpeciesTyping(indexFile, output);
 		paTyping.setMinQual(qual);
 		paTyping.setTwoOnly(twoOnly);		
 		paTyping.typing(bamFile, number, time);		
