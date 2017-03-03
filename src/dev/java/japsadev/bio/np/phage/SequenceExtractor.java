@@ -25,19 +25,21 @@ import japsadev.bio.hts.scaffold.ReadFilling;
 
 public class SequenceExtractor {
 	static final int FLANKING=200;
+	boolean trim=false;
 	//Sequence plasmid;
 	String plasmidFile; //plasmid fasta/q file that are already indexed by bwa
 	int s5, e5,
 		s3, e3;
 	String bwaExe = "bwa";
 	
-	public SequenceExtractor(String seqFile, String bwaExe, int e5, int s3) throws IOException{
+	public SequenceExtractor(String seqFile, String bwaExe, boolean trim, int e5, int s3) throws IOException{
 		plasmidFile=seqFile;
 		this.e5=e5;
 		this.s5=this.e5-FLANKING;
 		this.s3=s3;
 		this.e3=this.s3+FLANKING;
 		this.bwaExe = bwaExe;
+		this.trim = trim;
 	}
 	
 	public void extractInsertSequence(String inFile, int qual, String format, int bwaThread, String output) throws IOException, InterruptedException{
@@ -132,7 +134,7 @@ public class SequenceExtractor {
 				if(longestLeftFlankAlignment == 0 || longestRightFlankAlignment == 0 || start>=end){
 					System.out.println("Not applicable! Smt shjtty on read " + prevRecord.getReadName() + " length= " + prevRecord.getReadLength());
 				}else{
-					String readSub = prevRecord.getReadString().substring(start,end);
+					String readSub = trim?prevRecord.getReadString().substring(start+FLANKING,end-FLANKING):prevRecord.getReadString().substring(start,end);
 					System.out.println("Detect insert sequence of length " + readSub.length());
 					Sequence rs = new Sequence(Alphabet.DNA16(), readSub, prevRecord.getReadName());
 					rs.writeFasta(outFile);	
@@ -201,7 +203,7 @@ public class SequenceExtractor {
 	
 	public static void main(String[] args){
 		try {
-			SequenceExtractor vector = new SequenceExtractor("/home/s.hoangnguyen/Projects/Phage/plasmid.fasta", "bwa", 1658, 2735);
+			SequenceExtractor vector = new SequenceExtractor("/home/s.hoangnguyen/Projects/Phage/plasmid.fasta", "bwa", false, 1658, 2735);
 			
 			vector.extractInsertSequence("/home/s.hoangnguyen/Projects/Phage/2d_1.fasta", 0, "fasta", 2, "/home/s.hoangnguyen/Projects/Phage/insert-200.fasta");
 			

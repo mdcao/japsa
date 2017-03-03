@@ -72,6 +72,7 @@ public class PhageAnalysisCmd extends CommandLine{
 		
 		addString("bwaExe", "bwa", "Path to BWA mem.");	
 				
+		addBoolean("pure", false, "Use this option to get rid of flanking regions on both ends.");
 		addStdHelp();		
 	} 
 
@@ -87,8 +88,9 @@ public class PhageAnalysisCmd extends CommandLine{
 				plasmid = cmdLine.getStringVal("plasmid"),
 				bwaExe = cmdLine.getStringVal("bwaExe"),
 				output = cmdLine.getStringVal("output");
+		boolean pure = cmdLine.getBooleanVal("pure");
 		try {
-			SequenceExtractor vector = new SequenceExtractor(plasmid, bwaExe, 1658, 2735);
+			SequenceExtractor vector = new SequenceExtractor(plasmid, bwaExe, pure, 1658, 2735);
 			
 			vector.extractInsertSequence(input, 0, format, 4, output);
 			
