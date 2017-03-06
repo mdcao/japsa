@@ -15,24 +15,26 @@ import japsa.seq.SequenceReader;
 
 
 public class ConsensusGenerator {
-	HashMap<String,Sequence> sequences = new HashMap<String,Sequence>();
-	public ConsensusGenerator(String sequenceFile) throws IOException{
-		SequenceReader reader = SequenceReader.getReader(sequenceFile);
+	HashMap<String,Sequence> sequences;
+	public ConsensusGenerator(){
+		sequences = new HashMap<String,Sequence>();
+	}
+	
+	public Sequence getSeq(String name){
+		return sequences.get(name);
+	}
+	
+	public void generate(String seqFile, String listFile, String outFile, String aligner, boolean trim) throws IOException, InterruptedException{
+		
+		SequenceReader reader = SequenceReader.getReader(seqFile);
 		Sequence seq;
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
 				sequences.put(seq.getName(), seq);
 		}
 		reader.close();
-	}
-	public Sequence getSeq(String name){
-		return sequences.get(name);
-	}
-	
-	public static void main(String[] args) throws IOException, InterruptedException {
-		ConsensusGenerator cg = new ConsensusGenerator("/home/s.hoangnguyen/Projects/Phage/delta/insert_1.fasta");
 		
-		BufferedReader groupReader = new BufferedReader(new FileReader("/home/s.hoangnguyen/Projects/Phage/delta/blastclust/insert_nnp1"));
-		SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream("/home/s.hoangnguyen/Projects/Phage/delta/blastclust/insert_trimmed_nnp1.consensus");
+		BufferedReader groupReader = new BufferedReader(new FileReader(listFile));
+		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(outFile);
 		String s;
 		int count=1;
 		
@@ -40,20 +42,37 @@ public class ConsensusGenerator {
 			ArrayList<Sequence> aGroup = new ArrayList<Sequence>();
 			String[] toks = s.split(" ");
 			for(int i=0; i < toks.length; i++){
-				aGroup.add(cg.getSeq(toks[i]));
+				aGroup.add(getSeq(toks[i]));
 			}
-			Sequence consensus = ErrorCorrection.consensusSequence(aGroup, "insert_nnp1", "kalign");
+			Sequence consensus = ErrorCorrection.consensusSequence(aGroup, "grouping", aligner);
 
 			//trimming the flanks
-			consensus=consensus.subSequence(SequenceExtractor.FLANKING,consensus.length()-SequenceExtractor.FLANKING);
+			if(trim)
+				consensus=consensus.subSequence(SequenceExtractor.FLANKING,consensus.length()-SequenceExtractor.FLANKING);
 			
-			consensus.setName("N1_"+count);
-			consensus.writeFasta(outFile);
+				
+			consensus.setName("S_"+count);
+			consensus.writeFasta(out);
 			count++;
 			
 		}
 		groupReader.close();
-		outFile.close();
+		out.close();
+		
+	}
+	
+	public static void main(String[] args) throws IOException, InterruptedException {
+//		ConsensusGenerator cg = new ConsensusGenerator("/home/s.hoangnguyen/Projects/Phage/delta/insert_1.fasta");
+//		
+//		BufferedReader groupReader = new BufferedReader(new FileReader("/home/s.hoangnguyen/Projects/Phage/delta/blastclust/insert_nnp1"));
+//		SequenceOutputStream outFile = SequenceOutputStream.makeOutputStream("/home/s.hoangnguyen/Projects/Phage/delta/blastclust/insert_trimmed_nnp1.consensus");
+		
+
+		ConsensusGenerator cg = new ConsensusGenerator();
+		cg.generate("/home/s.hoangnguyen/Projects/Phage/delta/sangerInserts.fasta", 
+					"/home/s.hoangnguyen/Projects/Phage/delta/blastclust/sanger-blastclust", 
+					"/home/s.hoangnguyen/Projects/Phage/delta/blastclust/sanger.consensus",
+					"kalign",false);
 	}
 
 }
