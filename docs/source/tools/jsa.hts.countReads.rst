@@ -1,5 +1,5 @@
 ------------------------------------------------
- *jsa.hts.countReads*: Count reads from bam files 
+*jsa.hts.countReads*: Count reads from bam files 
 ------------------------------------------------
 
 

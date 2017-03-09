@@ -1,53 +1,3 @@
-package japsa.tools.bio.np;
-
-import java.io.IOException;
-
-import jaligner.matrix.MatrixLoaderException;
-import japsa.util.CommandLine;
-import japsa.util.deploy.Deployable;
-import japsa.bio.np.barcode.*;
-
-
-@Deployable(
-		scriptName = "jsa.np.barcode", 
-		scriptDesc = "Clustering nanopore sequences based on barcode"
-		)
-public class BarCodeAnalysisCmd extends CommandLine{
-	public BarCodeAnalysisCmd(){
-		super();
-		Deployable annotation = getClass().getAnnotation(Deployable.class);		
-		setUsage(annotation.scriptName() + " [options]");
-		setDesc(annotation.scriptDesc()); 
-
-		addString("bcFile", null, "Barcode file",true);		
-		addString("seqFile", null, "Nanopore sequences file",true);
-		addString("scriptRun", null, "Invoke command script to run npScarf",true);
-		addBoolean("verbose", false, "Verbose mode to show alignments (blossom62)");
-		addBoolean("print", false, "Print out demultiplexed reads to corresponding FASTA file or not.");
-		addStdHelp();
-	}
-	public static void main(String[] args) throws IOException, InterruptedException, MatrixLoaderException{
-		CommandLine cmdLine = new BarCodeAnalysisCmd ();
-		args = cmdLine.stdParseLine(args);
-
-		String bcFile = cmdLine.getStringVal("bcFile");
-		String script = cmdLine.getStringVal("scriptRun");
-		String seqFile = cmdLine.getStringVal("seqFile");
-		Boolean v = cmdLine.getBooleanVal("verbose"),
-				p = cmdLine.getBooleanVal("print");
-		BarCodeAnalysis.toPrint = BarCodeAnalysisVerbose.toPrint = p;
-
-		if(v){
-			BarCodeAnalysisVerbose bc = new BarCodeAnalysisVerbose(bcFile,script);
-			bc.clustering(seqFile);
-		}else{
-			BarCodeAnalysis bc = new BarCodeAnalysis(bcFile,script);
-			bc.clustering(seqFile);
-		}
-		
-	}
-}
-/*RST*
 ---------------------------------------------------------------------------
 *barcode*: real-time de-multiplexing Nanopore reads from barcode sequencing
 ---------------------------------------------------------------------------
@@ -57,7 +7,37 @@ Nanopore barcode sequencing. Downstream analysis can be invoked concurrently by 
 
 *barcode* is included in the `Japsa package <http://mdcao.github.io/japsa/>`_.
 
-<usage>
+~~~~~~~~
+Synopsis
+~~~~~~~~
+
+*jsa.np.barcode*: Clustering nanopore sequences based on barcode
+
+~~~~~
+Usage
+~~~~~
+::
+
+   jsa.np.barcode [options]
+
+~~~~~~~
+Options
+~~~~~~~
+  --bcFile=s      Barcode file
+                  (REQUIRED)
+  --seqFile=s     Nanopore sequences file
+                  (REQUIRED)
+  --scriptRun=s   Invoke command script to run npScarf
+                  (REQUIRED)
+  --verbose       Verbose mode to show alignments (blossom62)
+                  (default='false')
+  --print         Print out demultiplexed reads to corresponding FASTA file or not.
+                  (default='false')
+  --help          Display this usage and exit
+                  (default='false')
+
+
+
 
 ~~~~~~~~~~~~~~
 Usage examples
@@ -127,4 +107,3 @@ E.g.
 	jsa.np.npscarf -realtime -read 100 -time 1 -b - -seq ${dirname}/contigs.fasta -spadesDir ${dirname} -prefix ${1} > ${1}.log 2>&1
 	
 In this scenario, we assume the output SPAdes folders locate in one directory and the folder names contain the ID of the corresponding samples.
- *RST*/
