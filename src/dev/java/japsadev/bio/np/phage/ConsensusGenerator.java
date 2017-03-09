@@ -69,10 +69,14 @@ public class ConsensusGenerator {
 		
 
 		ConsensusGenerator cg = new ConsensusGenerator();
-		cg.generate("/home/s.hoangnguyen/Projects/Phage/delta/sangerInserts.fasta", 
-					"/home/s.hoangnguyen/Projects/Phage/delta/blastclust/sanger-blastclust", 
-					"/home/s.hoangnguyen/Projects/Phage/delta/blastclust/sanger.consensus",
-					"kalign",false);
+//		cg.generate("/home/s.hoangnguyen/Projects/Phage/delta/sangerInserts.fasta", 
+//					"/home/s.hoangnguyen/Projects/Phage/delta/blastclust/sanger-blastclust", 
+//					"/home/s.hoangnguyen/Projects/Phage/delta/blastclust/sanger.consensus",
+//					"kalign",false);
+		cg.generate("/home/s.hoangnguyen/Projects/Phage/delta/insert_2.fasta", 
+				"/home/s.hoangnguyen/Projects/Phage/delta/blastclust/insert_nnp2_88", 
+				"/home/s.hoangnguyen/Projects/Phage/delta/blastclust/insert_nnp2_88.consensus",
+				"kalign",false);
 	}
 
 }

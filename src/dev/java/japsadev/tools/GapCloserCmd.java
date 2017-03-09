@@ -74,7 +74,8 @@ public class GapCloserCmd extends CommandLine{
 		addInt("bwaThread", 4, "Theads used by bwa");
 		addBoolean("long", false, "Whether report all sequences, including short/repeat contigs (default) or only long/unique/completed sequences.");
 		addBoolean("eukaryotic", false, "Whether eukaryotic or bacterial (default) genomes");
-
+		addBoolean("update", true, "Whether output genome sequences in real-time or not.");
+		
 		addString("assembler", "spades", "Name of the assembler used for Illumina assembly: SPAdes (default) or ABySS.");
 		addString("graphDir", null, "Name of the output folder by SPAdes/ABySS: assembly graph and paths will be used for better gap-filling.");
 		addString("prefix", "out", "Prefix for the output files");	
@@ -219,6 +220,7 @@ public class GapCloserCmd extends CommandLine{
 		ScaffoldGraph.verbose = cmdLine.getBooleanVal("verbose");
 		ScaffoldGraph.reportAll = !cmdLine.getBooleanVal("long");
 		ScaffoldGraph.eukaryotic = cmdLine.getBooleanVal("eukaryotic");
+		ScaffoldGraph.updateGenome = cmdLine.getBooleanVal("update");
 		
 		ScaffoldGraph.minContigLength = minContig;
 		ScaffoldGraph.minSupportReads = minSupport;	
@@ -261,7 +263,7 @@ public class GapCloserCmd extends CommandLine{
 			if (cov <=0)
 				cov = ScaffoldGraph.estimatedCov;
 
-			rtScaffolding.scaffolding2(input, number, time, cov/1.6, qual, format, bwaExe, bwaThread, sequenceFile);
+			rtScaffolding.scaffolding(input, number, time, cov/1.6, qual, format, bwaExe, bwaThread, sequenceFile);
 
 		}
 		else{
@@ -276,14 +278,14 @@ public class GapCloserCmd extends CommandLine{
 			if (cov <=0)
 				cov = ScaffoldGraph.estimatedCov;
 
-			graph.makeConnections2(input, cov / 1.6, qual, format, bwaExe, bwaThread, sequenceFile);
+			graph.makeConnections(input, cov / 1.6, qual, format, bwaExe, bwaThread, sequenceFile);
 
 			graph.connectBridges();
 			if(prefix != null)
 				graph.prefix = prefix;
 
 			ContigBridge.forceFilling();
-			graph.printSequences();
+			graph.printSequences(true);
 		}
 
 	}

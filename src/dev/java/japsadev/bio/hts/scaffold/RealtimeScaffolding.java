@@ -42,7 +42,7 @@ public class RealtimeScaffolding {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public void scaffolding2(String inFile, int readNumber, int timeNumber, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) 
+	public void scaffolding(String inFile, int readNumber, int timeNumber, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) 
 			throws IOException, InterruptedException{
 		scaffolder.setReadPeriod(readNumber);
 		scaffolder.setTimePeriod(timeNumber * 1000);
@@ -144,6 +144,7 @@ public class RealtimeScaffolding {
 
 		String readID = "";
 		ReadFilling readFilling = null;
+		AlignmentRecord myRec = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
 
 		Thread thread = new Thread(scaffolder);
@@ -161,7 +162,7 @@ public class RealtimeScaffolding {
 				}
 				continue;		
 			}
-			AlignmentRecord myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
+			myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
 
 			if (readID.equals(myRec.readID)) {				
 
@@ -220,6 +221,7 @@ public class RealtimeScaffolding {
 
 		String readID = "";
 		ReadFilling readFilling = null;
+		AlignmentRecord myRec = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
 
 		Thread thread = new Thread(scaffolder);
@@ -237,7 +239,7 @@ public class RealtimeScaffolding {
 				}
 				continue;		
 			}
-			AlignmentRecord myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
+			myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
 
 			if (readID.equals(myRec.readID)) {				
 
@@ -288,6 +290,10 @@ public class RealtimeScaffolding {
 			}
 
 			try{
+				//print for the last time if needed
+				if(!ScaffoldGraph.updateGenome)
+					scaffolding.graph.printSequences(true);
+				
 				outOS.close();
 			}catch (Exception e){
 				e.printStackTrace();
@@ -304,7 +310,7 @@ public class RealtimeScaffolding {
 				try {
 					// This function is for the sake of real-time annotation experiments being more readable
 					//scaffolding.graph.printRT(scaffolding.currentBaseCount);
-					sg.printSequences();
+					sg.printSequences(ScaffoldGraph.updateGenome);
 					outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50 | \tBreaks (maxlen)\n");
 					outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + sg.getNumberOfContigs() 
 							+ " |\t" + sg.getNumberOfCirculars() + " |\t" + sg.getN50() + " |\t" + sg.getGapsInfo());

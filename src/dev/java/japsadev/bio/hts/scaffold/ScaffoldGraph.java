@@ -67,6 +67,7 @@ public class ScaffoldGraph{
 	public static int minSupportReads = 1;
 	public static boolean verbose = false;
 	public static boolean reportAll = false;
+	public static boolean updateGenome = true;
 	public static boolean eukaryotic = false;
 	public boolean annotation = false;
 	public static byte assembler =0b00; // 0 for SPAdes, 1 for ABySS
@@ -129,14 +130,13 @@ public class ScaffoldGraph{
 		reader.close();
 
 		estimatedCov /= estimatedLength;
-		if(verbose){ 
-			System.out.println("Cov " + estimatedCov + " Length " + estimatedLength);
-			//turn off verbose mode if the genome is bigger than 100Mb. 
-			//TODO: tidy up the output to get rid of this!
-			if(estimatedLength > 100000000 || contigs.size() > 10000){
-				System.out.println("Verbose mode disabled due to complicated genome!");
-				verbose=false;
-			}
+
+		Logging.info("Average coverage:" + estimatedCov + " Length: " + estimatedLength);
+		//turn off verbose mode if the genome is bigger than 100Mb. 
+		if(estimatedLength > 100000000 || contigs.size() > 10000){
+			Logging.warn("Verbose mode and realtime updating are automatically disabled due to too large genome!");
+			verbose=false;
+			updateGenome=false;
 		}
 
 		//2. Initialise scaffold graph
@@ -304,7 +304,7 @@ public class ScaffoldGraph{
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
-	public void makeConnections2(String inFile, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) throws IOException, InterruptedException{
+	public void makeConnections(String inFile, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) throws IOException, InterruptedException{
 
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 
@@ -401,8 +401,6 @@ public class ScaffoldGraph{
 					for (AlignmentRecord s : samList) {
 						if (s.useful){
 							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
-							//...update with synchronized
-
 						}
 					}
 				}
@@ -430,7 +428,7 @@ public class ScaffoldGraph{
 
 
 	/**
-	 * Forming bridges based on alignments
+	 * Forming bridges based on alignments. Used in batch mode only
 	 * 
 	 * @param bamFile
 	 * @param minCov
@@ -439,6 +437,7 @@ public class ScaffoldGraph{
 	 * @param qual
 	 * @throws IOException
 	 */
+	@Deprecated
 	public void makeConnections(String bamFile, double minCov, int qual) throws IOException{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 
@@ -452,6 +451,7 @@ public class ScaffoldGraph{
 
 		String readID = "";
 		ReadFilling readFilling = null;
+		AlignmentRecord myRec = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
 
 		while (iter.hasNext()) {
@@ -461,7 +461,7 @@ public class ScaffoldGraph{
 			if (rec.getMappingQuality() < qual)
 				continue;
 
-			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
+			myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
 
 
 			//////////////////////////////////////////////////////////////////
@@ -474,8 +474,6 @@ public class ScaffoldGraph{
 					for (AlignmentRecord s : samList) {
 						if (s.useful){
 							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
-							//...update with synchronized
-
 						}
 					}
 				}
@@ -981,7 +979,7 @@ public class ScaffoldGraph{
 		scaffolds[newHead.getIndex()] = newScf;
 
 	}
-	public synchronized void printSequences() throws IOException{
+	public synchronized void printSequences(boolean allOut) throws IOException{
 		//countOccurence=new HashMap<Integer,Integer>();
 		int currentNumberOfContigs = 0,
 			currentNumberOfCirculars = 0;	
@@ -1005,7 +1003,8 @@ public class ScaffoldGraph{
 					
 					if(verbose) 
 						System.out.println("Scaffold " + i + " estimated length " + len);
-					scaffolds[i].viewAnnotation(aout);
+					if(allOut)
+						scaffolds[i].viewAnnotation(aout);
 				}
 			}
 			aout.close();
@@ -1029,8 +1028,8 @@ public class ScaffoldGraph{
 					
 					if(verbose) 
 						System.out.println("Scaffold " + i + " estimated length " + len);
-
-					scaffolds[i].viewSequence(fout, jout);
+					if(allOut)
+						scaffolds[i].viewSequence(fout, jout);
 				}
 			}
 			fout.close();
