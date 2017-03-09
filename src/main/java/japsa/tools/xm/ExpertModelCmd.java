@@ -329,7 +329,7 @@ Citation
 If you find XM useful for your research, please cite
 
 Cao MD, Dix TI, Allison L, and Mears C, 
-A simple statistical algorithm for biological sequence compression
+*A simple statistical algorithm for biological sequence compression*,
 Data Compression Conference, 2007 (DCC'07), Snowbird, UT, pp43-52.
 
 *RST*/
