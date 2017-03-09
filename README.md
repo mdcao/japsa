@@ -40,6 +40,7 @@ algorithms, implementation, documentation and feedback:
 * [npAnalysis](https://github.com/mdcao/npAnalysis)
 * [npReader](https://github.com/mdcao/npReader)
 * [XMas](https://github.com/mdcao/XMas)
+* [eXpert Model](https://github.com/mdcao/xm)
 
 and more to come.
 
