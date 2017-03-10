@@ -375,7 +375,7 @@ public class HTSUtilities {
 				profile.numIns ++;
 				break;
 			case M :
-				for (int i = 0; i < length; i++){
+				for (int i = 0; i < length && refPos + i < refSeq.length(); i++){
 					if (refSeq.getBase(refPos + i) == readSeq.getBase(readPos + i))
 						profile.match ++;
 					else

@@ -249,12 +249,12 @@ public class CountReadInRegionCmd extends CommandLine{
 }
 /*RST*
 ------------------------------------------------
- *jsa.hts.countReads*: Count reads from bam files 
+*jsa.hts.countReads*: Count reads from bam files 
 ------------------------------------------------
 
 
 <usage> 
 
- *RST*/
+*RST*/
 
 

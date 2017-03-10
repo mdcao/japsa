@@ -1,8 +1,8 @@
----------------------------------------------------------------------------------------
- *npScarf*: real-time scaffolder using SPAdes contigs and Nanopore sequencing reads
----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+*npScarf*: real-time scaffolder using SPAdes contigs and Nanopore sequencing reads
+----------------------------------------------------------------------------------
 
- *npScarf* (jsa.np.npscarf) is a program that connect contigs from a draft genomes 
+*npScarf* (jsa.np.npscarf) is a program that connect contigs from a draft genomes 
 to generate sequences that are closer to finish. These pipelines can run on a single laptop
 for microbial datasets. In real-time mode, it can be integrated with simple structural 
 analyses such as gene ordering, plasmid forming.
@@ -116,12 +116,12 @@ Missing this step would break down the whole pipeline.
 
 Output
 =======
- *npScarf* output is specified by *-prefix* option. The default prefix is \'out\'.
+*npScarf* output is specified by *-prefix* option. The default prefix is \'out\'.
 Normally the tool generate two files: *prefix*.fin.fasta and *prefix*.fin.japsa which 
 indicate the result scaffolders in FASTA and JAPSA format.
 
 In realtime mode, if any annotation analysis is enabled, a file named 
- *prefix*.anno.japsa is generated instead. This file contains features detected after
+*prefix*.anno.japsa is generated instead. This file contains features detected after
 scaffolding.
 
 Real-time scaffolding
@@ -167,6 +167,7 @@ or if your file does not have the *timestamp* data yet, you can manually make on
 
 Real-time annotation
 ====================
+
 The tool includes usecase for streaming annotation. Ones can provides database of antibiotic
 resistance genes and/or Origin of Replication in FASTA format for the analysis of gene ordering
 and/or plasmid identifying respectively::
@@ -176,7 +177,8 @@ and/or plasmid identifying respectively::
 
 Assembly graph
 ==============
- *npScarf* can read the assembly graph info from SPAdes to make the results more precise.
+
+*npScarf* can read the assembly graph info from SPAdes to make the results more precise.
 The results might be slightly deviate from the old version in term of number of final contigs::
 
     jsa.np.npscarf --spadesFolder=<SPAdes_output_directory> <options...>

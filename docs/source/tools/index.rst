@@ -30,3 +30,4 @@ This chapter presents the list of tools provided by Japsa.
    jsa.util.streamClient.rst
    jsa.phylo.xmas.rst
    jsa.phylo.normalise.rst
+   jsa.xm.compress.rst

@@ -27,7 +27,7 @@ Usage
 ~~~~~~~
 Options
 ~~~~~~~
-  --output=s      Output file
+  --output=s      Output file, - for standard output
                   (default='output.dat')
   --bamFile=s     The bam file
                   (REQUIRED)
@@ -41,6 +41,8 @@ Options
                   (default='50')
   --time=i        Minimum number of seconds between analyses
                   (default='30')
+  --web           Whether to use Web visualization.
+                  (default='false')
   --help          Display this usage and exit
                   (default='false')
 

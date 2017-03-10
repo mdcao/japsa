@@ -305,6 +305,31 @@ public class ExpertModelCmd extends CommandLine{
 		eModel.setCheckPoint(cmdLine.getIntVal("checkPoint"));
 		return eModel;
 	}
-
-
 }
+
+
+/*RST*
+---------------------------------------------------------
+*Expert Model*: tool for compression of genomic sequences 
+---------------------------------------------------------
+
+*jsa.xm.compress* in the implementation of the expert model (XM) algorithm for 
+compression of genomics sequences. The source code is included in the 
+`Japsa package <http://mdcao.github.io/japsa/>`_. 
+Please see check the installation_ page for instructions.  
+
+.. _installation: ../install.html
+
+<usage> 
+
+~~~~~~~~
+Citation
+~~~~~~~~
+
+If you find XM useful for your research, please cite
+
+Cao MD, Dix TI, Allison L, and Mears C, 
+*A simple statistical algorithm for biological sequence compression*,
+Data Compression Conference, 2007 (DCC'07), Snowbird, UT, pp43-52.
+
+*RST*/

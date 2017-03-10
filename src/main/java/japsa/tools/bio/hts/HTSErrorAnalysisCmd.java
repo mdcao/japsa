@@ -115,7 +115,8 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 			totNumIns = 0,
 			totNumDel = 0,
 			totMisMatch = 0,
-			totMatch = 0;
+			totMatch = 0,
+			totClipped = 0;
 
 		long totReadBase = 0, totRefBase = 0;
 		int  numReads = 0;
@@ -169,8 +170,8 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 			totMatch    += profile.match;
 
 			totReadBase += profile.readBase;
-			totRefBase  += profile.refBase;
-
+			totRefBase  += profile.refBase;			
+			totClipped += profile.readClipped;
 			//numReadsConsidered ++;
 		}		
 		samReader.close();
@@ -183,6 +184,8 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 		System.out.println("Insertion " + totBaseIns + " " + totNumIns+" " + totBaseIns*1.0/totRefBase);
 		System.out.println("MisMatch " + totMisMatch +" " + totMisMatch*1.0/totRefBase);
 		System.out.println("Match " + totMatch);
+		System.out.println("Clipped " + totClipped);
+		
 
 
 		System.out.println("ReadBase " + totReadBase);

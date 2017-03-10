@@ -1,9 +1,9 @@
----------------------------------------------------------------------------------------
- *barcode*: real-time de-multiplexing Nanopore reads from barcode sequencing
----------------------------------------------------------------------------------------
+---------------------------------------------------------------------------
+*barcode*: real-time de-multiplexing Nanopore reads from barcode sequencing
+---------------------------------------------------------------------------
 
- *barcode* (jsa.np.barcode) is a program that demultiplex the nanopore reads from 
- Nanopore barcode sequencing. Downstream analysis can be invoked concurrently by an input script.
+*barcode* (jsa.np.barcode) is a program that demultiplex the nanopore reads from 
+Nanopore barcode sequencing. Downstream analysis can be invoked concurrently by an input script.
 
 *barcode* is included in the `Japsa package <http://mdcao.github.io/japsa/>`_.
 
@@ -69,8 +69,8 @@ of long-read streams to do further analysis.
 	Missing any file would break down the whole pipeline.
 
 Output
-=======
- *barcode* output depends on the <*analysis script*> because the de-multiplexed reads are streamed directly to its dedicated process.
+======
+*barcode* output depends on the <*analysis script*> because the de-multiplexed reads are streamed directly to its dedicated process.
 If ones only interest in de-multiplexing alone, then the script should be as simple as to write stream to file. For example:
 
 .. code-block:: bash
@@ -89,7 +89,7 @@ This is equivalent to enable the *-p* option::
 that would print out de-multiplexed FASTA sequences <id>\_clustered.fasta	
 
 Real-time scaffolding for barcode sequencing
-=====================
+============================================
 One use-case for barcode sequencing is to run *npscarf* on the resulted de-multiplexed reads. This could be done by calling a script 
 that can take an output folder of long reads from a sample to scaffold its corresponding short-reads (e.g. SPAdes) assembly.
 E.g.

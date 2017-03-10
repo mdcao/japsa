@@ -49,6 +49,7 @@ import japsadev.tools.CaptureProbeDesignCmd;
 import japsadev.tools.CaptureVNTR;
 import japsadev.tools.CombineProdigalCmd;
 import japsadev.tools.ConsensusGenerateCmd;
+//import japsadev.tools.ConsensusGenerateCmd;
 import japsadev.tools.ConvertProbeCmd;
 import japsadev.tools.FilterPEConcordance;
 import japsadev.tools.FixRastGFFCmd;
