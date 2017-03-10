@@ -715,7 +715,7 @@ public class ScaffoldGraph{
 	public synchronized boolean joinScaffold(Contig contig, ContigBridge bridge, boolean firstDir, int secondDir){		
 		if(verbose) {
 			System.out.println("PROCEED TO CONNECT " + bridge.hashKey + " with score " + bridge.getScore() + 
-					", size " + bridge.getConnections().size() + 
+					", size " + bridge.getNumOfConnections() + 
 					", vector (" + bridge.getTransVector().toString() + 
 					"), distance " + bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));
 			bridge.display();
