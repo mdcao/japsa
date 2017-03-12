@@ -90,7 +90,6 @@ that would print out de-multiplexed FASTA sequences <id>\_clustered.fasta
 
 Real-time scaffolding for barcode sequencing
 ============================================
-
 One use-case for barcode sequencing is to run *npscarf* on the resulted de-multiplexed reads. This could be done by calling a script 
 that can take an output folder of long reads from a sample to scaffold its corresponding short-reads (e.g. SPAdes) assembly.
 E.g.

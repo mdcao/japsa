@@ -313,7 +313,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			System.out.println("Size = " + size() + " sequence");
 		}
 		
-		// Synchronize positions of 2 contigs (myVector) of a bridge based on the real list of contigs
+		// Synchronize positions of 2 contigs (myVector) of a bridge based on the real list of (maybe cloned) contigs
 		// TODO: do the same with viewAnnotation()
 		assert this.size()==bridges.size()+1:"Number of contigs ("+this.size()+")" + " doesn't agree with number of bridges ("+bridges.size()+"!";
 		for(int i=0;i<bridges.size();i++){
@@ -356,7 +356,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		//int closeDis = 0;
 		
 		if (closeBridge != null){
-			bestCloseConnection = closeBridge.fewestGapConnection();
+			bestCloseConnection = closeBridge.getBestConnection();
 			leftContig = closeBridge.firstContig;
 			/* uncomment for longread-based */
 			startLeft = bestCloseConnection.filling(null, null); 
@@ -376,7 +376,7 @@ public final class Scaffold extends LinkedList<Contig>{
 
 		for (ContigBridge bridge:bridges){
 			rightContig = ctgIter.next();
-			ContigBridge.Connection connection = bridge.fewestGapConnection();
+			ContigBridge.Connection connection = bridge.getBestConnection();
 			/* uncomment for longread-based */
 			endLeft = 	(leftContig.getRelDir()>0)?(connection.firstAlignment.refEnd):
 				 		(connection.firstAlignment.refStart);
@@ -520,7 +520,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		int endLeft   = (rightContig.getRelDir() < 0)?1:rightContig.length();
 
 		if (closeBridge != null){
-			bestCloseConnection = closeBridge.fewestGapConnection();
+			bestCloseConnection = closeBridge.getBestConnection();
 			leftContig = closeBridge.firstContig;
 			startLeft = bestCloseConnection.filling(null, null); 
 
@@ -538,7 +538,7 @@ public final class Scaffold extends LinkedList<Contig>{
 
 		for (ContigBridge bridge:bridges){
 			rightContig = ctgIter.next();
-			ContigBridge.Connection connection = bridge.fewestGapConnection();
+			ContigBridge.Connection connection = bridge.getBestConnection();
 
 			endLeft = 	(leftContig.getRelDir()>0)?(connection.firstAlignment.refEnd):
 				 		(connection.firstAlignment.refStart);

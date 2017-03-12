@@ -42,7 +42,6 @@ import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
-import japsa.seq.SequenceOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -67,7 +66,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	
 	private double score = 0;//more is better
 	private ScaffoldVector transVector = null;
-	private ArrayList<Connection> connections;//a list of connections that make up this
+	private Connection connection = null;// the representative connection of this bridge
+	private int numOfConnections = 0;
 	private Path bridgePath=null;
 	
 
@@ -87,8 +87,6 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		secondContig = c2;
 		orderIndex = ind;		
 		hashKey = makeHash(c1.index,c2.index, orderIndex);
-
-		connections = new  ArrayList<Connection>();
 		
 	}
 	/**
@@ -101,7 +99,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		dolly.bridgePath=bridgePath;
 		dolly.transVector=transVector;
 		dolly.score=score;
-		dolly.connections=connections;
+		dolly.connection=connection;
+		dolly.numOfConnections=numOfConnections;
 		return dolly;
 
 	}
@@ -118,26 +117,34 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				)
 				;
 	}
-
+/**
+ * To add one more connection supporting this bridge. For memory efficient, only 
+ * store the best ones.
+ * @param readSequence
+ * @param firstAlignment
+ * @param secondAlignment
+ * @param trans
+ * @param sc
+ * @return
+ */
 	public double addConnection(ReadFilling readSequence, 
 			AlignmentRecord firstAlignment, 
 			AlignmentRecord secondAlignment, 
 			ScaffoldVector trans, 
 			double sc){
 	
-		//NB: firstAlignment for firstContig, secondAlignment for secondContig
-
-		if (transVector == null){
+		Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
+		numOfConnections++;
+		//the metric for bridge score is important!
+		//score = score>sc?score:sc;
+		score += sc;
+		
+		if(connection == null || connection.gapsBetween() > newConnect.gapsBetween())	{
 			transVector = trans;
-			score = sc;			
-			connections.add(new Connection(readSequence, firstAlignment,secondAlignment,trans));			
-		}else{		
-			Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
-			connections.add(newConnect);	
-			//the metric for bridge score is important!
-			score += sc;
-			//score = score>sc?score:sc;
-		}
+			connection=newConnect;			
+		}	
+
+		
 		return score;
 	}
 
@@ -456,8 +463,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	/**
 	 * @return the connections
 	 */
-	public ArrayList<Connection> getConnections() {
-		return connections;
+	public int getNumOfConnections() {
+		return numOfConnections;
 	}	
 	/*
 	 * @return the equivalent path
@@ -466,24 +473,17 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		return bridgePath;
 	}
 
-	public Connection fewestGapConnection() throws IOException{
+	public Connection getBestConnection() throws IOException{
 		if(ScaffoldGraph.verbose)
 			System.out.println("Finding best connection for bridge "+ hashKey + ":");
 		
 		Connection gapsBestConnection = updatePath();
 		if(gapsBestConnection==null){
 			if(ScaffoldGraph.verbose)
-				System.out.println("Path not found! Use connection with fewest gaps instead...");
-			//Collections.sort(connections);
-			//Find the best connections (has fewest gaps)
-			int gapsBest = Integer.MAX_VALUE;
-			for (Connection connection:connections){
-				int gapsBt = connection.gapsBetween();
-				if (gapsBt < gapsBest){
-					gapsBest = gapsBt;
-					gapsBestConnection = connection;
-				}
-			}	
+				System.out.println("Path not found! Use representative connection instead...");
+
+			gapsBestConnection = connection;
+	
 		} else if(ScaffoldGraph.verbose)
 			System.out.println("Found path("+bridgePath.length+"): "+bridgePath);
 		
@@ -492,118 +492,6 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		
 		return gapsBestConnection;
 
-	}
-	/**
-	 * Try to connect contigs with consensus sequence from involved reads
-	 * @return 
-	 * @throws IOException
-	 */
-	public Connection consensusConnection(SequenceOutputStream consensusOut) throws IOException{
-		int offset = 100; //1-based
-		Collections.sort(connections);
-		ArrayList<Sequence> readList = new ArrayList<Sequence>(connections.size());
-		// locate the offset points on two contigs
-		int cutOnFirstContig, cutOnSecondContig;
-		int tS = 1, tE = firstContig.length(),
-				fS, fE;			
-		if (transVector.direction > 0){
-			fS = transVector.magnitude;
-			fE = transVector.magnitude + secondContig.length();
-		}else{
-			fE = transVector.magnitude;
-			fS = transVector.magnitude - secondContig.length();
-		}		
-		// tS---|->tE fS<-|--->fE
-		if (fS-tE > tS-fE){
-			cutOnFirstContig = firstContig.length()>offset?firstContig.length()-offset:firstContig.length();			
-			cutOnSecondContig = secondContig.length()>offset?offset:secondContig.length();
-			
-		}
-		// fS<---|->fE tS-|--->tE
-		else{
-			cutOnFirstContig = firstContig.length()>offset?offset:firstContig.length();
-			cutOnSecondContig = secondContig.length()>offset?secondContig.length()-offset:secondContig.length();
-			
-		}
-		// should we check other case (overlapped, contained..)??
-		cutOnSecondContig = transVector.direction>0?cutOnSecondContig:secondContig.length()-cutOnSecondContig;
-		
-		Connection gapsBestConnection = null;
-		int gapsBest = Integer.MAX_VALUE;
-		int rplStart=0, rplEnd=0;
-		for (Connection connection:connections){
-			int 	firstCutOnRead=mapToRead(cutOnFirstContig, connection.firstAlignment),
-					secondCutOnRead=mapToRead(cutOnSecondContig, connection.secondAlignment);
-			Sequence tmp = null;
-			try{
-//				if(firstCutOnRead < secondCutOnRead)
-//					tmp = connection.read.readSequence.subSequence(firstCutOnRead, secondCutOnRead);
-//				else
-//					tmp = connection.read.readSequence.subSequence(secondCutOnRead, firstCutOnRead);
-				ReadFilling tmpRead = connection.read;
-				if (firstCutOnRead > secondCutOnRead){
-					connection.read = connection.read.reverse();
-					connection.firstAlignment=connection.firstAlignment.reverseRead();
-					connection.secondAlignment=connection.secondAlignment.reverseRead();
-					firstCutOnRead = tmpRead.readSequence.length()-firstCutOnRead+1;
-					secondCutOnRead = tmpRead.readSequence.length()-secondCutOnRead+1;
-				}
-				
-				tmp = connection.read.readSequence.subSequence(firstCutOnRead-1, secondCutOnRead-1);
-				tmp.setName(tmpRead.readSequence.getName());
-				tmp.setDesc(tmpRead.readSequence.getDesc());
-				readList.add(tmp);
-			}
-			catch(Exception e){
-				e.printStackTrace();
-				System.err.println("Failed attempt to extract (" + firstCutOnRead + ", " + secondCutOnRead 
-									+ ") from sequence with length " + connection.read.readSequence.length());
-			}
-			int gapsBt = connection.gapsBetween();
-			if (gapsBt < gapsBest){
-				gapsBest = gapsBt;
-				gapsBestConnection = connection;
-				rplStart = firstCutOnRead;
-				rplEnd = secondCutOnRead;
-			}
-		}
-
-		Sequence consensus = null;
-		Connection consensusConnection = gapsBestConnection;
-		try {
-			consensus = ErrorCorrection.consensusSequence(readList, hashKey, "poa");
-			consensus.setName(hashKey);
-			consensus.setDesc("Consensus sequence");
-			consensus.writeFasta(consensusOut);
-			Sequence gapsBestSequence = gapsBestConnection.read.readSequence;
-			int len = gapsBestSequence.length()-(rplEnd-rplStart+1)+consensus.length();
-			Sequence rpl = new Sequence(Alphabet.DNA16(), len);
-			for (int idx=0;idx < len; idx++){
-				if (idx < rplStart)
-					rpl.setBase(idx, gapsBestSequence.getBase(idx));
-				else if (idx >= rplStart+consensus.length())
-					rpl.setBase(idx, gapsBestSequence.getBase(idx+rplEnd+1-rplStart-consensus.length()));
-				else
-					rpl.setBase(idx, consensus.getBase(idx-rplStart));
-			}
-			System.out.println("---->Changed length (loss): " + (len-gapsBestSequence.length()));
-			
-			AlignmentRecord newFirst=gapsBestConnection.firstAlignment,
-							newSecond=gapsBestConnection.secondAlignment;
-			newSecond.readStart+=len-gapsBestSequence.length();
-			newSecond.readEnd+=len-gapsBestSequence.length();
-			ArrayList<AlignmentRecord> ends = new ArrayList<AlignmentRecord>();
-			ends.add(newFirst);
-			ends.add(newSecond);
-			ReadFilling simple = new ReadFilling(rpl, ends);
-			consensusConnection = new Connection(simple,gapsBestConnection.firstAlignment,gapsBestConnection.secondAlignment,gapsBestConnection.trans);
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println("Can not generate consensus sequence!");
-		}
-		return consensusConnection;		
-		
 	}
 
 	/**
@@ -762,9 +650,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				transVector.distance(firstContig, secondContig)				
 				);
 
-		Collections.sort(connections);
-		for (Connection connect:connections)
-			connect.display();
+		connection.display();
 		System.out.println("##################END########################");
 	}
 
@@ -776,6 +662,128 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		return (int) (o.score - score);
 
 	}	
+	
+/*******************************************************************************************************
+ * Deprecated functions used for calculating the consensus connection out of a list.
+ * Now only save the best connection for memory efficiency.
+ * Can get back to this for better quality gap filling...
+ *******************************************************************************************************
+ */
+
+	/*
+	 * 
+	//Try to connect contigs with consensus sequence from involved reads
+	public Connection consensusConnection(SequenceOutputStream consensusOut) throws IOException{
+		int offset = 100; //1-based
+		Collections.sort(connections);
+		ArrayList<Sequence> readList = new ArrayList<Sequence>(connections.size());
+		// locate the offset points on two contigs
+		int cutOnFirstContig, cutOnSecondContig;
+		int tS = 1, tE = firstContig.length(),
+				fS, fE;			
+		if (transVector.direction > 0){
+			fS = transVector.magnitude;
+			fE = transVector.magnitude + secondContig.length();
+		}else{
+			fE = transVector.magnitude;
+			fS = transVector.magnitude - secondContig.length();
+		}		
+		// tS---|->tE fS<-|--->fE
+		if (fS-tE > tS-fE){
+			cutOnFirstContig = firstContig.length()>offset?firstContig.length()-offset:firstContig.length();			
+			cutOnSecondContig = secondContig.length()>offset?offset:secondContig.length();
+			
+		}
+		// fS<---|->fE tS-|--->tE
+		else{
+			cutOnFirstContig = firstContig.length()>offset?offset:firstContig.length();
+			cutOnSecondContig = secondContig.length()>offset?secondContig.length()-offset:secondContig.length();
+			
+		}
+		// should we check other case (overlapped, contained..)??
+		cutOnSecondContig = transVector.direction>0?cutOnSecondContig:secondContig.length()-cutOnSecondContig;
+		
+		Connection gapsBestConnection = null;
+		int gapsBest = Integer.MAX_VALUE;
+		int rplStart=0, rplEnd=0;
+		for (Connection connection:connections){
+			int 	firstCutOnRead=mapToRead(cutOnFirstContig, connection.firstAlignment),
+					secondCutOnRead=mapToRead(cutOnSecondContig, connection.secondAlignment);
+			Sequence tmp = null;
+			try{
+//				if(firstCutOnRead < secondCutOnRead)
+//					tmp = connection.read.readSequence.subSequence(firstCutOnRead, secondCutOnRead);
+//				else
+//					tmp = connection.read.readSequence.subSequence(secondCutOnRead, firstCutOnRead);
+				ReadFilling tmpRead = connection.read;
+				if (firstCutOnRead > secondCutOnRead){
+					connection.read = connection.read.reverse();
+					connection.firstAlignment=connection.firstAlignment.reverseRead();
+					connection.secondAlignment=connection.secondAlignment.reverseRead();
+					firstCutOnRead = tmpRead.readSequence.length()-firstCutOnRead+1;
+					secondCutOnRead = tmpRead.readSequence.length()-secondCutOnRead+1;
+				}
+				
+				tmp = connection.read.readSequence.subSequence(firstCutOnRead-1, secondCutOnRead-1);
+				tmp.setName(tmpRead.readSequence.getName());
+				tmp.setDesc(tmpRead.readSequence.getDesc());
+				readList.add(tmp);
+			}
+			catch(Exception e){
+				e.printStackTrace();
+				System.err.println("Failed attempt to extract (" + firstCutOnRead + ", " + secondCutOnRead 
+									+ ") from sequence with length " + connection.read.readSequence.length());
+			}
+			int gapsBt = connection.gapsBetween();
+			if (gapsBt < gapsBest){
+				gapsBest = gapsBt;
+				gapsBestConnection = connection;
+				rplStart = firstCutOnRead;
+				rplEnd = secondCutOnRead;
+			}
+		}
+
+		Sequence consensus = null;
+		Connection consensusConnection = gapsBestConnection;
+		try {
+			consensus = ErrorCorrection.consensusSequence(readList, hashKey, "poa");
+			consensus.setName(hashKey);
+			consensus.setDesc("Consensus sequence");
+			consensus.writeFasta(consensusOut);
+			Sequence gapsBestSequence = gapsBestConnection.read.readSequence;
+			int len = gapsBestSequence.length()-(rplEnd-rplStart+1)+consensus.length();
+			Sequence rpl = new Sequence(Alphabet.DNA16(), len);
+			for (int idx=0;idx < len; idx++){
+				if (idx < rplStart)
+					rpl.setBase(idx, gapsBestSequence.getBase(idx));
+				else if (idx >= rplStart+consensus.length())
+					rpl.setBase(idx, gapsBestSequence.getBase(idx+rplEnd+1-rplStart-consensus.length()));
+				else
+					rpl.setBase(idx, consensus.getBase(idx-rplStart));
+			}
+			System.out.println("---->Changed length (loss): " + (len-gapsBestSequence.length()));
+			
+			AlignmentRecord newFirst=gapsBestConnection.firstAlignment,
+							newSecond=gapsBestConnection.secondAlignment;
+			newSecond.readStart+=len-gapsBestSequence.length();
+			newSecond.readEnd+=len-gapsBestSequence.length();
+			ArrayList<AlignmentRecord> ends = new ArrayList<AlignmentRecord>();
+			ends.add(newFirst);
+			ends.add(newSecond);
+			ReadFilling simple = new ReadFilling(rpl, ends);
+			consensusConnection = new Connection(simple,gapsBestConnection.firstAlignment,gapsBestConnection.secondAlignment,gapsBestConnection.trans);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.err.println("Can not generate consensus sequence!");
+		}
+		return consensusConnection;		
+		
+	}
+	*/
+
+	/*
+	// Get the consensus read out of the list
 	public ReadFilling consensusRead() throws IOException{
 		int offset = 300; //1-based
 		Collections.sort(connections);
@@ -844,10 +852,10 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		return consensusRead;		
 		
 	}
+	*/
+	
 	/* 
-	 * Fill the scaffold considering all connections (get the consensus)
-	 * 
-	 */
+	//Fill the scaffold considering all connections (get the consensus)
 	public Sequence fillConsensus(AlignmentRecord ttAlign, AlignmentRecord ffAlign){
 		int tS = 1, tE = firstContig.length(),
 				fS, fE, tC, fC;
@@ -1088,7 +1096,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 //		return new Connection(rf, first, second, ScaffoldVector.composition(second.contig.getVector(),ScaffoldVector.reverse(first.contig.getVector())));
 //		
 	}
-
+	 */
+	
+	
 	/*
 	 * Connections are linking structure retrieved by 2 contigs aligned to the same nanopore read
 	 * each common read makes up a Connection

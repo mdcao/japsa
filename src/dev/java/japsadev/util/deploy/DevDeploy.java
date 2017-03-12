@@ -46,6 +46,7 @@ import japsadev.tools.BreakPointAnalysisCmd;
 import japsadev.tools.CaptureProbeDesignCmd;
 import japsadev.tools.CaptureVNTR;
 import japsadev.tools.CombineProdigalCmd;
+import japsadev.tools.ConsensusGenerateCmd;
 //import japsadev.tools.ConsensusGenerateCmd;
 import japsadev.tools.ConvertProbeCmd;
 import japsadev.tools.FilterPEConcordance;
@@ -147,7 +148,7 @@ public class DevDeploy {
 		tools.add(new SelectReadsCmd());
 		tools.add(new StructuralVariationCmd());
 		tools.add(new PhageAnalysisCmd());		
-		//tools.add(new ConsensusGenerateCmd());
+		tools.add(new ConsensusGenerateCmd());
 		
 		//new 
 		//tools.add(new AMRTrackerCmd());
