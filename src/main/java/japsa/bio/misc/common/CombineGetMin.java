@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
+ * Copyright (c) 2010 Minh Duc Cao, Monash University.  All rights reserved. *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright      *
  *    notice, this list of conditions and the following disclaimer in the    *
  *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the names of the institutions nor the names of the contributors*
+ * 3. Neither the name of Monash University nor the names of its contributors*
  *    may be used to endorse or promote products derived from this software  *
  *    without specific prior written permission.                             *
  *                                                                           *
@@ -27,82 +27,67 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 23/01/2014 - Minh Duc Cao: Revised                                        
- *  
- ****************************************************************************/
+package japsa.bio.misc.common;
 
-package japsa.util;
+import java.io.*;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+public class CombineGetMin {
+	String inFile1, inFile2;
 
-/**
- * @author minhduc
- *
- */
-public class Logging {
-	private static String prefix = "#";
+	public CombineGetMin(String in1, String in2) {
+		this.inFile1 = in1;
+		this.inFile2 = in2;
+	}
 
-	private static PrintStream infoStr = System.err;
-	private static PrintStream errorStr = System.err;
-	private static PrintStream warnStr = System.err;
+	String readLn(BufferedReader in) throws IOException {
+		String ln = "#";
+		while (ln.startsWith("#")) {
+			ln = in.readLine();
+			if (ln == null)
+				return null;
+		}
 
+		return ln;
+	}
 
-	/**
-	 * A simple logging system
-	 */
-	private Logging() {
-		// TODO Auto-generated constructor stub
-	}	
+	// Read from stdin, smooth and write back to stdout
+	public void combineMin() {
+		try {
+			// This approach is rather not memory efficient
+			BufferedReader in1 = new BufferedReader(new FileReader(inFile1));
+			BufferedReader in2 = new BufferedReader(new FileReader(inFile2));
+
+			String line1, line2;
+			int count = 0;
+			while (((line1 = readLn(in1)) != null)
+					&& (line2 = readLn(in2)) != null) {
+
+				String arr1[] = line1.split(" |\t");
+				String arr2[] = line2.split(" |\t");
+
+				double value1 = Double.parseDouble(arr1[arr1.length - 1]);
+				double value2 = Double.parseDouble(arr2[arr2.length - 1]);
+				System.out.println(count + "\t" + Math.min(value1, value2));
+				count++;
+
+			}
+			in1.close();
+			in2.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * @param args
-	 * @throws FileNotFoundException 
 	 */
-	public static void setInfoFile(String filePath) throws FileNotFoundException{
-		infoStr = new PrintStream(new FileOutputStream(filePath,true));
-	}
-	
-	public static void setWarnFile(String filePath) throws FileNotFoundException{
-		warnStr = new PrintStream(new FileOutputStream(filePath,true));
-	}
-	
-	public static void setErrorFile(String filePath) throws FileNotFoundException{
-		errorStr = new PrintStream(new FileOutputStream(filePath,true));
-	}
-	/**
-	 * Force all three streams to the same file
-	 * @param filePath
-	 * @throws FileNotFoundException
-	 */
-	public static void setFile(String filePath) throws FileNotFoundException{
-		warnStr = errorStr = infoStr = new PrintStream(new FileOutputStream(filePath,true));
-	}	
-	
-	
-	public static void info(String msg) {
-		synchronized(infoStr){
-			infoStr.println(prefix+msg);
+	public static void main(String[] args) {
+		if (args.length < 2) {
+			System.err.println("Smooth inFile1 inFile2");
+			System.exit(1);
 		}
 
-	}
-
-	public static void warn(String msg) {
-		synchronized(warnStr){
-			warnStr.println(prefix+msg);
-		}
-	}
-
-	public static void error(String msg) {
-		synchronized(errorStr){
-			errorStr.println(prefix+msg);
-		}
-	}
-
-	public static void exit(String msg, int status) {
-		error(msg);		
-		System.exit(status);
+		CombineGetMin sm = new CombineGetMin(args[0], args[1]);
+		sm.combineMin();
 	}
 }

@@ -35,9 +35,10 @@
 
 package japsa.util.deploy;
 
-//import japsa.bio.hts.HTSAlignmentParam;
-import japsa.tools.bio.bac.Genomes2ResistanceGeneCmd;
-import japsa.tools.bio.bac.MLSTCmd;
+import japsa.bio.misc.dnaPlatform.gui.DnaGraphToolCmd;
+import japsa.tools.armt.AssemblyPostProcessingCmd;
+import japsa.tools.armt.Genomes2ResistanceGeneCmd;
+import japsa.tools.armt.MLSTCmd;
 import japsa.tools.bio.hts.AddReadSequence2SamCmd;
 import japsa.tools.bio.hts.AlignmentParamOptCmd;
 import japsa.tools.bio.hts.AlternativeAllelesCmd;
@@ -159,6 +160,7 @@ public class Deploy {
 		tools.add("Bacterial analysis:");
 		tools.add(new MLSTCmd());
 		tools.add(new Genomes2ResistanceGeneCmd());
+		tools.add(new AssemblyPostProcessingCmd());
 
 		//jsa.np.
 		//tools.add(NanoporeReader());
@@ -211,13 +213,14 @@ public class Deploy {
 		//jsa.xm
 		tools.add("Export Model compression");
 		tools.add(new ExpertModelCmd());
+		tools.add(new DnaGraphToolCmd());
 		
 		
 		tools.add("==========Testing===============");
 		tools.add(new VNTRLongReadsV2Cmd());
 
 
-		//tools.add(new VNTRLongReadsV2Cmd());
+		//tools.add(new AssemblyPostProcessingCmd());
 	}	
 
 

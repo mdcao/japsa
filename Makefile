@@ -97,7 +97,12 @@ classes:  $(CLASS_FILES)
 $(CLASS_DIR):
 	mkdir -p $(CLASS_DIR)
 
-$(JAR_FILE):classes
+
+
+images:
+	cp -r  $(SRC_DIR)/japsa/bio/misc/dnaPlatform/gui/images $(CLASS_DIR)/japsa/bio/misc/dnaPlatform/gui/ 
+
+$(JAR_FILE):classes images
 	jar cf $(JAR_FILE) -C $(CLASS_DIR) . 
 
 jar: $(JAR_FILE)

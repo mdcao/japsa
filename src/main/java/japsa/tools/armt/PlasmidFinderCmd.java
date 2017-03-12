@@ -28,81 +28,79 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 23/01/2014 - Minh Duc Cao: Revised                                        
- *  
+ * 18/01/2017 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.util;
+package japsa.tools.armt;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
+
+import japsa.seq.Alphabet;
+import japsa.seq.FastaReader;
+import japsa.seq.Sequence;
+import japsa.util.CommandLine;
+import japsa.util.deploy.Deployable;
 
 /**
+ * Identify plasmids from an assembly
  * @author minhduc
  *
  */
-public class Logging {
-	private static String prefix = "#";
+@Deployable(
+		scriptName = "jsa.armt.plasmidfinder", 
+		scriptDesc = "Multi-locus strain typing"
+		)
+public class PlasmidFinderCmd extends CommandLine{
+	//CommandLine cmdLine;
+	public PlasmidFinderCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 
-	private static PrintStream infoStr = System.err;
-	private static PrintStream errorStr = System.err;
-	private static PrintStream warnStr = System.err;
+		addString("input", null, "Name of the genome file");
+		addString("plasmiddb", null, "Plasmid database");
 
-
-	/**
-	 * A simple logging system
-	 */
-	private Logging() {
-		// TODO Auto-generated constructor stub
-	}	
-
-	/**
-	 * @param args
-	 * @throws FileNotFoundException 
-	 */
-	public static void setInfoFile(String filePath) throws FileNotFoundException{
-		infoStr = new PrintStream(new FileOutputStream(filePath,true));
+		addStdHelp();
 	}
-	
-	public static void setWarnFile(String filePath) throws FileNotFoundException{
-		warnStr = new PrintStream(new FileOutputStream(filePath,true));
-	}
-	
-	public static void setErrorFile(String filePath) throws FileNotFoundException{
-		errorStr = new PrintStream(new FileOutputStream(filePath,true));
-	}
-	/**
-	 * Force all three streams to the same file
-	 * @param filePath
-	 * @throws FileNotFoundException
-	 */
-	public static void setFile(String filePath) throws FileNotFoundException{
-		warnStr = errorStr = infoStr = new PrintStream(new FileOutputStream(filePath,true));
-	}	
-	
-	
-	public static void info(String msg) {
-		synchronized(infoStr){
-			infoStr.println(prefix+msg);
+
+	public static void main(String [] args) throws IOException, InterruptedException, ParserConfigurationException, SAXException{
+		PlasmidFinderCmd cmdLine = new PlasmidFinderCmd ();
+		args = cmdLine.stdParseLine(args);
+
+		String input = cmdLine.getStringVal("input");
+		String plasmiddb = cmdLine.getStringVal("plasmiddb");
+
+		//String blastn = cmdLine.getStringVal("blastn");		
+		ArrayList<Sequence> seqs = FastaReader.readAll(input, Alphabet.DNA());
+
+		ProcessBuilder pb = new ProcessBuilder("blastn", "-subject", input,
+				"-query", plasmiddb, "-outfmt", "6 qseqid qlen nident gaps mismatch");
+
+		Process process = pb.start();
+
+		//SequenceOutputStream out = new SequenceOutputStream(process.getOutputStream());
+		//for (Sequence seq:seqs){
+		//	seq.writeFasta(out);
+		//}
+		//out.close();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));			
+
+		String line;		
+		while ((line = br.readLine()) != null) {
+			
 		}
-
-	}
-
-	public static void warn(String msg) {
-		synchronized(warnStr){
-			warnStr.println(prefix+msg);
-		}
-	}
-
-	public static void error(String msg) {
-		synchronized(errorStr){
-			errorStr.println(prefix+msg);
-		}
-	}
-
-	public static void exit(String msg, int status) {
-		error(msg);		
-		System.exit(status);
+		br.close();
+		process.waitFor();		
 	}
 }

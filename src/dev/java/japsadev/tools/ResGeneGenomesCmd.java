@@ -47,7 +47,7 @@ import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-import japsa.tools.bio.bac.Genomes2ResistanceGeneCmd;
+import japsa.tools.armt.Genomes2ResistanceGeneCmd;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;

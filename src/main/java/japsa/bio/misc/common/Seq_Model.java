@@ -1,0 +1,61 @@
+/*  
+ *  Copyright (c) David Powell <david@drp.id.au>
+ *
+ * 
+ * This file is used by both FuzzyLZ and AlignCompress
+
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License
+  as published by the Free Software Foundation; either version 2
+  of the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+
+ */
+
+package japsa.bio.misc.common;
+
+import java.io.*;
+
+/**
+ * The interface for any left to right model of sequence
+ */
+public interface Seq_Model extends Serializable {
+	public static final long serialVersionUID = 1234567890;
+
+	/**
+	 * Calculate what it would cost to encode a character
+	 * 
+	 * @see #update
+	 * @param a
+	 *            The character to encode
+	 * @param i
+	 *            The character <b>a</b> is the <b>i</b><sup>th</sup> character
+	 *            of the sequence
+	 * @return The length to encode the character <b>a</b>
+	 */
+	double encodeLen(char a, int i);
+
+	/**
+	 * Update the internal model for encoding a character. Like
+	 * {@link #encodeLen} but actually updates the internal state of the model
+	 * as required.
+	 * 
+	 * @see #encodeLen
+	 * @param a
+	 *            The character to encode
+	 * @param i
+	 *            The character <b>a</b> is the <b>i</b><sup>th</sup> character
+	 *            of the sequence
+	 * @return The length to encode the character <b>a</b>
+	 */
+	double update(char a, int i);
+}

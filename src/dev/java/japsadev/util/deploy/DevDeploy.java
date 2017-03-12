@@ -35,11 +35,9 @@
 
 package japsadev.util.deploy;
 
-
 import japsa.tools.bio.phylo.XMDistance2Cmd;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deploy;
-import japsadev.misc.dnaPlatform.gui.DnaGraphToolCmd;
 import japsadev.tools.AnalyseCaptureCmd;
 import japsadev.tools.BarCodeAnalysisCmd;
 import japsadev.tools.BarCodeNPScarfCmd;
@@ -97,7 +95,6 @@ public class DevDeploy {
 	static {
 		//tools.add(new SampleCmd());
 
-		tools.add(new DnaGraphToolCmd());
 		tools.add(new FixRastGFFCmd());
 		tools.add(new CaptureVNTR());		
 		tools.add(new NpReadAnalysys());		

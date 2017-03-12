@@ -112,7 +112,7 @@ images:
 $(CLASS_DIR):
 	mkdir -p $(CLASS_DIR)
 
-$(JAR_FILE): main-classes dev-classes images
+$(JAR_FILE): main-classes dev-classes 
 	jar cf $(JAR_FILE) -C $(CLASS_DIR) . 
 
 jar: $(JAR_FILE)

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
+ * Copyright (c) 2010 Minh Duc Cao, Monash University.  All rights reserved. *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
  * modification, are permitted provided that the following conditions        *
@@ -10,7 +10,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright      *
  *    notice, this list of conditions and the following disclaimer in the    *
  *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the names of the institutions nor the names of the contributors*
+ * 3. Neither the name of Monash University nor the names of its contributors*
  *    may be used to endorse or promote products derived from this software  *
  *    without specific prior written permission.                             *
  *                                                                           *
@@ -27,82 +27,73 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 23/01/2014 - Minh Duc Cao: Revised                                        
- *  
- ****************************************************************************/
+package japsa.bio.misc.dnaPlatform.function;
 
-package japsa.util;
+import java.io.IOException;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import japsa.bio.misc.dnaPlatform.OptionsHandle;
+import japsa.bio.misc.dnaPlatform.sequence.*;
 
 /**
- * @author minhduc
- *
+ * <p>
+ * Title: ReadFileFunction
+ * </p>
+ * 
+ * <p>
+ * Description: This function reads a sequence from a file.
+ * </p>
+ * 
+ * 
+ * @author Julie Bernal
+ * @version 1.0
  */
-public class Logging {
-	private static String prefix = "#";
+public class ReadFileFunction implements Function {
 
-	private static PrintStream infoStr = System.err;
-	private static PrintStream errorStr = System.err;
-	private static PrintStream warnStr = System.err;
+	String filename = "";
 
+	public ReadFileFunction() {
+	}
+
+	@SuppressWarnings("rawtypes")
+	public Class[] getTypeSequenceData() {
+		Class[] typeData = { SequenceData.class };
+		return typeData;
+	}
 
 	/**
-	 * A simple logging system
+	 * ReadFromFile does not have options therefore return null
+	 * 
+	 * @return OptionsHandle
 	 */
-	private Logging() {
-		// TODO Auto-generated constructor stub
-	}	
+	public OptionsHandle getOptionsHandle() {
+		return null;
+	}
 
 	/**
-	 * @param args
-	 * @throws FileNotFoundException 
+	 * OptionsHandle must be null as this function doesn't have options. seqData
+	 * is sequence to read from a file.
+	 * 
+	 * @param myOptions
+	 *            OptionsHandle
+	 * @param seqData
+	 *            SequenceData
+	 * @return SequenceData
 	 */
-	public static void setInfoFile(String filePath) throws FileNotFoundException{
-		infoStr = new PrintStream(new FileOutputStream(filePath,true));
-	}
-	
-	public static void setWarnFile(String filePath) throws FileNotFoundException{
-		warnStr = new PrintStream(new FileOutputStream(filePath,true));
-	}
-	
-	public static void setErrorFile(String filePath) throws FileNotFoundException{
-		errorStr = new PrintStream(new FileOutputStream(filePath,true));
-	}
-	/**
-	 * Force all three streams to the same file
-	 * @param filePath
-	 * @throws FileNotFoundException
-	 */
-	public static void setFile(String filePath) throws FileNotFoundException{
-		warnStr = errorStr = infoStr = new PrintStream(new FileOutputStream(filePath,true));
-	}	
-	
-	
-	public static void info(String msg) {
-		synchronized(infoStr){
-			infoStr.println(prefix+msg);
+	public SequenceData execute(OptionsHandle myOptions, SequenceData seqData)
+			throws IOException, RuntimeException {
+		if (filename != "" && filename != null) {
+			// read a file using data's method to read sequence from file
+			seqData.readDataFromFile(filename);
 		}
-
+		return seqData;
 	}
 
-	public static void warn(String msg) {
-		synchronized(warnStr){
-			warnStr.println(prefix+msg);
-		}
+	public void setFile(String sequenceFile) {
+		filename = sequenceFile;
 	}
 
-	public static void error(String msg) {
-		synchronized(errorStr){
-			errorStr.println(prefix+msg);
-		}
+	public String toString() {
+		return "Read";
 	}
 
-	public static void exit(String msg, int status) {
-		error(msg);		
-		System.exit(status);
-	}
 }
