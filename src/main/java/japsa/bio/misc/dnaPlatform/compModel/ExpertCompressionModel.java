@@ -117,6 +117,7 @@ public class ExpertCompressionModel implements CompressionModel {
 
 		DoubleSequenceData outputData = new DoubleSequenceData(data);
 		if (data instanceof DNASequenceData) {
+			
 			int hashSize = options.getIntValue("hashSize");
 			int context = options.getIntValue("context");
 			int maxExpert = options.getIntValue("maxExpert");
@@ -126,21 +127,31 @@ public class ExpertCompressionModel implements CompressionModel {
 			ExpertModel expertModel = new ExpertModel(hashSize,
 					Alphabet.DNA4(), context, maxExpert, listenThreshold,
 					chances, false);
-
+			
+			
+			try{
 			expertModel.printParams();
 			DNASequenceData dnaData = (DNASequenceData) data;
 
+			char [] ssss = dnaData.getCharData();
 			Sequence dna = new Sequence(Alphabet.DNA4(), dnaData.getCharData(),
 					dnaData.getSequenceName());
+			
+			System.out.println(ssss[0] + "    " + ssss[1]);
 
 			Sequence[] dnaArray = new Sequence[1];
+			
 			dnaArray[0] = dna;
 
 			double[] costs = expertModel.encode(dnaArray);
-
+			
 			outputData.addHistory(this);
 			outputData.addHistory(options);
 			outputData.setDoubleData(costs);
+			}catch (Exception e){
+				e.printStackTrace(System.out);
+				throw e;
+			}
 		}
 		return outputData;
 	}

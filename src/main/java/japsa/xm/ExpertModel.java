@@ -113,9 +113,9 @@ public class ExpertModel {
 
 	// Two expert seeds
 	public RepeatExpert offSetSeed; // = new OffsetCountExpert(null,1,null);// a
-									// dummy one
+	// dummy one
 	public RepeatExpert palinSeed;// = new PalindromeCountExpert(null,1,null);//
-									// a dummy one
+	// a dummy one
 	/*
 	 * Parameters of the algorithm
 	 */
@@ -123,10 +123,10 @@ public class ExpertModel {
 	protected int chances;// Number of chances given to each expert
 	PatternStore myHash; // The hashtable
 	int hashSize;
-	
+
 	boolean selfRep = false;
 	boolean binaryHash = false;
-	
+
 	LinkedList<RepeatExpert> panel;
 	Alphabet alphabet;
 
@@ -151,7 +151,7 @@ public class ExpertModel {
 
 		finalD = new double[Expert.alphabet().size()];
 		markovD = new double[Expert.alphabet().size()];// Combination of the markov
-													// experts
+		// experts
 		this.hashSize = hashSize;
 		this.binaryHash = binaryHash;
 	}
@@ -216,7 +216,8 @@ public class ExpertModel {
 				+ "bps" + "\nChances          : " + chances
 				+ "\nBinaryHash       : " + binaryHash
 				+ "\nHashType         : " + hashName + "\nExpert Type      : "
-				+ offSetSeed.getClass());
+				//+ offSetSeed.getClass()
+				);
 	}
 
 	// protected abstract void initilise(BioCompSequence[] seqArray);//should
@@ -240,7 +241,7 @@ public class ExpertModel {
 
 		store(seqArray);
 	}
-	
+
 	public void store(AbstractSequence[] seqArray) {
 		// Store all back ground sequence in the hash
 		for (int sid = 0; sid < seqArray.length - 1; sid++) {
@@ -276,13 +277,13 @@ public class ExpertModel {
 		adapMarkovEx = new AdaptiveMarkovExpert(1,256);
 		//markovEx.setNext(adapMarkovEx);
 
-		
+
 		repEx = new CombinationExpert();
 		panel = new LinkedList<RepeatExpert>();
-		
+
 		MyHashtable hash = new MyHashtable(hashSize, (int) Math.ceil(JapsaMath.log2(alphabet.size())));
 		/*************************************************************************/
-		
+
 		//System.out.println("Run first pass");
 
 		for (int sid = 0; sid < seqArray.length; sid++) {
@@ -327,7 +328,7 @@ public class ExpertModel {
 
 		markovEx = new MarkovExpert(2);
 		adapMarkovEx = new AdaptiveMarkovExpert(1, 256);
-		
+
 		panel = new LinkedList<RepeatExpert>();
 		repEx = new CombinationExpert();
 
@@ -372,7 +373,7 @@ public class ExpertModel {
 
 			if (score > baseRateProb / repeatPriorProb){
 				repEx.getCombDistribution().addWeight(nextSym,	score * ptr.probability(nextSym));
-				
+
 				repSum += score;
 				ptr.resetCounter();				
 			} else {
@@ -438,7 +439,7 @@ public class ExpertModel {
 					repEx.getCombDistribution().addWeight(a,
 							score * ptr.probability(a));
 				}
-				
+
 				repSum += score;
 				ptr.resetCounter();				
 			} else {
@@ -524,41 +525,41 @@ public class ExpertModel {
 
 				if (position > 0) {// Offset expert
 					int id = position >> posSize;
-					int pos = position % (1 << posSize);
+			int pos = position % (1 << posSize);
 
-					if (pos <= hashSize) {
-						continue;
-					}
+			if (pos <= hashSize) {
+				continue;
+			}
 
-					if (pos > hashSize && // Have enough for resurrect
-							!bitSet.get(currentInd + accLengths[sid]
-									- accLengths[id] - pos)// Not in there
-							&& pos < seqArray[id].length() - 3) {// have some
-																	// thing to
-																	// predict
-						e = offSetSeed.duplicate(seqArray[id], pos,
-								bitSet);
-						e.setID(currentInd + accLengths[sid] - accLengths[id]
-								- pos);
-					}
+			if (pos > hashSize && // Have enough for resurrect
+					!bitSet.get(currentInd + accLengths[sid]
+							- accLengths[id] - pos)// Not in there
+					&& pos < seqArray[id].length() - 3) {// have some
+				// thing to
+				// predict
+				e = offSetSeed.duplicate(seqArray[id], pos,
+						bitSet);
+				e.setID(currentInd + accLengths[sid] - accLengths[id]
+						- pos);
+			}
 				} else {// Palindrome expert
 					position = -position;
 					// position = position - hashSize;
 					int id = position >> posSize;
-					int pos = position % (1 << posSize);
+			int pos = position % (1 << posSize);
 
-					if (pos > hashSize && // Have enough for resurrect
-							(!pBitSet.get(currentInd + accLengths[sid]
-									+ accLengths[id] + pos))// ?
-							&& (pos + 3 < seqArray[id].length())) {// Have
-																			// something
-																			// to
-																			// predict
-						e = palinSeed.duplicate(seqArray[id], pos
-								- hashSize + 1, pBitSet);
-						e.setID(currentInd + accLengths[sid] + accLengths[id]
-								+ pos);
-					}
+			if (pos > hashSize && // Have enough for resurrect
+					(!pBitSet.get(currentInd + accLengths[sid]
+							+ accLengths[id] + pos))// ?
+					&& (pos + 3 < seqArray[id].length())) {// Have
+				// something
+				// to
+				// predict
+				e = palinSeed.duplicate(seqArray[id], pos
+						- hashSize + 1, pBitSet);
+				e.setID(currentInd + accLengths[sid] + accLengths[id]
+						+ pos);
+			}
 				}
 				// Add this expert in only if an identical expert not in the
 				// list
@@ -610,7 +611,7 @@ public class ExpertModel {
 		AbstractSequence seq = seqArray[sid];
 
 		ArithDecoder decoder = new ArithDecoder(new BitInput(fileIn));
-		
+
 		currentInd = 0;
 		while (!decoder.endOfStream()) {
 			int mid = decoder.getCurrentSymbolCount(total);
@@ -632,7 +633,7 @@ public class ExpertModel {
 			decoder.removeSymbolFromStream((int) (accu * total),
 					(int) ((accu + finalD[actual]) * total), total);
 			seq.setSymbol(currentInd,  actual);
-	
+
 			updateExperts(actual);
 			postCoding(seqArray, sid);
 
@@ -653,7 +654,7 @@ public class ExpertModel {
 			// Get the sequence to be encode
 			int sid = seqArray.length - 1;
 			AbstractSequence seq = seqArray[seqArray.length - 1];
-			
+
 			File file = new File(filename);
 			FileOutputStream fileOut = new FileOutputStream(file);
 
@@ -822,7 +823,7 @@ public class ExpertModel {
 		double totalCost = 0.0, totalMarkovCost = 0.0, cost;
 		PrintStream infoPs = new PrintStream(new BufferedOutputStream(new FileOutputStream(infoFile)));
 		PrintStream markovPs = null;
-		
+
 		if (markovFile != null) {
 			markovPs = new PrintStream(new BufferedOutputStream(new FileOutputStream(markovFile)));
 			markovPs.println("#Information content produced using Markov Model by the eXpert Model (XM,DCC'07, doi:10.1109/DCC.2007.7) ");

@@ -179,7 +179,7 @@ public class FuzzyLZ implements Seq_Model {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	static int DEBUG = 0;
+	static int DEBUG = 5;
 
 	/**
 	 * Parent class for forward/reverse matches. Has parameters to continue a
