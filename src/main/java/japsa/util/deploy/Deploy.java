@@ -35,7 +35,6 @@
 
 package japsa.util.deploy;
 
-import japsa.bio.misc.dnaPlatform.gui.DnaGraphToolCmd;
 import japsa.tools.armt.AssemblyPostProcessingCmd;
 import japsa.tools.armt.Genomes2ResistanceGeneCmd;
 import japsa.tools.armt.MLSTCmd;
@@ -93,6 +92,7 @@ import japsa.tools.seq.SequenceReverseComplementCmd;
 import japsa.tools.seq.SequenceSortCmd;
 import japsa.tools.seq.SequenceStatsCmd;
 import japsa.tools.seq.SplitSequenceFileCmd;
+import japsa.tools.util.DnaGraphToolCmd;
 import japsa.tools.util.StreamClientCmd;
 import japsa.tools.util.StreamServerCmd;
 import japsa.tools.xm.ExpertModelCmd;

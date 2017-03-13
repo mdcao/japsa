@@ -17,8 +17,9 @@
 //This class is written by Julie Bernal and subsequently modified and maintained
 //by Minh Duc Cao
 
-package japsa.bio.misc.dnaPlatform.gui;
+package japsa.tools.util;
 
+import japsa.bio.misc.dnaPlatform.gui.MainFrame;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
@@ -45,7 +46,7 @@ import javax.swing.*;
  * @version 1.0
  */
 
-@Deployable(scriptName = "jsa.dnaGraph", scriptDesc = "Visualisation")
+@Deployable(scriptName = "jsa.misc.dnaGraph", scriptDesc = "Visualisation")
 public class DnaGraphToolCmd extends CommandLine{	
 	public DnaGraphToolCmd() {
 		super();

@@ -105,14 +105,14 @@ all: jar
 main-classes:  $(CLASS_MAIN_FILES) 
 dev-classes:  $(CLASS_DEV_FILES) 
 
-images:
-	cp -r  $(SRC_DEV_DIR)/japsadev/misc/dnaPlatform/gui/images  $(CLASS_DIR)/japsadev/misc/dnaPlatform/gui/ 
-
 ###Create the class directory if neccessary
 $(CLASS_DIR):
 	mkdir -p $(CLASS_DIR)
 
-$(JAR_FILE): main-classes dev-classes 
+images:
+	cp -r  $(SRC_MAIN_DIR)/japsa/bio/misc/dnaPlatform/gui/images $(CLASS_DIR)/japsa/bio/misc/dnaPlatform/gui/ 
+
+$(JAR_FILE): main-classes dev-classes images
 	jar cf $(JAR_FILE) -C $(CLASS_DIR) . 
 
 jar: $(JAR_FILE)
