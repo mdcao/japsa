@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsadev.seq.nanopore.applet;
+package japsadev.seq.nanopore;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -123,7 +123,22 @@ public class NanoporeReaderStream{
 	public String format = "fastq";
 	public boolean ready = true;
 	private static final byte MIN_QUAL = '!';//The minimum quality
-
+	
+	private Demultiplexer dmplx = null;
+	private String bcFile = null;
+	
+	public void updateDemultiplexFile(String file){
+		bcFile = file;
+		try{
+			dmplx = new Demultiplexer(file);
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+	}
+	public String getBCFileName(){
+		return bcFile;
+	}
+	
 	/**
 	 * Compute average quality of a read
 	 * @param fq
@@ -261,6 +276,10 @@ public class NanoporeReaderStream{
 				for (BaseCalledFastq fq:seqList){
 					if (fq.length() >= minLength){
 						fq.setName((number?(fileNumber *3 + fq.type()) + "_":"") + fq.getName());
+						//do multiplexing here
+						if(dmplx!=null)
+							dmplx.clustering(fq);
+						
 						print(fq);						
 						if (stats){						
 							lengths.add(fq.length());

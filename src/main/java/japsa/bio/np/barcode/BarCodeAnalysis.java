@@ -11,8 +11,8 @@ import japsa.util.Logging;
 public class BarCodeAnalysis {
 	static final int SCAN_WINDOW=120, SCORE_THRES=30; 
 	public static boolean toPrint=false;
-	ArrayList<Sequence> barCodes;
-	ArrayList<Sequence> barCodeComps;
+	ArrayList<Sequence> barCodes; //barcode sequences
+	ArrayList<Sequence> barCodeComps; //barcode complement sequences
 	Process[] processes;
 	int nSamples;
 	SequenceOutputStream[] streamToScaffolder, streamToFile;

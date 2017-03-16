@@ -31,7 +31,7 @@
  * 17 Apr 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsadev.seq.nanopore.applet;
+package japsadev.seq.nanopore;
 
 import japsa.util.DynamicHistogram;
 import japsa.util.JapsaException;
@@ -82,7 +82,7 @@ import org.jfree.data.time.TimeTableXYDataset;
  *
  */
 @SuppressWarnings("serial")
-public class NanoporeReaderWindow extends JApplet{
+public class NanoporeReaderWindowApplet extends JApplet{
 	
 	//private JFrame frmNanoporeReader; //applet!!!
 	private int height = 50;
@@ -101,7 +101,7 @@ public class NanoporeReaderWindow extends JApplet{
 				try {
 					JFrame frame = new JFrame("Nanopore Reader");
 					frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-					NanoporeReaderWindow window = new NanoporeReaderWindow(new NanoporeReaderStream(),null);
+					NanoporeReaderWindowApplet window = new NanoporeReaderWindowApplet(new NanoporeReaderStream(),null);
 					//window.setVisible(true);
 					window.init();
 					frame.getContentPane().add(window);
@@ -118,7 +118,7 @@ public class NanoporeReaderWindow extends JApplet{
 	 * Create the application.
 	 * @throws IOException 
 	 */
-	public NanoporeReaderWindow(){
+	public NanoporeReaderWindowApplet(){
 		reader  = new NanoporeReaderStream();
 		dataSet = new TimeTableXYDataset();
 		
@@ -129,7 +129,7 @@ public class NanoporeReaderWindow extends JApplet{
 		
 		//setVisible(true);
 	}
-	public NanoporeReaderWindow(NanoporeReaderStream r, TimeTableXYDataset dataset) throws IOException {
+	public NanoporeReaderWindowApplet(NanoporeReaderStream r, TimeTableXYDataset dataset) throws IOException {
 		this();
 		reader = r;
 		this.dataSet = dataset;
