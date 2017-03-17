@@ -56,6 +56,7 @@ import japsadev.tools.GetFlankBlast;
 import japsadev.tools.KmerAnalysisCmd;
 import japsadev.tools.NanoporeBarcodeCmd;
 import japsadev.tools.NanoporeFast5ReaderCmd;
+import japsadev.tools.NanoporeReaderCmd;
 import japsadev.tools.NewScarfCmd;
 import japsadev.tools.PhageAnalysisCmd;
 import japsadev.tools.ProfileDPCmd;
@@ -150,6 +151,7 @@ public class DevDeploy {
 		tools.add(new PhageAnalysisCmd());		
 		tools.add(new ConsensusGenerateCmd());
 		
+		tools.add(new NanoporeReaderCmd());
 		//new 
 		//tools.add(new AMRTrackerCmd());
 		//

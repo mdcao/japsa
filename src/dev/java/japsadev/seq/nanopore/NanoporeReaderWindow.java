@@ -126,7 +126,7 @@ public class NanoporeReaderWindow implements Runnable{
 	private void initialize() throws IOException {		
 		frmNanoporeReader = new JFrame();
 		frmNanoporeReader.setTitle("Nanopore Reader");
-		frmNanoporeReader.setBounds(topC, topR, 1238, 714);
+		frmNanoporeReader.setBounds(topC, topR, 1360, 714);
 		frmNanoporeReader.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmNanoporeReader.getContentPane().setLayout(new BorderLayout(0, 0));
 
@@ -289,10 +289,10 @@ public class NanoporeReaderWindow implements Runnable{
 		controlPanel.add(formatPanel);
 
 		final JRadioButton fqRadioButton = new JRadioButton("fastq");
-		fqRadioButton.setBounds(46, 22, 62, 23);
+		fqRadioButton.setBounds(46, 22, 72, 23);
 
 		final JRadioButton faRadioButton = new JRadioButton("fasta");
-		faRadioButton.setBounds(186, 22, 62, 23);
+		faRadioButton.setBounds(186, 22, 72, 23);
 		formatPanel.setLayout(null);
 
 		final ButtonGroup formatBtGroup = new ButtonGroup();
