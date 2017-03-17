@@ -88,7 +88,7 @@ public class AssemblyPostProcessingCmd extends CommandLine {
 		
 		String summaryStr = postProcessing(sample, inputFile, outputFile);
 		if (summaryStr != null){
-			Files.write(Paths.get(summaryFile), summaryStr.getBytes());
+			Files.write(Paths.get(summaryFile), (summaryStr + "\n").getBytes());
 		}else
 			System.exit(1);
 	}
