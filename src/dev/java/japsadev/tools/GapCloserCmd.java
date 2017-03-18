@@ -101,12 +101,17 @@ public class GapCloserCmd extends CommandLine{
 	} 	
 	//static boolean hardClip = false;
 
-	public static void main(String[] args) throws 
-	IOException, InterruptedException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		CommandLine cmdLine = new GapCloserCmd();		
 		args = cmdLine.stdParseLine(args);
 
 		/***********************************************************************/
+		ScaffoldGraph.verbose = cmdLine.getBooleanVal("verbose");
+		ScaffoldGraph.reportAll = !cmdLine.getBooleanVal("long");
+		ScaffoldGraph.eukaryotic = cmdLine.getBooleanVal("eukaryotic");
+		ScaffoldGraph.updateGenome = cmdLine.getBooleanVal("update");
+		
+		
 		String prefix = cmdLine.getStringVal("prefix");
 		//String bamFile = cmdLine.getStringVal("bamFile");
 
@@ -216,11 +221,6 @@ public class GapCloserCmd extends CommandLine{
 		if(maxRepeat <= 0)
 			Logging.exit("Maximal possible repeat length has to be positive", 1);
 
-
-		ScaffoldGraph.verbose = cmdLine.getBooleanVal("verbose");
-		ScaffoldGraph.reportAll = !cmdLine.getBooleanVal("long");
-		ScaffoldGraph.eukaryotic = cmdLine.getBooleanVal("eukaryotic");
-		ScaffoldGraph.updateGenome = cmdLine.getBooleanVal("update");
 		
 		ScaffoldGraph.minContigLength = minContig;
 		ScaffoldGraph.minSupportReads = minSupport;	
@@ -287,7 +287,7 @@ public class GapCloserCmd extends CommandLine{
 			ContigBridge.forceFilling();
 			graph.printSequences(true);
 		}
-
+		
 	}
 }
 

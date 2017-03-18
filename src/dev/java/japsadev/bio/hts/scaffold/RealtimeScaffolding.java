@@ -22,7 +22,7 @@ import japsa.util.Logging;
 //Simulate fastq realtime generator: jsa.np.timeEmulate -i <input> -output -
 public class RealtimeScaffolding {
 	RealtimeScaffolder scaffolder;
-	public ScaffoldGraphDFS graph;
+	public ScaffoldGraph graph;
 	int currentReadCount = 0;
 	long currentBaseCount = 0;	
 
