@@ -29,7 +29,7 @@ public class Demultiplexer {
 			barCodeComps.add(Alphabet.DNA.complement(barCode));
 		}
 		
-//		SCAN_WINDOW = barcodeLen * 4;
+//		SCAN_WINDOW = barcodeLen * 5;
 //		SCORE_THRES = (int) (barcodeLen * 1.5);
 	}
 	/*
