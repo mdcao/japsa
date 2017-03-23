@@ -1,5 +1,6 @@
 package japsadev.seq.nanopore;
 
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -43,6 +44,7 @@ public class FXExample extends Application {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
+      
         launch(FXExample.class, args);
     }
     
@@ -62,7 +64,7 @@ public class FXExample extends Application {
         
 // To see only the grid in the center, uncomment the following statement
 // comment out the setCenter() call farther down        
-//        border.setCenter(addGridPane());
+        border.setCenter(addGridPane());
         
 // Choose either a TilePane or FlowPane for right region and comment out the
 // one you aren't using        
@@ -72,7 +74,7 @@ public class FXExample extends Application {
 // To see only the grid in the center, comment out the following statement
 // If both setCenter() calls are executed, the anchor pane from the second
 // call replaces the grid from the first call        
-        border.setCenter(addAnchorPane(addGridPane()));
+//        border.setCenter(addAnchorPane(addGridPane()));
  
         Scene scene = new Scene(border);
         stage.setScene(scene);
@@ -190,7 +192,7 @@ public class FXExample extends Application {
         
         // House icon in column 1, rows 1-2
         ImageView imageHouse = new ImageView(
-                    new Image(FXExample.class.getResourceAsStream("graphics/house.png")));
+                    new Image(FXExample.class.getResourceAsStream("/house.png")));
         grid.add(imageHouse, 0, 0, 1, 2);
  
         // Left label in column 1 (bottom), row 3
@@ -200,7 +202,7 @@ public class FXExample extends Application {
         
         // Chart in columns 2-3, row 3
         ImageView imageChart = new ImageView(
-                    new Image(FXExample.class.getResourceAsStream("graphics/piechart.png")));
+                    new Image(FXExample.class.getResourceAsStream("/piechart.png")));
         grid.add(imageChart, 1, 2, 2, 1);
         
         // Right label in column 4 (top), row 3
@@ -225,10 +227,11 @@ public class FXExample extends Application {
         flow.setStyle("-fx-background-color: DAE6F3;");
  
         ImageView pages[] = new ImageView[8];
+        
+        
         for (int i=0; i<8; i++) {
             pages[i] = new ImageView(
-                    new Image(FXExample.class.getResourceAsStream(
-                    "graphics/chart_"+(i+1)+".png")));
+                    new Image(FXExample.class.getResourceAsStream("/chart_"+(i+1)+".png")));
             flow.getChildren().add(pages[i]);
         }
  
@@ -250,8 +253,7 @@ public class FXExample extends Application {
         ImageView pages[] = new ImageView[8];
         for (int i=0; i<8; i++) {
             pages[i] = new ImageView(
-                    new Image(FXExample.class.getResourceAsStream(
-                    "graphics/chart_"+(i+1)+".png")));
+                    new Image(FXExample.class.getResourceAsStream("/chart_"+(i+1)+".png")));
             tile.getChildren().add(pages[i]);
         }
  
