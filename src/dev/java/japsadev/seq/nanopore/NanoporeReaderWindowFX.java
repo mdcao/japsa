@@ -25,6 +25,7 @@ import org.jfree.data.time.TimeTableXYDataset;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -34,6 +35,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
@@ -46,6 +48,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -94,7 +97,7 @@ public class NanoporeReaderWindowFX extends Application{
  
         Scene scene = new Scene(border);
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Layout Sample");
+        primaryStage.setTitle("npreader");
 	    primaryStage.show();
     	
     }
@@ -137,6 +140,7 @@ public class NanoporeReaderWindowFX extends Application{
         return hbox;
     }
         
+    private final int LeftPaneWidth=400;
     /*
      * Creates a VBox with a list of parameter settings
      */
@@ -147,39 +151,54 @@ public class NanoporeReaderWindowFX extends Application{
         vbox.setSpacing(8);              // Gap between nodes
  
         Text title = new Text("Settings");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 15));
         vbox.getChildren().add(title);
         final Separator sep1 = new Separator();
-        sep1.setMaxWidth(400);
+        sep1.setMaxWidth(LeftPaneWidth);
         vbox.getChildren().add(1, sep1);
         
         vbox.getChildren().add(addInputPane());
         vbox.setSpacing(5);
         final Separator sep2 = new Separator();
-        sep2.setMaxWidth(400);
+        sep2.setMaxWidth(LeftPaneWidth);
         vbox.getChildren().add(3, sep2);
 
         
         vbox.getChildren().add(addOutputPane());
+        vbox.setSpacing(5);
+        final Separator sep3 = new Separator();
+        sep3.setMaxWidth(LeftPaneWidth);
+        vbox.getChildren().add(5, sep3);
+        
         vbox.getChildren().add(addOptionPane());
+        
         vbox.getChildren().add(addBarcodePane());
+        
+        
         return vbox;
     }
     private GridPane addInputPane() {
 		// TODO Auto-generated method stub
-    	GridPane inputPane = new GridPane();
-    	inputPane.setPadding(new Insets(10, 10, 10, 10));
-    	inputPane.setVgap(5);
-    	inputPane.setHgap(5);
+    	GridPane inputPane = createGridPane(LeftPaneWidth, 5);
     	
-    	final Label label = new Label("Input:");
-    	GridPane.setConstraints(label, 0,0);
-    	inputPane.getChildren().add(label);
+    	final Label inputLabel = new Label("Input:");
+    	inputLabel.setFont(Font.font("Roman", FontWeight.BOLD, 12));
+    	inputLabel.setStyle("-fx-underline:true");
+    	GridPane.setConstraints(inputLabel, 0,0);
+    	inputPane.getChildren().add(inputLabel);
+    	
+    	final CheckBox includeFailBox = new CheckBox("Include fail folder");
+    	includeFailBox.setOnAction((event) -> {
+    	    //reader.doFail = includeFailBox.isSelected();
+    	    
+    	});	
+    	GridPane.setConstraints(includeFailBox, 2,0,3,1);
+    	inputPane.getChildren().add(includeFailBox);
     	
     	final TextField textField = new TextField();
     	textField.setPromptText("Enter folder of basecalled reads...");
-    	textField.setPrefWidth(250);
-    	GridPane.setConstraints(textField, 1,0);
+    	//textField.setPrefWidth(250);
+    	GridPane.setConstraints(textField, 0,1,4,1);
     	inputPane.getChildren().add(textField);
     	
 
@@ -188,59 +207,128 @@ public class NanoporeReaderWindowFX extends Application{
     	inputBrowseButton.setOnAction((event) -> {
         	
         });
-    	GridPane.setConstraints(inputBrowseButton, 2,0);
+    	GridPane.setConstraints(inputBrowseButton, 4,1);
+    	GridPane.setHalignment(inputBrowseButton,HPos.LEFT);
     	inputPane.getChildren().add(inputBrowseButton);
-    	
-    	final CheckBox includeFailBox = new CheckBox("Include fail folder");
-    	includeFailBox.setOnAction((event) -> {
+    	//inputPane.setGridLinesVisible(true);
+
+    	final CheckBox barcodeBox = new CheckBox("Demultiplexing for barcode analysis");
+    	barcodeBox.setOnAction((event) -> {
     	    //reader.doFail = includeFailBox.isSelected();
     	    
     	});	
-    	GridPane.setConstraints(includeFailBox, 1,1);
-    	inputPane.getChildren().add(includeFailBox);
+    	GridPane.setConstraints(barcodeBox, 0,3,5,1);
+    	inputPane.getChildren().add(barcodeBox);
+    	
+    	final TextField barcodeInputField = new TextField();
+    	barcodeInputField.setPromptText("Enter name of barcode sequences file...");
+    	GridPane.setConstraints(barcodeInputField, 0,4,4,1);
+    	inputPane.getChildren().add(barcodeInputField);
+    	
+    	ImageButton barcodeBrowseButton = new ImageButton("/folder.png");
+    	barcodeBrowseButton.setPrefSize(10, 10);
+    	barcodeBrowseButton.setOnAction((event) -> {
+        	
+        });
+    	GridPane.setConstraints(barcodeBrowseButton, 4,4);
+    	GridPane.setHalignment(barcodeBrowseButton,HPos.LEFT);
+    	inputPane.getChildren().add(barcodeBrowseButton);
     	
 		return inputPane;
 	}
     private GridPane addOutputPane() {
 		// TODO Auto-generated method stub
-    	GridPane outputPane = new GridPane();
-    	outputPane.setPadding(new Insets(10, 10, 10, 10));
-    	outputPane.setVgap(5);
-    	outputPane.setHgap(5);
+    	GridPane outputPane = createGridPane(LeftPaneWidth, 5);
     	
-    	final Label label = new Label("Output:");
-    	GridPane.setConstraints(label, 0,0);
-    	outputPane.getChildren().add(label);
+    	final Label outputLabel = new Label("Output:");
+    	outputLabel.setFont(Font.font("Roman", FontWeight.BOLD, 12));
+    	outputLabel.setStyle("-fx-underline:true");
+    	GridPane.setConstraints(outputLabel, 0,0);
+    	outputPane.getChildren().add(outputLabel);
     	
-    	final TextField textField = new TextField();
-    	textField.setPromptText("Enter folder of basecalled reads...");
-    	textField.setPrefWidth(250);
-    	GridPane.setConstraints(textField, 1,0);
-    	outputPane.getChildren().add(textField);
+        final ComboBox<String> outputDestComboBox = new ComboBox<String>();
+        outputDestComboBox.getItems().addAll("to file", "to stdout");   
+        outputDestComboBox.setValue("to file");
+        GridPane.setConstraints(outputDestComboBox, 1, 0, 2, 1);
+        outputPane.getChildren().add(outputDestComboBox);
+        
+        final ComboBox<String> outputFormatComboBox = new ComboBox<String>();
+        outputFormatComboBox.getItems().addAll("fastq", "fasta");   
+        outputFormatComboBox.setValue("fastq");
+        GridPane.setConstraints(outputFormatComboBox, 3, 0);
+        outputPane.getChildren().add(outputFormatComboBox);
+    	
+    	final TextField outputTextField = new TextField();
+    	outputTextField.setPromptText("Enter name of output file...");
+    	GridPane.setConstraints(outputTextField, 0,1,4,1);
+    	outputPane.getChildren().add(outputTextField);
     	
 
-    	ImageButton inputBrowseButton = new ImageButton("/folder.png");
-    	inputBrowseButton.setPrefSize(10, 10);
-    	inputBrowseButton.setOnAction((event) -> {
+    	ImageButton outputBrowseButton = new ImageButton("/folder.png");
+    	outputBrowseButton.setPrefSize(10, 10);
+    	outputBrowseButton.setOnAction((event) -> {
         	
         });
-    	GridPane.setConstraints(inputBrowseButton, 2,0);
-    	outputPane.getChildren().add(inputBrowseButton);
-    	
-    	final CheckBox includeFailBox = new CheckBox("Include fail folder");
-    	includeFailBox.setOnAction((event) -> {
+    	GridPane.setConstraints(outputBrowseButton, 4,1);
+    	GridPane.setHalignment(outputBrowseButton, HPos.LEFT);
+    	outputPane.getChildren().add(outputBrowseButton);
+
+
+    	final CheckBox serversStreaming = new CheckBox("Streaming output to server(s)");
+    	serversStreaming.setOnAction((event) -> {
     	    //reader.doFail = includeFailBox.isSelected();
     	    
     	});	
-    	GridPane.setConstraints(includeFailBox, 1,1);
-    	outputPane.getChildren().add(includeFailBox);
+    	GridPane.setConstraints(serversStreaming, 0,4,3,1);
+    	outputPane.getChildren().add(serversStreaming);
     	
+    	final TextField outputStreamField = new TextField();
+    	outputStreamField.setPromptText("address1:port1, address2:port2,...");
+    	GridPane.setConstraints(outputStreamField, 0,5,4,1);
+    	outputPane.getChildren().add(outputStreamField);
+    	
+    	//outputPane.setGridLinesVisible(true);
 		return outputPane;
 	}
-    private StackPane addOptionPane() {
+    private GridPane addOptionPane() {
 		// TODO Auto-generated method stub
-    	StackPane optionPane = new StackPane();
+    	GridPane optionPane = createGridPane(LeftPaneWidth, 5);
     	
+    	final Label optLabel = new Label("Other options:");
+    	optLabel.setFont(Font.font("Roman", FontWeight.BOLD, 12));
+    	optLabel.setStyle("-fx-underline:true");
+    	
+    	GridPane.setConstraints(optLabel, 0,0,4,1);
+    	optionPane.getChildren().add(optLabel);
+    	
+    	final CheckBox includeAllReadBox = new CheckBox("Including template and complement reads");
+    	includeAllReadBox.setOnAction((event) -> {
+    	    //reader.doFail = includeFailBox.isSelected();
+    	    
+    	});	
+    	GridPane.setConstraints(includeAllReadBox, 0,2,4,1);
+    	optionPane.getChildren().add(includeAllReadBox);
+
+    	final CheckBox numGenerateBox = new CheckBox("Assign unique number to every read name");
+    	numGenerateBox.setOnAction((event) -> {
+    	    //reader.doFail = includeFailBox.isSelected();
+    	    
+    	});	
+    	GridPane.setConstraints(numGenerateBox, 0,4,4,1);
+    	optionPane.getChildren().add(numGenerateBox);
+    	
+    	final Label label2 = new Label("Filter out read shorter than ");
+    	GridPane.setConstraints(label2, 0,6,3,1);
+    	optionPane.getChildren().add(label2);
+    	
+    	final TextField minLenField = new TextField();
+    	minLenField.setPromptText("1");
+    	GridPane.setConstraints(minLenField, 3,6);
+    	optionPane.getChildren().add(minLenField);
+    	
+    	final Label label3 = new Label("bp");
+    	GridPane.setConstraints(label3, 4,6);
+    	optionPane.getChildren().add(label3);
     	
 		return optionPane;
 	}
@@ -252,7 +340,17 @@ public class NanoporeReaderWindowFX extends Application{
 		return barcodePane;
 	}
     
-    
+    private GridPane createGridPane(int width, int ncols){
+        GridPane gridpane = new GridPane();
+        for (int i = 0; i < ncols; i++) {
+            ColumnConstraints column = new ColumnConstraints(1.0*width/ncols);
+            gridpane.getColumnConstraints().add(column);
+        }
+        gridpane.setPadding(new Insets(10, 10, 10, 10));
+        gridpane.setVgap(5);
+        gridpane.setHgap(5);
+        return gridpane;
+    }
 	/*
      * Uses a stack pane to create a help icon and adds it to the right side of an HBox
      * 
