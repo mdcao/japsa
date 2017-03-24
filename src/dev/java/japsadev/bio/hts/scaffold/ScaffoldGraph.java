@@ -61,16 +61,16 @@ import java.util.Date;
 import java.util.HashMap;
 
 public class ScaffoldGraph{
-	public static int maxRepeatLength=7500; //for ribosomal repeat cluster in bacteria (Koren S et al 2013), it's 9.1kb for yeast.
-	public static int marginThres = 1000;
-	public static int minContigLength = 300;
-	public static int minSupportReads = 1;
-	public static boolean verbose = false;
-	public static boolean reportAll = false;
-	public static boolean updateGenome = true;
-	public static boolean eukaryotic = false;
-	public boolean annotation = false;
-	public static byte assembler =0b00; // 0 for SPAdes, 1 for ABySS
+	public static volatile int maxRepeatLength=7500; //for ribosomal repeat cluster in bacteria (Koren S et al 2013), it's 9.1kb for yeast.
+	public static volatile int marginThres = 1000;
+	public static volatile int minContigLength = 300;
+	public static volatile int minSupportReads = 1;
+	public static volatile boolean verbose = false;
+	public static volatile boolean reportAll = false;
+	public static volatile boolean updateGenome = true;
+	public static volatile boolean eukaryotic = false;
+	public volatile boolean annotation = false;
+	public static volatile byte assembler =0b00; // 0 for SPAdes, 1 for ABySS
 	
 	public static HashMap<Integer,Integer> countOccurence=new HashMap<Integer,Integer>();
 	public String prefix = "out";					
@@ -229,26 +229,35 @@ public class ScaffoldGraph{
 		int [] lengths = new int[scaffolds.length];
 		int count=0;
 		double sum = 0;
+//		for (int i = 0; i < scaffolds.length;i++){
+//			if(scaffolds[i].isEmpty()) continue;
+//			int len = scaffolds[i].length();
+//			
+//			if(contigs.get(i).head == i)
+//				if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+//						|| scaffolds[i].closeBridge != null //circular plasmid contigs
+//						|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required	
+//				{
+//					lengths[count] = len;
+//					sum+=len;
+//					count++;
+//				}
+//		}
 		for (int i = 0; i < scaffolds.length;i++){
 			if(scaffolds[i].isEmpty()) continue;
 			int len = scaffolds[i].length();
 			
-//			if ((contigs.get(i).head == i 
-//					&& !isRepeat(contigs.get(i))
-//					&& len > maxRepeatLength
-//					)
-//					|| scaffolds[i].closeBridge != null)
-			if(contigs.get(i).head == i)
-				if (	(!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
-						|| scaffolds[i].closeBridge != null //circular plasmid contigs
-						|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required	
-				{
-					lengths[count] = len;
-					sum+=len;
-					count++;
-				}
+			if(contigs.get(i).head == i){
+				if (isRepeat(contigs.get(i)) && !reportAll ) 
+					continue;
+			}
+			else if(!isRepeat(contigs.get(i)) || !needMore(contigs.get(i)) )
+				continue;
+			
+			lengths[count] = len;
+			sum+=len;
+			count++;		
 		}
-
 		Arrays.sort(lengths);
 
 		int index = lengths.length;
@@ -983,7 +992,8 @@ public class ScaffoldGraph{
 		//countOccurence=new HashMap<Integer,Integer>();
 		int currentNumberOfContigs = 0,
 			currentNumberOfCirculars = 0;	
-		
+		System.out.println("2 " + ScaffoldGraph.reportAll);
+
 		if(annotation){
 			SequenceOutputStream aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
 			for (int i = 0; i < scaffolds.length;i++){
@@ -991,47 +1001,75 @@ public class ScaffoldGraph{
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
 
 				if(contigs.get(i).head == i ){
-					if(scaffolds[i].closeBridge != null ){
-						currentNumberOfContigs++;
-						currentNumberOfCirculars++;					
-					}					
-					else if ((!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
-							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required
-						currentNumberOfContigs++;
-					else
-						continue;
+					if(!reportAll && isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null)
+						continue;			
 					
-					if(verbose) 
-						System.out.println("Scaffold " + i + " estimated length " + len);
-					if(allOut)
-						scaffolds[i].viewAnnotation(aout);
+					if(scaffolds[i].closeBridge != null ){
+						currentNumberOfCirculars++;					
+					}
+					currentNumberOfContigs++;
+					
+				}else if(reportAll && isRepeat(contigs.get(i)) && needMore(contigs.get(i))){
+					currentNumberOfContigs++;
+				}else{
+					continue;
 				}
+				
+				if(verbose) 
+					System.out.println("Scaffold " + i + " estimated length " + len);
+				if(allOut)
+					scaffolds[i].viewAnnotation(aout);
 			}
 			aout.close();
 		} else{
 			SequenceOutputStream 	fout = SequenceOutputStream.makeOutputStream(prefix+".fin.fasta"),
 									jout = SequenceOutputStream.makeOutputStream(prefix+".fin.japsa");
+//			for (int i = 0; i < scaffolds.length;i++){
+//				if(scaffolds[i].isEmpty()) continue;
+//				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
+//				
+//				if(contigs.get(i).head == i){
+//					if(scaffolds[i].closeBridge != null ){
+//						currentNumberOfContigs++;
+//						currentNumberOfCirculars++;					
+//					}					
+//					else if ((!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
+//							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required
+//						currentNumberOfContigs++;
+//					else
+//						continue;
+//					
+//					if(verbose) 
+//						System.out.println("Scaffold " + i + " estimated length " + len);
+//					if(allOut)
+//						scaffolds[i].viewSequence(fout, jout);
+//				}
+//			}
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
-				
-				if(contigs.get(i).head == i){
-					if(scaffolds[i].closeBridge != null ){
-						currentNumberOfContigs++;
-						currentNumberOfCirculars++;					
-					}					
-					else if ((!isRepeat(contigs.get(i)) && len > maxRepeatLength) //here are the big ones
-							|| (reportAll && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov)) //short,repetitive sequences here if required
-						currentNumberOfContigs++;
-					else
-						continue;
+
+				if(contigs.get(i).head == i ){
+					if(!reportAll && isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null)
+						continue;			
 					
-					if(verbose) 
-						System.out.println("Scaffold " + i + " estimated length " + len);
-					if(allOut)
-						scaffolds[i].viewSequence(fout, jout);
+					if(scaffolds[i].closeBridge != null ){
+						currentNumberOfCirculars++;					
+					}
+					currentNumberOfContigs++;
+					
+				}else if(reportAll && isRepeat(contigs.get(i)) && needMore(contigs.get(i))){
+					currentNumberOfContigs++;
+				}else{
+					continue;
 				}
+				
+				if(verbose) 
+					System.out.println("Scaffold " + i + " estimated length " + len);
+				if(allOut)
+					scaffolds[i].viewSequence(fout, jout);
 			}
+			
 			fout.close();
 			jout.close();
 		}

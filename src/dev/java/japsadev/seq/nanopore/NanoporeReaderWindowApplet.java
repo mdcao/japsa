@@ -718,7 +718,7 @@ public class NanoporeReaderWindowApplet extends JApplet{
 			public void run() {
 				// TODO Auto-generated method stub
 				try{
-					reader.readFastq(reader.folder);
+					reader.readFast5();
 				}catch (JapsaException e){
 					System.err.println(e.getMessage());
 					e.getStackTrace();

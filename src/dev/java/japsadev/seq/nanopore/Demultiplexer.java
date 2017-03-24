@@ -1,6 +1,7 @@
 package japsadev.seq.nanopore;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
@@ -8,21 +9,28 @@ import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
 public class Demultiplexer {
-	static final int SCAN_WINDOW=120, SCORE_THRES=30; 
+	int 	SCAN_WINDOW=120, 
+			SCORE_THRES=30; 
+	
 	ArrayList<Sequence> barCodes;
 	ArrayList<Sequence> barCodeComps;
 	int nSamples;
+	int barcodeLen;
 	
 	public Demultiplexer(String barcodeFile) throws IOException{
 		barCodes = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
 		nSamples = barCodes.size();
-
+		barcodeLen = barCodes.get(0).length();
+		
 		barCodeComps = new ArrayList<Sequence> (barCodes.size());
 		Sequence barCode = null;
 		for(int i=0;i<nSamples;i++){		
 			barCode = barCodes.get(i);
 			barCodeComps.add(Alphabet.DNA.complement(barCode));
 		}
+		
+//		SCAN_WINDOW = barcodeLen * 5;
+//		SCORE_THRES = (int) (barcodeLen * 1.5);
 	}
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
@@ -35,14 +43,14 @@ public class Demultiplexer {
 				cr = new double[nSamples],
 				cf = new double[nSamples];
 
-		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),21,"barcode");
-		Sequence tipSeq = new Sequence(Alphabet.DNA4(),SCAN_WINDOW,"tip");
+		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(), barcodeLen, "barcode");
+		Sequence tipSeq = new Sequence(Alphabet.DNA4(), SCAN_WINDOW, "tip");
 
 		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
 
-		if(seq.length() < 200){
-			Logging.info("Ignoring short sequence " + seq.getName());
-			seq.setName(seq.getName()+"_DMP:unknown");
+		if(seq.length() < barcodeLen * 2 + 200){
+//			Logging.info("Ignoring short sequence " + seq.getName());
+			seq.setName("Barcode:unknown:0.0|" + seq.getName());
 			return;
 		}
 		//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
@@ -85,19 +93,21 @@ public class Demultiplexer {
 		}
 
 		String retval="";
-		if(bestScore <= SCORE_THRES){
-			Logging.info("Unknown sequence " + seq.getName());
-			retval = "_DMP:unknown";
-		}
-		//if the best (sum of both ends) alignment in template sequence is greater than in complement
-		else {
-			Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
-			retval = "_DMP:"+barCodes.get(bestIndex).getName();
-		}
-		seq.setName(seq.getName() + retval);
+//		if(bestScore <= SCORE_THRES){
+//			Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
+//		}
+//		//if the best (sum of both ends) alignment in template sequence is greater than in complement
+//		else {
+//			Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
+//
+//		}
+		DecimalFormat twoDForm =  new DecimalFormat("#.##");
+		
+		retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+"|";
+		
+		seq.setName(retval + seq.getName());
 
 	}
-
 	
 	public final class BarcodeAlignment {
 
