@@ -36,13 +36,13 @@ package japsa.tools.bio.hts;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.HTSUtilities;
+import japsa.util.IntArray;
 import japsa.util.deploy.Deployable;
 
 /**
@@ -50,9 +50,9 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(
-	scriptName = "jsa.hts.n50", 
-	scriptDesc = "Compute N50 of an assembly"
-	)
+		scriptName = "jsa.hts.n50", 
+		scriptDesc = "Compute N50 of an assembly"
+		)
 public class GetN50Cmd extends CommandLine{
 	//CommandLine cmdLine;
 	public GetN50Cmd(){
@@ -71,20 +71,48 @@ public class GetN50Cmd extends CommandLine{
 
 		/**********************************************************************/
 		String input = cmdTool.getStringVal("input");
-		
-	
-		ArrayList<Sequence> seqs = SequenceReader.readAll(input, Alphabet.DNA());			
-		double n50 = HTSUtilities.n50(seqs);
-		System.out.println(n50 + "\t" + seqs.size());
+
+
+		//ArrayList<Sequence> seqs = SequenceReader.readAll(input, Alphabet.DNA());
+		Alphabet dna = Alphabet.DNA();
+		//double n50 = HTSUtilities.n50(seqs);
+		//System.out.println(n50 + "\t" + seqs.size());
+
+		IntArray lengthArray = new IntArray();
+		SequenceReader reader = SequenceReader.getReader(input);
+
+		Sequence seq = null;
+		while ((seq = reader.nextSequence(dna))!= null){
+			lengthArray.add(seq.length());
+		}
+
+		int [] lengths = lengthArray.toArray();
+
+		double sum = 0;
+		for (int i = 0;i < lengths.length;i++){			
+			sum += lengths[i];
+		}		
+		Arrays.sort(lengths);
+
+		int index = lengths.length;
+		double contains = 0;
+		while (contains < sum/2){
+			index --;
+			contains += lengths[index];
+		}
+
+		int n50 = lengths[index]; 
+		System.out.println(n50 + "\t" + lengths.length + "\t" + sum);
+
 	}	
 }
 
 /*RST*
 -----------------------------------------
-*jsa.hts.n50*: Compute N50 of an assembly 
+ *jsa.hts.n50*: Compute N50 of an assembly 
 -----------------------------------------
 
 <usage> 
 
-*RST*/
+ *RST*/
 
