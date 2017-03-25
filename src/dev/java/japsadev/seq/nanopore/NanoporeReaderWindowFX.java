@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JTextField;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -23,6 +25,7 @@ import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeTableXYDataset;
 
 import javafx.application.Application;
+import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
@@ -52,6 +55,7 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -92,6 +96,9 @@ public class NanoporeReaderWindowFX extends Application{
         addStackPane(hbox);  
         
     // Here the main content    
+//        GridPane mainGrid = addGridPane();
+//        mainGrid.prefWidthProperty().bind(border.widthProperty());
+//        mainGrid.prefHeightProperty().bind(border.heightProperty());
         border.setCenter(addGridPane());
         
  
@@ -140,7 +147,7 @@ public class NanoporeReaderWindowFX extends Application{
         return hbox;
     }
         
-    private final int LeftPaneWidth=400;
+    private final int LeftPaneWidth=360;
     /*
      * Creates a VBox with a list of parameter settings
      */
@@ -171,15 +178,13 @@ public class NanoporeReaderWindowFX extends Application{
         vbox.getChildren().add(5, sep3);
         
         vbox.getChildren().add(addOptionPane());
-        
-        vbox.getChildren().add(addBarcodePane());
-        
+               
         
         return vbox;
     }
     private GridPane addInputPane() {
 		// TODO Auto-generated method stub
-    	GridPane inputPane = createGridPane(LeftPaneWidth, 5);
+    	GridPane inputPane = createFixGridPane(LeftPaneWidth, 5);
     	
     	final Label inputLabel = new Label("Input:");
     	inputLabel.setFont(Font.font("Roman", FontWeight.BOLD, 12));
@@ -238,7 +243,7 @@ public class NanoporeReaderWindowFX extends Application{
 	}
     private GridPane addOutputPane() {
 		// TODO Auto-generated method stub
-    	GridPane outputPane = createGridPane(LeftPaneWidth, 5);
+    	GridPane outputPane = createFixGridPane(LeftPaneWidth, 5);
     	
     	final Label outputLabel = new Label("Output:");
     	outputLabel.setFont(Font.font("Roman", FontWeight.BOLD, 12));
@@ -255,11 +260,11 @@ public class NanoporeReaderWindowFX extends Application{
         final ComboBox<String> outputFormatComboBox = new ComboBox<String>();
         outputFormatComboBox.getItems().addAll("fastq", "fasta");   
         outputFormatComboBox.setValue("fastq");
-        GridPane.setConstraints(outputFormatComboBox, 3, 0);
+        GridPane.setConstraints(outputFormatComboBox, 3, 0, 2, 1);
         outputPane.getChildren().add(outputFormatComboBox);
     	
     	final TextField outputTextField = new TextField();
-    	outputTextField.setPromptText("Enter name of output file...");
+    	outputTextField.setPromptText("Enter name for output file...");
     	GridPane.setConstraints(outputTextField, 0,1,4,1);
     	outputPane.getChildren().add(outputTextField);
     	
@@ -292,7 +297,7 @@ public class NanoporeReaderWindowFX extends Application{
 	}
     private GridPane addOptionPane() {
 		// TODO Auto-generated method stub
-    	GridPane optionPane = createGridPane(LeftPaneWidth, 5);
+    	GridPane optionPane = createFixGridPane(LeftPaneWidth, 5);
     	
     	final Label optLabel = new Label("Other options:");
     	optLabel.setFont(Font.font("Roman", FontWeight.BOLD, 12));
@@ -332,21 +337,31 @@ public class NanoporeReaderWindowFX extends Application{
     	
 		return optionPane;
 	}
-    private StackPane addBarcodePane() {
-		// TODO Auto-generated method stub
-    	StackPane barcodePane = new StackPane();
-    	
-    	
-		return barcodePane;
-	}
     
-    private GridPane createGridPane(int width, int ncols){
+    private GridPane createFixGridPane(int width, int ncols){
         GridPane gridpane = new GridPane();
         for (int i = 0; i < ncols; i++) {
             ColumnConstraints column = new ColumnConstraints(1.0*width/ncols);
             gridpane.getColumnConstraints().add(column);
         }
         gridpane.setPadding(new Insets(10, 10, 10, 10));
+        gridpane.setVgap(5);
+        gridpane.setHgap(5);
+        return gridpane;
+    }
+    private GridPane createAutoresizeGridPane(int ncols, int nrows){
+        GridPane gridpane = new GridPane();
+        for (int i = 0; i < ncols; i++) {
+            ColumnConstraints column = new ColumnConstraints();
+            column.setPercentWidth(100/ncols);
+            gridpane.getColumnConstraints().add(column);
+        }
+        for (int i = 0; i < nrows; i++) {
+            RowConstraints row = new RowConstraints();
+            row.setPercentHeight(100/nrows);
+            gridpane.getRowConstraints().add(row);
+        }
+        gridpane.setPadding(new Insets(5, 5, 5, 5));
         gridpane.setVgap(5);
         gridpane.setHgap(5);
         return gridpane;
@@ -390,53 +405,213 @@ public class NanoporeReaderWindowFX extends Application{
      */
     private GridPane addGridPane() {
  
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(0, 10, 0, 10));
- 
-        // Category in column 2, row 1
-        Text category = new Text("Sales:");
-        category.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        grid.add(category, 1, 0); 
+        GridPane mainGrid = createAutoresizeGridPane(2,2);
+        mainGrid.setStyle("-fx-background-color: #C0C0C0;");
+        /*
+         * Read count chart
+         */
+		final JFreeChart chart = ChartFactory.createStackedXYAreaChart(
+				"Read count",      // chart title
+				"Time",             // domain axis label
+				"Read number",                   // range axis label
+				dataSet   
+				);			
+
+		final StackedXYAreaRenderer render = new StackedXYAreaRenderer();
+
+		DateAxis domainAxis = new DateAxis();
+		domainAxis.setAutoRange(true);
+		domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
+
+		XYPlot plot = (XYPlot) chart.getPlot();
+		plot.setRenderer(render);
+		plot.setDomainAxis(domainAxis);
+		plot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
+		plot.setForegroundAlpha(0.5f);
+
+		NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+		rangeAxis.setNumberFormatOverride(new DecimalFormat("#,###.#"));
+		rangeAxis.setAutoRange(true);
+
+		ChartPanel chartPanel = new ChartPanel(chart,	            
+			450,
+			280,
+			450,
+			280,
+			450,
+			280,
+			true,
+			true,  // properties
+			true,  // save
+			true,  // print
+			true,  // zoom
+			true   // tooltips
+			);		
+
+		SwingNode chartSwingNode = new SwingNode();
+		chartSwingNode.setContent(chartPanel);
+		GridPane.setConstraints(chartSwingNode, 0,0);
+		
+		mainGrid.getChildren().add(chartSwingNode);	
+			
+		/*
+		 * Read length histogram	
+		 */
+		
+		histoLengthDataSet=new DynamicHistogram();
+		histoLengthDataSet.prepareSeries("Read Length", 500, 0, 40000);
+		//histoDataset.prepareSeries("2D", 50, 0, 50000);
+		//histoDataset.prepareSeries("template", 50, 0, 50000);
+		//histoDataset.prepareSeries("complement", 50, 0, 50000);		
+
+		JFreeChart hisLengths=ChartFactory.createHistogram("Read length histogram","length","count",histoLengthDataSet,PlotOrientation.VERTICAL,true,true,false);
+		ChartPanel hisPanel = new ChartPanel(hisLengths,	            
+			450,
+			280,
+			450,
+			280,
+			450,
+			280,
+			true,
+			true,  // properties
+			true,  // save
+			true,  // print
+			true,  // zoom
+			true   // tooltips
+			);
+
+
+		XYPlot hisPlot = (XYPlot) hisLengths.getPlot();
+		hisPlot.getDomainAxis().setAutoRange(true);		
+		hisPlot.getRangeAxis().setAutoRange(true);
+
+		SwingNode lengthSwingNode = new SwingNode();
+		lengthSwingNode.setContent(hisPanel);
+		GridPane.setConstraints(lengthSwingNode, 1,0);
+//		GridPane.setHalignment(lengthSwingNode, HPos.CENTER);
+//		GridPane.setValignment(lengthSwingNode, VPos.CENTER);
+		mainGrid.getChildren().add(lengthSwingNode);
+		
+		/*
+		 * Quality histogram
+		 */
+		histoQualDataSet=new DynamicHistogram();
+		histoQualDataSet.setType(HistogramType.SCALE_AREA_TO_1);
+		histoQualDataSet.prepareSeries("2D", 100, 0, 30);
+		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
+		histoQualDataSet.prepareSeries("template", 100, 0, 30);
+
+		JFreeChart hisQual=ChartFactory.createXYLineChart("Quality","quality","frequency",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
+		ChartPanel hisQualPanel = new ChartPanel(hisQual,	            
+			450,
+			280,
+			450,
+			280,
+			450,
+			280,
+			true,
+			true,  // properties
+			true,  // save
+			true,  // print
+			true,  // zoom
+			true   // tooltips
+			);
+
+
+		XYPlot hisQualPlot = (XYPlot) hisQual.getPlot();
+		hisQualPlot.getDomainAxis().setAutoRange(true);		
+		hisQualPlot.getRangeAxis().setAutoRange(true);
+		hisQualPlot.setForegroundAlpha(0.8F);
+		
+		SwingNode qualitySwingNode = new SwingNode();
+		qualitySwingNode.setContent(hisQualPanel);
+		GridPane.setConstraints(qualitySwingNode, 1,1);
+		mainGrid.getChildren().add(qualitySwingNode);
+        /*
+         * Statistics field
+         */
+        GridPane countPane = new GridPane();
+        countPane.setPadding(new Insets(10, 10, 10, 10));
+        countPane.setVgap(5);
+        countPane.setHgap(5);
+        countPane.setStyle("-fx-background-color: #AABBCC;");
+
         
-        // Title in column 3, row 1
-        Text chartTitle = new Text("Current Year");
-        chartTitle.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        grid.add(chartTitle, 2, 0);
+        final Label lblFiles = new Label("Total fast5 files");
+		GridPane.setConstraints(lblFiles, 0, 0);
+		countPane.getChildren().add(lblFiles);
+
+		txtTFiles = new TextField("0");
+		txtTFiles.setPrefWidth(100);
+		GridPane.setConstraints(txtTFiles, 1, 0);
+		countPane.getChildren().add(txtTFiles);
+
+		final Label lblpFiles = new Label("Pass files");
+		GridPane.setConstraints(lblpFiles, 0, 1);
+		countPane.getChildren().add(lblpFiles);
+
+		txtPFiles = new TextField("0");
+		txtPFiles.setEditable(false);
+		txtPFiles.setPrefWidth(100);
+		GridPane.setConstraints(txtPFiles, 1, 1);
+		countPane.getChildren().add(txtPFiles);
+
+
+		final Label lblFFiles = new Label("Fail files");
+		GridPane.setConstraints(lblFFiles, 0, 2);
+		countPane.getChildren().add(lblFFiles);
+
+		txtFFiles = new TextField("0");
+		txtFFiles.setEditable(false);
+		txtFFiles.setPrefWidth(100);
+		GridPane.setConstraints(txtFFiles, 1, 2);
+		countPane.getChildren().add(txtFFiles);
+
+
+
+		final Label lbl2DReads = new Label("2D reads");
+		GridPane.setConstraints(lbl2DReads, 0, 3);
+		countPane.getChildren().add(lbl2DReads);		
+
+		txt2DReads= new TextField("0");
+		txt2DReads.setEditable(false);
+		txt2DReads.setPrefWidth(100);
+		GridPane.setConstraints(txt2DReads, 1, 3);
+		countPane.getChildren().add(txt2DReads);
+
+		final Label lblTempReads = new Label("Template reads");
+		GridPane.setConstraints(lblTempReads, 0, 4);
+		countPane.getChildren().add(lblTempReads);
+
+		txtTempReads= new TextField("0");
+		txtTempReads.setEditable(false);
+		txtTempReads.setPrefWidth(100);
+		GridPane.setConstraints(txtTempReads, 1, 4);
+		countPane.getChildren().add(txtTempReads);
+
+		final Label lblCompReads = new Label("Complement reads");
+		GridPane.setConstraints(lblCompReads, 0, 5);
+		countPane.getChildren().add(lblCompReads);
+		
+		txtCompReads= new TextField("0");
+		txtCompReads.setEditable(false);
+		txtCompReads.setPrefWidth(100);
+		GridPane.setConstraints(txtCompReads, 1, 5);
+        countPane.getChildren().add(txtCompReads);
         
-        // Subtitle in columns 2-3, row 2
-        Text chartSubtitle = new Text("Goods and Services");
-        grid.add(chartSubtitle, 1, 1, 2, 1);
+        GridPane.setConstraints(countPane, 0, 1);
+        mainGrid.getChildren().add(countPane);
         
-        // House icon in column 1, rows 1-2
-        ImageView imageHouse = new ImageView(
-                    new Image(getClass().getResourceAsStream("/house.png")));
-        grid.add(imageHouse, 0, 0, 1, 2);
- 
-        // Left label in column 1 (bottom), row 3
-        Text goodsPercent = new Text("Goods\n80%");
-        GridPane.setValignment(goodsPercent, VPos.BOTTOM);
-        grid.add(goodsPercent, 0, 2);
-        
-        // Chart in columns 2-3, row 3
-        ImageView imageChart = new ImageView(
-                    new Image(getClass().getResourceAsStream("/piechart.png")));
-        grid.add(imageChart, 1, 2, 2, 1);
-        
-        // Right label in column 4 (top), row 3
-        Text servicesPercent = new Text("Services\n20%");
-        GridPane.setValignment(servicesPercent, VPos.TOP);
-        grid.add(servicesPercent, 3, 2);
-        
-//            grid.setGridLinesVisible(true);
-        return grid;
+//        mainGrid.setGridLinesVisible(true);
+        return mainGrid;
     }
     
     
     /******************************************************************************************
      * ** Here are variables and controls for all plots ***************************************
      ******************************************************************************************/
+	TextField txtCompReads, txtTempReads, txt2DReads;
+	TextField txtPFiles, txtFFiles, txtTFiles;
 	DynamicHistogram histoLengthDataSet, histoQualDataSet;
 
 	private boolean stillRun = true;
@@ -458,13 +633,13 @@ public class NanoporeReaderWindowFX extends Application{
 			dataSet.add(period, reader.compCount,"complement");
 			dataSet.add(period, reader.tempCount,"template");
 
-//			txtTFiles.setText(reader.fileNumber+"");	                
-//			txtPFiles.setText(reader.passNumber+"");
-//			txtFFiles.setText(reader.failNumber+"");
-//
-//			txt2DReads.setText(reader.twoDCount+"");
-//			txtCompReads.setText(reader.compCount+"");
-//			txtTempReads.setText(reader.tempCount+"");
+			txtTFiles.setText(reader.fileNumber+"");	                
+			txtPFiles.setText(reader.passNumber+"");
+			txtFFiles.setText(reader.failNumber+"");
+
+			txt2DReads.setText(reader.twoDCount+"");
+			txtCompReads.setText(reader.compCount+"");
+			txtTempReads.setText(reader.tempCount+"");
 
 			int currentIndex = reader.lengths.size();
 
