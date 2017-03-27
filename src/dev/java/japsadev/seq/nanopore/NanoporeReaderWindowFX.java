@@ -69,8 +69,8 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 public class NanoporeReaderWindowFX extends Application{
 	
-	static TimeTableXYDataset dataSet;
-	static NanoporeReaderStream reader;
+	static TimeTableXYDataset dataSet = new TimeTableXYDataset();
+	static NanoporeReaderStream reader = new NanoporeReaderStream();
 	public static void setData(TimeTableXYDataset data){
 		dataSet = data;
 	}
@@ -108,7 +108,14 @@ public class NanoporeReaderWindowFX extends Application{
 	    primaryStage.show();
     	
     }
-    
+    /*
+     * Components from left pane
+     */
+    private Button 	buttonStart, buttonStop,
+    				inputBrowseButton, barcodeBrowseButton, outputBrowseButton;
+    private TextField inputTF, barcodeTF, outputTF, streamTF, minLenTF;
+    private CheckBox failCB, barcodeCB, readTypeCB, addNumberCB;
+    private ComboBox<String> outputToCombo, outputFormatCombo;
     /*
      * Creates an HBox with two buttons for the top region
      */
@@ -125,7 +132,7 @@ public class NanoporeReaderWindowFX extends Application{
         ImageView viewStart = new ImageView(imageStart); 
         viewStart.setFitWidth(20);
         viewStart.setFitHeight(20);
-        Button buttonStart = new Button("Start", viewStart);
+        buttonStart = new Button("Start", viewStart);
         buttonStart.setPrefSize(100, 20);
         buttonStart.setOnAction((event) -> {
         	
@@ -135,10 +142,21 @@ public class NanoporeReaderWindowFX extends Application{
         ImageView viewStop = new ImageView(imageStop); 
         viewStop.setFitWidth(20);
         viewStop.setFitHeight(20);
-        Button buttonStop = new Button("Stop", viewStop);
+        buttonStop = new Button("Stop", viewStop);
         buttonStop.setPrefSize(100, 20);
         buttonStop.setOnAction((event) -> {
-        	
+        	reader.wait = false;
+
+			while (!reader.done){
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException ee) {					
+					ee.printStackTrace();
+				}
+			}
+
+			stillRun = false;
+			FxDialogs.showInformation("Information", "Done");;
         });
         
         
@@ -157,7 +175,7 @@ public class NanoporeReaderWindowFX extends Application{
         vbox.setPadding(new Insets(10)); // Set all sides to 10
         vbox.setSpacing(8);              // Gap between nodes
  
-        Text title = new Text("Settings");
+        final Text title = new Text("Settings");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 15));
         vbox.getChildren().add(title);
         final Separator sep1 = new Separator();
@@ -183,7 +201,6 @@ public class NanoporeReaderWindowFX extends Application{
         return vbox;
     }
     private GridPane addInputPane() {
-		// TODO Auto-generated method stub
     	GridPane inputPane = createFixGridPane(LeftPaneWidth, 5);
     	
     	final Label inputLabel = new Label("Input:");
@@ -192,22 +209,22 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(inputLabel, 0,0);
     	inputPane.getChildren().add(inputLabel);
     	
-    	final CheckBox includeFailBox = new CheckBox("Include fail folder");
-    	includeFailBox.setOnAction((event) -> {
+    	failCB = new CheckBox("Include fail folder");
+    	failCB.setOnAction((event) -> {
     	    //reader.doFail = includeFailBox.isSelected();
     	    
     	});	
-    	GridPane.setConstraints(includeFailBox, 2,0,3,1);
-    	inputPane.getChildren().add(includeFailBox);
+    	GridPane.setConstraints(failCB, 2,0,3,1);
+    	inputPane.getChildren().add(failCB);
     	
-    	final TextField textField = new TextField();
-    	textField.setPromptText("Enter folder of basecalled reads...");
+    	inputTF = new TextField();
+    	inputTF.setPromptText("Enter folder of basecalled reads...");
     	//textField.setPrefWidth(250);
-    	GridPane.setConstraints(textField, 0,1,4,1);
-    	inputPane.getChildren().add(textField);
+    	GridPane.setConstraints(inputTF, 0,1,4,1);
+    	inputPane.getChildren().add(inputTF);
     	
 
-    	ImageButton inputBrowseButton = new ImageButton("/folder.png");
+    	inputBrowseButton = new ImageButton("/folder.png");
     	inputBrowseButton.setPrefSize(10, 10);
     	inputBrowseButton.setOnAction((event) -> {
         	
@@ -217,20 +234,20 @@ public class NanoporeReaderWindowFX extends Application{
     	inputPane.getChildren().add(inputBrowseButton);
     	//inputPane.setGridLinesVisible(true);
 
-    	final CheckBox barcodeBox = new CheckBox("Demultiplexing for barcode analysis");
-    	barcodeBox.setOnAction((event) -> {
+    	barcodeCB = new CheckBox("Demultiplexing for barcode analysis");
+    	barcodeCB.setOnAction((event) -> {
     	    //reader.doFail = includeFailBox.isSelected();
     	    
     	});	
-    	GridPane.setConstraints(barcodeBox, 0,3,5,1);
-    	inputPane.getChildren().add(barcodeBox);
+    	GridPane.setConstraints(barcodeCB, 0,3,5,1);
+    	inputPane.getChildren().add(barcodeCB);
     	
-    	final TextField barcodeInputField = new TextField();
-    	barcodeInputField.setPromptText("Enter name of barcode sequences file...");
-    	GridPane.setConstraints(barcodeInputField, 0,4,4,1);
-    	inputPane.getChildren().add(barcodeInputField);
+    	barcodeTF = new TextField();
+    	barcodeTF.setPromptText("Enter name of barcode sequences file...");
+    	GridPane.setConstraints(barcodeTF, 0,4,4,1);
+    	inputPane.getChildren().add(barcodeTF);
     	
-    	ImageButton barcodeBrowseButton = new ImageButton("/folder.png");
+    	barcodeBrowseButton = new ImageButton("/folder.png");
     	barcodeBrowseButton.setPrefSize(10, 10);
     	barcodeBrowseButton.setOnAction((event) -> {
         	
@@ -242,7 +259,6 @@ public class NanoporeReaderWindowFX extends Application{
 		return inputPane;
 	}
     private GridPane addOutputPane() {
-		// TODO Auto-generated method stub
     	GridPane outputPane = createFixGridPane(LeftPaneWidth, 5);
     	
     	final Label outputLabel = new Label("Output:");
@@ -251,25 +267,25 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(outputLabel, 0,0);
     	outputPane.getChildren().add(outputLabel);
     	
-        final ComboBox<String> outputDestComboBox = new ComboBox<String>();
-        outputDestComboBox.getItems().addAll("to file", "to stdout");   
-        outputDestComboBox.setValue("to file");
-        GridPane.setConstraints(outputDestComboBox, 1, 0, 2, 1);
-        outputPane.getChildren().add(outputDestComboBox);
+        outputToCombo = new ComboBox<String>();
+        outputToCombo.getItems().addAll("to file", "to stdout");   
+        outputToCombo.setValue("to file");
+        GridPane.setConstraints(outputToCombo, 1, 0, 2, 1);
+        outputPane.getChildren().add(outputToCombo);
         
-        final ComboBox<String> outputFormatComboBox = new ComboBox<String>();
-        outputFormatComboBox.getItems().addAll("fastq", "fasta");   
-        outputFormatComboBox.setValue("fastq");
-        GridPane.setConstraints(outputFormatComboBox, 3, 0, 2, 1);
-        outputPane.getChildren().add(outputFormatComboBox);
+        outputFormatCombo = new ComboBox<String>();
+        outputFormatCombo.getItems().addAll("fastq", "fasta");   
+        outputFormatCombo.setValue("fastq");
+        GridPane.setConstraints(outputFormatCombo, 3, 0, 2, 1);
+        outputPane.getChildren().add(outputFormatCombo);
     	
-    	final TextField outputTextField = new TextField();
-    	outputTextField.setPromptText("Enter name for output file...");
-    	GridPane.setConstraints(outputTextField, 0,1,4,1);
-    	outputPane.getChildren().add(outputTextField);
+    	outputTF = new TextField();
+    	outputTF.setPromptText("Enter name for output file...");
+    	GridPane.setConstraints(outputTF, 0,1,4,1);
+    	outputPane.getChildren().add(outputTF);
     	
 
-    	ImageButton outputBrowseButton = new ImageButton("/folder.png");
+    	outputBrowseButton = new ImageButton("/folder.png");
     	outputBrowseButton.setPrefSize(10, 10);
     	outputBrowseButton.setOnAction((event) -> {
         	
@@ -287,16 +303,15 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(serversStreaming, 0,4,3,1);
     	outputPane.getChildren().add(serversStreaming);
     	
-    	final TextField outputStreamField = new TextField();
-    	outputStreamField.setPromptText("address1:port1, address2:port2,...");
-    	GridPane.setConstraints(outputStreamField, 0,5,4,1);
-    	outputPane.getChildren().add(outputStreamField);
+    	streamTF = new TextField();
+    	streamTF.setPromptText("address1:port1, address2:port2,...");
+    	GridPane.setConstraints(streamTF, 0,5,4,1);
+    	outputPane.getChildren().add(streamTF);
     	
     	//outputPane.setGridLinesVisible(true);
 		return outputPane;
 	}
     private GridPane addOptionPane() {
-		// TODO Auto-generated method stub
     	GridPane optionPane = createFixGridPane(LeftPaneWidth, 5);
     	
     	final Label optLabel = new Label("Other options:");
@@ -306,30 +321,30 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(optLabel, 0,0,4,1);
     	optionPane.getChildren().add(optLabel);
     	
-    	final CheckBox includeAllReadBox = new CheckBox("Including template and complement reads");
-    	includeAllReadBox.setOnAction((event) -> {
+    	readTypeCB = new CheckBox("Including template and complement reads");
+    	readTypeCB.setOnAction((event) -> {
     	    //reader.doFail = includeFailBox.isSelected();
     	    
     	});	
-    	GridPane.setConstraints(includeAllReadBox, 0,2,4,1);
-    	optionPane.getChildren().add(includeAllReadBox);
+    	GridPane.setConstraints(readTypeCB, 0,2,4,1);
+    	optionPane.getChildren().add(readTypeCB);
 
-    	final CheckBox numGenerateBox = new CheckBox("Assign unique number to every read name");
-    	numGenerateBox.setOnAction((event) -> {
+    	addNumberCB = new CheckBox("Assign unique number to every read name");
+    	addNumberCB.setOnAction((event) -> {
     	    //reader.doFail = includeFailBox.isSelected();
     	    
     	});	
-    	GridPane.setConstraints(numGenerateBox, 0,4,4,1);
-    	optionPane.getChildren().add(numGenerateBox);
+    	GridPane.setConstraints(addNumberCB, 0,4,4,1);
+    	optionPane.getChildren().add(addNumberCB);
     	
     	final Label label2 = new Label("Filter out read shorter than ");
     	GridPane.setConstraints(label2, 0,6,3,1);
     	optionPane.getChildren().add(label2);
     	
-    	final TextField minLenField = new TextField();
-    	minLenField.setPromptText("1");
-    	GridPane.setConstraints(minLenField, 3,6);
-    	optionPane.getChildren().add(minLenField);
+    	minLenTF = new TextField();
+    	minLenTF.setPromptText("1");
+    	GridPane.setConstraints(minLenTF, 3,6);
+    	optionPane.getChildren().add(minLenTF);
     	
     	final Label label3 = new Label("bp");
     	GridPane.setConstraints(label3, 4,6);
@@ -368,7 +383,7 @@ public class NanoporeReaderWindowFX extends Application{
     }
 	/*
      * Uses a stack pane to create a help icon and adds it to the right side of an HBox
-     * 
+     * TODO: handle it!!!
      * @param hb HBox to add the stack to
      */
     private void addStackPane(HBox hb) {
@@ -384,7 +399,7 @@ public class NanoporeReaderWindowFX extends Application{
         helpIcon.setArcHeight(3.5);
         helpIcon.setArcWidth(3.5);
         
-        Text helpText = new Text("?");
+        final Text helpText = new Text("?");
         helpText.setFont(Font.font("Verdana", FontWeight.BOLD, 18));
         helpText.setFill(Color.WHITE);
         helpText.setStroke(Color.web("#7080A0")); 
@@ -530,10 +545,12 @@ public class NanoporeReaderWindowFX extends Application{
         /*
          * Statistics field
          */
-        GridPane countPane = new GridPane();
-        countPane.setPadding(new Insets(10, 10, 10, 10));
-        countPane.setVgap(5);
-        countPane.setHgap(5);
+//        GridPane countPane = new GridPane();
+//        countPane.setPadding(new Insets(10, 10, 10, 10));
+//        countPane.setVgap(5);
+//        countPane.setHgap(5);
+		GridPane countPane = createAutoresizeGridPane(3, 9);
+		countPane.setPadding(new Insets(30, 30, 30, 30));
         countPane.setStyle("-fx-background-color: #AABBCC;");
 
         
