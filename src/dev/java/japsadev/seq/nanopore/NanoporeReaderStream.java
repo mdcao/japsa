@@ -115,7 +115,7 @@ public class NanoporeReaderStream{
 	public boolean realtime = true;
 	public int interval = 1, age = 30000;
 	public boolean doFail = false;
-	public String output = "";
+	public String output = "-";
 	public String streamServers = null;
 	boolean doLow = true;
 	//public boolean getTime = false;
@@ -125,7 +125,7 @@ public class NanoporeReaderStream{
 	public boolean ready = true;
 	private static final byte MIN_QUAL = '!';//The minimum quality
 	
-	private Demultiplexer dmplx = null;
+	Demultiplexer dmplx = null;
 	private String bcFile = null;
 	
 	public void updateDemultiplexFile(String file){

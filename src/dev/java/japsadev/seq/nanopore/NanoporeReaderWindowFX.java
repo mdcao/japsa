@@ -25,6 +25,10 @@ import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeTableXYDataset;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.concurrent.Task;
 import javafx.embed.swing.SwingNode;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -66,6 +70,9 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 public class NanoporeReaderWindowFX extends Application{
 	
@@ -79,26 +86,58 @@ public class NanoporeReaderWindowFX extends Application{
 	}
 	
     public static void main(String[] args) {
+    	//set reader manually for testing purpose. comment it out for the final version
+    	reader.folder = "/home/hoangnguyen/workspace/data/rawNanopore/downloads";
+    	//reader.updateDemultiplexFile("/home/hoangnguyen/workspace/data/barcode/barcode-npreader/nnp_barcode.fasta");
+		reader.realtime = true;
+		System.setProperty("java.awt.headless", "false");
+		reader.stats = true;//GUI implies stats
+		reader.ready = false;
+		
+		new Thread(new Runnable(){
+
+			@Override
+			public void run() {
+				while (!reader.ready){
+					Logging.info("NOT READY");
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {					
+						e.printStackTrace();
+					}			
+				}
+				// TODO Auto-generated method stub
+				try{
+					reader.readFast5();
+				}catch (JapsaException e){
+					System.err.println(e.getMessage());
+					e.getStackTrace();
+					interupt(e);
+				}catch (Exception e){
+					e.printStackTrace();;
+				}
+			}
+			
+		}).start();
+		
         Application.launch(args);
     }
     
     public void start(Stage primaryStage){  	 
-	// Use a border pane as the root for scene
+    	
+    	//Start with a BorderPane as root
 	    BorderPane border = new BorderPane();
-	// Put start/stop button here  
+	    // Put start/stop button here  
 	    HBox hbox = addHBox();
 	    border.setTop(hbox);
 	    
-	// All the parameters setting to the left 
-	    border.setLeft(addVBox());
+	    // All the parameters setting to the left 
+	    border.setLeft(addVBox(primaryStage));
 	        
-	// Add a stack to the HBox in the top region
+	    // Add a stack to the HBox in the top region
         addStackPane(hbox);  
         
-    // Here the main content    
-//        GridPane mainGrid = addGridPane();
-//        mainGrid.prefWidthProperty().bind(border.widthProperty());
-//        mainGrid.prefHeightProperty().bind(border.heightProperty());
+        // Here the main content    
         border.setCenter(addGridPane());
         
  
@@ -107,6 +146,88 @@ public class NanoporeReaderWindowFX extends Application{
         primaryStage.setTitle("npreader");
 	    primaryStage.show();
     	
+
+	     Task<Void> task = new Task<Void>() {
+	         @Override protected Void call() throws Exception {
+                 if (isCancelled()) return null;
+
+                 Platform.runLater(new Runnable() {
+                     @Override public void run() {
+                 		int lastIndexLengths = 0;//, lastIndexLengths2D = 0, lastIndexLengthsComp = 0, lastIndexLengthsTemp = 0;
+                		int lastIndexQual2D = 0, lastIndexQualComp = 0, lastIndexQualTemp = 0;
+        			
+                		while(stillRun) {				                
+                			//synchronized(reader) {//avoid concurrent update					
+                			Second period = new Second();
+                			dataSet.add(period, reader.twoDCount,"2D");
+                			dataSet.add(period, reader.compCount,"complement");
+                			dataSet.add(period, reader.tempCount,"template");
+
+                			txtTFiles.setText(reader.fileNumber+"");	                
+                			txtPFiles.setText(reader.passNumber+"");
+                			txtFFiles.setText(reader.failNumber+"");
+
+                			txt2DReads.setText(reader.twoDCount+"");
+                			txtCompReads.setText(reader.compCount+"");
+                			txtTempReads.setText(reader.tempCount+"");
+
+                			int currentIndex = reader.lengths.size();
+
+                			if (currentIndex > lastIndexLengths){			
+                				int index = histoLengthDataSet.getSeriesIndex("Read Length");
+                				for (int i = lastIndexLengths; i < currentIndex;i++)
+                					histoLengthDataSet.addSeries(index, reader.lengths.get(i));
+
+                				lastIndexLengths = currentIndex;
+
+                				histoLengthDataSet.notifyChanged();
+                			}
+
+                			currentIndex = reader.qual2D.size();
+                			if (currentIndex > lastIndexQual2D){
+                				int index = histoQualDataSet.getSeriesIndex("2D");
+                				for (int i = lastIndexQual2D; i < currentIndex;i++)
+                					histoQualDataSet.addSeries(index, reader.qual2D.get(i));
+
+                				lastIndexQual2D = currentIndex;
+                				histoQualDataSet.notifyChanged();
+                			}
+
+                			currentIndex = reader.qualComp.size();
+                			if (currentIndex > lastIndexQualComp){
+                				int index = histoQualDataSet.getSeriesIndex("complement");
+                				for (int i = lastIndexQualComp; i < currentIndex;i++)
+                					histoQualDataSet.addSeries(index, reader.qualComp.get(i));
+
+                				lastIndexQualComp = currentIndex;
+                				histoQualDataSet.notifyChanged();
+                			}
+
+                			currentIndex = reader.qualTemp.size();
+                			if (currentIndex > lastIndexQualTemp){
+                				int index = histoQualDataSet.getSeriesIndex("template");
+                				for (int i = lastIndexQualTemp; i < currentIndex;i++)
+                					histoQualDataSet.addSeries(index, reader.qualTemp.get(i));
+
+                				lastIndexQualTemp = currentIndex;
+                				histoQualDataSet.notifyChanged();
+                			}
+
+                			try {
+                				Thread.sleep(1000);
+                			} catch (InterruptedException ex) {
+                				Logging.error(ex.getMessage());
+                			}
+                		}
+                     }
+                 });
+	             
+	             return null;
+	         }
+	     };
+        Thread th = new Thread(task);
+        th.setDaemon(true);
+        th.start();
     }
     /*
      * Components from left pane
@@ -114,7 +235,7 @@ public class NanoporeReaderWindowFX extends Application{
     private Button 	buttonStart, buttonStop,
     				inputBrowseButton, barcodeBrowseButton, outputBrowseButton;
     private TextField inputTF, barcodeTF, outputTF, streamTF, minLenTF;
-    private CheckBox failCB, barcodeCB, readTypeCB, addNumberCB;
+    private CheckBox failCB, barcodeCB, serversCB, allReadsOptCB, addNumberOptCB;
     private ComboBox<String> outputToCombo, outputFormatCombo;
     /*
      * Creates an HBox with two buttons for the top region
@@ -135,8 +256,87 @@ public class NanoporeReaderWindowFX extends Application{
         buttonStart = new Button("Start", viewStart);
         buttonStart.setPrefSize(100, 20);
         buttonStart.setOnAction((event) -> {
-        	
-        });
+			//1. Validate before running	
+			//validate input
+			String _path = inputTF.getText().trim();				
+			if (_path.equals("")){
+				FxDialogs.showWarning("File not found!", "Please specify download directory");
+				inputTF.requestFocus();
+				return;
+			}
+
+			File _file = new File(_path);
+			if (!_file.isDirectory()){
+				FxDialogs.showWarning("File not found!", "Directory \"" + _path + "\" does not exist!");
+				inputTF.requestFocus();
+				return;
+			}
+			reader.folder = _path;
+			//validate output
+			if (outputToCombo.getSelectionModel().getSelectedItem().toString().equals("to file")){
+				String _foutput = outputTF.getText().trim();
+				if (_foutput.equals("")){		
+					FxDialogs.showWarning("File not found!", "Please specify output file");
+					outputTF.requestFocus();
+					return;
+				}
+				reader.output = _foutput;					
+			}else
+				reader.output = "-";//stream
+				
+			
+			//validate stream
+			if (serversCB.isSelected()){
+				if (streamTF.getText().trim().equals("")){
+					FxDialogs.showWarning("Server(s) not found!", "Please specify output address of a server");
+					streamTF.requestFocus();
+					return;
+				}			
+				reader.streamServers = streamTF.getText().trim();
+			}
+			
+			//validate barcode analysis
+			if(barcodeCB.isSelected()){
+				if(barcodeTF.getText().trim().equals("")){
+					FxDialogs.showWarning("File not found!", "Please specify barcode file for demultiplex");
+					barcodeTF.requestFocus();
+					return;
+				}
+			}
+			//TODO: set barcode tab visible here...
+
+			String msg = reader.prepareIO();
+			if (msg !=null){
+				FxDialogs.showWarning("Warning", msg);
+				return;
+			}
+
+			//Start running
+			
+			inputBrowseButton.setDisable(true);
+			barcodeBrowseButton.setDisable(true);
+			outputBrowseButton.setDisable(true);
+			
+			inputTF.setDisable(true);
+			barcodeTF.setDisable(true);
+			outputTF.setDisable(true);
+			streamTF.setDisable(true);
+			minLenTF.setDisable(true);
+			
+			failCB.setDisable(true);
+			barcodeCB.setDisable(true);
+			serversCB.setDisable(true);
+			allReadsOptCB.setDisable(true);
+			addNumberOptCB.setDisable(true);
+			
+			outputToCombo.setDisable(true);
+			outputFormatCombo.setDisable(true);
+
+			buttonStart.setDisable(true);;
+			buttonStop.setDisable(false);
+
+			reader.ready = true;
+		});
         
         Image imageStop = new Image(getClass().getResourceAsStream("/stop.png"));
         ImageView viewStop = new ImageView(imageStop); 
@@ -144,19 +344,25 @@ public class NanoporeReaderWindowFX extends Application{
         viewStop.setFitHeight(20);
         buttonStop = new Button("Stop", viewStop);
         buttonStop.setPrefSize(100, 20);
+        buttonStop.setDisable(true);
         buttonStop.setOnAction((event) -> {
         	reader.wait = false;
 
-			while (!reader.done){
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException ee) {					
-					ee.printStackTrace();
-				}
-			}
+//			while (!reader.done){
+//				try {
+//					Thread.sleep(100);
+//				} catch (InterruptedException e) {					
+//					e.printStackTrace();
+//				}
+//			}
 
-			stillRun = false;
-			FxDialogs.showInformation("Information", "Done");;
+		stillRun = false;
+		//FxDialogs.showInformation("Process being terminated!", "Done");
+		String confirm = FxDialogs.showConfirm( "Remember to save all plots before quit", "Terminate the GUI", "Yes", "No");
+		if(confirm.equals("Yes")){
+			Platform.exit();
+		    System.exit(0);
+		}
         });
         
         
@@ -169,7 +375,7 @@ public class NanoporeReaderWindowFX extends Application{
     /*
      * Creates a VBox with a list of parameter settings
      */
-    private VBox addVBox() {
+    private VBox addVBox(Stage stage) {
         
         VBox vbox = new VBox();
         vbox.setPadding(new Insets(10)); // Set all sides to 10
@@ -182,14 +388,14 @@ public class NanoporeReaderWindowFX extends Application{
         sep1.setMaxWidth(LeftPaneWidth);
         vbox.getChildren().add(1, sep1);
         
-        vbox.getChildren().add(addInputPane());
+        vbox.getChildren().add(addInputPane(stage));
         vbox.setSpacing(5);
         final Separator sep2 = new Separator();
         sep2.setMaxWidth(LeftPaneWidth);
         vbox.getChildren().add(3, sep2);
 
         
-        vbox.getChildren().add(addOutputPane());
+        vbox.getChildren().add(addOutputPane(stage));
         vbox.setSpacing(5);
         final Separator sep3 = new Separator();
         sep3.setMaxWidth(LeftPaneWidth);
@@ -200,7 +406,7 @@ public class NanoporeReaderWindowFX extends Application{
         
         return vbox;
     }
-    private GridPane addInputPane() {
+    private GridPane addInputPane(Stage stage) {
     	GridPane inputPane = createFixGridPane(LeftPaneWidth, 5);
     	
     	final Label inputLabel = new Label("Input:");
@@ -210,14 +416,16 @@ public class NanoporeReaderWindowFX extends Application{
     	inputPane.getChildren().add(inputLabel);
     	
     	failCB = new CheckBox("Include fail folder");
-    	failCB.setOnAction((event) -> {
-    	    //reader.doFail = includeFailBox.isSelected();
-    	    
-    	});	
+    	failCB.setSelected(reader.doFail);
+    	failCB.selectedProperty().addListener(
+            (obs_val,old_val,new_val) -> {
+            	reader.doFail = new_val;
+            });	
+    	
     	GridPane.setConstraints(failCB, 2,0,3,1);
     	inputPane.getChildren().add(failCB);
     	
-    	inputTF = new TextField();
+    	inputTF = new TextField(reader.folder == null?"":reader.folder);
     	inputTF.setPromptText("Enter folder of basecalled reads...");
     	//textField.setPrefWidth(250);
     	GridPane.setConstraints(inputTF, 0,1,4,1);
@@ -227,7 +435,16 @@ public class NanoporeReaderWindowFX extends Application{
     	inputBrowseButton = new ImageButton("/folder.png");
     	inputBrowseButton.setPrefSize(10, 10);
     	inputBrowseButton.setOnAction((event) -> {
-        	
+    		DirectoryChooser chooser = new DirectoryChooser();
+    		chooser.setTitle("Select basecalled raw data (fast5) directory");
+    		File defaultDirectory = new File(inputTF.getText());
+    		if(defaultDirectory.isDirectory())
+    			chooser.setInitialDirectory(defaultDirectory);
+    		File selectedDirectory = chooser.showDialog(stage);
+    		if(selectedDirectory != null){
+				reader.folder = selectedDirectory.getPath();
+				inputTF.setText(reader.folder);	
+    		}
         });
     	GridPane.setConstraints(inputBrowseButton, 4,1);
     	GridPane.setHalignment(inputBrowseButton,HPos.LEFT);
@@ -235,22 +452,37 @@ public class NanoporeReaderWindowFX extends Application{
     	//inputPane.setGridLinesVisible(true);
 
     	barcodeCB = new CheckBox("Demultiplexing for barcode analysis");
-    	barcodeCB.setOnAction((event) -> {
-    	    //reader.doFail = includeFailBox.isSelected();
-    	    
-    	});	
+    	barcodeCB.setSelected(reader.dmplx!=null);
+    	barcodeCB.selectedProperty().addListener(
+                (obs_val,old_val,new_val) -> {
+                	barcodeTF.setDisable(!new_val);
+                	barcodeBrowseButton.setDisable(!new_val);
+                });	
     	GridPane.setConstraints(barcodeCB, 0,3,5,1);
     	inputPane.getChildren().add(barcodeCB);
     	
-    	barcodeTF = new TextField();
+    	barcodeTF = new TextField(reader.getBCFileName() == null?"":reader.getBCFileName());
     	barcodeTF.setPromptText("Enter name of barcode sequences file...");
+    	barcodeTF.setDisable(!barcodeCB.isSelected());
     	GridPane.setConstraints(barcodeTF, 0,4,4,1);
     	inputPane.getChildren().add(barcodeTF);
     	
     	barcodeBrowseButton = new ImageButton("/folder.png");
     	barcodeBrowseButton.setPrefSize(10, 10);
+    	barcodeBrowseButton.setDisable(!barcodeCB.isSelected());
     	barcodeBrowseButton.setOnAction((event) -> {
-        	
+    		FileChooser chooser = new FileChooser();
+    		chooser.setTitle("Select barcode file");
+    		File defaultFile = new File(barcodeTF.getText());
+    		if(defaultFile.isFile())
+    			chooser.setInitialFileName(defaultFile.getName());
+    		chooser.setInitialDirectory(defaultFile.getParentFile());
+    		chooser.setSelectedExtensionFilter(new ExtensionFilter("FASTA files", "*.fasta", "*.fna", "*.fa"));
+    		File selectedFile = chooser.showOpenDialog(stage);
+    		if(selectedFile != null){
+				reader.updateDemultiplexFile(selectedFile.getPath());
+				barcodeTF.setText(reader.getBCFileName());	
+    		}
         });
     	GridPane.setConstraints(barcodeBrowseButton, 4,4);
     	GridPane.setHalignment(barcodeBrowseButton,HPos.LEFT);
@@ -258,7 +490,7 @@ public class NanoporeReaderWindowFX extends Application{
     	
 		return inputPane;
 	}
-    private GridPane addOutputPane() {
+    private GridPane addOutputPane(Stage stage) {
     	GridPane outputPane = createFixGridPane(LeftPaneWidth, 5);
     	
     	final Label outputLabel = new Label("Output:");
@@ -269,17 +501,30 @@ public class NanoporeReaderWindowFX extends Application{
     	
         outputToCombo = new ComboBox<String>();
         outputToCombo.getItems().addAll("to file", "to stdout");   
-        outputToCombo.setValue("to file");
+        outputToCombo.valueProperty().addListener((obs_val, old_val, new_val) -> {
+        	if(new_val.trim().equals("to file")){
+        		outputTF.setText("");
+        		outputTF.setDisable(false);
+        		outputBrowseButton.setDisable(false);
+        	} else{
+        		outputTF.setText("-");
+        		outputTF.setDisable(true);
+        		outputBrowseButton.setDisable(true);
+        	}
+        });
         GridPane.setConstraints(outputToCombo, 1, 0, 2, 1);
         outputPane.getChildren().add(outputToCombo);
         
         outputFormatCombo = new ComboBox<String>();
         outputFormatCombo.getItems().addAll("fastq", "fasta");   
-        outputFormatCombo.setValue("fastq");
+        outputFormatCombo.setValue(reader.format);
+        outputFormatCombo.valueProperty().addListener((obs_val, old_val, new_val) -> {
+        	reader.format = new_val;
+        });
         GridPane.setConstraints(outputFormatCombo, 3, 0, 2, 1);
         outputPane.getChildren().add(outputFormatCombo);
     	
-    	outputTF = new TextField();
+    	outputTF = new TextField(reader.output == null?"":reader.output);
     	outputTF.setPromptText("Enter name for output file...");
     	GridPane.setConstraints(outputTF, 0,1,4,1);
     	outputPane.getChildren().add(outputTF);
@@ -288,26 +533,52 @@ public class NanoporeReaderWindowFX extends Application{
     	outputBrowseButton = new ImageButton("/folder.png");
     	outputBrowseButton.setPrefSize(10, 10);
     	outputBrowseButton.setOnAction((event) -> {
-        	
+    		FileChooser fileChooser = new FileChooser();
+    		fileChooser.setTitle("Save output to file");
+    		fileChooser.setInitialFileName("output."+reader.format);
+    		File savedFile = fileChooser.showSaveDialog(stage);
+    		if(savedFile != null){
+    			reader.output = savedFile.getName();
+    			outputTF.setText(reader.output);
+    		}
         });
     	GridPane.setConstraints(outputBrowseButton, 4,1);
     	GridPane.setHalignment(outputBrowseButton, HPos.LEFT);
     	outputPane.getChildren().add(outputBrowseButton);
 
-
-    	final CheckBox serversStreaming = new CheckBox("Streaming output to server(s)");
-    	serversStreaming.setOnAction((event) -> {
-    	    //reader.doFail = includeFailBox.isSelected();
-    	    
-    	});	
-    	GridPane.setConstraints(serversStreaming, 0,4,3,1);
-    	outputPane.getChildren().add(serversStreaming);
+    	//init
+        if(reader.output.equals("-")){
+        	outputTF.setText("-");
+        	outputToCombo.setValue("to stdout");
+    		outputTF.setDisable(true);
+    		outputBrowseButton.setDisable(true);
+        }else{
+        	outputTF.setText(reader.output);
+        	outputToCombo.setValue("to file");
+    		outputTF.setDisable(false);
+    		outputBrowseButton.setDisable(false);
+        }
+        
+    	
+    	serversCB = new CheckBox("Streaming output to server(s)");
+    	serversCB.selectedProperty().addListener(
+                (obs_val,old_val,new_val) -> {
+                	streamTF.setDisable(!new_val);
+                });	
+    	GridPane.setConstraints(serversCB, 0,4,3,1);
+    	outputPane.getChildren().add(serversCB);
     	
     	streamTF = new TextField();
     	streamTF.setPromptText("address1:port1, address2:port2,...");
     	GridPane.setConstraints(streamTF, 0,5,4,1);
     	outputPane.getChildren().add(streamTF);
     	
+    	if(reader.streamServers != null){
+    		serversCB.setSelected(true);
+    		streamTF.setText(reader.streamServers);
+    	}else{
+    		streamTF.setDisable(true);
+    	}
     	//outputPane.setGridLinesVisible(true);
 		return outputPane;
 	}
@@ -321,28 +592,30 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(optLabel, 0,0,4,1);
     	optionPane.getChildren().add(optLabel);
     	
-    	readTypeCB = new CheckBox("Including template and complement reads");
-    	readTypeCB.setOnAction((event) -> {
-    	    //reader.doFail = includeFailBox.isSelected();
-    	    
-    	});	
-    	GridPane.setConstraints(readTypeCB, 0,2,4,1);
-    	optionPane.getChildren().add(readTypeCB);
+    	allReadsOptCB = new CheckBox("Including template and complement reads");
+    	allReadsOptCB.setSelected(true);
+    	allReadsOptCB.selectedProperty().addListener(
+                (obs_val,old_val,new_val) -> {
+                	reader.doLow=new_val;
+                });	
+    	GridPane.setConstraints(allReadsOptCB, 0,2,4,1);
+    	optionPane.getChildren().add(allReadsOptCB);
 
-    	addNumberCB = new CheckBox("Assign unique number to every read name");
-    	addNumberCB.setOnAction((event) -> {
-    	    //reader.doFail = includeFailBox.isSelected();
-    	    
-    	});	
-    	GridPane.setConstraints(addNumberCB, 0,4,4,1);
-    	optionPane.getChildren().add(addNumberCB);
+    	addNumberOptCB = new CheckBox("Assign unique number to every read name");
+    	addNumberOptCB.setSelected(reader.number);
+    	addNumberOptCB.selectedProperty().addListener(
+                (obs_val,old_val,new_val) -> {
+                	reader.number=new_val;
+                });	
+    	GridPane.setConstraints(addNumberOptCB, 0,4,4,1);
+    	optionPane.getChildren().add(addNumberOptCB);
     	
     	final Label label2 = new Label("Filter out read shorter than ");
     	GridPane.setConstraints(label2, 0,6,3,1);
     	optionPane.getChildren().add(label2);
     	
-    	minLenTF = new TextField();
-    	minLenTF.setPromptText("1");
+    	minLenTF = new TextField(Integer.toString(reader.minLength));
+    	minLenTF.setPromptText("Enter minimum length to consider...");
     	GridPane.setConstraints(minLenTF, 3,6);
     	optionPane.getChildren().add(minLenTF);
     	
@@ -473,7 +746,7 @@ public class NanoporeReaderWindowFX extends Application{
 		 * Read length histogram	
 		 */
 		
-		histoLengthDataSet=new DynamicHistogram();
+		//histoLengthDataSet=new DynamicHistogram();
 		histoLengthDataSet.prepareSeries("Read Length", 500, 0, 40000);
 		//histoDataset.prepareSeries("2D", 50, 0, 50000);
 		//histoDataset.prepareSeries("template", 50, 0, 50000);
@@ -510,7 +783,7 @@ public class NanoporeReaderWindowFX extends Application{
 		/*
 		 * Quality histogram
 		 */
-		histoQualDataSet=new DynamicHistogram();
+		//histoQualDataSet=new DynamicHistogram();
 		histoQualDataSet.setType(HistogramType.SCALE_AREA_TO_1);
 		histoQualDataSet.prepareSeries("2D", 100, 0, 30);
 		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
@@ -558,7 +831,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(lblFiles, 0, 0);
 		countPane.getChildren().add(lblFiles);
 
-		txtTFiles = new TextField("0");
+		//txtTFiles = new TextField("0");
 		txtTFiles.setPrefWidth(100);
 		GridPane.setConstraints(txtTFiles, 1, 0);
 		countPane.getChildren().add(txtTFiles);
@@ -567,7 +840,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(lblpFiles, 0, 1);
 		countPane.getChildren().add(lblpFiles);
 
-		txtPFiles = new TextField("0");
+		//txtPFiles = new TextField("0");
 		txtPFiles.setEditable(false);
 		txtPFiles.setPrefWidth(100);
 		GridPane.setConstraints(txtPFiles, 1, 1);
@@ -578,7 +851,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(lblFFiles, 0, 2);
 		countPane.getChildren().add(lblFFiles);
 
-		txtFFiles = new TextField("0");
+		//txtFFiles = new TextField("0");
 		txtFFiles.setEditable(false);
 		txtFFiles.setPrefWidth(100);
 		GridPane.setConstraints(txtFFiles, 1, 2);
@@ -590,7 +863,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(lbl2DReads, 0, 3);
 		countPane.getChildren().add(lbl2DReads);		
 
-		txt2DReads= new TextField("0");
+		//txt2DReads= new TextField("0");
 		txt2DReads.setEditable(false);
 		txt2DReads.setPrefWidth(100);
 		GridPane.setConstraints(txt2DReads, 1, 3);
@@ -600,7 +873,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(lblTempReads, 0, 4);
 		countPane.getChildren().add(lblTempReads);
 
-		txtTempReads= new TextField("0");
+		//txtTempReads= new TextField("0");
 		txtTempReads.setEditable(false);
 		txtTempReads.setPrefWidth(100);
 		GridPane.setConstraints(txtTempReads, 1, 4);
@@ -610,7 +883,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(lblCompReads, 0, 5);
 		countPane.getChildren().add(lblCompReads);
 		
-		txtCompReads= new TextField("0");
+		//txtCompReads= new TextField("0");
 		txtCompReads.setEditable(false);
 		txtCompReads.setPrefWidth(100);
 		GridPane.setConstraints(txtCompReads, 1, 5);
@@ -627,86 +900,92 @@ public class NanoporeReaderWindowFX extends Application{
     /******************************************************************************************
      * ** Here are variables and controls for all plots ***************************************
      ******************************************************************************************/
-	TextField txtCompReads, txtTempReads, txt2DReads;
-	TextField txtPFiles, txtFFiles, txtTFiles;
-	DynamicHistogram histoLengthDataSet, histoQualDataSet;
+	final TextField txtCompReads= new TextField("0"), 
+					txtTempReads= new TextField("0"), 
+					txt2DReads= new TextField("0");
+	final TextField txtPFiles= new TextField("0"), 
+					txtFFiles= new TextField("0"), 
+					txtTFiles= new TextField("0");
+	final DynamicHistogram 	histoLengthDataSet = new DynamicHistogram(), 
+						histoQualDataSet = new DynamicHistogram();
 
-	private boolean stillRun = true;
+	private static boolean stillRun = true;
 
-	private void interupt(JapsaException e){
-		this.stillRun = false;
+	private static void interupt(JapsaException e){
+		stillRun = false;
 		reader.wait = false;
-		JOptionPane.showMessageDialog(null, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+		FxDialogs.showError("Unexpected errors happened!", e.getMessage());
 	}
-
-	private void run() {		
-		int lastIndexLengths = 0;//, lastIndexLengths2D = 0, lastIndexLengthsComp = 0, lastIndexLengthsTemp = 0;
-		int lastIndexQual2D = 0, lastIndexQualComp = 0, lastIndexQualTemp = 0;
-
-		while(stillRun) {				                
-			//synchronized(reader) {//avoid concurrent update					
-			Second period = new Second();
-			dataSet.add(period, reader.twoDCount,"2D");
-			dataSet.add(period, reader.compCount,"complement");
-			dataSet.add(period, reader.tempCount,"template");
-
-			txtTFiles.setText(reader.fileNumber+"");	                
-			txtPFiles.setText(reader.passNumber+"");
-			txtFFiles.setText(reader.failNumber+"");
-
-			txt2DReads.setText(reader.twoDCount+"");
-			txtCompReads.setText(reader.compCount+"");
-			txtTempReads.setText(reader.tempCount+"");
-
-			int currentIndex = reader.lengths.size();
-
-			if (currentIndex > lastIndexLengths){			
-				int index = histoLengthDataSet.getSeriesIndex("Read Length");
-				for (int i = lastIndexLengths; i < currentIndex;i++)
-					histoLengthDataSet.addSeries(index, reader.lengths.get(i));
-
-				lastIndexLengths = currentIndex;
-
-				histoLengthDataSet.notifyChanged();
-			}
-
-			currentIndex = reader.qual2D.size();
-			if (currentIndex > lastIndexQual2D){
-				int index = histoQualDataSet.getSeriesIndex("2D");
-				for (int i = lastIndexQual2D; i < currentIndex;i++)
-					histoQualDataSet.addSeries(index, reader.qual2D.get(i));
-
-				lastIndexQual2D = currentIndex;
-				histoQualDataSet.notifyChanged();
-			}
-
-			currentIndex = reader.qualComp.size();
-			if (currentIndex > lastIndexQualComp){
-				int index = histoQualDataSet.getSeriesIndex("complement");
-				for (int i = lastIndexQualComp; i < currentIndex;i++)
-					histoQualDataSet.addSeries(index, reader.qualComp.get(i));
-
-				lastIndexQualComp = currentIndex;
-				histoQualDataSet.notifyChanged();
-			}
-
-			currentIndex = reader.qualTemp.size();
-			if (currentIndex > lastIndexQualTemp){
-				int index = histoQualDataSet.getSeriesIndex("template");
-				for (int i = lastIndexQualTemp; i < currentIndex;i++)
-					histoQualDataSet.addSeries(index, reader.qualTemp.get(i));
-
-				lastIndexQualTemp = currentIndex;
-				histoQualDataSet.notifyChanged();
-			}
-
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException ex) {
-				Logging.error(ex.getMessage());
-			}
-		}
-	}
+	
+//TODO: fix this by concurrent/binding
+//	private void run() {		
+//		int lastIndexLengths = 0;//, lastIndexLengths2D = 0, lastIndexLengthsComp = 0, lastIndexLengthsTemp = 0;
+//		int lastIndexQual2D = 0, lastIndexQualComp = 0, lastIndexQualTemp = 0;
+//
+//		while(stillRun) {				                
+//			//synchronized(reader) {//avoid concurrent update					
+//			Second period = new Second();
+//			dataSet.add(period, reader.twoDCount,"2D");
+//			dataSet.add(period, reader.compCount,"complement");
+//			dataSet.add(period, reader.tempCount,"template");
+//
+//			txtTFiles.setText(reader.fileNumber+"");	                
+//			txtPFiles.setText(reader.passNumber+"");
+//			txtFFiles.setText(reader.failNumber+"");
+//
+//			txt2DReads.setText(reader.twoDCount+"");
+//			txtCompReads.setText(reader.compCount+"");
+//			txtTempReads.setText(reader.tempCount+"");
+//
+//			int currentIndex = reader.lengths.size();
+//
+//			if (currentIndex > lastIndexLengths){			
+//				int index = histoLengthDataSet.getSeriesIndex("Read Length");
+//				for (int i = lastIndexLengths; i < currentIndex;i++)
+//					histoLengthDataSet.addSeries(index, reader.lengths.get(i));
+//
+//				lastIndexLengths = currentIndex;
+//
+//				histoLengthDataSet.notifyChanged();
+//			}
+//
+//			currentIndex = reader.qual2D.size();
+//			if (currentIndex > lastIndexQual2D){
+//				int index = histoQualDataSet.getSeriesIndex("2D");
+//				for (int i = lastIndexQual2D; i < currentIndex;i++)
+//					histoQualDataSet.addSeries(index, reader.qual2D.get(i));
+//
+//				lastIndexQual2D = currentIndex;
+//				histoQualDataSet.notifyChanged();
+//			}
+//
+//			currentIndex = reader.qualComp.size();
+//			if (currentIndex > lastIndexQualComp){
+//				int index = histoQualDataSet.getSeriesIndex("complement");
+//				for (int i = lastIndexQualComp; i < currentIndex;i++)
+//					histoQualDataSet.addSeries(index, reader.qualComp.get(i));
+//
+//				lastIndexQualComp = currentIndex;
+//				histoQualDataSet.notifyChanged();
+//			}
+//
+//			currentIndex = reader.qualTemp.size();
+//			if (currentIndex > lastIndexQualTemp){
+//				int index = histoQualDataSet.getSeriesIndex("template");
+//				for (int i = lastIndexQualTemp; i < currentIndex;i++)
+//					histoQualDataSet.addSeries(index, reader.qualTemp.get(i));
+//
+//				lastIndexQualTemp = currentIndex;
+//				histoQualDataSet.notifyChanged();
+//			}
+//
+//			try {
+//				Thread.sleep(1000);
+//			} catch (InterruptedException ex) {
+//				Logging.error(ex.getMessage());
+//			}
+//		}
+//	}
 //    @Override
 //    public void start(Stage primaryStage) {
 //        primaryStage.setTitle("Tabs");

@@ -200,11 +200,9 @@ public class ScaffoldGraph{
 	}
 
 	public Contig getSPadesContig(String name){
-		if(name.contains("'")){
-			if(verbose)
-				System.out.println("Ignored (redundant) reversed sequence: " + name);
+		if(name.contains("'"))
 			return null;
-		}
+
 
 		Contig res = null;
 
@@ -999,7 +997,6 @@ public class ScaffoldGraph{
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
-
 				if(contigs.get(i).head == i ){
 					if(!reportAll && isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null)
 						continue;			
