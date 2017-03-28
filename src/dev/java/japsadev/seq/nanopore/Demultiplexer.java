@@ -17,6 +17,8 @@ public class Demultiplexer {
 	int nSamples;
 	int barcodeLen;
 	
+	int[] readCount;
+	
 	public Demultiplexer(String barcodeFile) throws IOException{
 		barCodes = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
 		nSamples = barCodes.size();
@@ -29,8 +31,9 @@ public class Demultiplexer {
 			barCodeComps.add(Alphabet.DNA.complement(barCode));
 		}
 		
-//		SCAN_WINDOW = barcodeLen * 5;
-//		SCORE_THRES = (int) (barcodeLen * 1.5);
+		SCAN_WINDOW = barcodeLen * 5;
+		SCORE_THRES = barcodeLen;
+		readCount = new int[nSamples];
 	}
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
@@ -83,7 +86,6 @@ public class Demultiplexer {
 			//This is for both end
 			//double myScore = Math.max(tf[i], tr[i]) + Math.max(cf[i], cr[i]);
 
-			//but may be we can use onely one end
 			double myScore = Math.max(Math.max(tf[i], tr[i]), Math.max(cf[i], cr[i]));
 			if (myScore > bestScore){
 				//Logging.info("Better score=" + myScore);
@@ -93,17 +95,18 @@ public class Demultiplexer {
 		}
 
 		String retval="";
-//		if(bestScore <= SCORE_THRES){
-//			Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
-//		}
-//		//if the best (sum of both ends) alignment in template sequence is greater than in complement
-//		else {
-//			Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
-//
-//		}
 		DecimalFormat twoDForm =  new DecimalFormat("#.##");
-		
-		retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+"|";
+		if(bestScore < SCORE_THRES){
+			//Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
+			retval = "Barcode:unknown:"+Double.valueOf(twoDForm.format(bestScore))+"|";
+
+		}
+		else {
+			//Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
+			retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+"|";
+			readCount[bestIndex]++;
+		}
+				
 		
 		seq.setName(retval + seq.getName());
 
