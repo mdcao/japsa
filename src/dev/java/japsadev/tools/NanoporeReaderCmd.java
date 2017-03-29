@@ -34,11 +34,9 @@
  ****************************************************************************/
 package japsadev.tools;
 
-import org.jfree.data.time.TimeTableXYDataset;
-
-import japsadev.seq.nanopore.Demultiplexer;
 import japsadev.seq.nanopore.NanoporeReaderStream;
-import japsadev.seq.nanopore.NanoporeReaderWindow;
+import japsadev.seq.nanopore.NanoporeReaderWindowFX;
+import javafx.application.Application;
 import japsa.util.CommandLine;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
@@ -96,10 +94,6 @@ public class NanoporeReaderCmd extends CommandLine{
 		String streamServers = cmdLine.getStringVal("streams");
 
 		String barcode = cmdLine.getStringVal("barcode");
-		//String pFolderName = cmdLine.getStringVal("pFolderName");
-		//String f5list = cmdLine.getStringVal("f5list");
-		//int interval = cmdLine.getIntVal("interval");//in second		
-		//int age = cmdLine.getIntVal("age") * 1000;//in second
 		int age = 20 * 1000;//cmdLine.getIntVal("age") * 1000;//in second
 		int interval = 30;
 
@@ -129,7 +123,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		if(barcode != null)
 			reader.updateDemultiplexFile(barcode);
 
-		NanoporeReaderWindow mGUI = null;
+		//NanoporeReaderWindowFX mGUI = null;
 
 		if (GUI){
 			reader.realtime = true;
@@ -137,42 +131,28 @@ public class NanoporeReaderCmd extends CommandLine{
 			reader.stats = true;//GUI implies stats
 			reader.ready = false;//wait for the command from GUI
 
-			TimeTableXYDataset dataset = new TimeTableXYDataset();
-			mGUI = new NanoporeReaderWindow(reader,dataset);
+			NanoporeReaderWindowFX.setReader(reader);
+			Application.launch(NanoporeReaderWindowFX.class,args);
 
-			while (!reader.ready){
-				Logging.info("NOT READY");
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {					
-					e.printStackTrace();
-				}			
-			}
-			Logging.info("GO");
-
-			new Thread(mGUI).start();
 		}else{
 			String msg = reader.prepareIO();
 			if (msg != null){
 				Logging.exit(msg, 1);
 			}
+			try{
+				Logging.info("Start reading" );
+				reader.readFast5();
+			}catch (JapsaException e){
+				System.err.println(e.getMessage());
+				e.getStackTrace();
+			}catch (Exception e){
+				throw e;
+			}finally{		
+				reader.close();
+			}
 		}
-		//reader need to wait until ready to go
 
-		//reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
-		try{
-			Logging.info("Start reading" );
-			reader.readFast5();
-		}catch (JapsaException e){
-			System.err.println(e.getMessage());
-			e.getStackTrace();
-			if (mGUI != null)
-				mGUI.interupt(e);
-		}catch (Exception e){
-			throw e;
-		}finally{		
-			reader.close();
-		}
+
 
 	}//main
 }
