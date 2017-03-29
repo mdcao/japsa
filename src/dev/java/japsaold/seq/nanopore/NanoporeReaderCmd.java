@@ -32,11 +32,9 @@
  * 7 Aug 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsadev.tools;
+package japsaold.seq.nanopore;
 
-import japsadev.seq.nanopore.NanoporeReaderStream;
-import japsadev.seq.nanopore.NanoporeReaderWindowFX;
-import javafx.application.Application;
+import org.jfree.data.time.TimeTableXYDataset;
 import japsa.util.CommandLine;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
@@ -47,8 +45,8 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(	
-	scriptName = "jsa.dev.npreader", 
-	scriptDesc = "Extract and stream Oxford Nanopore sequencing data in real-time. Demultiplexe included.",
+	scriptName = "jsa.np.npreader", 
+	scriptDesc = "Extract and stream Oxford Nanopore sequencing data in real-time",
 	seeAlso = "jsa.np.filter, jsa.util.streamServer, jsa.util.streamClient,jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.np.rtResistGenes"
 	)
 public class NanoporeReaderCmd extends CommandLine{	
@@ -70,8 +68,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		addBoolean("number", false,"Add a unique number to read name");
 		addBoolean("stats", false,"Generate a report of read statistics");
 		//addBoolean("time", false,"Extract the sequencing time of each read -- only work with Metrichor > 1.12");		
-		addBoolean("exhautive", false,"Whether to traverse the input directory exhautively (abacore) or lazily (metrichor)");
-		addString("barcode", null,"The file containing all barcode sequences for demultiplexing.");
+
 
 		addStdHelp();		
 	}
@@ -92,10 +89,14 @@ public class NanoporeReaderCmd extends CommandLine{
 		boolean fail  = cmdLine.getBooleanVal("fail");
 		String format = cmdLine.getStringVal("format");		
 		String streamServers = cmdLine.getStringVal("streams");
-		boolean exhautive = cmdLine.getBooleanVal("exhautive");
-		String barcode = cmdLine.getStringVal("barcode");
+
+		//String pFolderName = cmdLine.getStringVal("pFolderName");
+		//String f5list = cmdLine.getStringVal("f5list");
+		//int interval = cmdLine.getIntVal("interval");//in second		
+		//int age = cmdLine.getIntVal("age") * 1000;//in second
 		int age = 20 * 1000;//cmdLine.getIntVal("age") * 1000;//in second
 		int interval = 30;
+		String pFolderName = null;
 
 		if (!GUI && folder == null){// && f5list == null){
 			Logging.exit("Download folder need to be specified", 1);
@@ -118,12 +119,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		reader.format = format.toLowerCase();
 		reader.realtime = realtime;
 		reader.streamServers = streamServers;
-		reader.exhautive = exhautive;
-		
-		if(barcode != null)
-			reader.updateDemultiplexFile(barcode);
-
-		//NanoporeReaderWindowFX mGUI = null;
+		NanoporeReaderWindow mGUI = null;
 
 		if (GUI){
 			reader.realtime = true;
@@ -131,28 +127,41 @@ public class NanoporeReaderCmd extends CommandLine{
 			reader.stats = true;//GUI implies stats
 			reader.ready = false;//wait for the command from GUI
 
-			NanoporeReaderWindowFX.setReader(reader);
-			Application.launch(NanoporeReaderWindowFX.class,args);
+			TimeTableXYDataset dataset = new TimeTableXYDataset();
+			mGUI = new NanoporeReaderWindow(reader,dataset);
 
+			while (!reader.ready){
+				Logging.info("NOT READY");
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {					
+					e.printStackTrace();
+				}			
+			}
+			Logging.info("GO");
+
+			new Thread(mGUI).start();
 		}else{
 			String msg = reader.prepareIO();
 			if (msg != null){
 				Logging.exit(msg, 1);
 			}
-			try{
-				Logging.info("Start reading" );
-				reader.readFast5();
-			}catch (JapsaException e){
-				System.err.println(e.getMessage());
-				e.getStackTrace();
-			}catch (Exception e){
-				throw e;
-			}finally{		
-				reader.close();
-			}
 		}
+		//reader need to wait until ready to go
 
-
+		//reader.sos = SequenceOutputStream.makeOutputStream(reader.output);
+		try{
+			reader.readFastq(pFolderName);
+		}catch (JapsaException e){
+			System.err.println(e.getMessage());
+			e.getStackTrace();
+			if (mGUI != null)
+				mGUI.interupt(e);
+		}catch (Exception e){
+			throw e;
+		}finally{		
+			reader.close();
+		}
 
 	}//main
 }

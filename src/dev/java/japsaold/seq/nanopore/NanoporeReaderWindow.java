@@ -31,7 +31,7 @@
  * 17 Apr 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsa.seq.nanopore;
+package japsaold.seq.nanopore;
 
 import japsa.util.DynamicHistogram;
 import japsa.util.JapsaException;

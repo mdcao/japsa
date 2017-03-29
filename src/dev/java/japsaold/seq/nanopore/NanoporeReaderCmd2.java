@@ -32,12 +32,9 @@
  * 7 Aug 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsa.tools.bio.np;
+package japsaold.seq.nanopore;
 
 import org.jfree.data.time.TimeTableXYDataset;
-
-import japsa.seq.nanopore.NanoporeReaderStream2;
-import japsa.seq.nanopore.NanoporeReaderWindow2;
 import japsa.util.CommandLine;
 import japsa.util.JapsaException;
 import japsa.util.Logging;

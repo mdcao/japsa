@@ -417,14 +417,6 @@ public class NanoporeReaderWindowApplet extends JApplet{
 			public void actionPerformed(ActionEvent e) {
 				reader.wait = false;
 
-				while (!reader.done){
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException ee) {					
-						ee.printStackTrace();
-					}
-				}
-
 				stillRun = false;
 				JOptionPane.showMessageDialog(null, "Done", "Information", JOptionPane.PLAIN_MESSAGE);
 

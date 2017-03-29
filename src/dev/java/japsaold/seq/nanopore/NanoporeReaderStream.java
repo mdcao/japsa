@@ -28,18 +28,17 @@
  ****************************************************************************/
 
 /**************************     REVISION HISTORY    **************************
- * 21/07/2014 - Minh Duc Cao: Created
- * 14/03/2017 -- Minh Duc Cao modified
+ * 21/07/2014 - Minh Duc Cao: Created                                        
+ *  
  ****************************************************************************/
 
-package japsa.seq.nanopore;
+package japsaold.seq.nanopore;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,12 +46,12 @@ import java.util.HashSet;
 
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.seq.nanopore.Fast5NPReader.BaseCalledFastq;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
 import japsa.util.net.StreamClient;
+import japsaold.seq.nanopore.Fast5NPReader.BaseCalledFastq;
 
 /**
  * Read nanopore data (read sequence, events, alignment, models etc) from a raw
@@ -60,7 +59,7 @@ import japsa.util.net.StreamClient;
  * @author minhduc
  *
  */
-public class NanoporeReaderStream2{
+public class NanoporeReaderStream{
 	public String prepareIO(){
 		String msg = null;
 		try{
@@ -165,7 +164,90 @@ public class NanoporeReaderStream2{
 		}
 	}
 
+	/**************************************************************************************
+	public boolean readFastq3_XXX(String fileName) throws JapsaException, IOException{
+		//Logging.info("Open " + fileName);
+		try{				
+			Fast5NPReader f5Reader  = new Fast5NPReader(fileName);			
+			String log = "";
+			//if (getTime){
+			//	log = "ExpStart=" + npReader.expStart + " timestamp=" + npReader.seqTime + " "  + log;				
+			//}
 
+			FastqSequence fq;
+
+			fq = f5Reader.readTwoDim();
+			if (fq != null && fq.length() >= minLength){
+				fq.setName((number?(fileNumber *3) + "_":"") + fq.getName() + " " + log);
+				print(fq);
+				if (stats){						
+					lengths.add(fq.length());
+					lengths2D.add(fq.length());
+					twoDCount ++;
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qual2D.add(sumQual/fq.length());
+					}
+				}
+			}
+
+			fq = f5Reader.readTemplate();
+			if (fq != null && fq.length() >= minLength && this.doLow){
+				fq.setName((number?(fileNumber *3 + 1) + "_":"") + fq.getName() + " " + log);
+				print(fq);
+				if (stats){						
+					lengths.add(fq.length());	
+					lengthsTemp.add(fq.length());
+					tempCount ++;
+
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qualTemp.add(sumQual/fq.length());
+					}
+				}
+			}
+
+			fq = f5Reader.readComplement();
+			if (fq != null && fq.length() >= minLength && this.doLow){						
+				fq.setName((number?(fileNumber *3 + 2) + "_":"") + fq.getName() + " " + log);						
+				print(fq);
+				if (stats){						
+					lengths.add(fq.length());	
+					lengthsComp.add(fq.length());
+					compCount ++;
+
+					if (fq.length() > 0){
+						double sumQual  = 0;
+						for (int p = 0; p < fq.length(); p++){
+							sumQual += (fq.getQualByte(p) - MIN_QUAL);
+
+						}
+						qualComp.add(sumQual/fq.length());
+					}
+
+				}
+			}
+			f5Reader.close();
+			fileNumber ++;
+
+		}catch (JapsaException e){
+			throw e;
+		}catch (Exception e){
+			Logging.error("Problem with reading " + fileName + ":" + e.getMessage());
+			e.printStackTrace();			
+			return false;
+		}
+		return true;
+	}
+/*****************************************************************************/
 	public boolean readFastq2(String fileName) throws JapsaException, IOException{
 		//Logging.info("Open " + fileName);
 		try{					
@@ -215,7 +297,15 @@ public class NanoporeReaderStream2{
 	}
 	/*****************************************************************************/
 
-
+	public boolean moveFile(File f, String pFolder){
+		String fName = f.getName();
+		if (f.renameTo(new File(pFolder + fName))){
+			Logging.info("Move " + fName + " to " + pFolder);
+			return true;
+		}
+		else
+			return false;
+	}
 
 
 	/**
@@ -225,67 +315,160 @@ public class NanoporeReaderStream2{
 	 * @param stats: print out statistics
 	 * @throws IOException 
 	 */
-	public void readFast5() throws JapsaException, IOException{
+	public void readFastq(String pFolder) throws JapsaException, IOException{
 		if (minLength < 1)
 			minLength = 1;
 
-		Logging.info("Start reading " + folder);
+		if (pFolder != null ){
+			pFolder = pFolder + File.separatorChar;
+			Logging.info("Copy to " + pFolder);
+		}
+		/***********************************************
+		if (f5List != null){
+			Logging.info("Reading in file " + f5List);
+			BufferedReader bf = SequenceReader.openFile(f5List);
+			String fileName;
+			while ((fileName = bf.readLine())!=null){
+				readFastq2(fileName);
 
-
-		HashSet<String> filesDone = new HashSet<String>();
-
-		while (wait){
-			//Do main
-			final long now = System.currentTimeMillis();
-
-			Logging.info("Start reading  " + now );
-
-			Files.walk(Paths.get(folder))
-			//is a file
-			.filter(Files::isRegularFile)
-			//fast5 file
-			.filter(p -> p.toString().endsWith("fast5"))
-			//age is old enough
-			.filter(p -> {		        	
-				try{					
-					return now - Files.getLastModifiedTime(p).toMillis() > age;		        		
-				}catch (IOException e1) {
-					e1.printStackTrace();
-					return false;
-				}
-			})
-			//if (!doFail){
-			//	stream = stream.filter(p->!p.toString().contains("fail"));
-			//}
-			//not read before
-			.filter(p -> !filesDone.contains(p.toString()))
-			//read
-			.forEach(p -> {
-			//	System.out.println(p);
-				try {
-					if (readFastq2(p.toString())){
-						filesDone.add(p.toString());
-					}
-				} catch (JapsaException | IOException e) {
-					e.printStackTrace();
+				//Move to done folder
+				if (pFolder != null){
+					moveFile(new File(fileName),  pFolder);
 				}					
-			});		
+			}//while
+			bf.close();
+		}else
+		/***********************************************/
+		{//folder
+			HashSet<String> filesDone = new HashSet<String>();
 
-		/*******************************************************/
-			if (!realtime)
-				break;
+			File mainFolder = new File(folder);
+			File passFolder = new File(folder + File.separatorChar + "pass");
+			File failFolder = new File(folder + File.separatorChar + "fail");			
 
-			for (int x = 0; x < interval && wait; x++){
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {					
-					e.printStackTrace();
+			while (wait){
+				//Do main
+				long now = System.currentTimeMillis();
+				File [] fileList = mainFolder.listFiles();
+				Logging.info("Reading in folder " + mainFolder.getAbsolutePath());
+				if (fileList!=null){
+					for (File f:fileList){
+						if (!wait)
+							break;
+
+						//directory
+						if (!f.isFile())
+							continue;//for						
+
+						if (!f.getName().endsWith("fast5"))
+							continue;//for						
+
+						//File too new
+						if (now - f.lastModified() < age)
+							continue;//for
+
+						//if processed already
+						String sPath = f.getAbsolutePath();					
+						if (filesDone.contains(sPath))
+							continue;//for
+
+						if (readFastq2(sPath)){						
+							filesDone.add(sPath);	
+							if (pFolder != null){
+								moveFile(f,  pFolder);
+							}//if
+						}//if
+					}//for			
+				}//if
+				else{
+					Logging.info("Folder " + mainFolder.getAbsolutePath()  + " does not exist, are you sure this is the right folder?");					
 				}
-			}
 
-		}//while			
-		Logging.info("EXISTING");
+				//Pass folder
+				now = System.currentTimeMillis();
+				Logging.info("Reading in folder " + passFolder.getAbsolutePath());
+				fileList = passFolder.listFiles();
+				if (fileList!=null){
+					for (File f:fileList){
+						if (!wait)
+							break;
 
+						//directory
+						if (!f.isFile())
+							continue;//for
+
+						if (!f.getName().endsWith("fast5"))
+							continue;//for
+
+						//File too new
+						if (now - f.lastModified() < age)
+							continue;//for
+
+						//if processed already
+						String sPath = f.getAbsolutePath();					
+						if (filesDone.contains(sPath))
+							continue;//for
+
+						if (readFastq2(sPath)){
+							passNumber ++;
+							filesDone.add(sPath);	
+							if (pFolder != null){
+								moveFile(f,  pFolder);
+							}//if
+						}//if
+					}//for			
+				}//if
+
+				//Fail folder
+				if (doFail){
+					now = System.currentTimeMillis();
+					Logging.info("Reading in folder " + failFolder.getAbsolutePath());
+					fileList = failFolder.listFiles();
+					if (fileList!=null){
+						for (File f:fileList){
+							if (!wait)
+								break;
+
+							//directory
+							if (!f.isFile())
+								continue;
+
+							if (!f.getName().endsWith("fast5"))
+								continue;
+
+							//File too new
+							if (now - f.lastModified() < age)
+								continue;
+
+							//if processed already
+							String sPath = f.getAbsolutePath();					
+							if (filesDone.contains(sPath))
+								continue;
+
+							if (readFastq2(sPath)){	
+								failNumber ++;
+								filesDone.add(sPath);	
+								if (pFolder != null){
+									moveFile(f,  pFolder);
+								}//if
+							}//if
+						}//for			
+					}//if
+				}
+				if (!realtime)
+					break;
+
+				for (int x = 0; x < interval && wait; x++){
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {					
+						e.printStackTrace();
+					}
+				}
+
+			}//while			
+			Logging.info("EXISTING");
+		}
 
 		if (stats){
 			Logging.info("Getting stats ... ");

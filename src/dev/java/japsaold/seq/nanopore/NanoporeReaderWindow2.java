@@ -31,7 +31,7 @@
  * 17 Apr 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsadev.seq.nanopore;
+package japsaold.seq.nanopore;
 
 import japsa.util.DynamicHistogram;
 import japsa.util.JapsaException;
@@ -80,7 +80,7 @@ import org.jfree.data.time.TimeTableXYDataset;
  * @author minhduc
  *
  */
-public class NanoporeReaderWindow implements Runnable{
+public class NanoporeReaderWindow2 implements Runnable{
 
 	private JFrame frmNanoporeReader;
 	private int height = 50;
@@ -88,7 +88,7 @@ public class NanoporeReaderWindow implements Runnable{
 	//String downloadFolder;	
 
 	TimeTableXYDataset dataSet;
-	NanoporeReaderStream reader;
+	NanoporeReaderStream2 reader;
 
 	/**
 	 * Launch the application.
@@ -97,7 +97,7 @@ public class NanoporeReaderWindow implements Runnable{
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					NanoporeReaderWindow window = new NanoporeReaderWindow(new NanoporeReaderStream(),null);
+					NanoporeReaderWindow2 window = new NanoporeReaderWindow2(new NanoporeReaderStream2(),null);
 					window.frmNanoporeReader.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -110,7 +110,7 @@ public class NanoporeReaderWindow implements Runnable{
 	 * Create the application.
 	 * @throws IOException 
 	 */
-	public NanoporeReaderWindow(NanoporeReaderStream r, TimeTableXYDataset dataset) throws IOException {
+	public NanoporeReaderWindow2(NanoporeReaderStream2 r, TimeTableXYDataset dataset) throws IOException {
 		reader = r;
 		this.dataSet = dataset;
 
@@ -126,7 +126,7 @@ public class NanoporeReaderWindow implements Runnable{
 	private void initialize() throws IOException {		
 		frmNanoporeReader = new JFrame();
 		frmNanoporeReader.setTitle("Nanopore Reader");
-		frmNanoporeReader.setBounds(topC, topR, 1360, 714);
+		frmNanoporeReader.setBounds(topC, topR, 1238, 714);
 		frmNanoporeReader.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmNanoporeReader.getContentPane().setLayout(new BorderLayout(0, 0));
 
@@ -369,92 +369,8 @@ public class NanoporeReaderWindow implements Runnable{
 		txtMinLenth.setBounds(137, 77, 80, 21);
 		optionPanel.add(txtMinLenth);
 
-		///// Barcode analysis control panel
-		/*****************************************************************************************************
-		 *****************************************************************************************************
-		 *****************************************************************************************************
-		 */
-		JPanel bcPanel = new JPanel();
-		bcPanel.setBorder(BorderFactory.createTitledBorder("Demultiplex"));
-		bcPanel.setBounds(0, 521, 320, 120);
-		controlPanel.add(bcPanel);
-
-		final JRadioButton yRadioButton = new JRadioButton("Yes");
-		yRadioButton.setBounds(46, 22, 62, 23);
-
-		final JRadioButton nRadioButton = new JRadioButton("No");
-		nRadioButton.setBounds(186, 22, 62, 23);
-		bcPanel.setLayout(null);
-
-		final ButtonGroup bcBtGroup = new ButtonGroup();
-
-		bcBtGroup.add(yRadioButton);
-		bcBtGroup.add(nRadioButton);
-
-		bcPanel.add(yRadioButton);
-		bcPanel.add(nRadioButton);
-
-		final JTextField txtBCFile = new JTextField(reader.getBCFileName());		
-		txtBCFile.setBounds(10, 50, 300, 20);
-		bcPanel.add(txtBCFile);
-
-
-		final JButton btnBCFileChange = new JButton("Change");		
-		btnBCFileChange.setBounds(26, 80, 117, 25);	
-		bcPanel.add(btnBCFileChange);
 		
-		if (reader.getBCFileName() == null){
-			yRadioButton.setSelected(false);
-			nRadioButton.setSelected(true);
-			btnBCFileChange.setEnabled(false);
-			txtBCFile.setEnabled(false);
-		}else{
-			yRadioButton.setSelected(true);
-			nRadioButton.setSelected(false);
-			btnBCFileChange.setEnabled(true);
-			txtBCFile.setEnabled(true);
-		}
 
-		yRadioButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (nRadioButton.isSelected()){
-					btnBCFileChange.setEnabled(false);
-					txtBCFile.setEnabled(false);
-				}else{
-					btnBCFileChange.setEnabled(true);
-					txtBCFile.setEnabled(true);
-				}
-			}
-		});
-
-		nRadioButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (nRadioButton.isSelected()){
-					btnBCFileChange.setEnabled(false);
-					txtBCFile.setEnabled(false);
-				}else{
-					btnBCFileChange.setEnabled(true);
-					txtBCFile.setEnabled(true);
-				}
-			}
-		});		
-		
-		btnBCFileChange.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent ae) {
-				JFileChooser fileChooser = new JFileChooser();
-				fileChooser.setDialogTitle("Select barcode file");
-				fileChooser.setCurrentDirectory(new File(txtBCFile.getText()));
-
-				int returnValue = fileChooser.showOpenDialog(null);
-				if (returnValue == JFileChooser.APPROVE_OPTION) {
-					reader.updateDemultiplexFile(fileChooser.getSelectedFile().getPath());
-					txtBCFile.setText(reader.getBCFileName());	            
-				}
-			}
-		});
-
-		
-		
 		//final JLabel lblGroup = new JLabel("Group");
 		//lblGroup.setBounds(7, 113, 154, 15);
 		//optionPanel.add(lblGroup);
@@ -465,61 +381,13 @@ public class NanoporeReaderWindow implements Runnable{
 		//optionPanel.add(txtGroup);
 			
 
-//		final JPanel lPanel = new JPanel();
-//		lPanel.setBounds(10, 641, 320, 55);
-//		controlPanel.add(lPanel);
-//		lPanel.setLayout(null);		
-//
-//		final JButton btnStart = new JButton("Start");
-//		btnStart.setBounds(28, 18, 117, 25);
-//		btnStart.setEnabled(true);
-//		lPanel.add(btnStart);
-//
-//
-//		final JButton btnStop = new JButton("Stop");		
-//		btnStop.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent e) {
-//				reader.wait = false;
-//
-//				while (!reader.done){
-//					try {
-//						Thread.sleep(100);
-//					} catch (InterruptedException ee) {					
-//						ee.printStackTrace();
-//					}
-//				}
-//
-//				stillRun = false;
-//				JOptionPane.showMessageDialog(null, "Done", "Information", JOptionPane.PLAIN_MESSAGE);
-//
-//			}
-//		});
-//		btnStop.setBounds(191, 18, 117, 25);
-//		btnStop.setEnabled(false);
-//		lPanel.add(btnStop);
-
-
-
-		final JPanel mainPanel = new JPanel();
-		frmNanoporeReader.getContentPane().add(mainPanel, BorderLayout.CENTER);
-		//mainPanel.setBorder(BorderFactory.createTitledBorder("Statistics"));
-		mainPanel.setLayout(null);
-
-		final JPanel panelCounts = new JPanel();
-		panelCounts.setBounds(12, 304, 428, 280);
-		mainPanel.add(panelCounts);
-		panelCounts.setLayout(null);
-
-		/**********************************************************************
-		 * New position for start/stop buttons
-		 */
 		final JPanel lPanel = new JPanel();
-		lPanel.setBounds(12, 580, 320, 55);
-		mainPanel.add(lPanel);
+		lPanel.setBounds(0, 541, 320, 55);
+		controlPanel.add(lPanel);
 		lPanel.setLayout(null);		
 
 		final JButton btnStart = new JButton("Start");
-		btnStart.setBounds(40, 5, 117, 25);
+		btnStart.setBounds(28, 18, 117, 25);
 		btnStart.setEnabled(true);
 		lPanel.add(btnStart);
 
@@ -542,9 +410,22 @@ public class NanoporeReaderWindow implements Runnable{
 
 			}
 		});
-		btnStop.setBounds(203, 5, 117, 25);
+		btnStop.setBounds(191, 18, 117, 25);
 		btnStop.setEnabled(false);
 		lPanel.add(btnStop);
+
+
+
+		final JPanel mainPanel = new JPanel();
+		frmNanoporeReader.getContentPane().add(mainPanel, BorderLayout.CENTER);
+		//mainPanel.setBorder(BorderFactory.createTitledBorder("Statistics"));
+		mainPanel.setLayout(null);
+
+		final JPanel panelCounts = new JPanel();
+		panelCounts.setBounds(12, 304, 428, 280);
+		mainPanel.add(panelCounts);
+		panelCounts.setLayout(null);
+
 
 		//////////////////////////////////////////////////
 		final JLabel lblFiles = new JLabel("Total fast5 files");
@@ -657,7 +538,7 @@ public class NanoporeReaderWindow implements Runnable{
 		/////////////////////////////////////////////////////////////
 		//Histogram
 		histoLengthDataSet=new DynamicHistogram();
-		histoLengthDataSet.prepareSeries("Read Length", 500, 0, 40000);
+		histoLengthDataSet.prepareSeries("Read Length", 500, 0, 100000);
 		//histoDataset.prepareSeries("2D", 50, 0, 50000);
 		//histoDataset.prepareSeries("template", 50, 0, 50000);
 		//histoDataset.prepareSeries("complement", 50, 0, 50000);		
@@ -767,15 +648,6 @@ public class NanoporeReaderWindow implements Runnable{
 						return;
 					}			
 					reader.streamServers = txtStreamServers.getText().trim();
-				}
-				
-				//validate barcode analysis
-				if(yRadioButton.isSelected()){
-					if(txtBCFile.getText().trim().equals("")){
-						JOptionPane.showMessageDialog(null, "Please specify barcode file for demultiplex", "Warning", JOptionPane.PLAIN_MESSAGE);
-						txtBCFile.grabFocus();
-						return;
-					}
 				}
 
 

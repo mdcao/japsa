@@ -1,4 +1,4 @@
-package japsadev.seq.nanopore;
+package japsa.seq.nanopore;
 
 import japsa.util.DynamicHistogram;
 import japsa.util.JapsaException;
@@ -461,7 +461,7 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(label, 0,5,3,1);
     	inputPane.getChildren().add(label);
     	
-    	bcThresholdTF = new TextField(Integer.toString(reader.dmplx.SCORE_THRES));
+    	bcThresholdTF = new TextField(reader.dmplx!=null?Integer.toString(reader.dmplx.SCORE_THRES):"");
     	bcThresholdTF.setPromptText("Enter minimum score...");
     	barcodeBrowseButton.setDisable(!barcodeCB.isSelected());
     	bcThresholdTF.setOnKeyPressed(e -> {

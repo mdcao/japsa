@@ -1,4 +1,4 @@
-package japsadev.seq.nanopore;
+package japsa.seq.nanopore;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
-import japsa.util.Logging;
 
 public class Demultiplexer {
 	int 	SCAN_WINDOW=120, 
