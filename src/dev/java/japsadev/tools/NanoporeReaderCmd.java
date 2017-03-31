@@ -70,7 +70,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		addBoolean("number", false,"Add a unique number to read name");
 		addBoolean("stats", false,"Generate a report of read statistics");
 		//addBoolean("time", false,"Extract the sequencing time of each read -- only work with Metrichor > 1.12");		
-		addBoolean("exhautive", false,"Whether to traverse the input directory exhautively (abacore) or lazily (metrichor)");
+		addBoolean("exhaustive", false,"Whether to traverse the input directory exhaustively (albacore) or lazily (metrichor)");
 		addString("barcode", null,"The file containing all barcode sequences for demultiplexing.");
 
 		addStdHelp();		
@@ -92,7 +92,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		boolean fail  = cmdLine.getBooleanVal("fail");
 		String format = cmdLine.getStringVal("format");		
 		String streamServers = cmdLine.getStringVal("streams");
-		boolean exhautive = cmdLine.getBooleanVal("exhautive");
+		boolean exhautive = cmdLine.getBooleanVal("exhaustive");
 		String barcode = cmdLine.getStringVal("barcode");
 		int age = 20 * 1000;//cmdLine.getIntVal("age") * 1000;//in second
 		int interval = 30;
@@ -118,7 +118,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		reader.format = format.toLowerCase();
 		reader.realtime = realtime;
 		reader.streamServers = streamServers;
-		reader.exhautive = exhautive;
+		reader.exhaustive = exhautive;
 		
 		if(barcode != null)
 			reader.updateDemultiplexFile(barcode);

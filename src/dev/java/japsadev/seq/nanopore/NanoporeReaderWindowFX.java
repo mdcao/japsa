@@ -166,7 +166,7 @@ public class NanoporeReaderWindowFX extends Application{
     	newReader.format = reader.format.toLowerCase();
     	newReader.realtime = reader.realtime;
     	newReader.streamServers = reader.streamServers;
-    	newReader.exhautive = reader.exhautive;
+    	newReader.exhaustive = reader.exhaustive;
     	newReader.realtime = true;
 		newReader.stats = true;//GUI implies stats
 		newReader.ready = false;//wait for the command from GUI
@@ -461,7 +461,7 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(label, 0,5,3,1);
     	inputPane.getChildren().add(label);
     	
-    	bcThresholdTF = new TextField(Integer.toString(reader.dmplx.SCORE_THRES));
+    	bcThresholdTF = new TextField(reader.dmplx!=null?Integer.toString(reader.dmplx.SCORE_THRES):"");
     	bcThresholdTF.setPromptText("Enter minimum score...");
     	barcodeBrowseButton.setDisable(!barcodeCB.isSelected());
     	bcThresholdTF.setOnKeyPressed(e -> {
@@ -619,11 +619,11 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(addNumberOptCB, 0,4,4,1);
     	optionPane.getChildren().add(addNumberOptCB);
     	
-    	exhautiveCB = new CheckBox("Exhautively watch-mode (Abacore)");
-    	exhautiveCB.setSelected(reader.exhautive);
+    	exhautiveCB = new CheckBox("Exhaustively watch-mode (Albacore)");
+    	exhautiveCB.setSelected(reader.exhaustive);
     	exhautiveCB.selectedProperty().addListener(
             (obs_val,old_val,new_val) -> {
-            	reader.exhautive = new_val;
+            	reader.exhaustive = new_val;
             });	
     	
     	GridPane.setConstraints(exhautiveCB, 0,6,4,1);
@@ -634,7 +634,7 @@ public class NanoporeReaderWindowFX extends Application{
     	optionPane.getChildren().add(label2);
     	
     	minLenTF = new TextField(Integer.toString(reader.minLength));
-    	minLenTF.setPromptText("Enter minimum length to consider...");
+    	minLenTF.setPromptText("min.");
     	minLenTF.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER)  {
                 buttonStart.requestFocus();

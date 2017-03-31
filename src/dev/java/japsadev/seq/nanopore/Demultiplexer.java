@@ -58,7 +58,7 @@ public class Demultiplexer {
 
 		if(seq.length() < barcodeLen * 2 + 200){
 //			Logging.info("Ignoring short sequence " + seq.getName());
-			seq.setName("Barcode:unknown:0.0|" + seq.getName());
+			seq.setName("Barcode:unknown:0.0:0.0|" + seq.getName());
 			return;
 		}
 		//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
@@ -68,6 +68,7 @@ public class Demultiplexer {
 
 
 		double bestScore = 0.0;
+		double distance = 0.0; //distance between bestscore and the runner-up
 		int bestIndex = nSamples;
 
 		for(int i=0;i<nSamples; i++){
@@ -94,7 +95,8 @@ public class Demultiplexer {
 			double myScore = Math.max(Math.max(tf[i], tr[i]), Math.max(cf[i], cr[i]));
 			if (myScore > bestScore){
 				//Logging.info("Better score=" + myScore);
-				bestScore = myScore;
+				distance = myScore-bestScore;
+				bestScore = myScore;		
 				bestIndex = i;
 			}
 		}
@@ -103,12 +105,12 @@ public class Demultiplexer {
 		DecimalFormat twoDForm =  new DecimalFormat("#.##");
 		if(bestScore < SCORE_THRES){
 			//Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
-			retval = "Barcode:unknown:"+Double.valueOf(twoDForm.format(bestScore))+"|";
+			retval = "Barcode:unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
 
 		}
 		else {
 			//Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
-			retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+"|";
+			retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
 			readCount[bestIndex]++;
 		}
 				

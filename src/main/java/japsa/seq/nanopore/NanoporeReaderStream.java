@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -126,7 +127,7 @@ public class NanoporeReaderStream{
 	public boolean ready = true;
 	private static final byte MIN_QUAL = '!';//The minimum quality
 	
-	public boolean exhautive = false;
+	public boolean exhaustive = false;
 	Demultiplexer dmplx = null;
 	private String bcFile = null;
 	
@@ -266,7 +267,11 @@ public class NanoporeReaderStream{
 				//fail folder
 				.filter(p -> {
 					try{
-						return doFail || !Files.isSameFile(p.getParent(), Paths.get(folder+ File.separator + "fail"));
+						Path failFolderPath= Paths.get(folder+ File.separator + "fail");
+						if(failFolderPath.toFile().isDirectory())
+							return doFail || !Files.isSameFile(p.getParent(), failFolderPath);
+						else 
+							return true;
 					}catch(IOException e){
 						e.printStackTrace();
 						return false;
@@ -289,7 +294,7 @@ public class NanoporeReaderStream{
 				.forEach(p -> {
 				//	System.out.println(p);
 					try {
-						if (readFastq2(p.toString()) || !exhautive){
+						if (readFastq2(p.toString()) || !exhaustive){
 							filesDone.add(p.toString());
 							//System.out.println("Adding to list " + p.toString());
 						}

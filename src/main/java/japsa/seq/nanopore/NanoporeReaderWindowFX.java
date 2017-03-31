@@ -166,7 +166,7 @@ public class NanoporeReaderWindowFX extends Application{
     	newReader.format = reader.format.toLowerCase();
     	newReader.realtime = reader.realtime;
     	newReader.streamServers = reader.streamServers;
-    	newReader.exhautive = reader.exhautive;
+    	newReader.exhaustive = reader.exhaustive;
     	newReader.realtime = true;
 		newReader.stats = true;//GUI implies stats
 		newReader.ready = false;//wait for the command from GUI
@@ -619,11 +619,11 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(addNumberOptCB, 0,4,4,1);
     	optionPane.getChildren().add(addNumberOptCB);
     	
-    	exhautiveCB = new CheckBox("Exhautively watch-mode (Abacore)");
-    	exhautiveCB.setSelected(reader.exhautive);
+    	exhautiveCB = new CheckBox("Exhaustively watch-mode (Albacore)");
+    	exhautiveCB.setSelected(reader.exhaustive);
     	exhautiveCB.selectedProperty().addListener(
             (obs_val,old_val,new_val) -> {
-            	reader.exhautive = new_val;
+            	reader.exhaustive = new_val;
             });	
     	
     	GridPane.setConstraints(exhautiveCB, 0,6,4,1);

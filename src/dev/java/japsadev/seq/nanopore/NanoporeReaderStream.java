@@ -35,10 +35,14 @@
 package japsadev.seq.nanopore;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -125,7 +129,7 @@ public class NanoporeReaderStream{
 	public boolean ready = true;
 	private static final byte MIN_QUAL = '!';//The minimum quality
 	
-	public boolean exhautive = false;
+	public boolean exhaustive = false;
 	Demultiplexer dmplx = null;
 	private String bcFile = null;
 	
@@ -262,6 +266,19 @@ public class NanoporeReaderStream{
 				Files.walk(Paths.get(folder))
 				//is a file
 				.filter(Files::isRegularFile)
+				//fail folder
+				.filter(p -> {
+					try{
+						Path failFolderPath= Paths.get(folder+ File.separator + "fail");
+						if(failFolderPath.toFile().isDirectory())
+							return doFail || !Files.isSameFile(p.getParent(), failFolderPath);
+						else 
+							return true;
+					}catch(IOException e){
+						e.printStackTrace();
+						return false;
+					}
+				})
 				//fast5 file
 				.filter(p -> p.toString().endsWith("fast5"))
 				//age is old enough
@@ -271,19 +288,20 @@ public class NanoporeReaderStream{
 					}catch (IOException e1) {
 						e1.printStackTrace();
 						return false;
+					}catch (InvalidPathException e2){ 
+						e2.printStackTrace();
+						return true;// this happen when we don't have fail/ from the base-called folder
 					}
 				})
-				//if (!doFail){
-				//	stream = stream.filter(p->!p.toString().contains("fail"));
-				//}
 				//not read before
 				.filter(p -> !filesDone.contains(p.toString()))
 				//read
 				.forEach(p -> {
 				//	System.out.println(p);
 					try {
-						if (!exhautive || readFastq2(p.toString())){
+						if (readFastq2(p.toString()) || !exhaustive){
 							filesDone.add(p.toString());
+							//System.out.println("Adding to list " + p.toString());
 						}
 					} catch (JapsaException | IOException e) {
 						e.printStackTrace();
@@ -291,7 +309,7 @@ public class NanoporeReaderStream{
 	
 					if(!wait)
 						throw new BreakException("Stopping");
-				});		
+				});	
 
 			}catch(BreakException e){
 				Logging.info("Stop to read on directory " + folder);
