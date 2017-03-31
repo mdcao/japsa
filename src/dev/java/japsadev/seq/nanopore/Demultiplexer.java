@@ -9,8 +9,9 @@ import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
 public class Demultiplexer {
-	int 	SCAN_WINDOW=120, 
-			SCORE_THRES=30; 
+	int 	SCAN_WINDOW, 
+			DIST_THRES,
+			SCORE_THRES; 
 	
 	ArrayList<Sequence> barCodes;
 	ArrayList<Sequence> barCodeComps;
@@ -31,8 +32,9 @@ public class Demultiplexer {
 			barCodeComps.add(Alphabet.DNA.complement(barCode));
 		}
 		// Default setting for searching parameters
-		SCAN_WINDOW = barcodeLen * 5;
+		SCAN_WINDOW = barcodeLen * 3;
 		SCORE_THRES = barcodeLen;
+		DIST_THRES = barcodeLen / 3;
 		
 		readCount = new int[nSamples];
 	}
@@ -103,18 +105,19 @@ public class Demultiplexer {
 
 		String retval="";
 		DecimalFormat twoDForm =  new DecimalFormat("#.##");
-		if(bestScore < SCORE_THRES){
-			//Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
-			retval = "Barcode:unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
-
-		}
-		else {
-			//Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
-			retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
-			readCount[bestIndex]++;
-		}
+//		if(bestScore < SCORE_THRES || distance < DIST_THRES){
+//			//Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
+//			retval = "Barcode:unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
+//
+//		}
+//		else {
+//			//Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
+//			retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
+//			readCount[bestIndex]++;
+//		}
 				
-		
+		retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
+		readCount[bestIndex]++;
 		seq.setName(retval + seq.getName());
 
 	}

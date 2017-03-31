@@ -725,7 +725,6 @@ public class NanoporeReaderWindowFX extends Application{
 				);			
 
 		final StackedXYAreaRenderer render = new StackedXYAreaRenderer();
-
 		DateAxis domainAxis = new DateAxis();
 		domainAxis.setAutoRange(true);
 		domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
