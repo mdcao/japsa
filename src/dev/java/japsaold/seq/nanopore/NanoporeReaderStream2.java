@@ -282,7 +282,6 @@ public class NanoporeReaderStream2{
 					e.printStackTrace();
 				}
 			}
-
 		}//while			
 		Logging.info("EXISTING");
 
