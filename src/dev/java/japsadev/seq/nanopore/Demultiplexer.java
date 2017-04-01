@@ -69,9 +69,10 @@ public class Demultiplexer {
 		s3 = seq.subSequence(seq.length()-SCAN_WINDOW,seq.length());
 
 
-		double bestScore = 0.0;
-		double distance = 0.0; //distance between bestscore and the runner-up
-		int bestIndex = nSamples;
+		double bestScore = 0.0, secondBestScore = 0.0,
+				otherEndOfBest = 0.0, otherEndOfSecondBest = 0.0;
+		//double distance = 0.0; //distance between bestscore and the runner-up
+		int bestIndex = nSamples, secondBestIndex = nSamples;
 
 		for(int i=0;i<nSamples; i++){
 			Sequence barcode = barCodes.get(i);
@@ -97,11 +98,22 @@ public class Demultiplexer {
 			double myScore = Math.max(Math.max(tf[i], tr[i]), Math.max(cf[i], cr[i]));
 			if (myScore > bestScore){
 				//Logging.info("Better score=" + myScore);
-				distance = myScore-bestScore;
+				secondBestScore = bestScore;
 				bestScore = myScore;		
+				secondBestIndex = bestIndex;
 				bestIndex = i;
+			} else if(myScore > secondBestScore){
+				secondBestScore = bestScore;
+				secondBestIndex = bestIndex;
 			}
+				
 		}
+		otherEndOfBest = Math.max(tf[bestIndex], tr[bestIndex]) > Math.max(cf[bestIndex], cr[bestIndex]) ?
+				(tf[bestIndex]+tr[bestIndex]-bestScore):(cf[bestIndex]+cr[bestIndex]-bestScore);
+		otherEndOfSecondBest = Math.max(tf[secondBestIndex], tr[secondBestIndex]) > Math.max(cf[secondBestIndex], cr[secondBestIndex]) ?
+				(tf[secondBestIndex]+tr[secondBestIndex]-secondBestScore):(cf[secondBestIndex]+cr[secondBestIndex]-secondBestScore);
+		
+		
 
 		String retval="";
 		DecimalFormat twoDForm =  new DecimalFormat("#.##");
@@ -116,7 +128,11 @@ public class Demultiplexer {
 //			readCount[bestIndex]++;
 //		}
 				
-		retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
+		retval = barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+","+Double.valueOf(twoDForm.format(otherEndOfBest))+"|"
+				+barCodes.get(secondBestIndex).getName()+":"+Double.valueOf(twoDForm.format(secondBestScore))+","+Double.valueOf(twoDForm.format(otherEndOfSecondBest))
+				+"|";
+		
+		
 		readCount[bestIndex]++;
 		seq.setName(retval + seq.getName());
 
