@@ -103,8 +103,8 @@ public class Demultiplexer {
 				secondBestIndex = bestIndex;
 				bestIndex = i;
 			} else if(myScore > secondBestScore){
-				secondBestScore = bestScore;
-				secondBestIndex = bestIndex;
+				secondBestScore = myScore;
+				secondBestIndex = i;
 			}
 				
 		}

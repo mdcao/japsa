@@ -6,6 +6,7 @@ import japsa.util.Logging;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.Executors;
@@ -239,8 +240,23 @@ public class NanoporeReaderWindowFX extends Application{
 					FxDialogs.showWarning("File not found!", "Please specify output file");
 					outputTF.requestFocus();
 					return;
+				} else if(new File(_foutput).exists()){
+					String confirm = FxDialogs.showConfirm( "Output file already exists!", "Are you sure to overwrite the old file?", "No", "Yes");
+					if(confirm.equals("No")){
+						outputTF.requestFocus();
+						return;
+					}
 				}
-				reader.output = _foutput;					
+				reader.output = _foutput;			
+				try{
+					System.setProperty("usr.dir", Paths.get(_foutput).getParent().toString());
+				}
+				catch(NullPointerException | IllegalArgumentException | SecurityException e ){
+					e.printStackTrace();
+					FxDialogs.showWarning("Illegal output folder!", "Please specify another output destination");
+					outputTF.requestFocus();
+					return;
+				}
 			}else
 				reader.output = "-";//stream
 				
@@ -539,10 +555,13 @@ public class NanoporeReaderWindowFX extends Application{
     	outputBrowseButton.setOnAction((event) -> {
     		FileChooser fileChooser = new FileChooser();
     		fileChooser.setTitle("Save output to file");
+    		File initFolder = new File(inputTF.getText());
+    		if(initFolder.isDirectory())
+    			fileChooser.setInitialDirectory(initFolder);
     		fileChooser.setInitialFileName("output."+reader.format);
     		File savedFile = fileChooser.showSaveDialog(stage);
     		if(savedFile != null){
-    			reader.output = savedFile.getName();
+    			reader.output = savedFile.getAbsolutePath();
     			outputTF.setText(reader.output);
     		}
         });
@@ -634,7 +653,7 @@ public class NanoporeReaderWindowFX extends Application{
     	optionPane.getChildren().add(label2);
     	
     	minLenTF = new TextField(Integer.toString(reader.minLength));
-    	minLenTF.setPromptText("Enter minimum length to consider...");
+    	minLenTF.setPromptText("min.");
     	minLenTF.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER)  {
                 buttonStart.requestFocus();
@@ -725,7 +744,6 @@ public class NanoporeReaderWindowFX extends Application{
 				);			
 
 		final StackedXYAreaRenderer render = new StackedXYAreaRenderer();
-
 		DateAxis domainAxis = new DateAxis();
 		domainAxis.setAutoRange(true);
 		domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));

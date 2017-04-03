@@ -40,8 +40,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -288,9 +286,6 @@ public class NanoporeReaderStream{
 					}catch (IOException e1) {
 						e1.printStackTrace();
 						return false;
-					}catch (InvalidPathException e2){ 
-						e2.printStackTrace();
-						return true;// this happen when we don't have fail/ from the base-called folder
 					}
 				})
 				//not read before

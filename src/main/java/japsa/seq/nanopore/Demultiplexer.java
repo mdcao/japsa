@@ -8,8 +8,9 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 
 public class Demultiplexer {
-	int 	SCAN_WINDOW=120, 
-			SCORE_THRES=30; 
+	int 	SCAN_WINDOW, 
+			DIST_THRES,
+			SCORE_THRES; 
 	
 	ArrayList<Sequence> barCodes;
 	ArrayList<Sequence> barCodeComps;
@@ -30,14 +31,16 @@ public class Demultiplexer {
 			barCodeComps.add(Alphabet.DNA.complement(barCode));
 		}
 		// Default setting for searching parameters
-		SCAN_WINDOW = barcodeLen * 5;
+		SCAN_WINDOW = barcodeLen * 3;
 		SCORE_THRES = barcodeLen;
+		DIST_THRES = SCORE_THRES / 3;
 		
 		readCount = new int[nSamples];
 	}
 	
 	public void setThreshold(int score){
 		SCORE_THRES=score;
+		DIST_THRES = SCORE_THRES / 3;
 	}
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
@@ -57,7 +60,7 @@ public class Demultiplexer {
 
 		if(seq.length() < barcodeLen * 2 + 200){
 //			Logging.info("Ignoring short sequence " + seq.getName());
-			seq.setName("Barcode:unknown:0.0|" + seq.getName());
+			seq.setName("Barcode:unknown:0.0:0.0|" + seq.getName());
 			return;
 		}
 		//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
@@ -67,6 +70,8 @@ public class Demultiplexer {
 
 
 		double bestScore = 0.0;
+		double distance = 0.0; //distance between bestscore and the runner-up
+		
 		int bestIndex = nSamples;
 
 		for(int i=0;i<nSamples; i++){
@@ -93,24 +98,34 @@ public class Demultiplexer {
 			double myScore = Math.max(Math.max(tf[i], tr[i]), Math.max(cf[i], cr[i]));
 			if (myScore > bestScore){
 				//Logging.info("Better score=" + myScore);
-				bestScore = myScore;
+				distance = myScore-bestScore;
+				bestScore = myScore;		
 				bestIndex = i;
+			} else if((bestScore-myScore) < distance){
+				distance=bestScore-myScore;
 			}
+				
 		}
+		
+		
 
 		String retval="";
 		DecimalFormat twoDForm =  new DecimalFormat("#.##");
-		if(bestScore < SCORE_THRES){
+		if(bestScore < SCORE_THRES || distance < DIST_THRES){
 			//Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
-			retval = "Barcode:unknown:"+Double.valueOf(twoDForm.format(bestScore))+"|";
+			retval = "Barcode:unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
 
 		}
 		else {
 			//Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
-			retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+"|";
+			retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
 			readCount[bestIndex]++;
 		}
 				
+//		retval = barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+","+Double.valueOf(twoDForm.format(otherEndOfBest))+"|"
+//				+barCodes.get(secondBestIndex).getName()+":"+Double.valueOf(twoDForm.format(secondBestScore))+","+Double.valueOf(twoDForm.format(otherEndOfSecondBest))
+//				+"|";				
+//		readCount[bestIndex]++;
 		
 		seq.setName(retval + seq.getName());
 
