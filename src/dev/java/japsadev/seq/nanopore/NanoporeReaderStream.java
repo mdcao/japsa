@@ -105,8 +105,7 @@ public class NanoporeReaderStream{
 	DoubleArray qual2D = new DoubleArray(), qualComp = new DoubleArray(), qualTemp = new DoubleArray();
 	IntArray lengths2D = new IntArray(), lengthsComp = new IntArray(), lengthsTemp = new IntArray();
 
-	int fileNumber = 0;
-	int passNumber = 0, failNumber = 0;
+	int fileNumber = 0, passNumber = 0, failNumber = 0;
 	SequenceOutputStream sos;
 	ArrayList<SequenceOutputStream> networkOS = null;
 	public boolean stats, number;
