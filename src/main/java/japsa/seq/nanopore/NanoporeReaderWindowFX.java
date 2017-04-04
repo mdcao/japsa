@@ -13,15 +13,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
+import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.xy.StackedXYAreaRenderer;
+import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.statistics.HistogramType;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeTableXYDataset;
@@ -63,9 +68,10 @@ import javafx.stage.Stage;
 public class NanoporeReaderWindowFX extends Application{
 	
 	TimeTableXYDataset 	allReadsCount = new TimeTableXYDataset(),
-						demultiplexedReadsCount = new TimeTableXYDataset();
+						demultiplexedStackReadsCount = new TimeTableXYDataset();
+	DefaultCategoryDataset demultiplexedBarReadsCount = new DefaultCategoryDataset();
 	DynamicHistogram 	histoLengthDataSet = new DynamicHistogram(),
-			histoQualDataSet = new DynamicHistogram();
+						histoQualDataSet = new DynamicHistogram();
 	
 	static NanoporeReaderStream reader = new NanoporeReaderStream();
 
@@ -151,7 +157,7 @@ public class NanoporeReaderWindowFX extends Application{
     	leftBox.setDisable(false);
     		
     	allReadsCount = new TimeTableXYDataset();
-    	demultiplexedReadsCount = new TimeTableXYDataset();
+    	demultiplexedStackReadsCount = new TimeTableXYDataset();
 		histoLengthDataSet = new DynamicHistogram(); 
 		histoQualDataSet = new DynamicHistogram();
     	 
@@ -317,6 +323,11 @@ public class NanoporeReaderWindowFX extends Application{
         buttonStop.setPrefSize(100, 20);
         buttonStop.setDisable(true);
         buttonStop.setOnAction((event) -> {
+			String confirm = FxDialogs.showConfirm( "STOP button just being hit...", "Do you really want to stop the process?", "No", "Yes");
+			if(confirm.equals("No")){
+				return;
+			}
+			
         	reader.wait = false;
         	buttonStop.setDisable(true);
 
@@ -335,12 +346,6 @@ public class NanoporeReaderWindowFX extends Application{
 				}
 			}
 
-			String confirm = FxDialogs.showConfirm( "Remember to save all plots before quit", "Terminate the GUI right now?", "No", "Yes");
-			if(confirm.equals("Yes")){
-				Platform.exit();
-			    System.exit(0);
-			}
-			
         	//buttonRestart.setDisable(false);
 
         });
@@ -823,8 +828,9 @@ public class NanoporeReaderWindowFX extends Application{
 		//histoQualDataSet=new DynamicHistogram();
 		histoQualDataSet.setType(HistogramType.SCALE_AREA_TO_1);
 		histoQualDataSet.prepareSeries("2D", 100, 0, 30);
-		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
 		histoQualDataSet.prepareSeries("template", 100, 0, 30);
+		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
+
 
 		JFreeChart hisQual=ChartFactory.createXYLineChart("Quality","quality","frequency",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
 		ChartPanel hisQualPanel = new ChartPanel(hisQual,	            
@@ -870,7 +876,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(txtTFiles, 1, 0);
 		countPane.getChildren().add(txtTFiles);
 
-		final Label lblpFiles = new Label("Pass files");
+		final Label lblpFiles = new Label("Good-read fast5");
 		GridPane.setConstraints(lblpFiles, 0, 1);
 		countPane.getChildren().add(lblpFiles);
 
@@ -881,7 +887,7 @@ public class NanoporeReaderWindowFX extends Application{
 		countPane.getChildren().add(txtPFiles);
 
 
-		final Label lblFFiles = new Label("Fail files");
+		final Label lblFFiles = new Label("Invalid fast5");
 		GridPane.setConstraints(lblFFiles, 0, 2);
 		countPane.getChildren().add(lblFFiles);
 
@@ -934,45 +940,33 @@ public class NanoporeReaderWindowFX extends Application{
      * Create a Grid Pane for barcode analysis
      */
     private GridPane addBarcodePane(){
-	   GridPane mainGrid = createAutoresizeGridPane(1,1);
+	   GridPane mainGrid = createAutoresizeGridPane(1,2);
        mainGrid.setStyle("-fx-background-color: #C0C0C0;");
-       mainGrid.setPadding(new Insets(50, 50, 50, 50));
+       mainGrid.setPadding(new Insets(5, 100, 5, 100));
        mainGrid.setVgap(5);
        mainGrid.setHgap(5);
        /*
-        * Read count chart
+        * Read count stack chart
         */
-   		final JFreeChart chart = ChartFactory.createXYLineChart(
-   				"Demultiplexed-read count",      // chart title
+   		final JFreeChart stackChart = ChartFactory.createXYLineChart(
+   				"",      // chart title
    				"Time",             // domain axis label
-   				"Read number",                   // range axis label
-   				demultiplexedReadsCount,
+   				"Over-time read count",                   // range axis label
+   				demultiplexedStackReadsCount,
    				PlotOrientation.VERTICAL,
    				true,
    				true,
    				false
    				);			
 
-   		final StackedXYAreaRenderer render = new StackedXYAreaRenderer();
-//   		final XYLineAndShapeRenderer render = new XYLineAndShapeRenderer();
-//   	 
-//	   	// sets paint color for each series
-//   		render.setSeriesPaint(0, java.awt.Color.RED);
-//   		render.setSeriesPaint(1, java.awt.Color.GREEN);
-//   		render.setSeriesPaint(2, java.awt.Color.YELLOW);
-//	   	 
-//	   	// sets thickness for series (using strokes)
-//   		render.setSeriesStroke(0, new BasicStroke(4.0f));
-//   		render.setSeriesStroke(1, new BasicStroke(3.0f));
-//   		render.setSeriesStroke(2, new BasicStroke(2.0f));
-   				
+   		final StackedXYAreaRenderer stackRender = new StackedXYAreaRenderer();		
    				
    		DateAxis domainAxis = new DateAxis();
    		domainAxis.setAutoRange(true);
    		domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
 
-   		XYPlot plot = (XYPlot) chart.getPlot();
-   		plot.setRenderer(render);
+   		XYPlot plot = (XYPlot) stackChart.getPlot();
+   		plot.setRenderer(stackRender);
    		plot.setDomainAxis(domainAxis);
    		plot.setSeriesRenderingOrder(SeriesRenderingOrder.FORWARD);
    		plot.setForegroundAlpha(0.5f);
@@ -981,13 +975,13 @@ public class NanoporeReaderWindowFX extends Application{
    		rangeAxis.setNumberFormatOverride(new DecimalFormat("#,###.#"));
    		rangeAxis.setAutoRange(true);
 
-   		ChartPanel chartPanel = new ChartPanel(chart,	            
-   			700,
+   		ChartPanel stackChartPanel = new ChartPanel(stackChart,	            
    			500,
-   			700,
+   			300,
    			500,
-   			700,
+   			300,
    			500,
+   			300,
    			true,
    			true,  // properties
    			true,  // save
@@ -996,11 +990,56 @@ public class NanoporeReaderWindowFX extends Application{
    			true   // tooltips
    			);		
 
-   		SwingNode chartSwingNode = new SwingNode();
-   		chartSwingNode.setContent(chartPanel);
-   		GridPane.setConstraints(chartSwingNode, 0,0);
+   		SwingNode stackChartSwingNode = new SwingNode();
+   		stackChartSwingNode.setContent(stackChartPanel);
    		
-   		mainGrid.getChildren().add(chartSwingNode);	
+   		GridPane.setConstraints(stackChartSwingNode, 0,0);
+   		mainGrid.getChildren().add(stackChartSwingNode);	
+   		
+   		/*
+   		 * Reads count bar chart
+   		 */
+   		final JFreeChart barChart = ChartFactory.createBarChart(
+   				"", 
+   				"Barcode", 
+   				"In-time read count", 
+   				demultiplexedBarReadsCount, 
+   				PlotOrientation.VERTICAL, 
+   				false, 
+   				false, 
+   				false);
+   		final BarRenderer barRender = new CustomRenderer(ChartColor.createDefaultPaintArray());
+   		barRender.setSeriesItemLabelGenerator(0, new StandardCategoryItemLabelGenerator());
+   		barRender.setSeriesItemLabelsVisible(0, true);
+//   	barRender.setBarPainter(new StandardBarPainter());
+   		
+   		CategoryPlot bar = barChart.getCategoryPlot();
+   		bar.getDomainAxis().setVisible(false);
+   		bar.setRenderer(barRender);
+   		bar.setForegroundAlpha(0.5f);
+
+
+   		ChartPanel barChartPanel = new ChartPanel(barChart,	            
+   			500,
+   			300,
+   			500,
+   			300,
+   			500,
+   			300,
+   			true,
+   			true,  // properties
+   			true,  // save
+   			true,  // print
+   			true,  // zoom
+   			true   // tooltips
+   			);		
+
+   		SwingNode barChartSwingNode = new SwingNode();
+   		barChartSwingNode.setContent(barChartPanel);
+   		
+   		GridPane.setConstraints(barChartSwingNode, 0,1);
+   		mainGrid.getChildren().add(barChartSwingNode);
+   		
    		return mainGrid;
     }
     
@@ -1038,23 +1077,28 @@ public class NanoporeReaderWindowFX extends Application{
                     	
             			Second period = new Second();
             			allReadsCount.add(period, reader.twoDCount,"2D");
-            			allReadsCount.add(period, reader.compCount,"complement");
             			allReadsCount.add(period, reader.tempCount,"template");
+            			allReadsCount.add(period, reader.compCount,"complement");
+
             
             			Demultiplexer myDmplx = reader.dmplx;
             			if(myDmplx!=null){
             				for(int i=0;i<myDmplx.readCount.length;i++){
-            					demultiplexedReadsCount.add(period, myDmplx.readCount[i], myDmplx.barCodes.get(i).getName());
+            					demultiplexedStackReadsCount.add(period, myDmplx.readCount[i], myDmplx.barCodes.get(i).getName());
+            					
+            					demultiplexedBarReadsCount.setValue(myDmplx.readCount[i], "Count", myDmplx.barCodes.get(i).getName());
             				}
+            				
             			}
             			
-            			txtTFiles.setText(reader.fileNumber+"");	                
-            			txtPFiles.setText(reader.passNumber+"");
-            			txtFFiles.setText(reader.failNumber+"");
+            			txtTFiles.setText(reader.getTotalFilesNumber()+"");	                
+            			txtPFiles.setText(reader.getOKFilesNumber()+"");
+            			txtFFiles.setText(reader.getSkippedFilesNumber()+"");
             
             			txt2DReads.setText(reader.twoDCount+"");
-            			txtCompReads.setText(reader.compCount+"");
             			txtTempReads.setText(reader.tempCount+"");
+            			txtCompReads.setText(reader.compCount+"");
+
             
             			int currentIndex = reader.lengths.size();
             
@@ -1077,17 +1121,6 @@ public class NanoporeReaderWindowFX extends Application{
             				lastIndexQual2D = currentIndex;
             				histoQualDataSet.notifyChanged();
             			}
-            
-            			currentIndex = reader.qualComp.size();
-            			if (currentIndex > lastIndexQualComp){
-            				int index = histoQualDataSet.getSeriesIndex("complement");
-            				for (int i = lastIndexQualComp; i < currentIndex;i++)
-            					histoQualDataSet.addSeries(index, reader.qualComp.get(i));
-            
-            				lastIndexQualComp = currentIndex;
-            				histoQualDataSet.notifyChanged();
-            			}
-            
             			currentIndex = reader.qualTemp.size();
             			if (currentIndex > lastIndexQualTemp){
             				int index = histoQualDataSet.getSeriesIndex("template");
@@ -1097,7 +1130,16 @@ public class NanoporeReaderWindowFX extends Application{
             				lastIndexQualTemp = currentIndex;
             				histoQualDataSet.notifyChanged();
             			}
-                          
+            			currentIndex = reader.qualComp.size();
+            			if (currentIndex > lastIndexQualComp){
+            				int index = histoQualDataSet.getSeriesIndex("complement");
+            				for (int i = lastIndexQualComp; i < currentIndex;i++)
+            					histoQualDataSet.addSeries(index, reader.qualComp.get(i));
+            
+            				lastIndexQualComp = currentIndex;
+            				histoQualDataSet.notifyChanged();
+            			}          
+                        
                     }
                 }, 
                 1, 

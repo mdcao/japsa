@@ -57,6 +57,7 @@ import japsa.util.JapsaException;
 import japsa.util.Logging;
 import japsa.util.net.StreamClient;
 
+
 /**
  * Read nanopore data (read sequence, events, alignment, models etc) from a raw
  * (fast5) format. 
@@ -105,8 +106,7 @@ public class NanoporeReaderStream{
 	DoubleArray qual2D = new DoubleArray(), qualComp = new DoubleArray(), qualTemp = new DoubleArray();
 	IntArray lengths2D = new IntArray(), lengthsComp = new IntArray(), lengthsTemp = new IntArray();
 
-	int fileNumber = 0;
-	int passNumber = 0, failNumber = 0;
+	//int fileNumber = 0, passNumber = 0, failNumber = 0;
 	SequenceOutputStream sos;
 	ArrayList<SequenceOutputStream> networkOS = null;
 	public boolean stats, number;
@@ -194,10 +194,12 @@ public class NanoporeReaderStream{
 			npReader.close();
 
 			ArrayList<BaseCalledFastq> seqList = npReader.getFastqList();
-			if (seqList!= null){
+			if(seqList == null || seqList.isEmpty())
+				return false;
+			else{
 				for (BaseCalledFastq fq:seqList){
 					if (fq.length() >= minLength){
-						fq.setName((number?(fileNumber *3 + fq.type()) + "_":"") + fq.getName());
+						fq.setName((number?(getTotalFilesNumber() *3 + fq.type()) + "_":"") + fq.getName());
 						//do multiplexing here
 						if(dmplx!=null)
 							dmplx.clustering(fq);
@@ -227,7 +229,7 @@ public class NanoporeReaderStream{
 				}
 			}
 
-			fileNumber ++;			
+			//fileNumber ++;			
 		}catch (JapsaException e){
 			throw e;
 		}catch (Exception e){
@@ -246,6 +248,8 @@ public class NanoporeReaderStream{
 	 * @param stats: print out statistics
 	 * @throws IOException 
 	 */
+	HashSet<String> filesOK = new HashSet<String>(),
+					filesSkipped = new HashSet<String>();
 	public void readFast5() throws JapsaException, IOException{
 		if (minLength < 1)
 			minLength = 1;
@@ -253,7 +257,7 @@ public class NanoporeReaderStream{
 		Logging.info("Start reading " + folder);
 
 
-		HashSet<String> filesDone = new HashSet<String>();
+		//HashSet<String> filesDone = new HashSet<String>();
 
 		while (wait){
 			//Do main
@@ -289,15 +293,18 @@ public class NanoporeReaderStream{
 					}
 				})
 				//not read before
-				.filter(p -> !filesDone.contains(p.toString()))
+				.filter(p -> !filesOK.contains(p.toString()) && (exhaustive || !filesSkipped.contains(p.toString())) )
 				//read
 				.forEach(p -> {
 				//	System.out.println(p);
 					try {
-						if (readFastq2(p.toString()) || !exhaustive){
-							filesDone.add(p.toString());
-							//System.out.println("Adding to list " + p.toString());
+						if (readFastq2(p.toString())){
+							filesOK.add(p.toString());
+							filesSkipped.remove(p.toString());
 						}
+						else
+							filesSkipped.add(p.toString());
+						
 					} catch (JapsaException | IOException e) {
 						e.printStackTrace();
 					}		
@@ -329,7 +336,7 @@ public class NanoporeReaderStream{
 			Logging.info("Getting stats ... ");
 			int [] ls = lengths.toArray();
 			if (ls.length ==0){
-				Logging.info("Open " + fileNumber + " files");
+				Logging.info("Open " + getTotalFilesNumber() + " files");
 				Logging.info("Fould 0 reads");				
 			}else{
 				Arrays.sort(ls);
@@ -354,7 +361,7 @@ public class NanoporeReaderStream{
 						quantile3rd = i;
 				}
 
-				Logging.info("Open " + fileNumber + " files");
+				Logging.info("Open " + getTotalFilesNumber() + " files");
 				Logging.info("Read count = " + ls.length + "(" + tempCount + " templates, " + compCount + " complements and " + twoDCount +"  2D)");
 				Logging.info("Base count = " + baseCount);		
 				Logging.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
@@ -436,4 +443,15 @@ public class NanoporeReaderStream{
 		qualCompFile.close();
 		qual2DFile.close();
 	}
+	
+	public synchronized int getTotalFilesNumber(){
+		return filesOK.size() + filesSkipped.size();
+	}
+	public synchronized int getOKFilesNumber(){
+		return filesOK.size();
+	}
+	public synchronized int getSkippedFilesNumber(){
+		return filesSkipped.size();
+	}
+	
 }

@@ -193,7 +193,9 @@ public class NanoporeReaderStream{
 			npReader.close();
 
 			ArrayList<BaseCalledFastq> seqList = npReader.getFastqList();
-			if (seqList!= null){
+			if(seqList == null || seqList.isEmpty())
+				return false;
+			else{
 				for (BaseCalledFastq fq:seqList){
 					if (fq.length() >= minLength){
 						fq.setName((number?(getTotalFilesNumber() *3 + fq.type()) + "_":"") + fq.getName());

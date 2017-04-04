@@ -25,7 +25,6 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.SeriesRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
-import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.chart.renderer.xy.StackedXYAreaRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.statistics.HistogramType;
@@ -829,8 +828,9 @@ public class NanoporeReaderWindowFX extends Application{
 		//histoQualDataSet=new DynamicHistogram();
 		histoQualDataSet.setType(HistogramType.SCALE_AREA_TO_1);
 		histoQualDataSet.prepareSeries("2D", 100, 0, 30);
-		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
 		histoQualDataSet.prepareSeries("template", 100, 0, 30);
+		histoQualDataSet.prepareSeries("complement", 100, 0, 30);
+
 
 		JFreeChart hisQual=ChartFactory.createXYLineChart("Quality","quality","frequency",histoQualDataSet,PlotOrientation.VERTICAL,true,true,false);
 		ChartPanel hisQualPanel = new ChartPanel(hisQual,	            
@@ -876,7 +876,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(txtTFiles, 1, 0);
 		countPane.getChildren().add(txtTFiles);
 
-		final Label lblpFiles = new Label("Legal fast5");
+		final Label lblpFiles = new Label("Good-read fast5");
 		GridPane.setConstraints(lblpFiles, 0, 1);
 		countPane.getChildren().add(lblpFiles);
 
@@ -887,7 +887,7 @@ public class NanoporeReaderWindowFX extends Application{
 		countPane.getChildren().add(txtPFiles);
 
 
-		final Label lblFFiles = new Label("Error fast5");
+		final Label lblFFiles = new Label("Invalid fast5");
 		GridPane.setConstraints(lblFFiles, 0, 2);
 		countPane.getChildren().add(lblFFiles);
 
@@ -1077,8 +1077,9 @@ public class NanoporeReaderWindowFX extends Application{
                     	
             			Second period = new Second();
             			allReadsCount.add(period, reader.twoDCount,"2D");
-            			allReadsCount.add(period, reader.compCount,"complement");
             			allReadsCount.add(period, reader.tempCount,"template");
+            			allReadsCount.add(period, reader.compCount,"complement");
+
             
             			Demultiplexer myDmplx = reader.dmplx;
             			if(myDmplx!=null){
@@ -1095,8 +1096,9 @@ public class NanoporeReaderWindowFX extends Application{
             			txtFFiles.setText(reader.getSkippedFilesNumber()+"");
             
             			txt2DReads.setText(reader.twoDCount+"");
-            			txtCompReads.setText(reader.compCount+"");
             			txtTempReads.setText(reader.tempCount+"");
+            			txtCompReads.setText(reader.compCount+"");
+
             
             			int currentIndex = reader.lengths.size();
             
@@ -1119,17 +1121,6 @@ public class NanoporeReaderWindowFX extends Application{
             				lastIndexQual2D = currentIndex;
             				histoQualDataSet.notifyChanged();
             			}
-            
-            			currentIndex = reader.qualComp.size();
-            			if (currentIndex > lastIndexQualComp){
-            				int index = histoQualDataSet.getSeriesIndex("complement");
-            				for (int i = lastIndexQualComp; i < currentIndex;i++)
-            					histoQualDataSet.addSeries(index, reader.qualComp.get(i));
-            
-            				lastIndexQualComp = currentIndex;
-            				histoQualDataSet.notifyChanged();
-            			}
-            
             			currentIndex = reader.qualTemp.size();
             			if (currentIndex > lastIndexQualTemp){
             				int index = histoQualDataSet.getSeriesIndex("template");
@@ -1139,7 +1130,16 @@ public class NanoporeReaderWindowFX extends Application{
             				lastIndexQualTemp = currentIndex;
             				histoQualDataSet.notifyChanged();
             			}
-                          
+            			currentIndex = reader.qualComp.size();
+            			if (currentIndex > lastIndexQualComp){
+            				int index = histoQualDataSet.getSeriesIndex("complement");
+            				for (int i = lastIndexQualComp; i < currentIndex;i++)
+            					histoQualDataSet.addSeries(index, reader.qualComp.get(i));
+            
+            				lastIndexQualComp = currentIndex;
+            				histoQualDataSet.notifyChanged();
+            			}          
+                        
                     }
                 }, 
                 1, 
