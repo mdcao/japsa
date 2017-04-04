@@ -764,9 +764,9 @@ public class NanoporeReaderWindowApplet extends JApplet{
 			dataSet.add(period, reader.compCount,"complement");
 			dataSet.add(period, reader.tempCount,"template");
 
-			txtTFiles.setText(reader.fileNumber+"");	                
-			txtPFiles.setText(reader.passNumber+"");
-			txtFFiles.setText(reader.failNumber+"");
+			txtTFiles.setText(reader.getTotalFilesNumber()+"");	                
+			txtPFiles.setText(reader.getOKFilesNumber()+"");
+			txtFFiles.setText(reader.getSkippedFilesNumber()+"");
 
 			txt2DReads.setText(reader.twoDCount+"");
 			txtCompReads.setText(reader.compCount+"");

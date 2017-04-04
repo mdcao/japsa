@@ -876,7 +876,7 @@ public class NanoporeReaderWindowFX extends Application{
 		GridPane.setConstraints(txtTFiles, 1, 0);
 		countPane.getChildren().add(txtTFiles);
 
-		final Label lblpFiles = new Label("Pass files");
+		final Label lblpFiles = new Label("Legal fast5");
 		GridPane.setConstraints(lblpFiles, 0, 1);
 		countPane.getChildren().add(lblpFiles);
 
@@ -887,7 +887,7 @@ public class NanoporeReaderWindowFX extends Application{
 		countPane.getChildren().add(txtPFiles);
 
 
-		final Label lblFFiles = new Label("Fail files");
+		final Label lblFFiles = new Label("Error fast5");
 		GridPane.setConstraints(lblFFiles, 0, 2);
 		countPane.getChildren().add(lblFFiles);
 
@@ -1090,9 +1090,9 @@ public class NanoporeReaderWindowFX extends Application{
             				
             			}
             			
-            			txtTFiles.setText(reader.fileNumber+"");	                
-            			txtPFiles.setText(reader.passNumber+"");
-            			txtFFiles.setText(reader.failNumber+"");
+            			txtTFiles.setText(reader.getTotalFilesNumber()+"");	                
+            			txtPFiles.setText(reader.getOKFilesNumber()+"");
+            			txtFFiles.setText(reader.getSkippedFilesNumber()+"");
             
             			txt2DReads.setText(reader.twoDCount+"");
             			txtCompReads.setText(reader.compCount+"");
