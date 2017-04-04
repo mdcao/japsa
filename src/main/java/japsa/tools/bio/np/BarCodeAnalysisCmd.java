@@ -22,7 +22,7 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		addString("bcFile", null, "Barcode file",true);		
 		addString("seqFile", null, "Nanopore sequences file",true);
 		addString("scriptRun", null, "Invoke command script to run npScarf",true);
-		addBoolean("verbose", false, "Verbose mode to show alignments (blossom62)");
+		addInt("threshold", 24, "Minimum matching score for barcode alignment");
 		addBoolean("print", false, "Print out demultiplexed reads to corresponding FASTA file or not.");
 		addStdHelp();
 	}
@@ -33,17 +33,15 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		String bcFile = cmdLine.getStringVal("bcFile");
 		String script = cmdLine.getStringVal("scriptRun");
 		String seqFile = cmdLine.getStringVal("seqFile");
-		Boolean v = cmdLine.getBooleanVal("verbose"),
-				p = cmdLine.getBooleanVal("print");
-		BarCodeAnalysis.toPrint = BarCodeAnalysisVerbose.toPrint = p;
+		Integer threshold = cmdLine.getIntVal("threshold");
+		Boolean p = cmdLine.getBooleanVal("print");
+		BarCodeAnalysis.toPrint = p;
 
-		if(v){
-			BarCodeAnalysisVerbose bc = new BarCodeAnalysisVerbose(bcFile,script);
-			bc.clustering(seqFile);
-		}else{
-			BarCodeAnalysis bc = new BarCodeAnalysis(bcFile,script);
-			bc.clustering(seqFile);
-		}
+		
+		BarCodeAnalysis bc = new BarCodeAnalysis(bcFile,script);
+		bc.setThreshold(threshold);
+		bc.clustering(seqFile);
+
 		
 	}
 }
@@ -87,6 +85,11 @@ in which <*id*> is the identifier of a sample as given in the <barcode.fasta>. T
 of long-read streams to do further analysis.
 	
 	Missing any file would break down the whole pipeline.
+	
+	*barcode* allows user to set the minimum score of a hit with barcode reference to be considered valid. The default value
+is 24, the length of a single barcode sequence from Nanopore Native Kit. Decreasing the threshold will lead to more reads being
+clustered but with higher risk of false positive while increasing will generate less but more confident of demultiplexed
+reads.
 
 Output
 ======

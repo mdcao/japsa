@@ -15,7 +15,7 @@ public class Demultiplexer {
 	ArrayList<Sequence> barCodes;
 	ArrayList<Sequence> barCodeComps;
 	int nSamples;
-	int barcodeLen;
+	private int barcodeLen;
 	
 	int[] readCount;
 	
