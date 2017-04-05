@@ -1,5 +1,5 @@
 -----------------------------------------
-*jsa.hts.n50*: Compute N50 of an assembly 
+ *jsa.hts.n50*: Compute N50 of an assembly 
 -----------------------------------------
 
 ~~~~~~~~

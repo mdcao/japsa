@@ -42,7 +42,7 @@ latest version.
 Synopsis
 ~~~~~~~~
 
-*jsa.np.npreader*: Extract and stream Oxford Nanopore sequencing data in real-time
+*jsa.np.npreader*: Extract and stream Oxford Nanopore sequencing data in real-time. Demultiplexe included.
 
 ~~~~~
 Usage
@@ -74,6 +74,10 @@ Options
                   (default='false')
   --stats         Generate a report of read statistics
                   (default='false')
+  --exhaustive    Whether to traverse the input directory exhaustively (albacore) or lazily (metrichor)
+                  (default='false')
+  --barcode=s     The file containing all barcode sequences for demultiplexing.
+                  (default='null')
   --help          Display this usage and exit
                   (default='false')
 
@@ -152,6 +156,14 @@ direct stream data to the pipelines without the need of
    jsa.np.npreader -realtime -folder c:\Downloads\ -fail -output - | \
    bwa mem -t 8 -k11 -W20 -r10 -A1 -B1 -O1 -E1 -L0 -Y -K 10000 index - | \
    jsa.np.speciesTyping  -bam - --index speciesIndex -output output.dat
+
+*npReader* now supports barcode sequencing demultiplex. For this analysis, it
+requires a FASTA file of barcode tag sequences and will classify output sequences
+based on alignment. User can specify the threshold for alignment confidence from 
+the GUI. Demultiplexing results are illustrated as prefix Barcode:<sample>:<score>|
+added to each output sequence name.
+
+	jsa.np.npreader -GUI -barcode barcode.fasta
 
 Japsa also provides *jsa.np.filter*, a tool to bin sequence data in groups of
 the user's liking. Like any other streamline tools, jsa.np.filter can run

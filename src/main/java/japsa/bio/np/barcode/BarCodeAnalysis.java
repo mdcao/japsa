@@ -9,19 +9,20 @@ import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
 public class BarCodeAnalysis {
-	static final int SCAN_WINDOW=120, SCORE_THRES=30; 
+	int 	SCAN_WINDOW, 
+			DIST_THRES,
+			SCORE_THRES;
 	public static boolean toPrint=false;
 	ArrayList<Sequence> barCodes; //barcode sequences
 	ArrayList<Sequence> barCodeComps; //barcode complement sequences
 	Process[] processes;
 	int nSamples;
+	int barcodeLen;
 	SequenceOutputStream[] streamToScaffolder, streamToFile;
 
 	public BarCodeAnalysis(String barcodeFile, String scriptFile) throws IOException{
 		barCodes = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
 		nSamples = barCodes.size();
-
-
 
 		processes = new Process[nSamples];
 		streamToScaffolder = new SequenceOutputStream[nSamples];
@@ -49,6 +50,16 @@ public class BarCodeAnalysis {
 			if(toPrint)
 				streamToFile[i] = SequenceOutputStream.makeOutputStream(id+"_clustered.fasta");
 		}
+		
+		barcodeLen = barCodes.get(0).length();
+		SCAN_WINDOW = barcodeLen * 3;
+		SCORE_THRES = barcodeLen;
+		DIST_THRES = SCORE_THRES / 3;
+	}
+	
+	public void setThreshold(int score){
+		SCORE_THRES=score;
+		DIST_THRES = SCORE_THRES / 3;
 	}
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
@@ -73,7 +84,7 @@ public class BarCodeAnalysis {
 		//								alignmentsCF = new jaligner.Alignment[pop],
 		//								alignmentsCR = new jaligner.Alignment[pop];
 
-		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),21,"barcode");
+		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),barcodeLen,"barcode");
 		Sequence tipSeq = new Sequence(Alphabet.DNA4(),SCAN_WINDOW,"tip");
 
 		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
@@ -89,7 +100,10 @@ public class BarCodeAnalysis {
 			s3 = seq.subSequence(seq.length()-SCAN_WINDOW,seq.length());
 
 
+
 			double bestScore = 0.0;
+			double distance = 0.0; //distance between bestscore and the runner-up
+			
 			int bestIndex = nSamples;
 
 			for(int i=0;i<nSamples; i++){
@@ -113,16 +127,19 @@ public class BarCodeAnalysis {
 				//This is for both end
 				//double myScore = Math.max(tf[i], tr[i]) + Math.max(cf[i], cr[i]);
 
-				//but may be we can use onely one end
 				double myScore = Math.max(Math.max(tf[i], tr[i]), Math.max(cf[i], cr[i]));
 				if (myScore > bestScore){
 					//Logging.info("Better score=" + myScore);
-					bestScore = myScore;
+					distance = myScore-bestScore;
+					bestScore = myScore;		
 					bestIndex = i;
+				} else if((bestScore-myScore) < distance){
+					distance=bestScore-myScore;
 				}
+					
 			}
 
-			if(bestScore <= SCORE_THRES){
+			if(bestScore < SCORE_THRES || distance < DIST_THRES){
 				//Logging.info("Unknown sequence " + seq.getName());
 				continue;
 			}
@@ -130,14 +147,10 @@ public class BarCodeAnalysis {
 			else {
 				Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
 				if(bestIndex<nSamples && processes[bestIndex]!=null && processes[bestIndex].isAlive()){
-					if(bestIndex==0){
-						Logging.info("...skip to write to stream " + barCodes.get(0).getName());
-					}else{
-						Logging.info("...writing to stream " + bestIndex);
-						seq.writeFasta(streamToScaffolder[bestIndex]);
-						if(toPrint)
-							seq.writeFasta(streamToFile[bestIndex]);
-					}
+					Logging.info("...writing to stream " + bestIndex);
+					seq.writeFasta(streamToScaffolder[bestIndex]);
+					if(toPrint)
+						seq.writeFasta(streamToFile[bestIndex]);
 				}
 			}
 
