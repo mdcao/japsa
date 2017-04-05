@@ -202,7 +202,7 @@ public class NanoporeReaderWindowFX extends Application{
     private Button 	buttonStart, buttonStop, buttonRestart,
     				inputBrowseButton, barcodeBrowseButton, outputBrowseButton;
     private TextField inputTF, barcodeTF, bcThresholdTF, outputTF, streamTF, minLenTF;
-    private CheckBox failCB, exhautiveCB, barcodeCB, serversCB, allReadsOptCB, addNumberOptCB;
+    private CheckBox failCB, exhautiveCB, barcodeCB, serversCB, saveDemultiplexToFilesOptCB, addNumberOptCB;
     private ComboBox<String> outputToCombo, outputFormatCombo;
     /*
      * Creates an HBox with two buttons for the top region
@@ -504,6 +504,7 @@ public class NanoporeReaderWindowFX extends Application{
                 	barcodeTF.setDisable(!new_val);
                 	barcodeBrowseButton.setDisable(!new_val);
                 	bcThresholdTF.setDisable(!new_val);
+                	saveDemultiplexToFilesOptCB.setDisable(!new_val);
                 	label.setDisable(!new_val);
                 	tabPane.getSelectionModel().select(0);
                 });	
@@ -625,14 +626,15 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(optLabel, 0,0,4,1);
     	optionPane.getChildren().add(optLabel);
     	
-    	allReadsOptCB = new CheckBox("Including template and complement reads");
-    	allReadsOptCB.setSelected(true);
-    	allReadsOptCB.selectedProperty().addListener(
+    	saveDemultiplexToFilesOptCB = new CheckBox("Save demultiplexed reads to separated files");
+    	saveDemultiplexToFilesOptCB.setSelected(Demultiplexer.toPrint);
+    	saveDemultiplexToFilesOptCB.setDisable(!barcodeCB.isSelected());;
+    	saveDemultiplexToFilesOptCB.selectedProperty().addListener(
                 (obs_val,old_val,new_val) -> {
-                	reader.doLow=new_val;
+                	Demultiplexer.toPrint=new_val;
                 });	
-    	GridPane.setConstraints(allReadsOptCB, 0,2,4,1);
-    	optionPane.getChildren().add(allReadsOptCB);
+    	GridPane.setConstraints(saveDemultiplexToFilesOptCB, 0,2,4,1);
+    	optionPane.getChildren().add(saveDemultiplexToFilesOptCB);
 
     	addNumberOptCB = new CheckBox("Assign unique number to every read name");
     	addNumberOptCB.setSelected(reader.number);

@@ -5,6 +5,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
@@ -17,8 +18,10 @@ public class Demultiplexer {
 	ArrayList<Sequence> barCodeComps;
 	int nSamples;
 	int barcodeLen;
-	
 	int[] readCount;
+	
+	public static boolean toPrint=false;
+	SequenceOutputStream[] streamToFile;
 	
 	public Demultiplexer(String barcodeFile) throws IOException{
 		barCodes = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
@@ -26,22 +29,50 @@ public class Demultiplexer {
 		barcodeLen = barCodes.get(0).length();
 		
 		barCodeComps = new ArrayList<Sequence> (barCodes.size());
+		
+		if(toPrint){
+			streamToFile = new SequenceOutputStream[nSamples+1]; // plus unknown
+			for(int i=0;i<nSamples;i++){		
+				streamToFile[i] = SequenceOutputStream.makeOutputStream(barCodes.get(i).getName()+"_clustered.fasta");
+			}
+			streamToFile[nSamples] = SequenceOutputStream.makeOutputStream("unknown_clustered.fasta");
+
+		}
+		
 		Sequence barCode = null;
 		for(int i=0;i<nSamples;i++){		
 			barCode = barCodes.get(i);
 			barCodeComps.add(Alphabet.DNA.complement(barCode));
 		}
+		
 		// Default setting for searching parameters
 		SCAN_WINDOW = barcodeLen * 3;
 		SCORE_THRES = barcodeLen;
 		DIST_THRES = barcodeLen / 3;
 		
 		readCount = new int[nSamples];
+		
+
 	}
-	
+	/*
+	 * 
+	 */
 	public void setThreshold(int score){
 		SCORE_THRES=score;
 	}
+	
+	public void close(){
+		if(!toPrint)
+			return;
+		try{
+			for(int i=0;i<nSamples;i++){		
+				streamToFile[i].close();
+			}
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+	}
+	
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
 	 */
@@ -60,7 +91,10 @@ public class Demultiplexer {
 
 		if(seq.length() < barcodeLen * 2 + 200){
 //			Logging.info("Ignoring short sequence " + seq.getName());
-			seq.setName("Barcode:unknown:0.0:0.0|" + seq.getName());
+			if(toPrint)
+				seq.writeFasta(streamToFile[nSamples]);
+			seq.setName("unknown:0.0:0.0|" + seq.getName());
+
 			return;
 		}
 		//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
@@ -108,6 +142,7 @@ public class Demultiplexer {
 			}
 				
 		}
+		//this is for PCR barcoding, for Native barcoding two barcode ends are reverse-complemented to each other
 		otherEndOfBest = Math.max(tf[bestIndex], tr[bestIndex]) > Math.max(cf[bestIndex], cr[bestIndex]) ?
 				(tf[bestIndex]+tr[bestIndex]-bestScore):(cf[bestIndex]+cr[bestIndex]-bestScore);
 		otherEndOfSecondBest = Math.max(tf[secondBestIndex], tr[secondBestIndex]) > Math.max(cf[secondBestIndex], cr[secondBestIndex]) ?
@@ -117,26 +152,27 @@ public class Demultiplexer {
 
 		String retval="";
 		DecimalFormat twoDForm =  new DecimalFormat("#.##");
-//		if(bestScore < SCORE_THRES || distance < DIST_THRES){
-//			//Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
-//			retval = "Barcode:unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
-//
-//		}
-//		else {
-//			//Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
-//			retval = "Barcode:"+barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
-//			readCount[bestIndex]++;
-//		}
-				
+	
 		retval = barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+","+Double.valueOf(twoDForm.format(otherEndOfBest))+"|"
 				+barCodes.get(secondBestIndex).getName()+":"+Double.valueOf(twoDForm.format(secondBestScore))+","+Double.valueOf(twoDForm.format(otherEndOfSecondBest))
 				+"|";
 		
+		if(bestScore < SCORE_THRES || bestScore-secondBestScore < DIST_THRES){
+//			Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore + " - " + secondBestScore);
+			if(toPrint)
+				seq.writeFasta(streamToFile[nSamples]);
+		}else{
+//			Logging.info("Sequence " + seq.getName() + " matches to " + barCodes.get(bestIndex).getName() + " with score=" + bestScore + " - " + secondBestScore);
+			if(toPrint)
+				seq.writeFasta(streamToFile[bestIndex]);
+			readCount[bestIndex]++;
+		}
+
 		
-		readCount[bestIndex]++;
 		seq.setName(retval + seq.getName());
 
 	}
+	
 	
 	public final class BarcodeAlignment {
 

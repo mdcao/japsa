@@ -363,7 +363,7 @@ public class NanoporeReaderWindowApplet extends JApplet{
 
 		chckReads.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e){
-				reader.doLow = (e.getStateChange() == ItemEvent.SELECTED);
+				//do nothing
 			}		
 		});
 
