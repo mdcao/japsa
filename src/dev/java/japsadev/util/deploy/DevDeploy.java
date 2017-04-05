@@ -71,7 +71,6 @@ import japsadev.tools.VNTRDepthAnalyserCmd;
 import japsadev.tools.VNTRDepthSumCmd;
 import japsadev.tools.VNTRLongReadsHmmerCmd;
 import japsadev.tools.VNTRSelectCmd;
-import japsadev.tools.misc.GetN50;
 import japsadev.tools.work.BuildMLSTTreeCmd;
 import japsadev.tools.work.BuildXMTreeCmd;
 import japsadev.tools.work.FixFastqNameCmd;
@@ -100,7 +99,6 @@ public class DevDeploy {
 		tools.add(new FixRastGFFCmd());
 		tools.add(new CaptureVNTR());		
 		tools.add(new NpReadAnalysys());		
-		tools.add(new GetN50());		
 		tools.add(new ResGeneGenomesCmd());
 		tools.add(new GetFlankBlast());		
 		tools.add(new CombineProdigalCmd());

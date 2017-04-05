@@ -11,8 +11,9 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -41,6 +42,7 @@ public class SequenceExtractCmd extends CommandLine {
 		
 		addStdHelp();
 	}
+	private static final Logger LOG = LoggerFactory.getLogger(SequenceExtractCmd.class);
 
 	/**
 	 * @param args
@@ -72,7 +74,7 @@ public class SequenceExtractCmd extends CommandLine {
 			
 			Sequence seq = findSequence(seqs, chr);
 			if (seq == null){
-				Logging.error("Sequence " + chr + " not found");
+				LOG.error("Sequence " + chr + " not found");
 			}else{
 				Sequence newSequence = seq.subSequence(start - 1, end);			
 				if (rev)
@@ -89,8 +91,6 @@ public class SequenceExtractCmd extends CommandLine {
 	}
 	/**
 	 * Find a sequence with ID from a list
-	 * @param seqHash
-	 * @param id
 	 * @return
 	 */
 	static Sequence findSequence(ArrayList<Sequence> seqs, String id){		
