@@ -3,8 +3,6 @@
  */
 package japsa.tools.seq;
 
-import java.io.IOException;
-import java.util.ArrayList;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
@@ -12,8 +10,13 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * @author minhduc
@@ -24,6 +27,7 @@ import org.slf4j.LoggerFactory;
 	scriptDesc = "Extract subsequences"
 )
 public class SequenceExtractCmd extends CommandLine {
+	private static final Logger LOG = LoggerFactory.getLogger(SequenceExtractCmd.class);
 	public SequenceExtractCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -42,7 +46,7 @@ public class SequenceExtractCmd extends CommandLine {
 		
 		addStdHelp();
 	}
-	private static final Logger LOG = LoggerFactory.getLogger(SequenceExtractCmd.class);
+
 
 	/**
 	 * @param args

@@ -41,7 +41,9 @@ import java.io.PrintStream;
 /**
  * @author minhduc
  *
+ * We should use slf4j instead
  */
+@Deprecated
 public class Logging {
 	private static String prefix = "#";
 

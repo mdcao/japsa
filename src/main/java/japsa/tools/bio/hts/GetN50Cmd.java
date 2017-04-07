@@ -81,7 +81,7 @@ public class GetN50Cmd extends CommandLine{
 		IntArray lengthArray = new IntArray();
 		SequenceReader reader = SequenceReader.getReader(input);
 
-		Sequence seq = null;
+		Sequence seq ;
 		while ((seq = reader.nextSequence(dna))!= null){
 			lengthArray.add(seq.length());
 		}
@@ -109,10 +109,10 @@ public class GetN50Cmd extends CommandLine{
 
 /*RST*
 -----------------------------------------
- *jsa.hts.n50*: Compute N50 of an assembly 
+*jsa.hts.n50*: Compute N50 of an assembly 
 -----------------------------------------
 
 <usage> 
 
- *RST*/
+*RST*/
 
