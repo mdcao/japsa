@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import japsa.seq.Alphabet;
+import japsa.seq.FastqSequence;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
@@ -33,9 +34,9 @@ public class Demultiplexer {
 		if(toPrint){
 			streamToFile = new SequenceOutputStream[nSamples+1]; // plus unknown
 			for(int i=0;i<nSamples;i++){		
-				streamToFile[i] = SequenceOutputStream.makeOutputStream(barCodes.get(i).getName()+"_clustered.fasta");
+				streamToFile[i] = SequenceOutputStream.makeOutputStream(barCodes.get(i).getName()+"_clustered.fastq");
 			}
-			streamToFile[nSamples] = SequenceOutputStream.makeOutputStream("unknown_clustered.fasta");
+			streamToFile[nSamples] = SequenceOutputStream.makeOutputStream("unknown_clustered.fastq");
 
 		}
 		
@@ -76,7 +77,7 @@ public class Demultiplexer {
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
 	 */
-	public void clustering(Sequence seq) throws IOException, InterruptedException{
+	public void clustering(FastqSequence seq) throws IOException, InterruptedException{
 
 		Sequence s5, s3;
 		final double[] 	tf = new double[nSamples],
@@ -92,8 +93,8 @@ public class Demultiplexer {
 		if(seq.length() < barcodeLen * 2 + 200){
 //			Logging.info("Ignoring short sequence " + seq.getName());
 			if(toPrint)
-				seq.writeFasta(streamToFile[nSamples]);
-			seq.setName("unknown:0.0:0.0|" + seq.getName());
+				seq.print(streamToFile[nSamples]);
+			seq.setName("unknown:0.0,0.0|" + seq.getName());
 
 			return;
 		}
@@ -160,11 +161,11 @@ public class Demultiplexer {
 		if(bestScore < SCORE_THRES || bestScore-secondBestScore < DIST_THRES){
 //			Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore + " - " + secondBestScore);
 			if(toPrint)
-				seq.writeFasta(streamToFile[nSamples]);
+				seq.print(streamToFile[nSamples]);
 		}else{
 //			Logging.info("Sequence " + seq.getName() + " matches to " + barCodes.get(bestIndex).getName() + " with score=" + bestScore + " - " + secondBestScore);
 			if(toPrint)
-				seq.writeFasta(streamToFile[bestIndex]);
+				seq.print(streamToFile[bestIndex]);
 			readCount[bestIndex]++;
 		}
 
