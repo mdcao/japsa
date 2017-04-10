@@ -1,3 +1,36 @@
+/*****************************************************************************
+ * Copyright (c) Son Hoang Nguyen, IMB - UQ, All rights reserved.         *
+ *                                                                           *
+ * Redistribution and use in source and binary forms, with or without        *
+ * modification, are permitted provided that the following conditions        *
+ * are met:                                                                  * 
+ *                                                                           *
+ * 1. Redistributions of source code must retain the above copyright notice, *
+ *    this list of conditions and the following disclaimer.                  *
+ * 2. Redistributions in binary form must reproduce the above copyright      *
+ *    notice, this list of conditions and the following disclaimer in the    *
+ *    documentation and/or other materials provided with the distribution.   *
+ * 3. Neither the names of the institutions nor the names of the contributors*
+ *    may be used to endorse or promote products derived from this software  *
+ *    without specific prior written permission.                             *
+ *                                                                           *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS   *
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, *
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR    *
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR         *
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,     *
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,       *
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR        *
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF    *
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING      *
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS        *
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
+ ****************************************************************************/
+
+/**************************     REVISION HISTORY    **************************
+ * 01/03/2017 - Son Hoang Nguyen: Created                                        
+ *  
+ ****************************************************************************/
 package japsa.seq.nanopore;
 
 import japsa.util.DynamicHistogram;
@@ -202,7 +235,7 @@ public class NanoporeReaderWindowFX extends Application{
     private Button 	buttonStart, buttonStop, buttonRestart,
     				inputBrowseButton, barcodeBrowseButton, outputBrowseButton;
     private TextField inputTF, barcodeTF, bcThresholdTF, outputTF, streamTF, minLenTF;
-    private CheckBox failCB, exhautiveCB, barcodeCB, serversCB, allReadsOptCB, addNumberOptCB;
+    private CheckBox failCB, exhautiveCB, barcodeCB, serversCB, saveDemultiplexToFilesOptCB, addNumberOptCB;
     private ComboBox<String> outputToCombo, outputFormatCombo;
     /*
      * Creates an HBox with two buttons for the top region
@@ -504,6 +537,7 @@ public class NanoporeReaderWindowFX extends Application{
                 	barcodeTF.setDisable(!new_val);
                 	barcodeBrowseButton.setDisable(!new_val);
                 	bcThresholdTF.setDisable(!new_val);
+                	saveDemultiplexToFilesOptCB.setDisable(!new_val);
                 	label.setDisable(!new_val);
                 	tabPane.getSelectionModel().select(0);
                 });	
@@ -625,14 +659,15 @@ public class NanoporeReaderWindowFX extends Application{
     	GridPane.setConstraints(optLabel, 0,0,4,1);
     	optionPane.getChildren().add(optLabel);
     	
-    	allReadsOptCB = new CheckBox("Including template and complement reads");
-    	allReadsOptCB.setSelected(true);
-    	allReadsOptCB.selectedProperty().addListener(
+    	saveDemultiplexToFilesOptCB = new CheckBox("Save demultiplexed reads to separated files");
+    	saveDemultiplexToFilesOptCB.setSelected(Demultiplexer.toPrint);
+    	saveDemultiplexToFilesOptCB.setDisable(!barcodeCB.isSelected());;
+    	saveDemultiplexToFilesOptCB.selectedProperty().addListener(
                 (obs_val,old_val,new_val) -> {
-                	reader.doLow=new_val;
+                	Demultiplexer.toPrint=new_val;
                 });	
-    	GridPane.setConstraints(allReadsOptCB, 0,2,4,1);
-    	optionPane.getChildren().add(allReadsOptCB);
+    	GridPane.setConstraints(saveDemultiplexToFilesOptCB, 0,2,4,1);
+    	optionPane.getChildren().add(saveDemultiplexToFilesOptCB);
 
     	addNumberOptCB = new CheckBox("Assign unique number to every read name");
     	addNumberOptCB.setSelected(reader.number);

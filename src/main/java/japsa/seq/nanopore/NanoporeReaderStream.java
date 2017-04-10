@@ -96,6 +96,8 @@ public class NanoporeReaderStream{
 			for (SequenceOutputStream out:networkOS)
 				out.close();
 		}
+		if(dmplx!=null)
+			dmplx.close();
 		Logging.info("npReader closed");
 		//done = true;		
 	}
@@ -106,22 +108,18 @@ public class NanoporeReaderStream{
 	DoubleArray qual2D = new DoubleArray(), qualComp = new DoubleArray(), qualTemp = new DoubleArray();
 	IntArray lengths2D = new IntArray(), lengthsComp = new IntArray(), lengthsTemp = new IntArray();
 
-	//int fileNumber = 0, passNumber = 0, failNumber = 0;
 	SequenceOutputStream sos;
 	ArrayList<SequenceOutputStream> networkOS = null;
 	public boolean stats, number;
 	public String folder = null;
 	public int minLength = 1;
-	//public String group = "";
 	public volatile boolean wait = true;
 	public boolean realtime = true;
 	public int interval = 1, age = 30000;
 	public boolean doFail = false;
 	public String output = "-";
 	public String streamServers = null;
-	boolean doLow = true;
-	//public boolean getTime = false;
-	//boolean done = false;
+
 	
 	public String format = "fastq";
 	public boolean ready = true;
