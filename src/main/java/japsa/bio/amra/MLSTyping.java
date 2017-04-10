@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.bio.bac;
+package japsa.bio.amra;
 
 
 

@@ -42,12 +42,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import japsa.bio.bac.ResistanceGeneDB;
+import japsa.bio.amra.ResistanceGeneDB;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-import japsa.tools.armt.Genomes2ResistanceGeneCmd;
+import japsa.tools.amra.Genomes2ResistanceGeneCmd;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;

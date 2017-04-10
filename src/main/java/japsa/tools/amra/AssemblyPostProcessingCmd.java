@@ -31,7 +31,7 @@
  * 12-03-2017 - Minh Duc Cao: Created       
  *                                
  ****************************************************************************/
-package japsa.tools.armt;
+package japsa.tools.amra;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,7 +52,7 @@ import japsa.util.deploy.Deployable;
  * 
  */
 @Deployable(
-		scriptName = "jsa.armt.assppro", 
+		scriptName = "jsa.amra.assppro",
 		scriptDesc = "Extract subsequences"
 		)
 public class AssemblyPostProcessingCmd extends CommandLine {

@@ -32,7 +32,7 @@
  * 7 Sep 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsa.tools.armt;
+package japsa.tools.amra;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,7 +40,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import japsa.bio.bac.ResistanceGeneDB;
+import japsa.bio.amra.ResistanceGeneDB;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -53,7 +53,7 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(
-	scriptName = "jsa.armt.genome2res", 
+	scriptName = "jsa.amra.genome2res",
 	scriptDesc = "Finding resistance genes/classes in a genome"
 	)
 public class Genomes2ResistanceGeneCmd extends CommandLine {

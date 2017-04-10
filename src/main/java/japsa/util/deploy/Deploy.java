@@ -35,9 +35,9 @@
 
 package japsa.util.deploy;
 
-import japsa.tools.armt.AssemblyPostProcessingCmd;
-import japsa.tools.armt.Genomes2ResistanceGeneCmd;
-import japsa.tools.armt.MLSTCmd;
+import japsa.tools.amra.AssemblyPostProcessingCmd;
+import japsa.tools.amra.Genomes2ResistanceGeneCmd;
+import japsa.tools.amra.MLSTCmd;
 import japsa.tools.bio.hts.AddReadSequence2SamCmd;
 import japsa.tools.bio.hts.AlignmentParamOptCmd;
 import japsa.tools.bio.hts.AlternativeAllelesCmd;

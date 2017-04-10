@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.tools.armt;
+package japsa.tools.amra;
 
 
 import java.io.File;
@@ -53,8 +53,8 @@ import org.xml.sax.SAXException;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-import japsa.bio.bac.MLSTyping;
-import japsa.bio.bac.MLSTyping.MLSType;
+import japsa.bio.amra.MLSTyping;
+import japsa.bio.amra.MLSTyping.MLSType;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
@@ -67,7 +67,7 @@ import japsa.util.deploy.Deployable;
  *
  */
 @Deployable(
-	scriptName = "jsa.armt.mlst", 
+	scriptName = "jsa.amra.mlst",
 	scriptDesc = "Multi-locus strain typing"
 	)
 public class MLSTCmd extends CommandLine{

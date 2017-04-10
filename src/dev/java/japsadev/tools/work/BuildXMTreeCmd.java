@@ -44,11 +44,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import japsa.bio.bac.MLSTyping;
-import japsa.seq.Alphabet;
-import japsa.seq.Sequence;
-import japsa.seq.SequenceBuilder;
-import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.Logging;

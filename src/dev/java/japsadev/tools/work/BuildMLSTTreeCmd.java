@@ -38,7 +38,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
 
-import japsa.bio.bac.MLSTyping;
+import japsa.bio.amra.MLSTyping;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;

@@ -151,7 +151,7 @@ public class DevDeploy {
 		
 		tools.add(new NanoporeReaderCmd());
 		//new 
-		//tools.add(new AMRTrackerCmd());
+		//tools.add(new NanoporeReaderCmd());
 		//
 
 	}

@@ -32,13 +32,13 @@
  * 7 Sep 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsa.bio.bac;
+package japsa.bio.amra;
 
 /**
- * Database for bacterial species typing
+ * Database for presence/absence of gene typing
  * @author minhduc
  *
  */
-public class SpeciesTypingDB {
+public class GenePresenceDB {
 
 }

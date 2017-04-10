@@ -27,70 +27,80 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*****************************************************************************
- *                           Revision History                                
- * 7 Sep 2015 - Minh Duc Cao: Created                                        
- * 
+/*                           Revision History                                
+ * 18/01/2017 - Minh Duc Cao: Created                                        
  ****************************************************************************/
-package japsa.bio.bac;
 
-import japsa.seq.SequenceReader;
-import japsa.util.Logging;
+package japsa.tools.amra;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.HashMap;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
+
+import japsa.seq.Alphabet;
+import japsa.seq.FastaReader;
+import japsa.seq.Sequence;
+import japsa.util.CommandLine;
+import japsa.util.deploy.Deployable;
 
 /**
- * Database for resistance gene identification
+ * Identify plasmids from an assembly
  * @author minhduc
  *
  */
-public class ResistanceGeneDB {
+@Deployable(
+		scriptName = "jsa.amra.plasmidfinder",
+		scriptDesc = "Multi-locus strain typing"
+		)
+public class PlasmidFinderCmd extends CommandLine{
+	//CommandLine cmdLine;
+	public PlasmidFinderCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 
-	public static final String SEPARATOR = "\t"; 
-	public static final String COMMENT = "#";
+		addString("input", null, "Name of the genome file");
+		addString("plasmiddb", null, "Plasmid database");
 
-	String dbPath;//Act line the ID of the database	
-	String fasPath;
+		addStdHelp();
+	}
 
-	HashMap<String, String> gene2Res;
-	HashMap<String, String> gene2Class;
+	public static void main(String [] args) throws IOException, InterruptedException, ParserConfigurationException, SAXException{
+		PlasmidFinderCmd cmdLine = new PlasmidFinderCmd ();
+		args = cmdLine.stdParseLine(args);
 
-	public ResistanceGeneDB(String path) throws IOException {
-		dbPath =  path;
-		fasPath = path + ".fasta";
-		
-		//Read 		
-		gene2Res = new HashMap<String, String>();
-		gene2Class = new HashMap<String, String>();
-		BufferedReader br = SequenceReader.openFile(dbPath + ".map");
-		String line;
-		//int lineNo = 0;
-		while ((line =  br.readLine()) != null){
-			//lineNo ++;
-			if (line.startsWith(COMMENT))
-				continue;
-			String [] toks = line.split(SEPARATOR);
-			if (toks.length >= 3){
-				gene2Res.put(toks[0], toks[1]);	
-				gene2Class.put(toks[0], toks[2]);
-			}			
+		String input = cmdLine.getStringVal("input");
+		String plasmiddb = cmdLine.getStringVal("plasmiddb");
 
+		//String blastn = cmdLine.getStringVal("blastn");		
+		ArrayList<Sequence> seqs = FastaReader.readAll(input, Alphabet.DNA());
+
+		ProcessBuilder pb = new ProcessBuilder("blastn", "-subject", input,
+				"-query", plasmiddb, "-outfmt", "6 qseqid qlen nident gaps mismatch");
+
+		Process process = pb.start();
+
+		//SequenceOutputStream out = new SequenceOutputStream(process.getOutputStream());
+		//for (Sequence seq:seqs){
+		//	seq.writeFasta(out);
+		//}
+		//out.close();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));			
+
+		String line;		
+		while ((line = br.readLine()) != null) {
+			
 		}
-		Logging.info("Read in " + gene2Res.size() + " genes");
-		br.close();		
-	}	
-
-	public String getRes(String geneID){
-		return gene2Res.get(geneID);
-	}
-
-	public String getClass(String geneID){
-		return gene2Class.get(geneID);
-	}
-	
-	public String getSequenceFile(){
-		return fasPath;
+		br.close();
+		process.waitFor();		
 	}
 }
