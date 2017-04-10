@@ -125,7 +125,7 @@ public class Demultiplexer {
 //			Logging.info("Ignoring short sequence " + seq.getName());
 			if(toPrint)
 				seq.print(streamToFile[nSamples]);
-			seq.setName("unknown:0.0,0.0|" + seq.getName());
+			seq.setName("unknown:0.0:0.0|" + seq.getName());
 
 			return;
 		}
