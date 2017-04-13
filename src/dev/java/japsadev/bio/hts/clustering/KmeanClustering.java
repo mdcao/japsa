@@ -1,8 +1,6 @@
-package clustering;
+package japsadev.bio.hts.clustering;
 
 import java.util.ArrayList;
-import clustering.PairDistance.EditDistanceResult;
-import clustering.GettingTreadsFromFasta;
 
 /**
  * @author buvan.suji
@@ -62,7 +60,7 @@ public class KmeanClustering {
 			for (int j = i + 1; j < reads.size(); j++) {				
 				String x = reads.get(i);
 				String y = reads.get(j);				
-				EditDistanceResult result = PairDistance.compute(x, y);
+				PairDistance.EditDistanceResult result = PairDistance.compute(x, y);
 				double normdist = ((double) result.getDistance())
 						/ Math.max(x.length(), y.length());				
 				table[i][j]=normdist;				

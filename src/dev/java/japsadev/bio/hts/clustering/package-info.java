@@ -5,4 +5,4 @@
  * @author Subashchandran
  *
  */
-package clustering;
+package japsadev.bio.hts.clustering;

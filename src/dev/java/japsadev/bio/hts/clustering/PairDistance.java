@@ -1,4 +1,4 @@
-package clustering;
+package japsadev.bio.hts.clustering;
 
 import java.awt.Point;
 import java.io.IOException;
