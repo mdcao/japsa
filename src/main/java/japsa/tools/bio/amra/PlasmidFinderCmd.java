@@ -28,24 +28,82 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 15Jan.,2017 - Minh Duc Cao: Created                                        
+ * 18/01/2017 - Minh Duc Cao: Created                                        
  ****************************************************************************/
-package japsa.util.hpc;
 
+package japsa.tools.bio.amra;
+
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
+
+import japsa.seq.Alphabet;
+import japsa.seq.FastaReader;
+import japsa.seq.Sequence;
+import japsa.util.CommandLine;
+import japsa.util.deploy.Deployable;
+
 /**
- * This class acts as a driver to submit a job in slurm
+ * Identify plasmids from an assembly
  * @author minhduc
  *
  */
-public class SlurmJob extends HPCJob{
+@Deployable(
+		scriptName = "jsa.amra.plasmidfinder",
+		scriptDesc = "Multi-locus strain typing"
+		)
+public class PlasmidFinderCmd extends CommandLine{
+	//CommandLine cmdLine;
+	public PlasmidFinderCmd(){
+		super();
+		Deployable annotation = getClass().getAnnotation(Deployable.class);		
+		setUsage(annotation.scriptName() + " [options]");
+		setDesc(annotation.scriptDesc());
 
-	@Override
-	public boolean submit() {		
-		return true;
+		addString("build", null, "Build the databases to this directory only");
+		addString("input", null, "Name of the genome file");
+		addString("plasmiddb", null, "Plasmid database");
+
+		addStdHelp();
 	}
-	
-	
-	
+
+	public static void main(String [] args) throws IOException, InterruptedException, ParserConfigurationException, SAXException{
+		PlasmidFinderCmd cmdLine = new PlasmidFinderCmd ();
+		args = cmdLine.stdParseLine(args);
+
+		String build = cmdLine.getStringVal("build");
+		String input = cmdLine.getStringVal("input");
+		String plasmiddb = cmdLine.getStringVal("plasmiddb");
+
+		//String blastn = cmdLine.getStringVal("blastn");		
+		ArrayList<Sequence> seqs = FastaReader.readAll(input, Alphabet.DNA());
+
+		ProcessBuilder pb = new ProcessBuilder("blastn", "-subject", plasmiddb,
+				"-query", input, "-outfmt", "6 qseqid qlen nident gaps mismatch");
+
+		//curl -o data.zip  --data "folder=plasmidfinder&filename=plasmidfinder.zip" https://cge.cbs.dtu.dk/cge/download_data.php
+		Process process = pb.start();
+
+		//SequenceOutputStream out = new SequenceOutputStream(process.getOutputStream());
+		//for (Sequence seq:seqs){
+		//	seq.writeFasta(out);
+		//}
+		//out.close();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));			
+
+		String line;		
+		while ((line = br.readLine()) != null) {
+			System.out.println(line);
+		}
+		br.close();
+		process.waitFor();		
+	}
 }

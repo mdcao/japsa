@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.tools.amra;
+package japsa.tools.bio.amra;
 
 
 import java.io.File;
@@ -80,7 +80,7 @@ public class MLSTCmd extends CommandLine{
 
 		addString("build", null, "Build the databases to this directory only");		
 		addString("input", null, "Name of the genome file");
-		addString("mlstScheme", null, "Folder contianing the allele files");
+		addString("mlstScheme", null, "Folder containing the MLST scheme");
 		addInt("top", 0, "If > 0, will provide top closest profile");
 
 		addStdHelp();

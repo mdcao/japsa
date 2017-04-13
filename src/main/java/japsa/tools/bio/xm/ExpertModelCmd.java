@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsa.tools.xm;
+package japsa.tools.bio.xm;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;

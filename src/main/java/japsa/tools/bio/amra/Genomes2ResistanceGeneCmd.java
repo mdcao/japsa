@@ -32,7 +32,7 @@
  * 7 Sep 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsa.tools.amra;
+package japsa.tools.bio.amra;
 
 import java.io.BufferedReader;
 import java.io.IOException;

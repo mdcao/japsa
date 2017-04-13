@@ -31,7 +31,7 @@
  * 12-03-2017 - Minh Duc Cao: Created       
  *                                
  ****************************************************************************/
-package japsa.tools.amra;
+package japsa.tools.bio.amra;
 
 import java.io.IOException;
 import java.nio.file.Files;
