@@ -202,26 +202,19 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	 */
 	@Override
 	public synchronized void connectBridges(){
-//		for(Contig ctg:contigs){
-//			//System.out.println(ctg.getName());
-//			if(ctg.isCircular){
-//				if(ctg.bridges.size() != 2){
-//					ctg.isCircular = false;
-//					break;
-//				}
-//				for(ContigBridge brg:ctg.bridges){
-//					//System.out.println("\t"+brg.hashKey+" : "+brg.getTransVector());
-//					if(brg.firstContig.getIndex() != brg.secondContig.getIndex()){
-//						ctg.isCircular = false;
-//						break;
-//					}
-//				}
-//			}
-//		}
-		
+		System.out.println("List of all bridges: ");
+		for(Contig ctg:contigs){
+			ArrayList<ContigBridge> brgList = getListOfBridgesFromContig(ctg);
+			System.out.print(ctg.getName() + " roots for " + brgList.size() + " bridges: ");
+			for(ContigBridge brg:brgList)
+				System.out.print(brg.hashKey + " ; ");
+			System.out.println();
+		}
 		// Start scaffolding
-		if(verbose) 
+		if(verbose) {
 			System.out.println("Starting scaffolding.......");
+			
+		}
 		
 		List<LengthIndex> list = new ArrayList<LengthIndex>();
 		for(int i = 0; i<contigs.size(); i++)

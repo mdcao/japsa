@@ -60,7 +60,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
-public class ScaffoldGraph{
+public abstract class ScaffoldGraph{
 	public static volatile int maxRepeatLength=7500; //for ribosomal repeat cluster in bacteria (Koren S et al 2013), it's 9.1kb for yeast.
 	public static volatile int marginThres = 1000;
 	public static volatile int minContigLength = 300;
@@ -428,7 +428,7 @@ public class ScaffoldGraph{
 			bwaProcess.waitFor();
 		}
 
-		Logging.info("Sort list of bridges");		
+		//Logging.info("Sort list of bridges");		
 		//Collections.sort(bridgeList);		
 	}
 
@@ -498,7 +498,7 @@ public class ScaffoldGraph{
 		//outOS.close();
 		reader.close();		
 
-		Logging.info("Sort list of bridges");		
+		//Logging.info("Sort list of bridges");		
 		//Collections.sort(bridgeList);		
 	}
 
@@ -578,6 +578,7 @@ public class ScaffoldGraph{
 
 				//				a.contig.bridges.add(bridge);
 				//				b.contig.bridges.add(bridge_rev);
+				System.out.println("...addding " + bridge.hashKey + " and " + bridge_rev.hashKey);
 				bridgesFromContig.get(a.contig.getIndex()).add(bridge);
 				bridgesFromContig.get(b.contig.getIndex()).add(bridge_rev);
 
@@ -1178,10 +1179,7 @@ public class ScaffoldGraph{
 			return false;
 	}
 
-	public void connectBridges() {
-		// TODO Auto-generated method stub
-		
-	}
+	abstract public void connectBridges();
 
 	public int getNumberOfContigs(){
 		return scfNum;
