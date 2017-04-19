@@ -28,11 +28,10 @@
  ****************************************************************************/
 
 /*                           Revision History                                
- * 18/01/2017 - Minh Duc Cao: Created                                        
+ * 18/03/2017 - Minh Duc Cao: Created
  ****************************************************************************/
 
 package japsa.tools.bio.amra;
-
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,19 +40,11 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Calendar;
-
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
-
-import japsa.seq.Alphabet;
-import japsa.seq.FastaReader;
-import japsa.seq.Sequence;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
@@ -65,96 +56,96 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  *
  */
 @Deployable(
-		scriptName = "jsa.amra.plasmidfinder",
-		scriptDesc = "Multi-locus strain typing"
-		)
+        scriptName = "jsa.amra.plasmidfinder",
+        scriptDesc = "Multi-locus strain typing"
+)
 public class PlasmidFinderCmd extends CommandLine{
     private static final Logger LOG = LoggerFactory.getLogger(PlasmidFinderCmd.class);
 
-	//CommandLine cmdLine;
-	public PlasmidFinderCmd(){
-		super();
-		Deployable annotation = getClass().getAnnotation(Deployable.class);		
-		setUsage(annotation.scriptName() + " [options]");
-		setDesc(annotation.scriptDesc());
+    //CommandLine cmdLine;
+    public PlasmidFinderCmd(){
+        super();
+        Deployable annotation = getClass().getAnnotation(Deployable.class);
+        setUsage(annotation.scriptName() + " [options]");
+        setDesc(annotation.scriptDesc());
 
-		addString("build", null, "Build the databases to this directory only");
-		addString("input", null, "Name of the genome file");
-		addString("plasmiddb", null, "Plasmid database");
+        addBoolean("build", false, "To build the latest from plasmidFinder");
+        addString("input", null, "Name of the genome file");
+        addString("plasmiddb", null, "Folder of the the plasmid database",true);
 
-		addStdHelp();
-	}
+        addStdHelp();
+    }
 
-	public static void main(String [] args) throws IOException, InterruptedException, ParserConfigurationException, SAXException{
-		PlasmidFinderCmd cmdLine = new PlasmidFinderCmd ();
-		args = cmdLine.stdParseLine(args);
+    public static void main(String [] args) throws IOException, InterruptedException{
+        PlasmidFinderCmd cmdLine = new PlasmidFinderCmd ();
+        args = cmdLine.stdParseLine(args);
 
-		String build = cmdLine.getStringVal("build");
-		String input = cmdLine.getStringVal("input");
-		String plasmiddb = cmdLine.getStringVal("plasmiddb");
+        boolean build = cmdLine.getBooleanVal("build");
+        String input = cmdLine.getStringVal("input");
+        String plasmidFolder = cmdLine.getStringVal("plasmiddb");
 
-
-		if (build != null){
-		    try {
-                File buildFolder = new File(build);
+        if (build){
+            try {
+                File buildFolder = new File(plasmidFolder);
                 if (!buildFolder.isDirectory()) {
                     if (!buildFolder.mkdirs()) {
-                        LOG.error("Cannot create folder " + build);
+                        LOG.error("Cannot create folder " + plasmidFolder);
                         System.exit(1);
                     }
                 }
-                ProcessBuilder setup = new ProcessBuilder("curl", "-o", build + File.separator + "data.zip",
+                ProcessBuilder setup = new ProcessBuilder("curl", "-o", plasmidFolder + File.separator + "data.zip",
                         "--data", "folder=plasmidfinder&filename=plasmidfinder.zip","https://cge.cbs.dtu.dk/cge/download_data.php");
                 Process process = setup.inheritIO().start();
                 int status = process.waitFor();
+
                 if (status != 0) {
                     LOG.error("Problem downloading the current database from plasmidfilder server");
                     System.exit(1);
                 }
 
-                setup = new ProcessBuilder("unzip", "-d", build, build + File.separator + "data.zip");
+                setup = new ProcessBuilder("unzip", "-o","-d", plasmidFolder, plasmidFolder + File.separator + "data.zip");
                 process = setup.inheritIO().start();
                 status = process.waitFor();
                 if (status != 0) {
-                    LOG.error("Problem unzip file " + build + File.separator + "data.zip");
+                    LOG.error("Problem unzip file " + plasmidFolder + File.separator + "data.zip");
                     System.exit(1);
                 }
                 Long timestamp = Calendar.getInstance().getTimeInMillis();
-                Path actualFile = Paths.get(build + File.separator + "ORI" + timestamp + ".fasta");
-                actualFile = Files.move(Paths.get(build + File.separator + "plasmid_database.fsa"), actualFile, REPLACE_EXISTING);
-                Files.copy(actualFile, Paths.get(build + File.separator + "ORI.fasta"),REPLACE_EXISTING);
-
-
+                Path actualFile = Paths.get(plasmidFolder + File.separator + "ORI" + timestamp + ".fasta");
+                actualFile = Files.move(Paths.get(plasmidFolder + File.separator + "plasmid_database.fsa"), actualFile, REPLACE_EXISTING);
+                Files.copy(actualFile, Paths.get(plasmidFolder + File.separator + "ORI.fasta"),REPLACE_EXISTING);
             }catch (IOException e){
-		        e.printStackTrace();
+                e.printStackTrace();
                 System.exit(1);
             }
-		    System.exit(0);
+            System.exit(0);
+        }
 
-		}
-        //String blastn = cmdLine.getStringVal("blastn");
-        ArrayList<Sequence> seqs = FastaReader.readAll(input, Alphabet.DNA());
+        if (input == null){
+            System.err.println("Please specify an input file");
+            System.exit(1);
+        }
 
+        ProcessBuilder pb = new ProcessBuilder("blastn", "-subject", plasmidFolder + File.separator + "ORI.fasta",
+                "-query", input, "-outfmt", "6 qseqid qlen qstart qend sseqid slen sstart send length frames pident nident gaps mismatch score bitscore");
+        //qseqid qlen qstart qend sseqid slen sstart send length frames pident nident gaps mismatch score bitscore
+        Process process = pb.start();
+        BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        while ((line = br.readLine()) != null) {
+            String [] toks = line.trim().split("\t");
+            double oLength = Double.parseDouble(toks[5]);
+            double oCov = Math.abs(Double.parseDouble(toks[7])- Double.parseDouble(toks[6])) + 1;
 
-        ProcessBuilder pb = new ProcessBuilder("blastn", "-subject", plasmiddb,
-				"-query", input, "-outfmt", "6 qseqid qlen nident gaps mismatch");
+            double ratio = oCov / oLength;
+            double identity = Double.parseDouble(toks[10]) / 10;
 
-		//
-		Process process = pb.start();
+            if (ratio > 0.9 && identity > 0.9){
+                System.out.println(toks[0] + "\t" + toks[4] + "\t" + ratio + "\t" + identity);
+            }
 
-		//SequenceOutputStream out = new SequenceOutputStream(process.getOutputStream());
-		//for (Sequence seq:seqs){
-		//	seq.writeFasta(out);
-		//}
-		//out.close();
-
-		BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));			
-
-		String line;		
-		while ((line = br.readLine()) != null) {
-			System.out.println(line);
-		}
-		br.close();
-		process.waitFor();		
-	}
+        }
+        br.close();
+        process.waitFor();
+    }
 }

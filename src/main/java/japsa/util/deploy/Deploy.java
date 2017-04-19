@@ -35,10 +35,7 @@
 
 package japsa.util.deploy;
 
-import japsa.tools.bio.amra.AssemblyPostProcessingCmd;
-import japsa.tools.bio.amra.Genomes2ResistanceGeneCmd;
-import japsa.tools.bio.amra.MLSTCmd;
-import japsa.tools.bio.amra.PlasmidFinderCmd;
+import japsa.tools.bio.amra.*;
 import japsa.tools.bio.hts.AddReadSequence2SamCmd;
 import japsa.tools.bio.hts.AlignmentParamOptCmd;
 import japsa.tools.bio.hts.AlternativeAllelesCmd;
@@ -160,9 +157,10 @@ public class Deploy {
 
 		tools.add("Bacterial AMR  analysis:");
 		tools.add(new MLSTCmd());
-		tools.add(new Genomes2ResistanceGeneCmd());
-		tools.add(new AssemblyPostProcessingCmd());
 		tools.add(new PlasmidFinderCmd());
+        tools.add(new Genomes2ResistanceGeneCmd());
+        tools.add(new AssemblyPostProcessingCmd());
+        tools.add(new ResistanceGeneCardCmd());
 
 		//jsa.np.
 		//tools.add(NanoporeReader());
@@ -222,7 +220,7 @@ public class Deploy {
 		tools.add(new VNTRLongReadsV2Cmd());
 
 
-		//tools.add(new PlasmidFinderCmd());
+		//tools.add(new ResistanceGeneCardCmd());
 	}	
 
 
