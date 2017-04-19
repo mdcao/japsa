@@ -37,7 +37,7 @@ package japsa.tools.bio.phylo;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
-import japsa.tools.xm.ExpertModelCmd;
+import japsa.tools.bio.xm.ExpertModelCmd;
 import japsa.util.CommandLine;
 import japsa.util.Logging;
 import japsa.util.deploy.Deployable;

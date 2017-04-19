@@ -41,9 +41,9 @@ import japsa.seq.JapsaFileFormat;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -52,7 +52,8 @@ import japsa.util.deploy.Deployable;
  */
 @Deployable(scriptName = "jsa.seq.addanno",
             scriptDesc = "Add annotations to a Japsa file")
-public class AddAnnotationCmd extends CommandLine{	
+public class AddAnnotationCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(AddAnnotationCmd.class);
 	public AddAnnotationCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -144,11 +145,11 @@ public class AddAnnotationCmd extends CommandLine{
 					//mainAnno.sortFeatures();
 					mainAnno.write(out);
 				}else{
-					Logging.warn("The IDs are not identical, annotation not added!");
+					LOG.warn("The IDs are not identical, annotation not added!");
 				}
 				
 			}else//if anno = null
-				Logging.warn("Annotations for " + mainAnno.getAnnotationID() + " not found");
+				LOG.warn("Annotations for " + mainAnno.getAnnotationID() + " not found");
 		}
 
 		out.close();

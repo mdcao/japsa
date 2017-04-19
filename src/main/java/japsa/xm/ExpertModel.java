@@ -48,7 +48,7 @@ import java.util.LinkedList;
 import japsa.seq.AbstractSequence;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
-import japsa.tools.xm.ExpertModelCmd;
+import japsa.tools.bio.xm.ExpertModelCmd;
 import japsa.util.IntIterator;
 import japsa.util.MyBitSet;
 import japsa.util.JapsaMath;

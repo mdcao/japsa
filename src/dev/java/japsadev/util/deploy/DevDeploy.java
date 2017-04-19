@@ -38,39 +38,8 @@ package japsadev.util.deploy;
 import japsa.tools.bio.phylo.XMDistance2Cmd;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deploy;
-import japsadev.tools.AnalyseCaptureCmd;
-import japsadev.tools.BarCodeAnalysisCmd;
-import japsadev.tools.BarCodeNPScarfCmd;
-import japsadev.tools.BarCodeNPScarfCmd2;
-import japsadev.tools.BreakPointAnalysisCmd;
-import japsadev.tools.CaptureProbeDesignCmd;
-import japsadev.tools.CaptureVNTR;
-import japsadev.tools.CombineProdigalCmd;
-import japsadev.tools.ConsensusGenerateCmd;
+import japsadev.tools.*;
 //import japsadev.tools.ConsensusGenerateCmd;
-import japsadev.tools.ConvertProbeCmd;
-import japsadev.tools.FilterPEConcordance;
-import japsadev.tools.FixRastGFFCmd;
-import japsadev.tools.GapCloserCmd;
-import japsadev.tools.GetFlankBlast;
-import japsadev.tools.KmerAnalysisCmd;
-import japsadev.tools.NanoporeBarcodeCmd;
-import japsadev.tools.NanoporeFast5ReaderCmd;
-import japsadev.tools.NanoporeReaderCmd;
-import japsadev.tools.NewScarfCmd;
-import japsadev.tools.PhageAnalysisCmd;
-import japsadev.tools.ProfileDPCmd;
-import japsadev.tools.RemoveNsCmd;
-import japsadev.tools.RepeatPrimerCmd;
-import japsadev.tools.ResGeneGenomesCmd;
-import japsadev.tools.SampleCmd;
-import japsadev.tools.SelectReadsCmd;
-import japsadev.tools.StructuralVariationCmd;
-import japsadev.tools.TestSampleCmd;
-import japsadev.tools.VNTRDepthAnalyserCmd;
-import japsadev.tools.VNTRDepthSumCmd;
-import japsadev.tools.VNTRLongReadsHmmerCmd;
-import japsadev.tools.VNTRSelectCmd;
 import japsadev.tools.work.BuildMLSTTreeCmd;
 import japsadev.tools.work.BuildXMTreeCmd;
 import japsadev.tools.work.FixFastqNameCmd;
@@ -150,8 +119,9 @@ public class DevDeploy {
 		tools.add(new ConsensusGenerateCmd());
 		
 		tools.add(new NanoporeReaderCmd());
+		tools.add(new VNTRClusteringCmd());
 		//new 
-		//tools.add(new NanoporeReaderCmd());
+		//tools.add(new VNTRClusteringCmd());
 		//
 
 	}

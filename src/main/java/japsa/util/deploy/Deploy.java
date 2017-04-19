@@ -35,9 +35,7 @@
 
 package japsa.util.deploy;
 
-import japsa.tools.amra.AssemblyPostProcessingCmd;
-import japsa.tools.amra.Genomes2ResistanceGeneCmd;
-import japsa.tools.amra.MLSTCmd;
+import japsa.tools.bio.amra.*;
 import japsa.tools.bio.hts.AddReadSequence2SamCmd;
 import japsa.tools.bio.hts.AlignmentParamOptCmd;
 import japsa.tools.bio.hts.AlternativeAllelesCmd;
@@ -95,7 +93,7 @@ import japsa.tools.seq.SplitSequenceFileCmd;
 import japsa.tools.util.DnaGraphToolCmd;
 import japsa.tools.util.StreamClientCmd;
 import japsa.tools.util.StreamServerCmd;
-import japsa.tools.xm.ExpertModelCmd;
+import japsa.tools.bio.xm.ExpertModelCmd;
 import japsa.util.CommandLine;
 import japsa.util.StringSeparator;
 
@@ -116,7 +114,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.7-02a";
+	public static String VERSION = "1.7-04b";
 	public static final String FIELD_SEP = "\t";
 
 	public static boolean DEBUG = true;
@@ -157,10 +155,12 @@ public class Deploy {
 		tools.add(new SpeciesMixtureCmd());
 		tools.add(new AddReadSequence2SamCmd());
 
-		tools.add("Bacterial analysis:");
+		tools.add("Bacterial AMR  analysis:");
 		tools.add(new MLSTCmd());
-		tools.add(new Genomes2ResistanceGeneCmd());
-		tools.add(new AssemblyPostProcessingCmd());
+		tools.add(new PlasmidFinderCmd());
+        tools.add(new Genomes2ResistanceGeneCmd());
+        tools.add(new AssemblyPostProcessingCmd());
+        tools.add(new ResistanceGeneCardCmd());
 
 		//jsa.np.
 		//tools.add(NanoporeReader());
@@ -220,7 +220,7 @@ public class Deploy {
 		tools.add(new VNTRLongReadsV2Cmd());
 
 
-		//tools.add(new NanoporeReaderCmd2());
+		//tools.add(new ResistanceGeneCardCmd());
 	}	
 
 
