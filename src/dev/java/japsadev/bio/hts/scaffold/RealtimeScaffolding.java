@@ -163,6 +163,7 @@ public class RealtimeScaffolding {
 				continue;		
 			}
 			myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
+			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
 			if (readID.equals(myRec.readID)) {				
 
@@ -201,6 +202,7 @@ public class RealtimeScaffolding {
 
 	}
 
+	@Deprecated
 	public void scaffolding(String bamFile, int readNumber, int timeNumber, double minCov, int qual) 
 			throws IOException, InterruptedException{
 		scaffolder.setReadPeriod(readNumber);

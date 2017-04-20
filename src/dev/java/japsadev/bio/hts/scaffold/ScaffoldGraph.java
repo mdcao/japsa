@@ -376,26 +376,22 @@ public abstract class ScaffoldGraph{
 		}
 
 
-		//SamReader reader;
-		//if ("-".equals(bamFile))
-		//	reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
-		//else
-		//	reader = SamReaderFactory.makeDefault().open(new File(bamFile));	
-
 		SAMRecordIterator iter = reader.iterator();
 
 		String readID = "";
 		ReadFilling readFilling = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
-
 		while (iter.hasNext()) {
-			SAMRecord rec = iter.next();
+			SAMRecord rec = iter.next();			
+			
 			if (rec.getReadUnmappedFlag())
 				continue;
 			if (rec.getMappingQuality() < qual)
 				continue;
 
 			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
+			
+			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
 
 			//////////////////////////////////////////////////////////////////
@@ -428,8 +424,6 @@ public abstract class ScaffoldGraph{
 			bwaProcess.waitFor();
 		}
 
-		//Logging.info("Sort list of bridges");		
-		//Collections.sort(bridgeList);		
 	}
 
 
@@ -549,7 +543,9 @@ public abstract class ScaffoldGraph{
 				minContigLength)      
 				|| a.contig.getCoverage() < minCov	// filter out contigs with inappropriate cov
 				|| b.contig.getCoverage() < minCov
-				){		
+				)
+		{		
+			System.out.println("...ignoring " + a.contig.getIndex() + "#" + b.contig.getIndex());
 			return;
 		}
 
