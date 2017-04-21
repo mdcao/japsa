@@ -285,7 +285,7 @@ public class GapCloserCmd extends CommandLine{
 				graph.prefix = prefix;
 
 			ContigBridge.forceFilling();
-			graph.printSequences(true);
+			graph.printSequences(true,true);
 		}
 		
 	}

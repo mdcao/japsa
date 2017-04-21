@@ -102,9 +102,10 @@ public abstract class ScaffoldGraph{
 					desc = seq.getDesc();
 			
 			double mycov = 1.0;
-			//SPAdes header: >%d_length_%d_cov_%f, ID, length, coverage
+			//SPAdes header: >%d_length_%d_cov_%f
+			//SPAdes header: >MicroManage_ID %d_length_%d_cov_%f
 			if(assembler==0b00){
-				String [] toks = name.split("_");
+				String [] toks = (name+desc).split("_");
 				for (int i = 0; i < toks.length - 1;i++){
 					if ("cov".equals(toks[i])){
 						mycov = Double.parseDouble(toks[i+1]);
@@ -210,7 +211,7 @@ public abstract class ScaffoldGraph{
 			// Extract to find contig named NODE_x_ 
 			//because sometimes there are disagreement between contig name (_length_) in contigs.paths and contigs.fasta in SPAdes!!!
 			// 
-			if(ctg.getName().contains("NODE_"+name.split("_")[1]+"_")){
+			if( ctg.getName().contains(name) || (ctg.getName()+ctg.getDesc()).contains("NODE_"+name.split("_")[1]+"_") ){
 				res = ctg;
 				break;
 			}
@@ -983,11 +984,10 @@ public abstract class ScaffoldGraph{
 		scaffolds[newHead.getIndex()] = newScf;
 
 	}
-	public synchronized void printSequences(boolean allOut) throws IOException{
+	public synchronized void printSequences(boolean allOut, boolean isBatch) throws IOException{
 		//countOccurence=new HashMap<Integer,Integer>();
 		int currentNumberOfContigs = 0,
 			currentNumberOfCirculars = 0;	
-		System.out.println("2 " + ScaffoldGraph.reportAll);
 
 		if(annotation){
 			SequenceOutputStream aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
@@ -1011,6 +1011,8 @@ public abstract class ScaffoldGraph{
 				
 				if(verbose) 
 					System.out.println("Scaffold " + i + " estimated length " + len);
+				if(isBatch)
+					scaffolds[i].printBatchGenes();
 				if(allOut)
 					scaffolds[i].viewAnnotation(aout);
 			}
@@ -1142,6 +1144,8 @@ public abstract class ScaffoldGraph{
 
 
 	}	
+	
+	
 	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a marker.
 	public static boolean isRepeat(Contig ctg){
 		//for the case when no coverage information of contigs is found
