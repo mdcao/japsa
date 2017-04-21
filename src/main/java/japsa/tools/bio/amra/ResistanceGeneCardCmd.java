@@ -43,7 +43,6 @@ import javax.json.JsonReader;
 import javax.json.JsonValue;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.StringReader;
 import java.util.Collection;
 import java.util.Set;
 
@@ -139,8 +138,6 @@ public class ResistanceGeneCardCmd extends CommandLine {
 
                         break;//for
                     }
-
-
                 } catch (Exception e) {
                     System.err.println(e.getMessage() + '\n' + key);
                 }
