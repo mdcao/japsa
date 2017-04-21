@@ -31,7 +31,7 @@
  * 17 Apr 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsaold.seq.nanopore;
+package japsadev.obsolete.np;
 
 import japsa.util.DynamicHistogram;
 import japsa.util.JapsaException;
@@ -80,7 +80,7 @@ import org.jfree.data.time.TimeTableXYDataset;
  * @author minhduc
  *
  */
-public class NanoporeReaderWindow implements Runnable{
+public class NanoporeReaderWindow2 implements Runnable{
 
 	private JFrame frmNanoporeReader;
 	private int height = 50;
@@ -88,7 +88,7 @@ public class NanoporeReaderWindow implements Runnable{
 	//String downloadFolder;	
 
 	TimeTableXYDataset dataSet;
-	NanoporeReaderStream reader;
+	NanoporeReaderStream2 reader;
 
 	/**
 	 * Launch the application.
@@ -97,7 +97,7 @@ public class NanoporeReaderWindow implements Runnable{
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					NanoporeReaderWindow window = new NanoporeReaderWindow(new NanoporeReaderStream(),null);
+					NanoporeReaderWindow2 window = new NanoporeReaderWindow2(new NanoporeReaderStream2(),null);
 					window.frmNanoporeReader.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -110,7 +110,7 @@ public class NanoporeReaderWindow implements Runnable{
 	 * Create the application.
 	 * @throws IOException 
 	 */
-	public NanoporeReaderWindow(NanoporeReaderStream r, TimeTableXYDataset dataset) throws IOException {
+	public NanoporeReaderWindow2(NanoporeReaderStream2 r, TimeTableXYDataset dataset) throws IOException {
 		reader = r;
 		this.dataSet = dataset;
 

@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsaold.seq.nanopore;
+package japsadev.obsolete.np;
 
 import ncsa.hdf.object.FileFormat;
 import ncsa.hdf.object.Group;

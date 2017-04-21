@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsaold.seq.nanopore;
+package japsadev.obsolete.np;
 
 import java.util.List;
 

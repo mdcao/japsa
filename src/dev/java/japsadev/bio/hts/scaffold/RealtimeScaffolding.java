@@ -163,7 +163,7 @@ public class RealtimeScaffolding {
 				continue;		
 			}
 			myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
-			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
+//			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
 			if (readID.equals(myRec.readID)) {				
 

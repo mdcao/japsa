@@ -107,8 +107,6 @@ public class DevDeploy {
 		tools.add(new VNTRSelectCmd());
 		tools.add(new BarCodeAnalysisCmd());
 		tools.add(new NanoporeBarcodeCmd());
-		tools.add(new BarCodeNPScarfCmd());
-		tools.add(new BarCodeNPScarfCmd2());
 		tools.add(new NewScarfCmd());
 
 		tools.add(new GapCloserCmd());
@@ -118,7 +116,6 @@ public class DevDeploy {
 		tools.add(new PhageAnalysisCmd());		
 		tools.add(new ConsensusGenerateCmd());
 		
-		tools.add(new NanoporeReaderCmd());
 		tools.add(new VNTRClusteringCmd());
 		//new 
 		//tools.add(new VNTRClusteringCmd());

@@ -202,14 +202,14 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	 */
 	@Override
 	public synchronized void connectBridges(){
-		System.out.println("List of all bridges: ");
-		for(Contig ctg:contigs){
-			ArrayList<ContigBridge> brgList = getListOfBridgesFromContig(ctg);
-			System.out.print(ctg.getName() + " roots for " + brgList.size() + " bridges: ");
-			for(ContigBridge brg:brgList)
-				System.out.print(brg.hashKey + " ; ");
-			System.out.println();
-		}
+//		System.out.println("List of all bridges: ");
+//		for(Contig ctg:contigs){
+//			ArrayList<ContigBridge> brgList = getListOfBridgesFromContig(ctg);
+//			System.out.print(ctg.getName() + " roots for " + brgList.size() + " bridges: ");
+//			for(ContigBridge brg:brgList)
+//				System.out.print(brg.hashKey + " ; ");
+//			System.out.println();
+//		}
 		// Start scaffolding
 		if(verbose) {
 			System.out.println("Starting scaffolding.......");

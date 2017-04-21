@@ -391,7 +391,7 @@ public abstract class ScaffoldGraph{
 
 			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
 			
-			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
+//			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
 
 			//////////////////////////////////////////////////////////////////
@@ -545,7 +545,7 @@ public abstract class ScaffoldGraph{
 				|| b.contig.getCoverage() < minCov
 				)
 		{		
-			System.out.println("...ignoring " + a.contig.getIndex() + "#" + b.contig.getIndex());
+//			System.out.println("...ignoring " + a.contig.getIndex() + "#" + b.contig.getIndex());
 			return;
 		}
 
@@ -574,7 +574,7 @@ public abstract class ScaffoldGraph{
 
 				//				a.contig.bridges.add(bridge);
 				//				b.contig.bridges.add(bridge_rev);
-				System.out.println("...addding " + bridge.hashKey + " and " + bridge_rev.hashKey);
+//				System.out.println("...addding " + bridge.hashKey + " and " + bridge_rev.hashKey);
 				bridgesFromContig.get(a.contig.getIndex()).add(bridge);
 				bridgesFromContig.get(b.contig.getIndex()).add(bridge_rev);
 

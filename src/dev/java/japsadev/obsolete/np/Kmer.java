@@ -1,4 +1,4 @@
-package japsadev.bio.meth;
+package japsadev.obsolete.np;
 
 public class Kmer implements Comparable<Kmer>{
 	boolean isMeth=false;

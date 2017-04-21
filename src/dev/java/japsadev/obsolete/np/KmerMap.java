@@ -1,4 +1,4 @@
-package japsadev.bio.meth;
+package japsadev.obsolete.np;
 
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;

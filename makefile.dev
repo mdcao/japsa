@@ -113,7 +113,6 @@ $(CLASS_DIR):
 images:
 	cp -r  $(SRC_MAIN_DIR)/japsa/bio/misc/dnaPlatform/gui/images $(CLASS_DIR)/japsa/bio/misc/dnaPlatform/gui/ 
 	cp -r  $(SRC_MAIN_DIR)/japsa/seq/nanopore/icons $(CLASS_DIR)/japsa/seq/nanopore/ 
-	cp -r  $(SRC_DEV_DIR)/japsadev/seq/nanopore/icons $(CLASS_DIR)/japsadev/seq/nanopore/ 
 
 $(JAR_FILE): main-classes dev-classes images
 	jar cf $(JAR_FILE) -C $(CLASS_DIR) . 

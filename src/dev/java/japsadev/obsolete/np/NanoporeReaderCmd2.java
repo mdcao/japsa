@@ -32,7 +32,7 @@
  * 7 Aug 2015 - Minh Duc Cao: Created                                        
  * 
  ****************************************************************************/
-package japsaold.seq.nanopore;
+package japsadev.obsolete.np;
 
 import org.jfree.data.time.TimeTableXYDataset;
 import japsa.util.CommandLine;
