@@ -5,6 +5,7 @@ import java.util.*;
 
 
 
+
 /**
  * @author buvan.suji
  *
@@ -111,13 +112,16 @@ public class GettingTreadsFromFasta {
 
 	// call this method-1
 	public static void DestReads() throws Exception {
-		String fname = "";
+		/*String fname = "";
 		System.out.print("Enter the name of the FastaFile:");
 		fname = (new BufferedReader(new InputStreamReader(System.in)))
 				.readLine();
-		FnamePath = new File(fname).getName();
+		FnamePath = new File(fname).getName();*/
+		
 		// System.out.println(FnamePath);
-		FileReading(fname);
+		//FileReading(fname);
+		FnamePath = "chr2250781022_50785963.fasta";
+		FileReading(FnamePath);
 	}
 
 	public static void main(String[] args) throws Exception {

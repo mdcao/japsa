@@ -67,10 +67,8 @@ public class PairDistance {
     }
 	
 	public static EditDistanceResult compute(String s, String z) {
-        // This is required to keep the parent map invariant. If we did not do
-        // this, the very first edit operation would not end up in the output.
-        // For more details, comment out the following two rows and see what 
-        // happens.
+        // This is required to keep the parent map invariant. 
+        // Otherwise the very first edit operation would not end up in the output.        
         s = "\u0000" + s;
         z = "\u0000" + z;
         
@@ -87,17 +85,11 @@ public class PairDistance {
             d[0][j] = j;
         }
         
-        //System.out.println("initial="+d[0][0]);
+        
         
 
         for (int j = 1; j <= n; ++j) {
-            for (int i = 1; i <= m; ++i) {
-            	/*if(s.charAt(j-1)==z.charAt(i-1)){
-            		final int delta = 0;
-            	}
-            	else{
-            		if(s.charAt(j-1)== z.charAt(i-1))
-            	}*/
+            for (int i = 1; i <= m; ++i) {            	
                 final int delta = (s.charAt(j - 1) == z.charAt(i - 1)) ? 0 : 1; 
 
                 int tentativeDistance = d[i - 1][j] + 2;//gap penalty
@@ -114,7 +106,7 @@ public class PairDistance {
                 }
 
                 d[i][j] = tentativeDistance;
-                //System.out.println("inloop d("+i+", "+j+")="+d[i][j]);
+                
 
                 switch (editOperation) {
                     case SUBSTITUTE:
@@ -196,15 +188,7 @@ public class PairDistance {
         System.out.println(result.getTopAlignmentRow());
         System.out.println(result.getBottomAlignmentRow());
         
-        //S1 = "ATTCGGCATCA"
-        //S2 = "ACTAGGTTA"
-        //S3 = "GGTAAGGATTGCC"
-        //S4 = "CTAGGATCCAG"
-        //S5 = "TAAGGCTCAAT"
-        //S6 = "CTACTGCAAG"
-        //S7 = "TTTAGGAGCTCA"
-        //S8 = "ACCTGACCTTG"
-        //S9 = "GGTTCAGTTCC"
+       
 	}
 
 
