@@ -35,7 +35,8 @@
 package japsa.bio.amra;
 
 import japsa.seq.SequenceReader;
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -47,8 +48,10 @@ import java.util.HashMap;
  *
  */
 public class ResistanceGeneDB {
+    private static final Logger LOG = LoggerFactory.getLogger(ResistanceGeneDB.class);
 
-	public static final String SEPARATOR = "\t"; 
+
+    public static final String SEPARATOR = "\t";
 	public static final String COMMENT = "#";
 
 	String dbPath;//Act line the ID of the database	
@@ -78,7 +81,7 @@ public class ResistanceGeneDB {
 			}			
 
 		}
-		Logging.info("Read in " + gene2Res.size() + " genes");
+		LOG.info("Read in " + gene2Res.size() + " genes");
 		br.close();		
 	}	
 

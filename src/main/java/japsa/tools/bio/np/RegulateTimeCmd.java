@@ -45,8 +45,9 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -58,7 +59,9 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Regulate time"
 	)
 public class RegulateTimeCmd extends CommandLine {
-	public RegulateTimeCmd(){
+    private static final Logger LOG = LoggerFactory.getLogger(RegulateTimeCmd.class);
+
+    public RegulateTimeCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -103,7 +106,7 @@ public class RegulateTimeCmd extends CommandLine {
 		long   numBase = 0;
 		
 		long timeStart = System.currentTimeMillis();		
-		Logging.info("Time start " + new Date(timeStart));
+		LOG.info("Time start " + new Date(timeStart));
 		long reportTime = timeStart;
 		
 		while ((seq = reader.nextSequence(Alphabet.DNA()))!= null){			
@@ -120,10 +123,10 @@ public class RegulateTimeCmd extends CommandLine {
 					}	
 				}
 			}catch (Exception e){
-				Logging.error(e.getMessage());
+				LOG.error(e.getMessage());
 			}			
 			if (cTime == 0){
-				Logging.info("Not found timing for sequence " + seq.getName());
+				LOG.info("Not found timing for sequence " + seq.getName());
 				continue;
 			}
 			if (firstReadTime == 0){
@@ -133,7 +136,7 @@ public class RegulateTimeCmd extends CommandLine {
 			long reportTimeNow = System.currentTimeMillis();
 			if (reportTimeNow - reportTime >= 60000){
 				reportTime = reportTimeNow; 
-				Logging.info(new Date(reportTime) + " : " + numRead + " reads " + numBase + " bases");
+				LOG.info(new Date(reportTime) + " : " + numRead + " reads " + numBase + " bases");
 			}			
 			
 			cTime = 1000* (cTime - firstReadTime) / scale;//scale and convert to milisecond

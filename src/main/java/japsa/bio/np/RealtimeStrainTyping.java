@@ -39,13 +39,14 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.HTSUtilities;
-import japsa.util.Logging;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -62,6 +63,7 @@ import java.util.HashSet;
  *
  */
 public class RealtimeStrainTyping {
+    private static final Logger LOG = LoggerFactory.getLogger(RealtimeStrainTyping.class);
 	RealtimeStrainTyper typer;
 	private double minQual = 0;
 	private boolean twoDOnly = false;
@@ -75,15 +77,6 @@ public class RealtimeStrainTyping {
 	long currentBaseCount = 0;
 	int  currentReadAligned = 0;
 
-	/**
-	 * 
-	 * @param minRead
-	 * @param minTime: in seconds
-	 * @param geneFile
-	 * @param profileFile
-	 * @param output
-	 * @throws IOException
-	 */
 
 	public RealtimeStrainTyping(int minRead, int minTime, String geneDB, String output) throws IOException{
 		typer = new RealtimeStrainTyper(this, geneDB, output);
@@ -121,12 +114,11 @@ public class RealtimeStrainTyping {
 
 	/**
 	 * @param bamFile
-	 * @param geneFile
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
 	public void typing(String bamFile) throws IOException, InterruptedException{
-		Logging.info("Strain typing ready at " + new Date());
+		LOG.info("Strain typing ready at " + new Date());
 
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
 
@@ -193,7 +185,7 @@ public class RealtimeStrainTyping {
 				Sequence readSeq = HTSUtilities.spanningSequence(record, readSequence, refLength, 0);
 
 				if (readSeq == null){
-					Logging.warn("Read sequence is NULL sequence ");
+					LOG.warn("Read sequence is NULL sequence ");
 				}else{
 					alignmentList.add(readSeq);
 				}
@@ -214,12 +206,6 @@ public class RealtimeStrainTyping {
 		}
 	}
 
-	/**	 
-	 * @param file
-	 * @param out
-	 * @param profile
-	 * @throws IOException
-	 */
 
 	public static class GeneProfile implements Comparable<GeneProfile>{
 		String strainID;
@@ -343,7 +329,7 @@ public class RealtimeStrainTyping {
 			out.close();
 
 			/*****************************************************************/
-			Logging.info("There are " + myProfileList.size() +" strains");
+			LOG.info("There are " + myProfileList.size() +" strains");
 			lcTyping = new PresenceAbsence(myProfileList);
 		}
 
@@ -373,7 +359,7 @@ public class RealtimeStrainTyping {
 		}
 
 		private ArrayList<LCTypingResult> makePresenceTyping(int top) throws IOException, InterruptedException{
-			Logging.info("Perform an analysis at " + new Date());			
+			LOG.info("Perform an analysis at " + new Date());
 			long step = (lastTime - startTime)/1000;//convert to second
 
 			//int step = typing.currentReadCount;
@@ -394,7 +380,7 @@ public class RealtimeStrainTyping {
 					}
 				}
 			}
-			Logging.info(timeNow + ": Found " + seenGenes.size() + "  " + compute);
+			LOG.info(timeNow + ": Found " + seenGenes.size() + "  " + compute);
 
 			if (compute){
 				posterior = lcTyping.calcPosterior();
@@ -422,7 +408,7 @@ public class RealtimeStrainTyping {
 			}
 			datOS.flush();
 
-			Logging.info("End an analysis at " + new Date());
+			LOG.info("End an analysis at " + new Date());
 			return lcT;
 		}
 		/**
