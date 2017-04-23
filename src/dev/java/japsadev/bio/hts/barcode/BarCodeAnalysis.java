@@ -2,6 +2,8 @@ package japsadev.bio.hts.barcode;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -13,28 +15,40 @@ public class BarCodeAnalysis {
 			DIST_THRES,
 			SCORE_THRES;
 	public static boolean 	print=false,
-							strict=false;
-	ArrayList<Sequence> barCodes; //barcode sequences
-	ArrayList<Sequence> barCodeComps; //barcode complement sequences
+							strict=false; // both-ends-matching 
+	ArrayList<Sequence> barCodesLeft; //barcode sequences from left end
+	ArrayList<Sequence> barCodesRight; //barcode from right end
 	Process[] processes;
 	int nSamples;
 	int barcodeLen;
 	SequenceOutputStream[] streamToScaffolder, streamToFile;
 
 	public BarCodeAnalysis(String barcodeFile, String scriptFile) throws IOException{
-		barCodes = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
-		nSamples = barCodes.size();
+		ArrayList<Sequence> allSeq = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
+		if(strict){
+			allSeq.sort(Comparator.comparing(Sequence::getName));
+			for(int i=0;i<allSeq.size();i++){
+				barCodesLeft.add(allSeq.get(i++));
+				barCodesRight.add(allSeq.get(i));
+			}
+		}else{
+			barCodesLeft = allSeq;
+			for(Sequence seq:barCodesLeft)
+				barCodesRight.add(Alphabet.DNA.complement(seq));
+
+		}
+		
+		nSamples = barCodesLeft.size();
 
 		processes = new Process[nSamples];
 		streamToScaffolder = new SequenceOutputStream[nSamples];
 		if(print)
 			streamToFile = new SequenceOutputStream[nSamples];
 
-		barCodeComps = new ArrayList<Sequence> (barCodes.size());
+		barCodesRight = new ArrayList<Sequence> (barCodesLeft.size());
 		String id;
 		for(int i=0;i<nSamples;i++){		
-			Sequence barCode = barCodes.get(i);
-			barCodeComps.add(Alphabet.DNA.complement(barCode));
+			Sequence barCode = barCodesLeft.get(i);
 
 			id = barCode.getName();
 			//System.out.println(i + " >" + id + ":" + barCode);
@@ -52,7 +66,7 @@ public class BarCodeAnalysis {
 				streamToFile[i] = SequenceOutputStream.makeOutputStream(id+"_clustered.fasta");
 		}
 		
-		barcodeLen = barCodes.get(0).length();
+		barcodeLen = barCodesLeft.get(0).length();
 		SCAN_WINDOW = barcodeLen * 3;
 		SCORE_THRES = barcodeLen;
 		DIST_THRES = SCORE_THRES / 3;
@@ -108,17 +122,17 @@ public class BarCodeAnalysis {
 			int bestIndex = nSamples;
 
 			for(int i=0;i<nSamples; i++){
-				Sequence barcode = barCodes.get(i);
-				Sequence barcodeComp = barCodeComps.get(i);
+				Sequence barcodeLeft = barCodesLeft.get(i);
+				Sequence barcodeRight = barCodesRight.get(i);
 
-				barcodeAlignment.setBarcodeSequence(barcode);				
+				barcodeAlignment.setBarcodeSequence(barcodeLeft);				
 				barcodeAlignment.setReadSequence(s5);				
 				tf[i]=barcodeAlignment.align();				
 
 				barcodeAlignment.setReadSequence(s3);
 				tr[i]=barcodeAlignment.align();
 
-				barcodeAlignment.setBarcodeSequence(barcodeComp);
+				barcodeAlignment.setBarcodeSequence(barcodeRight);
 				barcodeAlignment.setReadSequence(s3);
 				cr[i]=barcodeAlignment.align();
 				barcodeAlignment.setReadSequence(s5);
@@ -146,7 +160,7 @@ public class BarCodeAnalysis {
 			}
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			else {
-				Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
+				Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodesLeft.get(bestIndex).getName() + " with score=" + bestScore);
 				if(bestIndex<nSamples && processes[bestIndex]!=null && processes[bestIndex].isAlive()){
 					Logging.info("...writing to stream " + bestIndex);
 					seq.writeFasta(streamToScaffolder[bestIndex]);
