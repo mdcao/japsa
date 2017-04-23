@@ -34,8 +34,9 @@
 
 package japsa.seq;
 
-import japsa.seq.Alphabet;
-import japsa.util.Logging;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,7 +50,8 @@ import java.util.Arrays;
  * @author Minh Duc Cao (minhduc \dot cao \at gmail \dot com)
  *
  */
-public class FastqReader extends SequenceReader{	
+public class FastqReader extends SequenceReader{
+    private static final Logger LOG = LoggerFactory.getLogger(FastqReader.class);
 	
 	private byte [] seq = new byte[1024];//estimated max read length
 	private byte [] qual = new byte[1024];
@@ -139,7 +141,7 @@ public class FastqReader extends SequenceReader{
 		
 		if (seqIndex != qualIndex){
 			//throw new RuntimeException("Lengths of sequence and quality strings do not match at line " + lineNo + " : " + seqIndex + " vs " + qualIndex);
-			Logging.warn("Lengths of sequence and quality strings do not match at line " + lineNo + " : " + seqIndex + " vs " + qualIndex);
+			LOG.warn("Lengths of sequence and quality strings do not match at line " + lineNo + " : " + seqIndex + " vs " + qualIndex);
 		}
 		
 		//Read the next byte from the stream (expecting a @ or eof

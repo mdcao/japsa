@@ -39,7 +39,6 @@ import japsa.seq.nanopore.NanoporeReaderWindowFX;
 import javafx.application.Application;
 import japsa.util.CommandLine;
 import japsa.util.JapsaException;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

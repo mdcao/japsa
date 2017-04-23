@@ -34,9 +34,10 @@
 package japsa.tools.util;
 
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 import japsa.util.net.StreamClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,7 +55,8 @@ import java.util.Date;
 	seeAlso = "jsa.util.streamServer, jsa.np.filter, jsa.np.npreader"
 	)
 
-public class StreamClientCmd extends CommandLine{	
+public class StreamClientCmd extends CommandLine{
+    private static final Logger LOG = LoggerFactory.getLogger(StreamClientCmd.class);
 	public StreamClientCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -75,13 +77,14 @@ public class StreamClientCmd extends CommandLine{
 	 * @throws Exception 
 	 * @throws OutOfMemoryError 
 	 */
-	public static void main(String[] args) throws IOException{		 		
+	public static void main(String[] args) throws IOException{
+
 		CommandLine cmdLine = new StreamClientCmd();				
 		args = cmdLine.stdParseLine(args);						
 		/**********************************************************************/
 		String input = cmdLine.getStringVal("input");
 		StreamClient client = new StreamClient(cmdLine.getStringVal("server"));
-		Logging.info("Connection established at " + new Date());
+		LOG.info("Connection established at " + new Date());
 
 		InputStream ins = input.equals("-")? System.in : new FileInputStream(input);
 		byte[] buffer = new byte[8192];
@@ -98,7 +101,7 @@ public class StreamClientCmd extends CommandLine{
 						socket.getOutputStream().write(buffer,0, ret);
 						count ++;
 					} catch (IOException e) {
-						Logging.info("Connection to " + socket.getRemoteSocketAddress() + " closed at "+ new Date());
+						LOG.info("Connection to " + socket.getRemoteSocketAddress() + " closed at "+ new Date());
 						socket.close();
 					}					
 				}				

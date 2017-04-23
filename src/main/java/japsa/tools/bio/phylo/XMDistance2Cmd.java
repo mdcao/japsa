@@ -45,15 +45,18 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.tools.bio.xm.ExpertModelCmd;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 import japsa.xm.ExpertModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Deployable(scriptName = "jsa.phylo.xmdist2",
 scriptDesc = "Generate a distances bet matrix from genomes (potentially not alignable")
-public class XMDistance2Cmd  extends CommandLine{	
-	public XMDistance2Cmd(){
+public class XMDistance2Cmd  extends CommandLine{
+    private static final Logger LOG = LoggerFactory.getLogger(XMDistance2Cmd.class);
+
+    public XMDistance2Cmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -102,7 +105,8 @@ public class XMDistance2Cmd  extends CommandLine{
 		int index = cmdLine.getIntVal("index");
 
 		if(index >= list.size()){
-			Logging.exit("Wrong index (< " + list.size()+") : " + index, 1);
+			LOG.error("Wrong index (< " + list.size()+") : " + index);
+			System.exit(1);
 		}		
 
 		FastaReader sin = new FastaReader("data/" + list.get(index));

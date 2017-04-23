@@ -113,12 +113,13 @@ public class DevDeploy {
 
 		tools.add(new SelectReadsCmd());
 		tools.add(new StructuralVariationCmd());
-		tools.add(new PhageAnalysisCmd());		
+		tools.add(new PhageAnalysisCmd());
+        tools.add(new PhageAnalysis2Cmd());
 		tools.add(new ConsensusGenerateCmd());
 		
 		tools.add(new VNTRClusteringCmd());
 		//new 
-		//tools.add(new VNTRClusteringCmd());
+		//tools.add(new PhageAnalysis2Cmd());
 		//
 
 	}

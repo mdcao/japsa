@@ -37,13 +37,15 @@ package japsa.tools.seq;
 import java.io.IOException;
 import java.util.HashMap;
 
+import japsa.bio.BuildGeneDatabase;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -55,6 +57,7 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Group genes based on their identity and build a database of gene family and their alleles"
 	)
 public class BuildGeneDatabaseCmd  extends CommandLine{
+    private static final Logger LOG = LoggerFactory.getLogger(BuildGeneDatabaseCmd.class);
 	//CommandLine cmdLine;
 	public BuildGeneDatabaseCmd(){
 		super();
@@ -112,21 +115,21 @@ public class BuildGeneDatabaseCmd  extends CommandLine{
 		myGenes = new HashMap<String, Sequence>();
 		while ((seq = reader.nextSequence(alphabet)) != null){									
 			if (myGenes.size() >=number){
-				Logging.info("BIG TER ");
+                LOG.trace("BIG TER ");
 				HashMap <String, String> mapped = db.addGeneMap(myGenes, checkGeneID);
 				for (String key:myGenes.keySet()){
 					Sequence keySeq = myGenes.get(key);
 					String dbID = mapped.get(key);
 					if (dbID != null)
-						Logging.info("Added " + key + " as "+ dbID +" G");
+                        LOG.trace("Added " + key + " as "+ dbID +" G");
 					else{
 						dbID = db.addGene(myGenes.get(key));
-						Logging.info("Added " + key + " as "+ dbID +" B");
+                        LOG.trace("Added " + key + " as "+ dbID +" B");
 					}//else					
 					keySeq.setDesc("JSA=" + dbID+";"+keySeq.getDesc());
 					keySeq.writeFasta(sos);
 				}//for key
-				Logging.info("BIG TER END " + db.geneDatabase.size());
+                LOG.trace("BIG TER END " + db.geneDatabase.size());
 				myGenes.clear();				
 			}
 
@@ -140,10 +143,10 @@ public class BuildGeneDatabaseCmd  extends CommandLine{
 			Sequence keySeq = myGenes.get(key);
 			String dbID = mapped.get(key);
 			if (dbID != null)
-				Logging.info("Added " + key + " as "+ dbID +" G");
+                LOG.info("Added " + key + " as "+ dbID +" G");
 			else{
 				dbID = db.addGene(myGenes.get(key));
-				Logging.info("Added " + key + " as "+ dbID +" B");
+                LOG.info("Added " + key + " as "+ dbID +" B");
 			}//else					
 			keySeq.setDesc("JSA=" + dbID+";"+keySeq.getDesc());
 			keySeq.writeFasta(sos);

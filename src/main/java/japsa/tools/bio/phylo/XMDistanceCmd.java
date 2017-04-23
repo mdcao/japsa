@@ -39,9 +39,10 @@ import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.tools.bio.xm.ExpertModelCmd;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 import japsa.xm.ExpertModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -54,7 +55,8 @@ import java.util.concurrent.TimeUnit;
 
 @Deployable(scriptName = "jsa.phylo.xmdist",
 scriptDesc = "Generate a distance matrix from genomes (potentially not alignable")
-public class XMDistanceCmd  extends CommandLine{	
+public class XMDistanceCmd  extends CommandLine{
+    private static final Logger LOG = LoggerFactory.getLogger(XMDistanceCmd.class);
 	public XMDistanceCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -152,7 +154,7 @@ public class XMDistanceCmd  extends CommandLine{
 		boolean finished = executor.awaitTermination(3, TimeUnit.DAYS);
 
 		double [][] mtx = new double[seqs.size()] [seqs.size()];
-		Logging.info("ALL DONE " + finished);
+		LOG.info("ALL DONE " + finished);
 		for (int i = 0; i < seqs.size();i++){
 			mtx[i][i] = 0;
 			for (int j = i+1; j < seqs.size(); j++){
@@ -231,16 +233,16 @@ public class XMDistanceCmd  extends CommandLine{
 		public void run() {
 			try {
 				if (index2 < 0){
-					Logging.info("Thread Single " + index1 + " started");
+					LOG.info("Thread Single " + index1 + " started");
 					Sequence [] mS = new Sequence[1];
 					mS[0] = seqs.get(index1);
 					double score = eModel.encode_optimise(mS);
 					synchronized(resultSingle){
 						resultSingle[index1] = score;
 					}
-					Logging.info("Thread Single " + index1 + " done!");
+					LOG.info("Thread Single " + index1 + " done!");
 				}else{
-					Logging.info("Thread GB " + index1 + " - " + index2 + " started");
+					LOG.info("Thread GB " + index1 + " - " + index2 + " started");
 					Sequence [] mS = new Sequence[2];
 					mS[0] = seqs.get(index1);
 					mS[1] = seqs.get(index2);
@@ -248,10 +250,10 @@ public class XMDistanceCmd  extends CommandLine{
 					synchronized(resultBG){
 						resultBG[index1][index2] = e_ij; 
 					}
-					Logging.info("Thread GB " + index1 + " - " + index2 + " done");
+					LOG.info("Thread GB " + index1 + " - " + index2 + " done");
 
 
-					Logging.info("Thread GB2 " + index2 + " - " + index1 + " started");
+					LOG.info("Thread GB2 " + index2 + " - " + index1 + " started");
 					mS[0] = seqs.get(index2);
 					mS[1] = seqs.get(index1);					
 					double e_ji = eModel.encode_optimise(mS);
@@ -259,7 +261,7 @@ public class XMDistanceCmd  extends CommandLine{
 					synchronized(resultBG){
 						resultBG[index2][index1] = e_ji; 
 					}
-					Logging.info("Thread GB2 " + index2 + " - " + index1 + " done");
+					LOG.info("Thread GB2 " + index2 + " - " + index1 + " done");
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block

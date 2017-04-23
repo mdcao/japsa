@@ -101,8 +101,8 @@ public class SequenceExtractor {
 						"-L0",
 						"-a",
 						"-Y",
-//						"-K",
-//						"20000",
+						"-K",
+						"20000",
 						plasmidFile,
 						"-"
 						).
@@ -122,8 +122,8 @@ public class SequenceExtractor {
 						"-L0",
 						"-a",
 						"-Y",
-//						"-K",
-//						"20000",
+						"-K",
+						"20000",
 						plasmidFile,
 						inFile
 						);

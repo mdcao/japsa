@@ -42,8 +42,9 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.nanopore.Fast5NPReader;
 import japsa.util.CommandLine;
 import japsa.util.JapsaException;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -53,7 +54,8 @@ import japsa.util.deploy.Deployable;
 		scriptName = "jsa.np.fastnpreader", 
 		scriptDesc = "Fast Extraction of Oxford Nanopore sequencing data in real-time"
 		)
-public class FastNanoporeReaderCmd extends CommandLine{	
+public class FastNanoporeReaderCmd extends CommandLine{
+    private static final Logger LOG = LoggerFactory.getLogger(FastNanoporeReaderCmd.class);
 	public FastNanoporeReaderCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -110,7 +112,7 @@ public class FastNanoporeReaderCmd extends CommandLine{
 					}catch (JapsaException e){
 						throw e;
 					}catch (Exception e){
-						Logging.error("Problem with reading " + sPath + ":" + e.getMessage());
+						LOG.error("Problem with reading " + sPath + ":" + e.getMessage());
 						e.printStackTrace();					
 					}
 				}//for f

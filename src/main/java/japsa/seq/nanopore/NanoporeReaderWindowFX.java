@@ -35,7 +35,6 @@ package japsa.seq.nanopore;
 
 import japsa.util.DynamicHistogram;
 import japsa.util.JapsaException;
-import japsa.util.Logging;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,10 +96,14 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NanoporeReaderWindowFX extends Application{
-	
-	TimeTableXYDataset 	allReadsCount = new TimeTableXYDataset(),
+    private static final Logger LOG = LoggerFactory.getLogger(NanoporeReaderWindowFX.class);
+
+
+    TimeTableXYDataset 	allReadsCount = new TimeTableXYDataset(),
 						demultiplexedStackReadsCount = new TimeTableXYDataset();
 	DefaultCategoryDataset demultiplexedBarReadsCount = new DefaultCategoryDataset();
 	DynamicHistogram 	histoLengthDataSet = new DynamicHistogram(),
@@ -157,7 +160,7 @@ public class NanoporeReaderWindowFX extends Application{
 			@Override
 			public void run() {
 				while (!reader.ready){
-					Logging.info("NOT READY");
+					//LOG.info("NOT READY");
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {					
@@ -165,7 +168,7 @@ public class NanoporeReaderWindowFX extends Application{
 					}			
 				}
 				// TODO Auto-generated method stub
-				Logging.info("GO");
+				LOG.info("GO");
 
 				updateData();
 				try{

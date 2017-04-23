@@ -40,9 +40,10 @@ import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.Simulation;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ import java.util.Random;
 		scriptDesc = "Simulate genomes with variation from an existing genome"
 		)
 public class SimulateGenomeCmd extends CommandLine{
-
+    private static final Logger LOG = LoggerFactory.getLogger(SimulateGenomeCmd.class);
 	public SimulateGenomeCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -167,7 +168,7 @@ public class SimulateGenomeCmd extends CommandLine{
 				}else if (sv.svType == StructualVarition.DELETION){
 					//doing nothing
 				}else{
-					Logging.error("Dont know what to do");
+					LOG.error("Dont know what to do");
 				}				
 				currentIndex = end - 1;
 				
