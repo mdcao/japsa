@@ -41,11 +41,14 @@ import ncsa.hdf.object.h5.H5ScalarDS;
 import japsa.seq.Alphabet.DNA;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import japsa.seq.Alphabet;
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.JapsaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -55,7 +58,8 @@ import japsa.util.JapsaException;
  *  
  * @author minhduc
  */
-public class Fast5NPReader{	
+public class Fast5NPReader{
+    private static final Logger LOG = LoggerFactory.getLogger(Fast5NPReader.class);
 	protected FileFormat f5File;
 	//	FastqSequence seqTemplate = null, seqComplement = null, seq2D = null;
 
@@ -105,6 +109,63 @@ public class Fast5NPReader{
 		Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
 		readAllFastq(root, sos);
 	}
+
+    long timeStamp = 0;
+	public void readTime() throws Exception {
+	    try {
+            Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) f5File.getRootNode()).getUserObject();
+            readTime(root);
+        }catch (Exception e){
+	        LOG.error(e.getMessage());
+        }
+    }
+
+    private long getValue(Object v){
+	    //System.out.println(v.getClass());
+        if (v.getClass().toString().startsWith("class [J")) {
+           // System.out.println("LLL = "  + ((long[]) v).length);
+            return ((long[]) v)[0];
+        }
+
+	    if (v.getClass().toString().startsWith("class [I")) {
+            //System.out.println("LLL = "  +   ((int[]) v).length);
+            return 0L + ((int[]) v)[0];
+        }
+
+        return 0;
+    }
+
+    private void readTime(Group g) throws OutOfMemoryError, Exception{
+        if (timeStamp > 0) return;
+        if (g == null) return;
+        java.util.List<HObject> members = g.getMemberList();
+
+        for (HObject member:members) {
+            if (member instanceof Group) {
+                String name = member.getName();
+                String fullName = member.getFullName();
+                if (!fullName.startsWith("/Raw"))
+                    continue;
+
+                if (name.startsWith("Read_")) {
+                    //System.out.println("Found " + member.getFullName());
+                    List<Object> objs = member.getMetadata();
+                    for (Object obj : objs) {
+                        ncsa.hdf.object.Attribute attribute = (ncsa.hdf.object.Attribute) obj;
+
+                        if (attribute.getName().startsWith("duration"))
+                            timeStamp += getValue(attribute.getValue());
+
+                        if (attribute.getName().startsWith("start_time"))
+                            timeStamp += getValue(attribute.getValue());
+                    }//for
+                }else
+                    readTime((Group) member);
+
+            }
+        }
+    }
+
 
 
 	///**
