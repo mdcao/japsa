@@ -294,7 +294,7 @@ public class RealtimeScaffolding {
 			try{
 				//print for the last time if needed
 				if(!ScaffoldGraph.updateGenome)
-					scaffolding.graph.printSequences(true);
+					scaffolding.graph.printSequences(true,false);
 				
 				outOS.close();
 			}catch (Exception e){
@@ -311,8 +311,8 @@ public class RealtimeScaffolding {
 		
 				try {
 					// This function is for the sake of real-time annotation experiments being more readable
-					//scaffolding.graph.printRT(scaffolding.currentBaseCount);
-					sg.printSequences(ScaffoldGraph.updateGenome);
+					scaffolding.graph.printRT(scaffolding.currentBaseCount);
+					sg.printSequences(ScaffoldGraph.updateGenome,false);
 					outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50 | \tBreaks (maxlen)\n");
 					outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + sg.getNumberOfContigs() 
 							+ " |\t" + sg.getNumberOfCirculars() + " |\t" + sg.getN50() + " |\t" + sg.getGapsInfo());

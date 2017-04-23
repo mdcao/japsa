@@ -142,9 +142,12 @@ public class Contig{
 		return remainFeatures;
 	}
 
-	
+	//get the SPAdes name (out of MicroManage name maybe)
 	public String getName(){
 		return contigSequence.getName();
+	}
+	public String getDesc(){
+		return contigSequence.getDesc();
 	}
 	
 	public int getIndex(){

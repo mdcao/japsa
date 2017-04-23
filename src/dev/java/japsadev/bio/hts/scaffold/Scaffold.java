@@ -39,7 +39,12 @@ import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -636,4 +641,36 @@ public final class Scaffold extends LinkedList<Contig>{
 		JapsaAnnotation.write(null, anno, out); 
 		len = seq.length();
 	}
+	
+	public void printBatchGenes() throws IOException{
+		String fname = "scaffold_" + scaffoldIndex + ".rtout";
+		File f = new File(fname);
+		f.delete();
+	
+		//BufferedWriter out = new BufferedWriter(new FileWriter(f.getPath(), true));
+		FileWriter fw = new FileWriter(f,true);
+		BufferedWriter bw = new BufferedWriter(fw);
+		PrintWriter pw = new PrintWriter(bw);
+	
+		ArrayList<String> 	ctgList = new ArrayList<String>(),
+							genesList = new ArrayList<String>();
+	
+		for(Contig ctg:this){
+			ctgList.add(ctg.getName());
+			for (JapsaFeature feature:ctg.genes)
+				genesList.add(feature.toString());
+		}
+		pw.print(">");
+		for(String ctg:ctgList)
+			pw.printf("%s\t", ctg);
+	
+		pw.printf("\n>%d genes\t",genesList.size());
+	
+		for(String genes:genesList)
+			pw.print(" \n\t"+genes);
+		pw.println("");
+
+		pw.close();
+	}
+
 }
