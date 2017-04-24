@@ -9,7 +9,7 @@ import japsadev.bio.hts.barcode.*;
 
 
 @Deployable(
-		scriptName = "jsa.np.barcode", 
+		scriptName = "jsa.dev.barcode", 
 		scriptDesc = "Clustering nanopore sequences based on barcode"
 		)
 public class BarCodeAnalysisCmd extends CommandLine{

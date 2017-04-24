@@ -18,8 +18,8 @@ public class BarCodeAnalysis {
 			SCORE_THRES;
 	public static boolean 	print=false,
 							strict=false; // both-ends-matching 
-	ArrayList<Sequence> barCodesLeft; //barcode sequences from left end
-	ArrayList<Sequence> barCodesRight; //barcode from right end
+	ArrayList<Sequence> barCodesLeft = new ArrayList<Sequence>(); //barcode sequences from left end
+	ArrayList<Sequence> barCodesRight = new ArrayList<Sequence>(); //barcode from right end
 	Process[] processes;
 	int nSamples;
 	int barcodeLen;
@@ -47,7 +47,6 @@ public class BarCodeAnalysis {
 		if(print)
 			streamToFile = new SequenceOutputStream[nSamples+1]; //unknown sequences included
 
-		barCodesRight = new ArrayList<Sequence> (barCodesLeft.size());
 		String id;
 		for(int i=0;i<nSamples;i++){		
 			Sequence barCode = barCodesLeft.get(i);
