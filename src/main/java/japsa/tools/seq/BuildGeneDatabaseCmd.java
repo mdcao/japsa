@@ -37,7 +37,7 @@ package japsa.tools.seq;
 import java.io.IOException;
 import java.util.HashMap;
 
-import japsa.bio.BuildGeneDatabase;
+import japsa.bio.BuildSequenceGroupDatabase;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -83,7 +83,8 @@ public class BuildGeneDatabaseCmd  extends CommandLine{
 	 * @throws Exception 
 	 * @throws OutOfMemoryError 
 	 */
-	public static void main(String[] args) throws IOException, InterruptedException{		 		
+	public static void main(String[] args) throws IOException, InterruptedException{
+
 		CommandLine cmdLine = new BuildGeneDatabaseCmd();
 		args = cmdLine.stdParseLine(args);			
 
@@ -101,20 +102,17 @@ public class BuildGeneDatabaseCmd  extends CommandLine{
 
 		double thresholdOption = cmdLine.getDoubleVal("threshold");
 
-		BuildGeneDatabase.ratio = thresholdOption;
-		BuildGeneDatabase db = new BuildGeneDatabase(prefix);
+		BuildSequenceGroupDatabase.ratio = thresholdOption;
+		BuildSequenceGroupDatabase db = new BuildSequenceGroupDatabase(prefix);
 		SequenceOutputStream sos =  SequenceOutputStream.makeOutputStream(outOption);
 
-
-		HashMap<String, Sequence> myGenes;
-		//if (listOption == null){
+		HashMap<String, Sequence> myGenes = new HashMap<String, Sequence>();
 		SequenceReader reader = SequenceReader.getReader(inputOption);
 		Alphabet.DNA alphabet = Alphabet.DNA();
 		Sequence seq;
 
-		myGenes = new HashMap<String, Sequence>();
 		while ((seq = reader.nextSequence(alphabet)) != null){									
-			if (myGenes.size() >=number){
+			if (myGenes.size() >= number){
                 LOG.trace("BIG TER ");
 				HashMap <String, String> mapped = db.addGeneMap(myGenes, checkGeneID);
 				for (String key:myGenes.keySet()){
@@ -136,7 +134,6 @@ public class BuildGeneDatabaseCmd  extends CommandLine{
 			myGenes.put(seq.getName(), seq);
 		}		
 		reader.close();
-
 
 		HashMap <String, String> mapped = db.addGeneMap(myGenes, checkGeneID);
 		for (String key:myGenes.keySet()){

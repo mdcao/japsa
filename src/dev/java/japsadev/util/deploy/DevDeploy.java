@@ -88,7 +88,7 @@ public class DevDeploy {
 		tools.add(new MethylationAnalysisCmd());
 		tools.add(new MethylationAnalysis2Cmd());
 		tools.add(new PlasmaAnalysisCrossCorrelationCmd());
-		tools.add(new RemoveNsCmd());
+		//tools.add(new RemoveNsCmd());
 		tools.add(new XMDistance2Cmd());
 		tools.add(new BuildMLSTTreeCmd());
 

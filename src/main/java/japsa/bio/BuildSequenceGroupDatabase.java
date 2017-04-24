@@ -44,7 +44,7 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.seq.Alphabet.DNA;
 import japsa.util.HTSUtilities;
-import japsa.util.JapsaTimer;
+//import japsa.util.JapsaTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +61,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Implement a database of genes
@@ -69,19 +70,16 @@ import java.util.HashMap;
  *
  */
 
-public class BuildGeneDatabase {
-    private static final Logger LOG = LoggerFactory.getLogger(BuildGeneDatabase.class);
-
-    //ArrayList<GeneDatabase.GeneFamily> geneFamilies;//Array list of gene family, each is a list of gene alleles
+public class BuildSequenceGroupDatabase {
+    private static final Logger LOG = LoggerFactory.getLogger(BuildSequenceGroupDatabase.class);
 	public GeneDatabase geneDatabase;
 
 	String prefix;
-
 	String fFile;
 	String gFile;
 	String bFile;
 
-	public BuildGeneDatabase(String p) throws IOException{
+	public BuildSequenceGroupDatabase(String p) throws IOException{
 		//geneFamilies = new ArrayList<GeneDatabase.GeneFamily>();
 		geneDatabase = new  GeneDatabase();
 		prefix = p;
@@ -124,22 +122,24 @@ public class BuildGeneDatabase {
 	/**
 	 * Add a collection of genes to the database as a batch
 	 * 
-	 * @param seqs
-	 * @param checkGeneID
-	 * @return
+	 * @param seqs: new list of sequences to be added
+	 * @param checkGeneID: insert based on geneID first
+	 * @return A map of what sequences were inserted to what
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public HashMap<String, String> addGeneMap(final HashMap<String, Sequence> seqs, boolean checkGeneID) throws IOException, InterruptedException{
+	public HashMap<String, String> addGeneMap(final Map<String, Sequence> seqs, boolean checkGeneID) throws IOException, InterruptedException{
 		HashMap<String, String>  strMap =  new HashMap<String, String> ();
 
 		//0: initialise grouping within the new sequences
 		HashMap<String, ArrayList<String>> setMap = new HashMap<String, ArrayList<String>>();
 		for (Sequence seq:seqs.values()){
+		    //tSet: set of sequences belong to a group. Potentially, every sequence makes up one group
 			ArrayList<String> tSet =  new ArrayList<String>();
 			tSet.add(seq.getName());
 			setMap.put(seq.getName(), tSet);
 		}
+		//note: setMap: maps each set to an ID (of the first sequence)
         LOG.info("Total " + seqs.size() + " sequences");
 		//0.5 Merge based on annotation
 		if (checkGeneID){
@@ -218,6 +218,7 @@ public class BuildGeneDatabase {
 				}					
 			}//for
 		}
+
 		boolean merge = true;
 		int iteration = 0;
 		while (merge){
@@ -229,6 +230,7 @@ public class BuildGeneDatabase {
 			LOG.info("Iteration " + iteration + " size = " + setMap.size() + "  " + new Date());
 			int countI = 0;
 
+			//write the reps of temp groups to file anc cosider them as `reads' as well as refs
 			for (String key:setMap.keySet()){
 				ArrayList<String> tSet = setMap.get(key);
 				if (tSet.get(0) == key){
@@ -239,7 +241,7 @@ public class BuildGeneDatabase {
 			sos.close();
 
 			LOG.info("Iteration " + iteration + " of " + countI + " sequences " + new Date());
-			JapsaTimer.systemInfo();
+			//JapsaTimer.systemInfo();
 
 			Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA2.sh");
 			process.waitFor();
@@ -262,13 +264,14 @@ public class BuildGeneDatabase {
 				ArrayList<String> refSet = setMap.get(refName);
 
 				if (readSet == refSet){
-					//these two have been in a group
+					//these two have been from group
 					continue;
 				}
 
 				Sequence readSeq = seqs.get(readName);
 				Sequence refSeq = seqs.get(refName);
-				
+
+				//now we find the respresentations from groups are similar, and hence join two groups together
 				if (isSimilar(refSeq, readSeq, sam)){
 					merge = true;
 					refSet.addAll(readSet);
@@ -280,16 +283,27 @@ public class BuildGeneDatabase {
 			}
 			samIter.close();
 			samReader.close();
-			JapsaTimer.systemInfo();
+			//JapsaTimer.systemInfo();
 		}
 
 		LOG.info(" 2 Grouping " + geneDatabase.size());
-		JapsaTimer.systemInfo();
+		//JapsaTimer.systemInfo();
 
-		//2.Try to add groups whose family is already in
+		//2.Try to add to the existing groups
 		int G = 0, GG = 0;
 		if (geneDatabase.size() > 0){			
 			geneDatabase.write2File(fFile, false);
+
+			//creat a map of current reps
+
+            SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(fFile);
+            HashMap<String, Sequence> repMap = new HashMap<String, Sequence>();
+            for (GeneDatabase.GeneFamily family:geneDatabase){
+                Sequence rep = family.represetationSequence();
+                repMap.put(rep.getName(),rep);
+            }
+            sos.close();
+
 
 			//Run bwa
 			//LOG.info("Running bwa for " + seq.getName() + " " + geneFamilies.size() + " family");
@@ -323,6 +337,7 @@ public class BuildGeneDatabase {
 					LOG.error("ERROR 5: family " + refName + " not found!");
 					continue;
 				}
+
 				Sequence refSeq = family.represetationSequence();
 				if (refSeq == null){
 					LOG.error("ERROR 6: rep for family " + refName + " not found!");
@@ -350,7 +365,7 @@ public class BuildGeneDatabase {
 
 
 		LOG.info(" 3 Grouping " + geneDatabase.size() + " " + seqs.size());
-		JapsaTimer.systemInfo();
+		//JapsaTimer.systemInfo();
 
 		for (Sequence seq:seqs.values()){
 			String seqName = seq.getName();
@@ -363,7 +378,7 @@ public class BuildGeneDatabase {
 			}
 			//tSet is not empty
 			GeneDatabase.GeneFamily family = null;
-			//LOG.info(" ADDing GGs " + GG + " of size " + tSet.size() + " " + (new Date()));
+			LOG.info(" ADDing GGs " + GG + " of size " + tSet.size() + " " + (new Date()));
 			for (String key:tSet){
 				Sequence keySeq = seqs.get(key);
 				if (family == null){
@@ -441,7 +456,8 @@ public class BuildGeneDatabase {
 	}
 
 	//TODO: no good public
-	public static double ratio = 0.9;	
+	public static double ratio = 0.9;
+	public static double coverageTheshold = 0.9;
 
 	static boolean isSimilar(Sequence refSeq, Sequence readSeq, SAMRecord sam){
 		japsa.util.HTSUtilities.IdentityProfile 
@@ -450,13 +466,12 @@ public class BuildGeneDatabase {
 			:HTSUtilities.identity(refSeq, readSeq, sam); 
 
 		double m = profile.match / ratio;
-		//System.out.println("XXXX " + (1.0 *profile.match/profile.refBase) + " " + (1.0 *profile.match/profile.readBase));
-		return (m > profile.refBase && m > profile.readBase);
+		return (m > profile.refBase
+                && m > profile.readBase
+                && profile.refBase > refSeq.length() * coverageTheshold
+                && profile.readBase > readSeq.length() * coverageTheshold
+        );
 	}
-
-
-
-
 
 	/**
 	 * Set up with a list of strains

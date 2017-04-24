@@ -181,7 +181,6 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 			geneAlleles = new ArrayList<Sequence>();
 		}
 
-
 		/**
 		 * @return the desc
 		 */
@@ -204,7 +203,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 
 		public Sequence represetationSequence(){
 			Sequence rep = geneAlleles.get(repIndex).clone();
-			rep.setDesc(desc + ";index=" +repIndex);
+			rep.setDesc(desc + ";index=" +repIndex + ";size=" + geneAlleles.size());
 			rep.setName(familyID());
 			return rep;
 		}
