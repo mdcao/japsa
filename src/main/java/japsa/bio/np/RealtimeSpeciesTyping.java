@@ -37,7 +37,6 @@ package japsa.bio.np;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
-import japsa.util.Logging;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -55,12 +54,16 @@ import java.util.HashMap;
 
 import org.rosuda.JRI.REXP;
 import org.rosuda.JRI.Rengine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Minh Duc Cao, Son Hoang Nguyen
  *
  */
 public class RealtimeSpeciesTyping {
+    private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTyping.class);
+
 	public static boolean JSON=false;
 	RealtimeSpeciesTyper typer;
 
@@ -88,13 +91,6 @@ public class RealtimeSpeciesTyping {
 	}
 
 
-
-	/**
-	 * @param bamFile
-	 * @param geneFile
-	 * @throws IOException
-	 * @throws InterruptedException 
-	 */
 	static class SpeciesCount implements Comparable<SpeciesCount>{
 		String species;
 		int count = 0;
@@ -133,7 +129,7 @@ public class RealtimeSpeciesTyping {
 			}			
 		}//while
 		bf.close();
-		Logging.info(seq2Species.size() + "   " + species2Count.size());
+		LOG.info(seq2Species.size() + "   " + species2Count.size());
 		speciesList.addAll(species2Count.keySet());
 
 		//Write header				
@@ -161,7 +157,7 @@ public class RealtimeSpeciesTyping {
 		typer.setReadPeriod(readNumber);
 		typer.setTimePeriod(timeNumber * 1000);
 
-		Logging.info("Species typing ready at " + new Date());
+		LOG.info("Species typing ready at " + new Date());
 
 		String readName = "";
 		//Read the bam file		
@@ -237,12 +233,13 @@ public class RealtimeSpeciesTyping {
 			//Set up Rengine
 			rengine = new Rengine (new String [] {"--no-save"}, false, null);
 			if (!rengine.waitForR()){
-				Logging.exit("Cannot load R",1);            
+				LOG.error("Cannot load R");
+				System.exit(1);
 			}    
 			rengine.eval("library(MultinomialCI)");
 			rengine.eval("alpha<-0.05");
 
-			Logging.info("REngine ready");
+			LOG.info("REngine ready");
 			countsOS = SequenceOutputStream.makeOutputStream(output);
 			if(!JSON)
 				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
@@ -271,7 +268,7 @@ public class RealtimeSpeciesTyping {
 				if (count[i] >= minCount){
 					countArray.add(count[i]);
 					speciesArray.add(typing.speciesList.get(i));
-					Logging.info(step+" : " + typing.speciesList.get(i) + " == " + count[i]);
+					LOG.info(step+" : " + typing.speciesList.get(i) + " == " + count[i]);
 				}
 			}		
 			//if (countArray.size() > 10) return;
@@ -318,7 +315,7 @@ public class RealtimeSpeciesTyping {
 			if(JSON)
 				countsOS.print("\t]\n}\n");
 			countsOS.flush();
-			Logging.info(step+"  " + countArray.size());
+			LOG.info(step+"  " + countArray.size());
 		}
 
 		protected void close(){
@@ -338,7 +335,7 @@ public class RealtimeSpeciesTyping {
 			try{
 				simpleAnalysisCurrent();
 			}catch (IOException e){
-				Logging.warn(e.getMessage());
+				LOG.warn(e.getMessage());
 			}
 		}
 

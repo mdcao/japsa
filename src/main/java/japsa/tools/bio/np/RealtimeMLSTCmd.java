@@ -39,6 +39,8 @@ import java.io.IOException;
 import japsa.bio.np.RealtimeMLST;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -49,7 +51,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Realtime Multi-Locus Strain Typing using Nanopore Sequencing data",
 	seeAlso = "jsa.np.npreader, jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.np.rtResistGenes, jsa.util.streamServer, jsa.util.streamClient"
 	)
-public class RealtimeMLSTCmd extends CommandLine{	
+public class RealtimeMLSTCmd extends CommandLine{
+//    private static final Logger LOG = LoggerFactory.getLogger(RealtimeMLSTCmd.class);
 	public RealtimeMLSTCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
