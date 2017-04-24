@@ -15,11 +15,13 @@ public class GettingTreadsFromFasta {
 
 	private String[] description;
 	private String[] sequence;
+	
 
 	static ArrayList<String> Rname = new ArrayList<String>();
 	static ArrayList<String> TReads = new ArrayList<String>();
 	static String FnamePath;
 	static int sequenceLength;
+	static String fle;
 
 	public GettingTreadsFromFasta(String filename) {
 		readSequenceFromFile(filename);
@@ -111,7 +113,8 @@ public class GettingTreadsFromFasta {
 	}
 
 	// call this method-1
-	public static void DestReads() throws Exception {
+	//public static void DestReads() throws Exception {
+	public static void DestReads(String fle1) throws Exception {
 		/*String fname = "";
 		System.out.print("Enter the name of the FastaFile:");
 		fname = (new BufferedReader(new InputStreamReader(System.in)))
@@ -120,12 +123,14 @@ public class GettingTreadsFromFasta {
 		
 		// System.out.println(FnamePath);
 		//FileReading(fname);
-		FnamePath = "chr2250781022_50785963.fasta";
+		fle = fle1;
+		FnamePath = fle1;
+		//FnamePath = "chr10134169759_134174717.fasta";
 		FileReading(FnamePath);
 	}
 
 	public static void main(String[] args) throws Exception {
-		DestReads();
+		DestReads(fle);
 		ViewList();
 	}
 
