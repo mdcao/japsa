@@ -49,13 +49,13 @@ import java.util.HashSet;
 
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.seq.nanopore.Fast5NPReader;
 import japsa.seq.nanopore.Fast5NPReader.BaseCalledFastq;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.JapsaException;
-import japsa.util.Logging;
 import japsa.util.net.StreamClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -65,7 +65,10 @@ import japsa.util.net.StreamClient;
  *
  */
 public class NanoporeReaderStream{
-	public String prepareIO(){
+    private static final Logger LOG = LoggerFactory.getLogger(NanoporeReaderStream.class);
+
+
+    public String prepareIO(){
 		String msg = null;
 		try{
 			sos = SequenceOutputStream.makeOutputStream(output);
@@ -90,7 +93,7 @@ public class NanoporeReaderStream{
 
 
 	public void close() throws IOException{
-		Logging.info("npReader closing");
+        LOG.info("npReader closing");
 		sos.close();
 		if (networkOS != null){
 			for (SequenceOutputStream out:networkOS)
@@ -98,7 +101,7 @@ public class NanoporeReaderStream{
 		}
 		if(dmplx!=null)
 			dmplx.close();
-		Logging.info("npReader closed");
+        LOG.info("npReader closed");
 		//done = true;		
 	}
 
@@ -119,6 +122,8 @@ public class NanoporeReaderStream{
 	public boolean doFail = false;
 	public String output = "-";
 	public String streamServers = null;
+    public boolean getTimeStamp = false;
+    private double rps = 4000.0;
 
 	
 	public String format = "fastq";
@@ -188,7 +193,9 @@ public class NanoporeReaderStream{
 		//Logging.info("Open " + fileName);
 		try{					
 			Fast5NPReader npReader = new Fast5NPReader(fileName);
-			npReader.readFastq();						
+			npReader.readFastq();
+			if (getTimeStamp)
+			    npReader.readTime();
 			npReader.close();
 
 			ArrayList<BaseCalledFastq> seqList = npReader.getFastqList();
@@ -197,7 +204,9 @@ public class NanoporeReaderStream{
 			else{
 				for (BaseCalledFastq fq:seqList){
 					if (fq.length() >= minLength){
-						fq.setName((number?(getTotalFilesNumber() *3 + fq.type()) + "_":"") + fq.getName());
+						fq.setName((number?(getTotalFilesNumber() *3 + fq.type()) + "_":"") + fq.getName() +
+                                (getTimeStamp? (" timestamp=" +(npReader.timeStamp/rps)):"")
+                        );
 						//do multiplexing here
 						if(dmplx!=null)
 							dmplx.clustering(fq);
@@ -231,7 +240,7 @@ public class NanoporeReaderStream{
 		}catch (JapsaException e){
 			throw e;
 		}catch (Exception e){
-			Logging.error("Problem with reading " + fileName + ":" + e.getMessage());
+            LOG.error("Problem with reading " + fileName + ":" + e.getMessage());
 			e.printStackTrace();
 			return false;
 		}		
@@ -252,7 +261,7 @@ public class NanoporeReaderStream{
 		if (minLength < 1)
 			minLength = 1;
 
-		Logging.info("Start reading " + folder);
+        LOG.info("Start reading " + folder);
 
 
 		//HashSet<String> filesDone = new HashSet<String>();
@@ -261,7 +270,7 @@ public class NanoporeReaderStream{
 			//Do main
 			final long now = System.currentTimeMillis();
 
-			Logging.info("Start reading  " + now );
+            LOG.info("Start reading  " + now );
 			try{
 				Files.walk(Paths.get(folder))
 				//is a file
@@ -312,7 +321,7 @@ public class NanoporeReaderStream{
 				});	
 
 			}catch(BreakException e){
-				Logging.info("Stop to read on directory " + folder);
+                LOG.info("Stop to read on directory " + folder);
 			}
 		/*******************************************************/
 			if (!realtime)
@@ -327,15 +336,15 @@ public class NanoporeReaderStream{
 			}
 
 		}//while			
-		Logging.info("EXITING");
+        LOG.info("EXITING");
 
 
 		if (stats){
-			Logging.info("Getting stats ... ");
+            LOG.info("Getting stats ... ");
 			int [] ls = lengths.toArray();
 			if (ls.length ==0){
-				Logging.info("Open " + getTotalFilesNumber() + " files");
-				Logging.info("Fould 0 reads");				
+                LOG.info("Open " + getTotalFilesNumber() + " files");
+                LOG.info("Found 0 reads");
 			}else{
 				Arrays.sort(ls);
 
@@ -359,13 +368,13 @@ public class NanoporeReaderStream{
 						quantile3rd = i;
 				}
 
-				Logging.info("Open " + getTotalFilesNumber() + " files");
-				Logging.info("Read count = " + ls.length + "(" + tempCount + " templates, " + compCount + " complements and " + twoDCount +"  2D)");
-				Logging.info("Base count = " + baseCount);		
-				Logging.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
-				Logging.info("Average read length = " + mean);
-				Logging.info("Median read length = " + median);
-				Logging.info("Quantile first = " + ls[quantile1st] + " second = " + ls[quantile2nd] + " third = " + ls[quantile3rd]);
+                LOG.info("Open " + getTotalFilesNumber() + " files");
+                LOG.info("Read count = " + ls.length + "(" + tempCount + " templates, " + compCount + " complements and " + twoDCount +"  2D)");
+                LOG.info("Base count = " + baseCount);
+                LOG.info("Longest read = " + ls[ls.length - 1] + ", shortest read = " + ls[0]);
+                LOG.info("Average read length = " + mean);
+                LOG.info("Median read length = " + median);
+                LOG.info("Quantile first = " + ls[quantile1st] + " second = " + ls[quantile2nd] + " third = " + ls[quantile3rd]);
 
 				if (qual2D.size() > 0){
 					double sumQual = 0;
@@ -379,7 +388,7 @@ public class NanoporeReaderStream{
 					double meanQual = sumQual / qual2D.size();
 					double stdQual = Math.sqrt(sumQualSq / qual2D.size() - meanQual * meanQual);
 
-					Logging.info("Ave 2D qual " +meanQual + " " + qual2D.size() + " std = " + stdQual);
+                    LOG.info("Ave 2D qual " +meanQual + " " + qual2D.size() + " std = " + stdQual);
 				}
 
 				if (qualTemp.size() > 0){
@@ -394,7 +403,7 @@ public class NanoporeReaderStream{
 					double meanQual = sumQual / qualTemp.size();
 					double stdQual = Math.sqrt(sumQualSq / qualTemp.size() - meanQual * meanQual);
 
-					Logging.info("Ave Temp qual " +meanQual + " " + qualTemp.size() + " std = " + stdQual);
+                    LOG.info("Ave Temp qual " +meanQual + " " + qualTemp.size() + " std = " + stdQual);
 				}	
 
 				if (qualComp.size() > 0){
@@ -410,7 +419,7 @@ public class NanoporeReaderStream{
 					double meanQual = sumQual / qualComp.size();
 					double stdQual = Math.sqrt(sumQualSq / qualComp.size() - meanQual * meanQual);
 
-					Logging.info("Ave Comp qual " + meanQual + " " + qualComp.size() + " std = " + stdQual);
+                    LOG.info("Ave Comp qual " + meanQual + " " + qualComp.size() + " std = " + stdQual);
 				}	
 			}
 			printToFile("stats");

@@ -31,7 +31,7 @@
  * 17 Apr 2015 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
-package japsadev.seq.nanopore;
+package japsadev.obsolete.np;
 
 import japsa.util.DynamicHistogram;
 import japsa.util.JapsaException;
@@ -41,7 +41,6 @@ import java.awt.EventQueue;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
-import javax.swing.JApplet;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -81,10 +80,9 @@ import org.jfree.data.time.TimeTableXYDataset;
  * @author minhduc
  *
  */
-@SuppressWarnings("serial")
-public class NanoporeReaderWindowApplet extends JApplet{
-	
-	//private JFrame frmNanoporeReader; //applet!!!
+public class NanoporeReaderWindow implements Runnable{
+
+	private JFrame frmNanoporeReader;
 	private int height = 50;
 	private int topR = 100, topC = 100;
 	//String downloadFolder;	
@@ -99,14 +97,8 @@ public class NanoporeReaderWindowApplet extends JApplet{
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					JFrame frame = new JFrame("Nanopore Reader");
-					frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-					NanoporeReaderWindowApplet window = new NanoporeReaderWindowApplet(new NanoporeReaderStream(),null);
-					//window.setVisible(true);
-					window.init();
-					frame.getContentPane().add(window);
-					frame.setSize(1600,600);
-					frame.setVisible(true);
+					NanoporeReaderWindow window = new NanoporeReaderWindow(new NanoporeReaderStream(),null);
+					window.frmNanoporeReader.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -118,40 +110,28 @@ public class NanoporeReaderWindowApplet extends JApplet{
 	 * Create the application.
 	 * @throws IOException 
 	 */
-	public NanoporeReaderWindowApplet(){
-		reader  = new NanoporeReaderStream();
-		dataSet = new TimeTableXYDataset();
-		
-		reader.realtime = true;
-		System.setProperty("java.awt.headless", "false");
-		reader.stats = true;//GUI implies stats
-		reader.ready = false;//wait for the command from GUI
-		
-		//setVisible(true);
-	}
-	public NanoporeReaderWindowApplet(NanoporeReaderStream r, TimeTableXYDataset dataset) throws IOException {
-		this();
+	public NanoporeReaderWindow(NanoporeReaderStream r, TimeTableXYDataset dataset) throws IOException {
 		reader = r;
 		this.dataSet = dataset;
 
-		//initialize();		
-
-		//setVisible(true);
+		initialize();		
+		//frmNanoporeReader.pack();
+		frmNanoporeReader.setVisible(true);
 	}			
 
 	/**
 	 * Initialize the contents of the frame.
 	 * @throws IOException 
 	 */
-	public void init() {		
-		System.out.println("Applet initializing");
-		
-		setSize(1600,600);
-		setBounds(topC, topR, 1238, 714);
-		getContentPane().setLayout(new BorderLayout(0, 0));
+	private void initialize() throws IOException {		
+		frmNanoporeReader = new JFrame();
+		frmNanoporeReader.setTitle("Nanopore Reader");
+		frmNanoporeReader.setBounds(topC, topR, 1238, 714);
+		frmNanoporeReader.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmNanoporeReader.getContentPane().setLayout(new BorderLayout(0, 0));
 
 		final JPanel controlPanel = new JPanel();
-		getContentPane().add(controlPanel, BorderLayout.WEST);
+		frmNanoporeReader.getContentPane().add(controlPanel, BorderLayout.WEST);
 		controlPanel.setPreferredSize(new Dimension(330, height));
 		controlPanel.setLayout(null);
 
@@ -309,10 +289,10 @@ public class NanoporeReaderWindowApplet extends JApplet{
 		controlPanel.add(formatPanel);
 
 		final JRadioButton fqRadioButton = new JRadioButton("fastq");
-		fqRadioButton.setBounds(46, 22, 62, 23);
+		fqRadioButton.setBounds(46, 22, 72, 23);
 
 		final JRadioButton faRadioButton = new JRadioButton("fasta");
-		faRadioButton.setBounds(186, 22, 62, 23);
+		faRadioButton.setBounds(186, 22, 72, 23);
 		formatPanel.setLayout(null);
 
 		final ButtonGroup formatBtGroup = new ButtonGroup();
@@ -363,7 +343,7 @@ public class NanoporeReaderWindowApplet extends JApplet{
 
 		chckReads.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e){
-				//do nothing
+				reader.doLow = (e.getStateChange() == ItemEvent.SELECTED);
 			}		
 		});
 
@@ -417,6 +397,14 @@ public class NanoporeReaderWindowApplet extends JApplet{
 			public void actionPerformed(ActionEvent e) {
 				reader.wait = false;
 
+				while (!reader.done){
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException ee) {					
+						ee.printStackTrace();
+					}
+				}
+
 				stillRun = false;
 				JOptionPane.showMessageDialog(null, "Done", "Information", JOptionPane.PLAIN_MESSAGE);
 
@@ -429,7 +417,7 @@ public class NanoporeReaderWindowApplet extends JApplet{
 
 
 		final JPanel mainPanel = new JPanel();
-		getContentPane().add(mainPanel, BorderLayout.CENTER);
+		frmNanoporeReader.getContentPane().add(mainPanel, BorderLayout.CENTER);
 		//mainPanel.setBorder(BorderFactory.createTitledBorder("Statistics"));
 		mainPanel.setLayout(null);
 
@@ -550,7 +538,7 @@ public class NanoporeReaderWindowApplet extends JApplet{
 		/////////////////////////////////////////////////////////////
 		//Histogram
 		histoLengthDataSet=new DynamicHistogram();
-		histoLengthDataSet.prepareSeries("Read Length", 500, 0, 40000);
+		histoLengthDataSet.prepareSeries("Read Length", 500, 0, 100000);
 		//histoDataset.prepareSeries("2D", 50, 0, 50000);
 		//histoDataset.prepareSeries("template", 50, 0, 50000);
 		//histoDataset.prepareSeries("complement", 50, 0, 50000);		
@@ -687,60 +675,8 @@ public class NanoporeReaderWindowApplet extends JApplet{
 
 				reader.ready = true;
 			}
-		});	
-		
-		setVisible(true);
-	}
+		});	}
 
-	public void start(){
-		System.out.println("Applet starting");
-		
-		while (!reader.ready){
-			Logging.info("NOT READY");
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {					
-				e.printStackTrace();
-			}			
-		}
-		
-		new Thread(new Runnable(){
-
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				try{
-					reader.readFast5();
-				}catch (JapsaException e){
-					System.err.println(e.getMessage());
-					e.getStackTrace();
-					interupt(e);
-				}catch (Exception e){
-					e.printStackTrace();;
-				}
-			}
-			
-		}).start();
-
-		
-		run();
-	}
-	
-	public void stop(){
-		System.out.println("Applet stopping");
-		try{
-			reader.close();
-		}catch (Exception e){
-			e.printStackTrace();
-		}
-
-	}
-	
-	public void destroy(){
-		System.out.println("Applet destroyed");
-		
-	}
-	
 	JTextField txtCompReads, txtTempReads, txt2DReads;
 	JTextField txtPFiles, txtFFiles, txtTFiles;
 	DynamicHistogram histoLengthDataSet, histoQualDataSet;
@@ -764,9 +700,9 @@ public class NanoporeReaderWindowApplet extends JApplet{
 			dataSet.add(period, reader.compCount,"complement");
 			dataSet.add(period, reader.tempCount,"template");
 
-			txtTFiles.setText(reader.getTotalFilesNumber()+"");	                
-			txtPFiles.setText(reader.getOKFilesNumber()+"");
-			txtFFiles.setText(reader.getSkippedFilesNumber()+"");
+			txtTFiles.setText(reader.fileNumber+"");	                
+			txtPFiles.setText(reader.passNumber+"");
+			txtFFiles.setText(reader.failNumber+"");
 
 			txt2DReads.setText(reader.twoDCount+"");
 			txtCompReads.setText(reader.compCount+"");

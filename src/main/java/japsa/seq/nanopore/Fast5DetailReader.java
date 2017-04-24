@@ -36,12 +36,14 @@ package japsa.seq.nanopore;
 
 import java.util.List;
 
+
 import ncsa.hdf.object.Group;
 import ncsa.hdf.object.HObject;
 import ncsa.hdf.object.h5.H5CompoundDS;
 import ncsa.hdf.object.h5.H5ScalarDS;
 import japsa.util.JapsaException;
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Read detail nanopore data (read sequence, events, alignment, models etc) from a raw
@@ -50,8 +52,10 @@ import japsa.util.Logging;
  *  
  * @author minhduc
  */
-public class Fast5DetailReader extends Fast5NPReader{	
-	static String RAW_PREFIX = "/Raw/Reads";
+public class Fast5DetailReader extends Fast5NPReader{
+    private static final Logger LOG = LoggerFactory.getLogger(Fast5DetailReader.class);
+
+    static String RAW_PREFIX = "/Raw/Reads";
 	static String CHANNEL_ID = "/UniqueGlobalKey/channel_id";
 	static String TRACKING_ID = "/UniqueGlobalKey/tracking_id";		
 
@@ -107,7 +111,7 @@ public class Fast5DetailReader extends Fast5NPReader{
 
 	public RawSignal getRawEvent() throws Exception{
 		HObject data = f5File.get(RAW_PREFIX);
-		//Logging.info("Read 1 " + (data == null));
+		//LOG.info("Read 1 " + (data == null));
 		if (data !=null){
 			Group group = (Group) data;
 			group = (Group) group.getMemberList().get(0);
@@ -119,10 +123,10 @@ public class Fast5DetailReader extends Fast5NPReader{
 				}
 			}
 			H5ScalarDS  myDat =((H5ScalarDS) group.getMemberList().get(0));			
-			//Logging.info("Read 2 " + (myDat == null));
+			//LOG.info("Read 2 " + (myDat == null));
 			if (myDat != null){
 				short [] rawEvent = (short[])myDat.getData();
-				//Logging.info("Read 3 " + (rawEvent == null));
+				//LOG.info("Read 3 " + (rawEvent == null));
 				RawSignal rawSignal  = new RawSignal(rawEvent);
 				return rawSignal;
 			}
@@ -156,20 +160,20 @@ public class Fast5DetailReader extends Fast5NPReader{
 			}else if (member instanceof H5CompoundDS){ 
 				String fullName = member.getFullName();
 
-				//Logging.info(member.getClass() +" ");				
+				//LOG.info(member.getClass() +" ");
 				@SuppressWarnings("unchecked")
 				List<Object> dat = (List<Object>)  (((H5CompoundDS) member).getData());
 				if (dat != null){
 					/********************************************************/
 					if (fullName.startsWith("/Analyses/EventDetection_000/Reads/") && fullName.endsWith("Events") ){
-						Logging.info("Read " + fullName);
+						LOG.info("Read " + fullName);
 						detectedEvents = new DetectionEvents();						
 						detectedEvents.start =  (long[]) dat.get(0);
 						detectedEvents.length =  (long[]) dat.get(1);
 						detectedEvents.mean =  (double[]) dat.get(2);						
 						detectedEvents.stdv =  (double[]) dat.get(3);							
 					}else if (fullName.endsWith("BaseCalled_template/Events")){
-						Logging.info("Read " + fullName);
+						LOG.info("Read " + fullName);
 						bcTempEvents = new BaseCallEvents();
 						bcTempEvents.mean  =  (double[]) dat.get(0);
 						bcTempEvents.start =  (double[]) dat.get(1);
@@ -187,7 +191,7 @@ public class Fast5DetailReader extends Fast5NPReader{
 						bcTempEvents.pG = (float[]) dat.get(12);
 						bcTempEvents.pT = (float[]) dat.get(13);
 					}else if (fullName.endsWith("BaseCalled_complement/Events")){
-						Logging.info("Read " + fullName);
+						LOG.info("Read " + fullName);
 						bcCompEvents = new BaseCallEvents();
 						bcCompEvents.mean  =  (double[]) dat.get(0);
 						bcCompEvents.start =  (double[]) dat.get(1);
@@ -205,7 +209,7 @@ public class Fast5DetailReader extends Fast5NPReader{
 						bcCompEvents.pG = (float[]) dat.get(12);
 						bcCompEvents.pT = (float[]) dat.get(13);						
 					}else if (fullName.endsWith("BaseCalled_complement/Model")){
-						Logging.info("Read " + fullName);
+						LOG.info("Read " + fullName);
 						bcCompModel = new BaseCallModel();
 						bcCompModel.kmer = (String[]) dat.get(0);
 						//bcCompModel.variant = (double[]) dat.get(1);
@@ -215,7 +219,7 @@ public class Fast5DetailReader extends Fast5NPReader{
 						bcCompModel.sdStdv = (double[]) dat.get(5);						
 						//bcCompModel.weigth = (double[]) dat.get(6);
 					}else if (fullName.endsWith("BaseCalled_template/Model")){
-						Logging.info("Read " + fullName);
+						LOG.info("Read " + fullName);
 						bcTempModel = new BaseCallModel();
 						bcTempModel.kmer = (String[]) dat.get(0);
 						//bcTempModel.variant = (double[]) dat.get(1);
@@ -225,13 +229,13 @@ public class Fast5DetailReader extends Fast5NPReader{
 						bcTempModel.sdStdv = (double[]) dat.get(5);						
 						//bcTempModel.weigth = (double[]) dat.get(6);
 					}else if (fullName.endsWith("HairpinAlign/Alignment")){
-						Logging.info("Read " + fullName);
+						LOG.info("Read " + fullName);
 						bcAlignmentHairpin = new BaseCallAlignmentHairpin();
 						bcAlignmentHairpin.template =  (long[]) dat.get(0);
 						bcAlignmentHairpin.complement =  (long[]) dat.get(1);						
 					}else 	
 						if (fullName.endsWith("BaseCalled_2D/Alignment")){
-							Logging.info("Read " + fullName);
+							LOG.info("Read " + fullName);
 							bcAlignment2D = new BaseCallAlignment2D();
 							bcAlignment2D.template = (long[]) dat.get(0);
 							bcAlignment2D.complement = (long[]) dat.get(1);

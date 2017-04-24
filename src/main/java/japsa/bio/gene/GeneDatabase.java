@@ -38,25 +38,27 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.seq.Alphabet.DNA;
 import japsa.seq.SequenceOutputStream;
-import japsa.util.Logging;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
 
-public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
-	ArrayList<GeneFamily> geneFamilies;
+public class GeneDatabase extends ArrayList<GeneDatabase.GeneFamily>{
+    private static final Logger LOG = LoggerFactory.getLogger(GeneDatabase.class);
 	String dbID = "JSA";	
 	
 	public GeneDatabase(){
-		geneFamilies = new ArrayList<GeneFamily>();
+	    super();
 	}	
 	
 	public String addNewFamily(Sequence seq){
 		GeneDatabase.GeneFamily newFam = new GeneDatabase.GeneFamily(size());
 		String geneID = newFam.addSequence(seq);
-		geneFamilies.add(newFam);
+		add(newFam);
 		return geneID;
 	}
 	
@@ -68,7 +70,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 	 */
 	public void write2File(String fileName, boolean includeAlleles) throws IOException{
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(fileName);
-		for (GeneDatabase.GeneFamily family:geneFamilies){
+		for (GeneDatabase.GeneFamily family:this){
 			Sequence rep = family.represetationSequence();			
 			rep.writeFasta(sos);
 			if (includeAlleles){
@@ -98,13 +100,13 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 			if (toks.length == 2){
 				//rep
 				GeneDatabase.GeneFamily newFam = new GeneDatabase.GeneFamily(db.size());
-				db.geneFamilies.add(newFam);				
+				db.add(newFam);
 			}else if (toks.length == 3){
 				//a gene
 				GeneDatabase.GeneFamily fam = db.getFamily(Integer.parseInt(toks[1]));
-				fam.geneAlleles.add(seq);
+				fam.add(seq);
 			}else{
-				Logging.error("Unknown sequence " + seq.getName());
+				LOG.error("Unknown sequence " + seq.getName());
 			}
 		}		
 		reader.close();
@@ -131,7 +133,7 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 			//doing nothing
 		}
 		
-		return geneFamilies.get(fID);
+		return get(fID);
 	}
 	
 	/**
@@ -141,46 +143,26 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 	 */
 	
 	public GeneDatabase.GeneFamily getFamily(int famID){
-		if (famID >= geneFamilies.size() || famID < 0){
+	    //TODO: Check if really need to validate famID
+		if (famID >= size() || famID < 0){
 			return null;
 		}
 		
-		return geneFamilies.get(famID);
+		return get(famID);
 	}
-	
-	
-	/**
-	 * Return the number of families in the database
-	 * @return
-	 */
-	public int size(){
-		return geneFamilies.size();
-	}
-	
 
-	/* (non-Javadoc)
-	 * @see java.lang.Iterable#iterator()
-	 */
-	@Override
-	public Iterator<GeneFamily> iterator() {
-		return geneFamilies.iterator();
-
-	}
 	/////////////////////////////////////////////////////////////////////////
 	
-	public static class GeneFamily implements Iterable<Sequence>{
+	public static class GeneFamily extends ArrayList<Sequence>{
 		private final int fID;
-		private ArrayList<Sequence> geneAlleles;//known instance of this family
-		//Sequence rep = null;//The representation of this gene family
-		
+
 		int repIndex = -1;		
 		String desc = "";
 		
 		public GeneFamily(int id){
+		    super();
 			fID = id;
-			geneAlleles = new ArrayList<Sequence>();
 		}
-
 
 		/**
 		 * @return the desc
@@ -203,14 +185,14 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 		}
 
 		public Sequence represetationSequence(){
-			Sequence rep = geneAlleles.get(repIndex).clone();
-			rep.setDesc(desc + ";index=" +repIndex);
+			Sequence rep = get(repIndex).clone();
+			rep.setDesc(desc + ";index=" +repIndex + ";size=" + size());
 			rep.setName(familyID());
 			return rep;
 		}
 
 		private void updateRep(int newIndex){
-			if (repIndex < 0 || geneAlleles.get(newIndex).length() > geneAlleles.get(repIndex).length()){
+			if (repIndex < 0 || get(newIndex).length() > get(repIndex).length()){
 				repIndex = newIndex;
 			}
 		}
@@ -223,8 +205,9 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 		 */
 		public String addSequence(Sequence seq){
 			//This allele already in the database
-			for (int i = 0; i < geneAlleles.size(); i++){
-				Sequence eSeq = geneAlleles.get(i);
+            //TODO: Need to see if this feature is really needed
+			for (int i = 0; i < size(); i++){
+				Sequence eSeq = get(i);
 				if (eSeq.match(seq) == 0)
 					return eSeq.getName();
 				if (eSeq.match(DNA.complement(seq)) == 0)
@@ -233,19 +216,10 @@ public class GeneDatabase implements Iterable<GeneDatabase.GeneFamily>{
 
 			Sequence nSeq = seq.clone();
 			nSeq.setDesc(nSeq.getName() + " " + nSeq.getDesc());			
-			nSeq.setName(familyID() + "_" + (geneAlleles.size()));			
-			geneAlleles.add(nSeq);
-			updateRep(geneAlleles.size() - 1);			
+			nSeq.setName(familyID() + "_" + (size()));
+			add(nSeq);
+			updateRep(size() - 1);
 			return nSeq.getName();			
 		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Iterable#iterator()
-		 */
-		@Override
-		public Iterator<Sequence> iterator() {
-			return geneAlleles.iterator();
-		}
 	}
-
 }

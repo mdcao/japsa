@@ -39,8 +39,9 @@ import japsa.seq.nanopore.NanoporeReaderWindowFX;
 import javafx.application.Application;
 import japsa.util.CommandLine;
 import japsa.util.JapsaException;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -51,7 +52,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Extract and stream Oxford Nanopore sequencing data in real-time. Demultiplexe included.",
 	seeAlso = "jsa.np.filter, jsa.util.streamServer, jsa.util.streamClient,jsa.np.rtSpeciesTyping, jsa.np.rtStrainTyping, jsa.np.rtResistGenes"
 	)
-public class NanoporeReaderCmd extends CommandLine{	
+public class NanoporeReaderCmd extends CommandLine{
+    private static final Logger LOG = LoggerFactory.getLogger(NanoporeReaderCmd.class);
 	public NanoporeReaderCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -69,7 +71,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		addInt("minLength", 1,"Minimum read length");
 		addBoolean("number", false,"Add a unique number to read name");
 		addBoolean("stats", false,"Generate a report of read statistics");
-		//addBoolean("time", false,"Extract the sequencing time of each read -- only work with Metrichor > 1.12");		
+		addBoolean("time", false,"Extract the sequencing time of each read -- experimental");
 		addBoolean("exhaustive", false,"Whether to traverse the input directory exhaustively (albacore) or lazily (metrichor)");
 		addString("barcode", null,"The file containing all barcode sequences for demultiplexing.");
 
@@ -86,7 +88,7 @@ public class NanoporeReaderCmd extends CommandLine{
 		int minLength  = cmdLine.getIntVal("minLength");
 		boolean stats  = cmdLine.getBooleanVal("stats");
 		boolean number  = cmdLine.getBooleanVal("number");
-		//boolean time  = cmdLine.getBooleanVal("time");
+		boolean time  = cmdLine.getBooleanVal("time");
 		boolean GUI  = cmdLine.getBooleanVal("GUI");
 		boolean realtime  = cmdLine.getBooleanVal("realtime");
 		boolean fail  = cmdLine.getBooleanVal("fail");
@@ -98,12 +100,14 @@ public class NanoporeReaderCmd extends CommandLine{
 		int interval = 30;
 
 		if (!GUI && folder == null){// && f5list == null){
-			Logging.exit("Download folder need to be specified", 1);
+			System.err.println("Download folder need to be specified\n\n" +
+			    cmdLine.usageString());
+			System.exit(1);
 		}
 
 		NanoporeReaderStream reader = new NanoporeReaderStream();
 
-		//reader.getTime = time;
+		reader.getTimeStamp = time;
 		reader.stats = stats;
 		reader.number = number;
 		reader.minLength = minLength;
@@ -137,10 +141,11 @@ public class NanoporeReaderCmd extends CommandLine{
 		}else{
 			String msg = reader.prepareIO();
 			if (msg != null){
-				Logging.exit(msg, 1);
+			    LOG.error(msg);
+				System.exit(1);
 			}
 			try{
-				Logging.info("Start reading" );
+				LOG.info("Start reading" );
 				reader.readFast5();
 			}catch (JapsaException e){
 				System.err.println(e.getMessage());

@@ -36,7 +36,8 @@
 package japsa.seq;
 
 
-import japsa.seq.Alphabet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -56,7 +57,7 @@ import java.util.zip.GZIPInputStream;
  *
  */
 public class FastaReader extends SequenceReader{
-	static int INI_SEQ_SIZE = 8191;//1 << 20-1;
+    static int INI_SEQ_SIZE = 8191;//1 << 20-1;
 	//private int seqNo = 1;//keep tract of sequence number	
 
 	//Temporary byte array for the sequence
@@ -94,7 +95,7 @@ public class FastaReader extends SequenceReader{
 	/**
 	 * Read the first sequence from an input stream
 	 * @param ins
-	 * @param dna
+	 * @param alphabet
 	 * @return
 	 * @throws IOException
 	 */
@@ -111,8 +112,7 @@ public class FastaReader extends SequenceReader{
 	 * Precondition:it is a fasta file. If some invalid character exists, an 
 	 * IOException will be thrown.
 	 * 
-	 * @param in
-	 * @param dna: the dna, if not specified, the default is DNA16
+	 * @param alphabet: the alphabet
 	 * @return
 	 * @throws IOException
 	 */
@@ -179,14 +179,7 @@ public class FastaReader extends SequenceReader{
 		}
 	}
 	
-	/**
-	 * This method is created as for reusable
-	 * @param dna
-	 * @param byteArray
-	 * @param length
-	 * @param name
-	 * @return
-	 */
+
 	static private Sequence makeSequence
 	  (Alphabet alphabet, byte[] byteArray, int length, String name){
 		String[] toks = name.split("\\s",2);
@@ -307,8 +300,6 @@ public class FastaReader extends SequenceReader{
 		 * Precondition:it is a fasta file. If some invalid character exists, an 
 		 * IOException will be thrown.
 		 * 
-		 * @param in
-		 * @param dna: the dna, if not specified, the default is DNA16
 		 * @return
 		 * @throws IOException
 		 */

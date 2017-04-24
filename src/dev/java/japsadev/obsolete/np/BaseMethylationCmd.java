@@ -1,4 +1,4 @@
-package japsadev.bio.meth;
+package japsadev.obsolete.np;
 
 import japsa.util.CommandLine;
 import japsa.util.JapsaException;

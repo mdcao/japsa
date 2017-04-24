@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import japsa.bio.BuildSequenceGroupDatabase;
 import japsa.seq.Alphabet;
 import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
@@ -105,7 +106,7 @@ public class ExtractRefSeqGenes  extends CommandLine{
 			prefix = System.currentTimeMillis() + "";
 
 		double thresholdOption = cmdLine.getDoubleVal("threshold");
-		BuildGeneDatabase.ratio = thresholdOption;
+		BuildSequenceGroupDatabase.ratio = thresholdOption;
 
 		geneOS = SequenceOutputStream.makeOutputStream(gene);
 		processDB(db, annoType, familyOption, alleleOption, outOption, prefix);
@@ -120,7 +121,7 @@ public class ExtractRefSeqGenes  extends CommandLine{
 		HashSet<String> organismSet = new HashSet<String>();
 		HashSet<String> stSet = new HashSet<String>();
 
-		BuildGeneDatabase geneDB = new BuildGeneDatabase(prefix);
+		BuildSequenceGroupDatabase geneDB = new BuildSequenceGroupDatabase(prefix);
 		SequenceOutputStream sos =  SequenceOutputStream.makeOutputStream(outOption);
 
 		String line = "";

@@ -35,7 +35,8 @@ package japsa.util.net;
 
 
 import japsa.tools.util.StreamServerCmd;
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -48,6 +49,7 @@ import java.util.ArrayList;
  *
  */
 public class StreamClient implements Closeable{
+    private static final Logger LOG = LoggerFactory.getLogger(StreamClient.class);
 	private ArrayList<Socket> sockets;
 
 	public StreamClient(String serverList){
@@ -58,14 +60,14 @@ public class StreamClient implements Closeable{
 			int portNumber = StreamServerCmd.DEFAULT_PORT;
 			if (toks.length > 1)
 				portNumber = Integer.parseInt(toks[1]);			
-			Logging.info("Trying to connect " + toks[0] + ":" + portNumber);			
+			LOG.info("Trying to connect " + toks[0] + ":" + portNumber);
 			try {
 				Socket socket = new Socket(toks[0], portNumber);
 				sockets.add(socket);
-				Logging.info("Connection to " + toks[0] + ":" + portNumber + " established");
+				LOG.info("Connection to " + toks[0] + ":" + portNumber + " established");
 			} catch (UnknownHostException e) {
 				//e.printStackTrace();
-				Logging.warn("Could not connect to " + toks[0] + ":" + portNumber);
+				LOG.warn("Could not connect to " + toks[0] + ":" + portNumber);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -84,7 +86,7 @@ public class StreamClient implements Closeable{
 	public void close() throws IOException {
 		for (Socket socket:sockets){
 			socket.close();
-			Logging.info("Connection to " + socket.getRemoteSocketAddress() + " closed");
+			LOG.info("Connection to " + socket.getRemoteSocketAddress() + " closed");
 		}
 	}	
 

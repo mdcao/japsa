@@ -97,7 +97,7 @@ public class Demultiplexer {
 		if(!toPrint)
 			return;
 		try{
-			for(int i=0;i<nSamples;i++){		
+			for(int i=0;i<=nSamples;i++){		
 				streamToFile[i].close();
 			}
 		}catch(IOException e){

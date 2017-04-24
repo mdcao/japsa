@@ -88,7 +88,7 @@ public class DevDeploy {
 		tools.add(new MethylationAnalysisCmd());
 		tools.add(new MethylationAnalysis2Cmd());
 		tools.add(new PlasmaAnalysisCrossCorrelationCmd());
-		tools.add(new RemoveNsCmd());
+		//tools.add(new RemoveNsCmd());
 		tools.add(new XMDistance2Cmd());
 		tools.add(new BuildMLSTTreeCmd());
 
@@ -107,21 +107,19 @@ public class DevDeploy {
 		tools.add(new VNTRSelectCmd());
 		tools.add(new BarCodeAnalysisCmd());
 		tools.add(new NanoporeBarcodeCmd());
-		tools.add(new BarCodeNPScarfCmd());
-		tools.add(new BarCodeNPScarfCmd2());
 		tools.add(new NewScarfCmd());
 
 		tools.add(new GapCloserCmd());
 
 		tools.add(new SelectReadsCmd());
 		tools.add(new StructuralVariationCmd());
-		tools.add(new PhageAnalysisCmd());		
+		tools.add(new PhageAnalysisCmd());
+        tools.add(new PhageAnalysis2Cmd());
 		tools.add(new ConsensusGenerateCmd());
 		
-		tools.add(new NanoporeReaderCmd());
 		tools.add(new VNTRClusteringCmd());
 		//new 
-		//tools.add(new VNTRClusteringCmd());
+		//tools.add(new PhageAnalysis2Cmd());
 		//
 
 	}

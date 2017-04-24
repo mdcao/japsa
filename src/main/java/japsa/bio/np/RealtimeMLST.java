@@ -44,13 +44,14 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.HTSUtilities;
-import japsa.util.Logging;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,7 +67,8 @@ import java.util.concurrent.TimeUnit;
  * @author minhduc
  *
  */
-public class RealtimeMLST{	
+public class RealtimeMLST{
+    private static final Logger LOG = LoggerFactory.getLogger(RealtimeMLST.class);
 	/////////////////////////////////////////////////////////////////////////////	
 	private double minQual = 0;
 	private boolean twoDOnly = false;
@@ -115,7 +117,7 @@ public class RealtimeMLST{
 	}
 	/**
 	 * @param bamFile
-	 * @param geneFile
+	 * @param top
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
@@ -173,7 +175,7 @@ public class RealtimeMLST{
 			Sequence readSeq = HTSUtilities.spanningSequence(record, readSequence, refLength, 0);
 
 			if (readSeq == null){
-				Logging.warn("Read sequence is NULL sequence ");
+				LOG.warn("Read sequence is NULL sequence ");
 			}else{
 				//MLFSMThread mlFSM = new MLFSMThread(this.typer, record.getReferenceIndex(), readSeq);
 				//executor.execute(mlFSM);
@@ -256,7 +258,7 @@ public class RealtimeMLST{
 				for (int i = 0; i < typing.alignmentLists.length;i++){
 					Sequence consensus = ErrorCorrection.consensusSequence(typing.alignmentLists[i], prefix + mlstScheme.getGeneName(i) + "kalign" + count, "kalign");
 					if (consensus == null){
-						Logging.warn("No read found for " + mlstScheme.getGeneName(i));
+						LOG.warn("No read found for " + mlstScheme.getGeneName(i));
 						continue;
 					}
 
@@ -310,7 +312,7 @@ public class RealtimeMLST{
 		 */
 		@Override
 		public void run() {
-			Logging.info("Running thread " + geneIndex + " on " + readSeq.getName());
+			LOG.info("Running thread " + geneIndex + " on " + readSeq.getName());
 			ArrayList<Sequence> alleles = typer.mlstScheme.alleles(geneIndex);
 			int numAlleles = alleles.size();
 			double [] myScore = new double[numAlleles];
@@ -335,13 +337,13 @@ public class RealtimeMLST{
 					//}
 					cost = retState.myCost;					
 					int emitCount = tsm.updateCount(retState);
-					Logging.info("Iter " + c + " : " + emitCount + " states and " + cost + " bits " + readSeq.length() + "bp " + readSeq.getName() + " by " + seq.getName());
+					LOG.info("Iter " + c + " : " + emitCount + " states and " + cost + " bits " + readSeq.length() + "bp " + readSeq.getName() + " by " + seq.getName());
 					tsm.reEstimate();	
 				}//for (iteration)
-				//Logging.info(" Saving " + (readSeq.length() * 2 - cost) + " on " + readSeq.getName() + " by " + seq.getName());						
+				//LOG.info(" Saving " + (readSeq.length() * 2 - cost) + " on " + readSeq.getName() + " by " + seq.getName());
 				//if (cost < readSeq.length() * 2){
 				myScore[x] = (readSeq.length() * 2 - cost);
-				Logging.info("Score for " + seq.getName() + " " + myScore[x]);
+				LOG.info("Score for " + seq.getName() + " " + myScore[x]);
 				//}else
 				//	myScore[x] = 0;
 			}//for
@@ -350,7 +352,7 @@ public class RealtimeMLST{
 					typer.typerScoreMatrix[geneIndex][x] = myScore[x];
 				}
 			}
-			Logging.info("Done thread " + geneIndex + " on " + readSeq.getName());
+			LOG.info("Done thread " + geneIndex + " on " + readSeq.getName());
 		}//run		
 	}
 }

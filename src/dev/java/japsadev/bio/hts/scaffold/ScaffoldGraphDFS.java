@@ -172,7 +172,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			if (line.startsWith(">"))
 				break;
 			String [] toks = line.trim().split("\t");
-			Contig ctg = getSPadesContig(toks[0]+"_"); //get the contig from its shorten name
+			Contig ctg = getSPadesContig(toks[0]); //get the contig from its shorten name
 			if(ctg != null){
 				int start = Integer.parseInt(toks[3]),
 					end = Integer.parseInt(toks[4]);
@@ -202,14 +202,14 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 	 */
 	@Override
 	public synchronized void connectBridges(){
-		System.out.println("List of all bridges: ");
-		for(Contig ctg:contigs){
-			ArrayList<ContigBridge> brgList = getListOfBridgesFromContig(ctg);
-			System.out.print(ctg.getName() + " roots for " + brgList.size() + " bridges: ");
-			for(ContigBridge brg:brgList)
-				System.out.print(brg.hashKey + " ; ");
-			System.out.println();
-		}
+//		System.out.println("List of all bridges: ");
+//		for(Contig ctg:contigs){
+//			ArrayList<ContigBridge> brgList = getListOfBridgesFromContig(ctg);
+//			System.out.print(ctg.getName() + " roots for " + brgList.size() + " bridges: ");
+//			for(ContigBridge brg:brgList)
+//				System.out.print(brg.hashKey + " ; ");
+//			System.out.println();
+//		}
 		// Start scaffolding
 		if(verbose) {
 			System.out.println("Starting scaffolding.......");

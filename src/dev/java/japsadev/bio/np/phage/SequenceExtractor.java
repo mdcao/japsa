@@ -101,8 +101,8 @@ public class SequenceExtractor {
 						"-L0",
 						"-a",
 						"-Y",
-//						"-K",
-//						"20000",
+						"-K",
+						"20000",
 						plasmidFile,
 						"-"
 						).
@@ -122,8 +122,8 @@ public class SequenceExtractor {
 						"-L0",
 						"-a",
 						"-Y",
-//						"-K",
-//						"20000",
+						"-K",
+						"20000",
 						plasmidFile,
 						inFile
 						);
@@ -154,7 +154,7 @@ public class SequenceExtractor {
 			//not the first occurrance				
 			if (!currentReadName.equals("") && !currentReadName.equals(currentRecord.getReadName())) {	
 				if(longestLeftFlankAlignment == 0 || longestRightFlankAlignment == 0 || start>=end){
-					//System.out.println("Not applicable! Smt shjtty on read " + prevRecord.getReadName() + " length=
+					//System.out.println("Not applicable! Smt shjtt on read " + prevRecord.getReadName() + " length=
 					// " +	 "" + prevRecord.getReadLength());
 				}else{
 					String readSub = trim?prevRecord.getReadString().substring(start+FLANKING,end-FLANKING)

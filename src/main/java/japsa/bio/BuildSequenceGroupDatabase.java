@@ -1,38 +1,52 @@
-/*****************************************************************************
- * Copyright (c) Minh Duc Cao, Monash Uni & UQ, All rights reserved.         *
- *                                                                           *
- * Redistribution and use in source and binary forms, with or without        *
- * modification, are permitted provided that the following conditions        *
- * are met:                                                                  * 
- *                                                                           *
- * 1. Redistributions of source code must retain the above copyright notice, *
- *    this list of conditions and the following disclaimer.                  *
- * 2. Redistributions in binary form must reproduce the above copyright      *
- *    notice, this list of conditions and the following disclaimer in the    *
- *    documentation and/or other materials provided with the distribution.   *
- * 3. Neither the names of the institutions nor the names of the contributors*
- *    may be used to endorse or promote products derived from this software  *
- *    without specific prior written permission.                             *
- *                                                                           *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS   *
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, *
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR    *
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR         *
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,     *
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,       *
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR        *
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF    *
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING      *
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS        *
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
- ****************************************************************************/
+/*
+ * Copyright (c) 2017  Minh Duc Cao (minhduc.cao@gmail.com).
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the names of the institutions nor the names of the contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /**************************     REVISION HISTORY    **************************
  * 07/09/2014 - Minh Duc Cao: Created                                        
  *  
  ****************************************************************************/
 
-package japsa.tools.seq;
+package japsa.bio;
+
+
+
+import japsa.bio.gene.GeneDatabase;
+import japsa.seq.JapsaAnnotation;
+import japsa.seq.JapsaFeature;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
+import japsa.seq.Alphabet.DNA;
+import japsa.util.HTSUtilities;
+//import japsa.util.JapsaTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -47,17 +61,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-
-import japsa.bio.gene.GeneDatabase;
-import japsa.seq.JapsaAnnotation;
-import japsa.seq.JapsaFeature;
-import japsa.seq.Sequence;
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.seq.Alphabet.DNA;
-import japsa.util.HTSUtilities; 
-import japsa.util.JapsaTimer;
-import japsa.util.Logging;
+import java.util.Map;
 
 /**
  * Implement a database of genes
@@ -66,17 +70,16 @@ import japsa.util.Logging;
  *
  */
 
-public class BuildGeneDatabase {
-	//ArrayList<GeneDatabase.GeneFamily> geneFamilies;//Array list of gene family, each is a list of gene alleles
+public class BuildSequenceGroupDatabase {
+    private static final Logger LOG = LoggerFactory.getLogger(BuildSequenceGroupDatabase.class);
 	public GeneDatabase geneDatabase;
 
 	String prefix;
-
 	String fFile;
 	String gFile;
 	String bFile;
 
-	public BuildGeneDatabase(String p) throws IOException{
+	public BuildSequenceGroupDatabase(String p) throws IOException{
 		//geneFamilies = new ArrayList<GeneDatabase.GeneFamily>();
 		geneDatabase = new  GeneDatabase();
 		prefix = p;
@@ -111,7 +114,7 @@ public class BuildGeneDatabase {
 	}	
 
 	public void cleanUp() throws IOException, InterruptedException{
-		Logging.info("rm -f "+ prefix +"*");
+		LOG.info("rm -f "+ prefix +"*");
 		Process process = Runtime.getRuntime().exec("rm -f "+ prefix +"*");
 		process.waitFor();
 	}
@@ -119,23 +122,26 @@ public class BuildGeneDatabase {
 	/**
 	 * Add a collection of genes to the database as a batch
 	 * 
-	 * @param seqs
-	 * @param checkGeneID
-	 * @return
+	 * @param seqs: new list of sequences to be added
+	 * @param checkGeneID: insert based on geneID first
+	 * @return A map of what sequences were inserted to what
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public HashMap<String, String> addGeneMap(final HashMap<String, Sequence> seqs, boolean checkGeneID) throws IOException, InterruptedException{
+	public HashMap<String, String> addGeneMap(final Map<String, Sequence> seqs, boolean checkGeneID)
+            throws IOException, InterruptedException{
 		HashMap<String, String>  strMap =  new HashMap<String, String> ();
 
 		//0: initialise grouping within the new sequences
 		HashMap<String, ArrayList<String>> setMap = new HashMap<String, ArrayList<String>>();
 		for (Sequence seq:seqs.values()){
+		    //tSet: set of sequences belong to a group. Potentially, every sequence makes up one group
 			ArrayList<String> tSet =  new ArrayList<String>();
 			tSet.add(seq.getName());
 			setMap.put(seq.getName(), tSet);
-		}		
-		Logging.info("Total " + seqs.size() + " sequences");
+		}
+		//note: setMap: maps each set to an ID (of the first sequence)
+        LOG.info("Total " + seqs.size() + " sequences");
 		//0.5 Merge based on annotation
 		if (checkGeneID){
 			HashMap<String, ArrayList<String>> annoMap = new HashMap<String, ArrayList<String>>();
@@ -196,11 +202,11 @@ public class BuildGeneDatabase {
 					}
 					list.add(seq.getName());
 				}else{
-					//Logging.info("NOT found annoID " + seq.getName());
+					//LOG.info("NOT found annoID " + seq.getName());
 				}
 			}//for
 
-			Logging.info(" Step 0.5  " + annoMap.size() + " from " + getIntrisciID);
+            LOG.info(" Step 0.5  " + annoMap.size() + " from " + getIntrisciID);
 			for (String annoID:annoMap.keySet()){
 				ArrayList<String> list = annoMap.get(annoID);
 				String firstName = list.get(0);
@@ -213,17 +219,19 @@ public class BuildGeneDatabase {
 				}					
 			}//for
 		}
+
 		boolean merge = true;
 		int iteration = 0;
 		while (merge){
 			//1. Group these sequences first
-			Logging.info(" --Start of " + iteration + "  " + new Date());
+            LOG.info(" --Start of " + iteration + "  " + new Date());
 			merge = false;
 			iteration ++;
 			SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(gFile);			
-			Logging.info("Iteration " + iteration + " size = " + setMap.size() + "  " + new Date());
+			LOG.info("Iteration " + iteration + " size = " + setMap.size() + "  " + new Date());
 			int countI = 0;
 
+			//write the reps of temp groups to file anc cosider them as `reads' as well as refs
 			for (String key:setMap.keySet()){
 				ArrayList<String> tSet = setMap.get(key);
 				if (tSet.get(0) == key){
@@ -233,9 +241,10 @@ public class BuildGeneDatabase {
 			}
 			sos.close();
 
-			Logging.info("Iteration " + iteration + " of " + countI + " sequences " + new Date());
-			JapsaTimer.systemInfo();
+			LOG.info("Iteration " + iteration + " of " + countI + " sequences " + new Date());
+			//JapsaTimer.systemInfo();
 
+            //TODO: 1. think of a way to perform alignment `in memory' instead of write to bwa (may be use jalign)
 			Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA2.sh");
 			process.waitFor();
 
@@ -257,13 +266,14 @@ public class BuildGeneDatabase {
 				ArrayList<String> refSet = setMap.get(refName);
 
 				if (readSet == refSet){
-					//these two have been in a group
+					//these two have been from group
 					continue;
 				}
 
 				Sequence readSeq = seqs.get(readName);
 				Sequence refSeq = seqs.get(refName);
-				
+
+				//now we find the respresentations from groups are similar, and hence join two groups together
 				if (isSimilar(refSeq, readSeq, sam)){
 					merge = true;
 					refSet.addAll(readSet);
@@ -275,20 +285,33 @@ public class BuildGeneDatabase {
 			}
 			samIter.close();
 			samReader.close();
-			JapsaTimer.systemInfo();
+			//JapsaTimer.systemInfo();
 		}
 
-		Logging.info(" 2 Grouping " + geneDatabase.size());
-		JapsaTimer.systemInfo();
+		LOG.info(" 2 Grouping " + geneDatabase.size());
+		//JapsaTimer.systemInfo();
 
-		//2.Try to add groups whose family is already in
+		//2.Try to add to the existing groups. Align the rep from each group to each of the family rep
+        //if match, add the whole group to the family
 		int G = 0, GG = 0;
 		if (geneDatabase.size() > 0){			
-			geneDatabase.write2File(fFile, false);
+			//geneDatabase.write2File(fFile, false);
+
+			//creat a map of current reps
+            SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(fFile);
+            HashMap<String, Sequence> repMap = new HashMap<String, Sequence>();
+            for (GeneDatabase.GeneFamily family:geneDatabase){
+                Sequence rep = family.represetationSequence();
+                repMap.put(rep.getName(),rep);
+                rep.writeFasta(sos);
+            }
+            sos.close();
+
 
 			//Run bwa
-			//Logging.info("Running bwa for " + seq.getName() + " " + geneFamilies.size() + " family");
-			Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA.sh");
+			//LOG.info("Running bwa for " + seq.getName() + " " + geneFamilies.size() + " family");
+            //TODO 2: Read this directly from stdout of bwa
+           	Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA.sh");
 			process.waitFor();
 
 			//Read the sam file
@@ -310,25 +333,26 @@ public class BuildGeneDatabase {
 
 				Sequence readSeq = seqs.get(readName);
 				if (readSeq == null){
-					Logging.error("ERROR 4: sequence " + readName + " not found!");
+					LOG.error("ERROR 4: sequence " + readName + " not found!");
 				}
 				String refName = sam.getReferenceName();
 				GeneDatabase.GeneFamily family = geneDatabase.getFamily(refName);
 				if (family == null){
-					Logging.error("ERROR 5: family " + refName + " not found!");
+					LOG.error("ERROR 5: family " + refName + " not found!");
 					continue;
 				}
-				Sequence refSeq = family.represetationSequence();
-				if (refSeq == null){
-					Logging.error("ERROR 6: rep for family " + refName + " not found!");
-				}
-				
-				if (isSimilar(refSeq, readSeq, sam)){
-					ArrayList<String> readSet = setMap.get(readName);
 
+				Sequence refSeq = repMap.get(refName);
+				if (refSeq == null){
+					LOG.error("ERROR 6: rep for family " + refName + " not found!");
+				}
+
+				if (isSimilar(refSeq, readSeq, sam)){
+				    //asign all reads in this set to the family
+					ArrayList<String> readSet = setMap.get(readName);
 					for (String key:readSet){
 						//if (strMap.containsKey(key)){
-						//	Logging.error("ERROR 1 : " + key);
+						//	LOG.error("ERROR 1 : " + key);
 						//}
 						Sequence keySeq = seqs.get(key);
 						geneID = family.addSequence(keySeq);
@@ -337,28 +361,29 @@ public class BuildGeneDatabase {
 					}
 					readSet.clear();
 				}
-				//Logging.info(" ADD a G " + G + " " + (new Date()));
+				//LOG.info(" ADD a G " + G + " " + (new Date()));
 			}
 			samIter.close();
 			samReader.close();
 		}
 
 
-		Logging.info(" 3 Grouping " + geneDatabase.size() + " " + seqs.size());
-		JapsaTimer.systemInfo();
+		LOG.info(" 3 Grouping " + geneDatabase.size() + " " + seqs.size());
+		//JapsaTimer.systemInfo();
 
+        //IF there are any groups left, add each of them as a family
 		for (Sequence seq:seqs.values()){
 			String seqName = seq.getName();
 			ArrayList<String> tSet =  setMap.get(seqName);
 			if (tSet.isEmpty()){
 				if (!strMap.containsKey(seqName)){
-					Logging.error("ERROR 2 : " + seqName);
+                    LOG.error("ERROR 2 : " + seqName);
 				}
 				continue;//added
 			}
 			//tSet is not empty
 			GeneDatabase.GeneFamily family = null;
-			//Logging.info(" ADDing GGs " + GG + " of size " + tSet.size() + " " + (new Date()));
+			LOG.info(" ADDing GGs " + GG + " of size " + tSet.size() + " " + (new Date()));
 			for (String key:tSet){
 				Sequence keySeq = seqs.get(key);
 				if (family == null){
@@ -372,9 +397,8 @@ public class BuildGeneDatabase {
 				GG ++;				
 			}
 			tSet.clear();
-		}	
-
-		Logging.info("Manage to add " + G + " and " + GG + " " + new Date());
+		}
+        LOG.info("Manage to add " + G + " and " + GG + " " + new Date());
 		return strMap;
 	}
 
@@ -399,7 +423,7 @@ public class BuildGeneDatabase {
 		sos.close();
 
 		//Run bwa
-		//Logging.info("Running bwa for " + seq.getName() + " " + geneFamilies.size() + " family");
+		//LOG.info("Running bwa for " + seq.getName() + " " + geneFamilies.size() + " family");
 		Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA.sh");
 		process.waitFor();
 
@@ -418,7 +442,7 @@ public class BuildGeneDatabase {
 			String refName = sam.getReferenceName();
 			GeneDatabase.GeneFamily family = geneDatabase.getFamily(refName);
 			if (family == null){
-				Logging.error("Check for problem : family " + refName + " not found!");
+                LOG.error("Check for problem : family " + refName + " not found!");
 				continue;
 			}
 			Sequence refSeq = family.represetationSequence();
@@ -436,7 +460,8 @@ public class BuildGeneDatabase {
 	}
 
 	//TODO: no good public
-	public static double ratio = 0.9;	
+	public static double ratio = 0.9;
+	public static double coverageTheshold = 0.9;
 
 	static boolean isSimilar(Sequence refSeq, Sequence readSeq, SAMRecord sam){
 		japsa.util.HTSUtilities.IdentityProfile 
@@ -445,13 +470,12 @@ public class BuildGeneDatabase {
 			:HTSUtilities.identity(refSeq, readSeq, sam); 
 
 		double m = profile.match / ratio;
-		//System.out.println("XXXX " + (1.0 *profile.match/profile.refBase) + " " + (1.0 *profile.match/profile.readBase));
-		return (m > profile.refBase && m > profile.readBase);
+		return (m > profile.refBase
+                && m > profile.readBase
+                && profile.refBase > refSeq.length() * coverageTheshold
+                && profile.readBase > readSeq.length() * coverageTheshold
+        );
 	}
-
-
-
-
 
 	/**
 	 * Set up with a list of strains
@@ -479,7 +503,7 @@ public class BuildGeneDatabase {
 			String n50 = toks[4];
 
 			if (Integer.parseInt(n50) < 100000){
-				Logging.info("Strain " + strain + ": skipped as N50=" + toks[4]);			
+                LOG.info("Strain " + strain + ": skipped as N50=" + toks[4]);
 				continue;
 			}
 
@@ -489,8 +513,8 @@ public class BuildGeneDatabase {
 			annoMap = JapsaAnnotation.readMGFF(gffIn,0,0,"CDS");
 			gffIn.close();
 
-			Logging.info("Genome " + toks[3] + " " + strain);
-			Logging.info("There are " + annoMap.size()+ " annotations here");
+            LOG.info("Genome " + toks[3] + " " + strain);
+			LOG.info("There are " + annoMap.size()+ " annotations here");
 			for (JapsaAnnotation anno:annoMap){				
 				for (int i = 0; i < anno.numFeatures(); i++){
 					//totGenes ++;
@@ -507,7 +531,7 @@ public class BuildGeneDatabase {
 						}						
 					}
 					if (geneID == null){
-						//Logging.error("ERROR = " + desc );
+						//LOG.error("ERROR = " + desc );
 						continue;
 					}
 					//totGenes ++;
@@ -519,10 +543,10 @@ public class BuildGeneDatabase {
 
 					myGenes.put(geneID, geneSeq);
 					//geneID = addGene(geneSeq);			
-					//Logging.info("Added " + geneSeq.getName() + " as "+ geneID);
+					//LOG.info("Added " + geneSeq.getName() + " as "+ geneID);
 				}//for i
 				/*************************************************************
-				Logging.info("Trying to add " + anno.getAnnotationID() + " of " + anno.numFeatures() + " genes");				
+				LOG.info("Trying to add " + anno.getAnnotationID() + " of " + anno.numFeatures() + " genes");
 				/*************************************************************/
 
 			}//for anno

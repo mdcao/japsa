@@ -417,11 +417,11 @@ public class HTSUtilities {
 
 	/**
 	 * Get the list of positions in reads corresponding the the positions in reference
-	 * @param refSeq
-	 * @param sam
+     * @param sam
+	 * @param refPositions
 	 * @return
 	 */
-	public static int[] positionsInRead(SAMRecord sam, int [] refPositions){		
+	public static int[] positionsInRead(SAMRecord sam, int [] refPositions){
 		int readPos = 0;//start from 0					
 		int refPos = sam.getAlignmentStart();//convert to 0-based index		
 		int [] readPositions = new int[refPositions.length];

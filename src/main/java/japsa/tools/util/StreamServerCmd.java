@@ -34,7 +34,6 @@
 package japsa.tools.util;
 
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.IOException;
@@ -43,6 +42,8 @@ import java.net.Socket;
 import java.util.Date;
 
 import com.google.common.io.ByteStreams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -55,7 +56,9 @@ import com.google.common.io.ByteStreams;
 		seeAlso = "jsa.util.streamClient, jsa.np.filter, jsa.np.npreader"
 		)
 public class StreamServerCmd extends CommandLine{
-	public static int DEFAULT_PORT = 3456;
+    private static final Logger LOG = LoggerFactory.getLogger(StreamServerCmd.class);
+
+    public static int DEFAULT_PORT = 3456;
 	public StreamServerCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -82,12 +85,12 @@ public class StreamServerCmd extends CommandLine{
 		int port = cmdLine.getIntVal("port");
 		
 		ServerSocket serverSocket = new ServerSocket(port);
-		Logging.info("Listen on " +  serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort());		
+		LOG.info("Listen on " +  serverSocket.getInetAddress() + ":" + serverSocket.getLocalPort());
 	    Socket clientSocket = serverSocket.accept();	    
-	    Logging.info("Connection established at " + new Date());
+	    LOG.info("Connection established at " + new Date());
 	    ByteStreams.copy(clientSocket.getInputStream(), System.out);
 	    serverSocket.close();
-	    Logging.info("Connection closed at " + new Date());	    
+	    LOG.info("Connection closed at " + new Date());
 	}
 }
 

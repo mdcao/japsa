@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsaold.seq.nanopore;
+package japsadev.obsolete.np;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -51,7 +51,7 @@ import japsa.util.IntArray;
 import japsa.util.JapsaException;
 import japsa.util.Logging;
 import japsa.util.net.StreamClient;
-import japsaold.seq.nanopore.Fast5NPReader.BaseCalledFastq;
+import japsadev.obsolete.np.Fast5NPReader.BaseCalledFastq;
 
 /**
  * Read nanopore data (read sequence, events, alignment, models etc) from a raw
