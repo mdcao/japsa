@@ -22,7 +22,8 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		addString("bcFile", null, "Barcode file",true);		
 		addString("seqFile", null, "Nanopore sequences file",true);
 		addString("scriptRun", null, "Invoke command script to run npScarf",true);
-		addInt("threshold", 24, "Minimum matching score for barcode alignment");
+		addDouble("threshold", .7, "Minimum identity for barcode alignment");
+		addBoolean("twoends", false, "Whether a read must contain barcode sequence from both ends or just one end (default)");
 		addBoolean("print", false, "Print out demultiplexed reads to corresponding FASTA file or not.");
 		addStdHelp();
 	}
@@ -33,9 +34,10 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		String bcFile = cmdLine.getStringVal("bcFile");
 		String script = cmdLine.getStringVal("scriptRun");
 		String seqFile = cmdLine.getStringVal("seqFile");
-		Integer threshold = cmdLine.getIntVal("threshold");
-		Boolean p = cmdLine.getBooleanVal("print");
-		BarCodeAnalysis.print = p;
+		Double threshold = cmdLine.getDoubleVal("threshold");
+
+		BarCodeAnalysis.print = cmdLine.getBooleanVal("print");
+		BarCodeAnalysis.strict = cmdLine.getBooleanVal("twoends");
 
 		
 		BarCodeAnalysis bc = new BarCodeAnalysis(bcFile,script);

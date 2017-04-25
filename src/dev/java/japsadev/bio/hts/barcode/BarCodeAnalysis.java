@@ -13,8 +13,8 @@ import japsa.seq.SequenceReader;
 import japsa.util.Logging;
 
 public class BarCodeAnalysis {
-	int 	SCAN_WINDOW, 
-			DIST_THRES,
+	int 	SCAN_WINDOW; 
+	double	DIST_THRES,
 			SCORE_THRES;
 	public static boolean 	print=false,
 							strict=false; // both-ends-matching 
@@ -29,9 +29,10 @@ public class BarCodeAnalysis {
 		ArrayList<Sequence> allSeq = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
 		if(strict){
 			allSeq.sort(Comparator.comparing(Sequence::getName));
-			for(int i=0;i<allSeq.size();i++){
+			int i = 0;
+			while(i < allSeq.size()){
 				barCodesLeft.add(allSeq.get(i++));
-				barCodesRight.add(allSeq.get(i));
+				barCodesRight.add(allSeq.get(i++));
 			}
 		}else{
 			barCodesLeft = allSeq;
@@ -63,7 +64,10 @@ public class BarCodeAnalysis {
 
 			Logging.info("Job for " + id  + " started");
 			streamToScaffolder[i] = new SequenceOutputStream(processes[i].getOutputStream());
+			barcodeLen += barCodesLeft.get(i).length();
 		}
+		
+		barcodeLen /= nSamples;
 		
 		if(print){
 			streamToFile = new SequenceOutputStream[nSamples+1]; // plus unknown
@@ -74,15 +78,14 @@ public class BarCodeAnalysis {
 
 		}
 		
-		barcodeLen = barCodesLeft.get(0).length();
+		
 		SCAN_WINDOW = barcodeLen * 3;
-		SCORE_THRES = barcodeLen;
-		DIST_THRES = strict?SCORE_THRES/2:SCORE_THRES/3;
+		SCORE_THRES = .7;
+		DIST_THRES = .1;
 	}
 	
-	public void setThreshold(int score){
-		SCORE_THRES=score;
-		DIST_THRES = strict?SCORE_THRES/2:SCORE_THRES/3;
+	public void setThreshold(double ident){
+		SCORE_THRES = ident;
 	}
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
@@ -115,13 +118,14 @@ public class BarCodeAnalysis {
 //		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
 
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
-			if(seq.length() < 200){
+			if(seq.length() < barcodeLen*4){
 				System.err.println("Ignore short sequence " + seq.getName());
 				continue;
 			}
 			//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
 
 			s5 = seq.subSequence(0, SCAN_WINDOW);
+//			s3=seq.subSequence(seq.length()-SCAN_WINDOW,seq.length());
 			s3 = Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()));
 
 
@@ -158,15 +162,15 @@ public class BarCodeAnalysis {
 				alignmentRF = jaligner.SmithWatermanGotoh.align(js5, jBarcodeRight, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
 				alignmentRR = jaligner.SmithWatermanGotoh.align(js3, jBarcodeRight, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
 				
-				lf[i] = alignmentLF.getScore();
-				lr[i] = alignmentLR.getScore();
-				rf[i] = alignmentRF.getScore();
-				rr[i] = alignmentRR.getScore();
+				lf[i] = alignmentLF.getIdentity()/(float)barcodeLeft.length();
+				lr[i] = alignmentLR.getIdentity()/(float)barcodeLeft.length();
+				rf[i] = alignmentRF.getIdentity()/(float)barcodeRight.length();
+				rr[i] = alignmentRR.getIdentity()/(float)barcodeRight.length();
 				
 
 				double myScore = 0.0;
 				if(strict){
-					myScore = Math.max(lf[i] + rr[i] , lr[i] + rf[i]);
+					myScore = Math.max(lf[i] + rr[i] , lr[i] + rf[i])/2;
 				}
 				else{	
 					myScore = Math.max(Math.max(lf[i], lr[i]), Math.max(rf[i], rr[i]));
@@ -205,7 +209,10 @@ public class BarCodeAnalysis {
 			
 			String retval="";
 			DecimalFormat twoDForm =  new DecimalFormat("#.##");
-			if(bestScore < SCORE_THRES || distance < DIST_THRES){
+			if(bestScore < SCORE_THRES || distance < DIST_THRES 
+//					|| bestLeftAlignment.getLength() < 0.8 * bestLeftAlignment.getOriginalSequence2().length()
+//					|| bestRightAlignment.getLength() < 0.8 * bestRightAlignment.getOriginalSequence2().length()
+					){
 				//Logging.info("Unknown sequence " + seq.getName());
 				retval = "unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|0-0:0-0|";
 				seq.setName(retval + seq.getName());
@@ -230,7 +237,7 @@ public class BarCodeAnalysis {
 					printAlignment(bestLeftAlignment);
 					System.out.println();
 					printAlignment(bestRightAlignment);
-					System.out.println("==================================================================================");
+					System.out.println("\n==================================================================================\n");
 					
 					seq.print(streamToScaffolder[bestIndex]);
 					if(print)
