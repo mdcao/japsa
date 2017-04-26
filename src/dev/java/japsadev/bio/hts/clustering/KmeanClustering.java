@@ -15,7 +15,7 @@ import japsadev.bio.hts.clustering.GettingTreadsFromFasta;
 public class KmeanClustering {	
 	
 	public static void Clustering() throws Exception{
-		FileInputStream file1 = new FileInputStream("TRfile.fasta");
+		FileInputStream file1 = new FileInputStream("TRfiletemp.fasta");
 		BufferedReader br = new BufferedReader(new InputStreamReader(file1));
 		String line = null;
 		while((line = br.readLine())!=null){
