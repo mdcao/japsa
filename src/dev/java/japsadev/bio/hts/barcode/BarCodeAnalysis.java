@@ -56,8 +56,8 @@ public class BarCodeAnalysis {
 			//System.out.println(i + " >" + id + ":" + barCode);
 
 			ProcessBuilder pb = new ProcessBuilder(scriptFile, id)
-					.redirectError(new File("log_" + id + ".err"))
-					.redirectOutput(new File("log_" + id + ".out"));
+					.redirectError(new File("/dev/null"))
+					.redirectOutput(new File("/dev/null"));
 			pb.directory(new File(System.getProperty("user.dir")));
 			
 			processes[i]  = pb.start();
@@ -87,6 +87,17 @@ public class BarCodeAnalysis {
 	public void setThreshold(double ident){
 		SCORE_THRES = ident;
 	}
+	
+	//alignment matrix
+	float[][] scores = {
+		{  2.7f, -4.5f, -4.5f, -4.5f},
+		{ -4.5f,  2.7f, -4.5f, -4.5f},
+		{ -4.5f, -4.5f,  2.7f, -4.5f},
+		{ -4.5f, -4.5f, -4.5f,  2.7f}			
+	};
+	
+	private jaligner.matrix.Matrix 	matrix = jaligner.matrix.MatrixGenerator.generate(2.7f, -4.5f);
+	float openPenalty = 4.7f, extendPenalty = 1.6f;
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
 	 */
@@ -157,15 +168,16 @@ public class BarCodeAnalysis {
 				jBarcodeLeft = new jaligner.Sequence(barcodeLeft.toString());
 				jBarcodeRight = new jaligner.Sequence(barcodeRight.toString());
 
-				alignmentLF = jaligner.SmithWatermanGotoh.align(js5, jBarcodeLeft, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
-				alignmentLR = jaligner.SmithWatermanGotoh.align(js3, jBarcodeLeft, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
-				alignmentRF = jaligner.SmithWatermanGotoh.align(js5, jBarcodeRight, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
-				alignmentRR = jaligner.SmithWatermanGotoh.align(js3, jBarcodeRight, jaligner.matrix.MatrixLoader.load("BLOSUM62"), 10f, 0.5f);
+			
+				alignmentLF = jaligner.SmithWatermanGotoh.align(js5, jBarcodeLeft, matrix, openPenalty, extendPenalty);
+				alignmentLR = jaligner.SmithWatermanGotoh.align(js3, jBarcodeLeft, matrix, openPenalty, extendPenalty);
+				alignmentRF = jaligner.SmithWatermanGotoh.align(js5, jBarcodeRight, matrix, openPenalty, extendPenalty);
+				alignmentRR = jaligner.SmithWatermanGotoh.align(js3, jBarcodeRight, matrix, openPenalty, extendPenalty);
 				
-				lf[i] = alignmentLF.getIdentity()/(float)barcodeLeft.length();
-				lr[i] = alignmentLR.getIdentity()/(float)barcodeLeft.length();
-				rf[i] = alignmentRF.getIdentity()/(float)barcodeRight.length();
-				rr[i] = alignmentRR.getIdentity()/(float)barcodeRight.length();
+				lf[i] = alignmentLF.getIdentity()/(float)Math.max(barcodeLeft.length(),alignmentLF.getLength());
+				lr[i] = alignmentLR.getIdentity()/(float)Math.max(barcodeLeft.length(),alignmentLR.getLength());
+				rf[i] = alignmentRF.getIdentity()/(float)Math.max(barcodeRight.length(),alignmentRF.getLength());
+				rr[i] = alignmentRR.getIdentity()/(float)Math.max(barcodeRight.length(),alignmentRR.getLength());
 				
 
 				double myScore = 0.0;
@@ -194,7 +206,7 @@ public class BarCodeAnalysis {
 						if(myScore==lf[i] || myScore==rr[i]){
 							bestLeftAlignment = alignmentLF;
 							bestRightAlignment = alignmentRR;
-						}else{
+						}else if(myScore==lr[i] || myScore==rf[i]){
 							bestLeftAlignment = alignmentLR;
 							bestRightAlignment = alignmentRF;
 						}
