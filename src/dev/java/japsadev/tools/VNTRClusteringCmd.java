@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) Bhuvana, email
+ * Copyright (c) Bhuvaneswari Thirugnanasambandham, buvan.suji@gmail.com
  * All rights reserved.         *
  *                                                                           *
  * Redistribution and use in source and binary forms, with or without        *
@@ -36,14 +36,15 @@ package japsadev.tools;
 
 
 
+
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+import japsadev.bio.hts.clustering.KmeanClustering;
 
-import java.io.IOException;
 
 
 /**
- * @author your name
+ * @author Bhuvaneswari Thirugnanasambandham
  *
  */
 @Deployable(
@@ -53,6 +54,8 @@ import java.io.IOException;
 public class VNTRClusteringCmd extends CommandLine{
 	//CommandLine cmdLine;
 	public VNTRClusteringCmd(){
+		
+		
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -62,18 +65,32 @@ public class VNTRClusteringCmd extends CommandLine{
 		addString("output", "-",  "Output file");
 
 		addStdHelp();
+		
+		
+		
+		
 	}
-	public static void main(String [] args) throws IOException{
+	public static void main(String [] args) throws Exception{
 		CommandLine cmdLine = new VNTRClusteringCmd();
 		args = cmdLine.stdParseLine(args);	
+		/*String[] s = args;
+		System.out.println(s);*/
+		
+		
 
 
 		/**********************************************************************/
 
 		String input = cmdLine.getStringVal("input");
-		String output       =  cmdLine.getStringVal("output");
-		////YOUR CODE GOES HERE
-		System.out.println("Hello world input is " + input);
+		String output= cmdLine.getStringVal("output");
+		////YOUR CODE GOES HERE		
+		/*System.out.println("Hello world input is " + input);
+		System.out.println("Testing this statement");*/
 		////////////
+		
+		KmeanClustering cluster = new KmeanClustering();
+		cluster.Clustering();
+		
+		
 	}
 }

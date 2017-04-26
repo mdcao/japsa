@@ -12,10 +12,10 @@ import japsadev.bio.hts.clustering.GettingTreadsFromFasta;
  *
  */
 
-public class KmeanClustering {	
+public class KmeanClustering1 {	
 	
 	public static void Clustering() throws Exception{
-		FileInputStream file1 = new FileInputStream("TRfile.fasta");
+		FileInputStream file1 = new FileInputStream("TRfile1.fasta");
 		BufferedReader br = new BufferedReader(new InputStreamReader(file1));
 		String line = null;
 		while((line = br.readLine())!=null){
@@ -166,7 +166,7 @@ public class KmeanClustering {
 			bw.newLine();
 			bw.write("Number of Iterations: "+ Nclusters);		
 			bw.newLine();		
-			bw.write("Estimated Time: "+estimateTime+" ms");
+			bw.write("Estimated Time: "+estimateTime+" s");
 			bw.newLine();			
 			bw.write("Two clusters elements are: ");
 			bw.newLine();

@@ -128,7 +128,8 @@ public class BuildSequenceGroupDatabase {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public HashMap<String, String> addGeneMap(final Map<String, Sequence> seqs, boolean checkGeneID) throws IOException, InterruptedException{
+	public HashMap<String, String> addGeneMap(final Map<String, Sequence> seqs, boolean checkGeneID)
+            throws IOException, InterruptedException{
 		HashMap<String, String>  strMap =  new HashMap<String, String> ();
 
 		//0: initialise grouping within the new sequences
@@ -243,6 +244,7 @@ public class BuildSequenceGroupDatabase {
 			LOG.info("Iteration " + iteration + " of " + countI + " sequences " + new Date());
 			//JapsaTimer.systemInfo();
 
+            //TODO: 1. think of a way to perform alignment `in memory' instead of write to bwa (may be use jalign)
 			Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA2.sh");
 			process.waitFor();
 
@@ -289,25 +291,27 @@ public class BuildSequenceGroupDatabase {
 		LOG.info(" 2 Grouping " + geneDatabase.size());
 		//JapsaTimer.systemInfo();
 
-		//2.Try to add to the existing groups
+		//2.Try to add to the existing groups. Align the rep from each group to each of the family rep
+        //if match, add the whole group to the family
 		int G = 0, GG = 0;
 		if (geneDatabase.size() > 0){			
-			geneDatabase.write2File(fFile, false);
+			//geneDatabase.write2File(fFile, false);
 
 			//creat a map of current reps
-
             SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(fFile);
             HashMap<String, Sequence> repMap = new HashMap<String, Sequence>();
             for (GeneDatabase.GeneFamily family:geneDatabase){
                 Sequence rep = family.represetationSequence();
                 repMap.put(rep.getName(),rep);
+                rep.writeFasta(sos);
             }
             sos.close();
 
 
 			//Run bwa
 			//LOG.info("Running bwa for " + seq.getName() + " " + geneFamilies.size() + " family");
-			Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA.sh");
+            //TODO 2: Read this directly from stdout of bwa
+           	Process process = Runtime.getRuntime().exec("bash " + prefix + "runBWA.sh");
 			process.waitFor();
 
 			//Read the sam file
@@ -338,14 +342,14 @@ public class BuildSequenceGroupDatabase {
 					continue;
 				}
 
-				Sequence refSeq = family.represetationSequence();
+				Sequence refSeq = repMap.get(refName);
 				if (refSeq == null){
 					LOG.error("ERROR 6: rep for family " + refName + " not found!");
 				}
-				
-				if (isSimilar(refSeq, readSeq, sam)){
-					ArrayList<String> readSet = setMap.get(readName);
 
+				if (isSimilar(refSeq, readSeq, sam)){
+				    //asign all reads in this set to the family
+					ArrayList<String> readSet = setMap.get(readName);
 					for (String key:readSet){
 						//if (strMap.containsKey(key)){
 						//	LOG.error("ERROR 1 : " + key);
@@ -367,6 +371,7 @@ public class BuildSequenceGroupDatabase {
 		LOG.info(" 3 Grouping " + geneDatabase.size() + " " + seqs.size());
 		//JapsaTimer.systemInfo();
 
+        //IF there are any groups left, add each of them as a family
 		for (Sequence seq:seqs.values()){
 			String seqName = seq.getName();
 			ArrayList<String> tSet =  setMap.get(seqName);
@@ -393,7 +398,6 @@ public class BuildSequenceGroupDatabase {
 			}
 			tSet.clear();
 		}
-
         LOG.info("Manage to add " + G + " and " + GG + " " + new Date());
 		return strMap;
 	}
