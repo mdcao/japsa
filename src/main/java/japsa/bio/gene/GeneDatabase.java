@@ -199,7 +199,8 @@ public class GeneDatabase extends ArrayList<GeneDatabase.GeneFamily>{
 
 		/**
 		 * Add a new sequence to the new family. This will create a new allele
-		 * if it is not already in the dababase
+		 * if it is not already in the dababase. This is the proper method for adding
+         * a new sequence to the famlily, instead of the add()
 		 * @param seq
 		 * @return
 		 */
@@ -217,7 +218,7 @@ public class GeneDatabase extends ArrayList<GeneDatabase.GeneFamily>{
 			Sequence nSeq = seq.clone();
 			nSeq.setDesc(nSeq.getName() + " " + nSeq.getDesc());			
 			nSeq.setName(familyID() + "_" + (size()));
-			add(nSeq);
+			super.add(nSeq);
 			updateRep(size() - 1);
 			return nSeq.getName();			
 		}

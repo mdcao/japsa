@@ -65,7 +65,6 @@ import java.util.Map;
 
 /**
  * Implement a database of genes
- * TODO: to finalise the design of the database, and move this class out here
  * @author minhduc
  *
  */
@@ -361,7 +360,7 @@ public class BuildSequenceGroupDatabase {
 					}
 					readSet.clear();
 				}
-				//LOG.info(" ADD a G " + G + " " + (new Date()));
+				LOG.trace(" ADD a G " + G + " " + (new Date()));
 			}
 			samIter.close();
 			samReader.close();
