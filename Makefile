@@ -148,9 +148,9 @@ endif
 RELEASE=JapsaRelease
 
 pre-install: jar
-	@@echo "java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) $(O_SERVER) --compiler \"`$(JCC) -version 2>&1`\"" > install.sh && \
+	@@echo "java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar:$(LIB_DIR)/slf4j-api-1.7.25.jar:$(LIB_DIR)/slf4j-simple-1.7.25.jar japsadev.util.deploy.DevDeploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) $(O_SERVER) --compiler \"`$(JCC) -version 2>&1`\"" > install.sh && \
 	chmod u+x install.sh && \
-	echo "java -cp $(JAR_FILE);$(LIB_DIR)\guava-18.0.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) $(O_SERVER) --compiler \"`$(JCC) -version 2>&1`\"" > install.bat && \
+	echo "java -cp $(JAR_FILE);$(LIB_DIR)\guava-18.0.jar;$(LIB_DIR)\slf4j-api-1.7.25.jar;$(LIB_DIR)\slf4j-simple-1.7.25.jar japsa.util.deploy.Deploy --mode install --libs $(subst $(SPACE),:, $(EXT_LIBS)) $(O_INS_DIR) $(O_JLP) $(O_MXMEM) $(O_SERVER) --compiler \"`$(JCC) -version 2>&1`\"" > install.bat && \
 	echo "Installation scripts created"
 
 install: pre-install
