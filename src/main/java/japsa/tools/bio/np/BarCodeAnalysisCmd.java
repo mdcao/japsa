@@ -2,7 +2,6 @@ package japsa.tools.bio.np;
 
 import java.io.IOException;
 
-import jaligner.matrix.MatrixLoaderException;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 import japsa.bio.np.barcode.*;
@@ -26,7 +25,7 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		addBoolean("print", false, "Print out demultiplexed reads to corresponding FASTA file or not.");
 		addStdHelp();
 	}
-	public static void main(String[] args) throws IOException, InterruptedException, MatrixLoaderException{
+	public static void main(String[] args) throws IOException, InterruptedException{
 		CommandLine cmdLine = new BarCodeAnalysisCmd ();
 		args = cmdLine.stdParseLine(args);
 

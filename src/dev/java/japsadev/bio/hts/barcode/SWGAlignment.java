@@ -1,8 +1,9 @@
 package japsadev.bio.hts.barcode;
-
+/**
+ * Implement based on jaligner from Ahmed Moustafa
+ * See license below
+ */
 import java.text.DecimalFormat;
-
-import jaligner.Cell;
 import japsa.seq.Sequence;
 
 public class SWGAlignment {
@@ -61,25 +62,43 @@ public class SWGAlignment {
 	/**
 	 * Scoring matrix
 	 */
-//	private Matrix matrix;
-	//poreFUME's scores
+	
+//	//poreFUME's scores
+//	static float [][] matrix = {
+//			{  2.7f, -4.5f, -4.5f, -4.5f},
+//			{ -4.5f,  2.7f, -4.5f, -4.5f},
+//			{ -4.5f, -4.5f,  2.7f, -4.5f},
+//			{ -4.5f, -4.5f, -4.5f,  2.7f}			
+//	};
+//	/**
+//	 * Gap open cost
+//	 */
+//	static float open=4.7f;
+//
+//	/**
+//	 * Gap extend cost
+//	 */
+//	static float extend=1.6f;
 
-	float [][] matrix = {
-			{  2.7f, -4.5f, -4.5f, -4.5f},
-			{ -4.5f,  2.7f, -4.5f, -4.5f},
-			{ -4.5f, -4.5f,  2.7f, -4.5f},
-			{ -4.5f, -4.5f, -4.5f,  2.7f}			
+	//HOXD70 scoring scheme (F Chiaromonte, VB Yap, W Miller, PSB 2002:115-126)
+	static float [][] matrix = {
+			{  91f, -114f, -31f, -123f},
+			{ -114f,  100f, -125f, -31f},
+			{ -31f, -125f,  100f, -114f},
+			{ -123f, -31f, -114f,  91f}			
 	};
 	/**
 	 * Gap open cost
 	 */
-	private float open=4.7f;
+	static float open=400f;
 
 	/**
 	 * Gap extend cost
 	 */
-	private float extend=1.6f;
-
+	static float extend=30f;
+	
+	
+	
 	/**
 	 * Alignment score
 	 */
@@ -161,7 +180,7 @@ public class SWGAlignment {
 	 *            The extend to set.
 	 */
 	public void setExtend(float extend) {
-		this.extend = extend;
+		SWGAlignment.extend = extend;
 	}
 
 	/**
@@ -206,7 +225,7 @@ public class SWGAlignment {
 	 *            The open to set.
 	 */
 	public void setOpen(float open) {
-		this.open = open;
+		SWGAlignment.open = open;
 	}
 
 	/**
@@ -461,7 +480,11 @@ public class SWGAlignment {
 		return count;
 	}
 
-
+	/****************************************************************************************
+	 **************************************************************************************** 
+	 ***************************Static functions for the algorithm **************************
+	 ****************************************************************************************
+	 ****************************************************************************************/
 	
 	/**
 	 * Aligns two sequences by Smith-Waterman (local)
@@ -481,7 +504,7 @@ public class SWGAlignment {
 	 * @see Sequence
 	 * @see Matrix
 	 */
-	public SWGAlignment align(Sequence s1, Sequence s2) {
+	public static SWGAlignment align(Sequence s1, Sequence s2) {
 
 		int m = s1.length() + 1;
 		int n = s2.length() + 1;
@@ -534,7 +557,7 @@ public class SWGAlignment {
 	 *            extend gap penalty
 	 * @return The cell where the traceback starts.
 	 */
-	private Cell construct(Sequence s1, Sequence s2, byte[] pointers, short[] sizesOfVerticalGaps,
+	private static Cell construct(Sequence s1, Sequence s2, byte[] pointers, short[] sizesOfVerticalGaps,
 			short[] sizesOfHorizontalGaps) {
  
 		char[] a1 = s1.charSequence();
@@ -567,7 +590,8 @@ public class SWGAlignment {
 			h = Float.NEGATIVE_INFINITY;
 			vDiagonal = v[0];
 			for (int j = 1, l = k + 1; j < n; j++, l++) {
-				similarityScore = matrix[a1[i - 1]][a2[j - 1]];
+//				similarityScore = matrix[a1[i - 1]][a2[j - 1]];
+				similarityScore = matrix[s1.getBase(i-1)][s2.getBase(j-1)];
 
 				// Fill the matrices
 				f = vDiagonal + similarityScore;
@@ -629,7 +653,7 @@ public class SWGAlignment {
 	 * @see Cell
 	 * @see Alignment
 	 */
-	private SWGAlignment traceback(Sequence s1, Sequence s2, byte[] pointers, Cell cell, short[] sizesOfVerticalGaps,
+	private static SWGAlignment traceback(Sequence s1, Sequence s2, byte[] pointers, Cell cell, short[] sizesOfVerticalGaps,
 			short[] sizesOfHorizontalGaps) {
 
 		char[] a1 = s1.charSequence();
@@ -685,7 +709,8 @@ public class SWGAlignment {
 					reversed3[len3++] = MARKUP_IDENTITY;
 					identity++;
 					similarity++;
-				} else if (matrix[c1][c2] > 0) {
+//				} else if (matrix[c1][c2] > 0) {
+				} else if (matrix[s1.getBase(i)][s2.getBase(j)] > 0) {
 					reversed3[len3++] = MARKUP_SIMILARITY;
 					similarity++;
 				} else {
@@ -759,4 +784,92 @@ public class SWGAlignment {
 		return b;
 	}
 
+	
+	static class Cell {
+		/**
+		 * Row of the cell
+		 */
+		private int row;
+		/**
+		 * Column of the cell
+		 */
+		private int col;
+		/**
+		 * Alignment score at this cell
+		 */
+		private float score;
+		
+		/**
+		 * Constructor
+		 */
+		public Cell() {
+			super();
+			this.row = 0;
+			this.col = 0;
+			this.score = Float.NEGATIVE_INFINITY;
+		}
+		/**
+		 * @return Returns the col.
+		 */
+		public int getCol() {
+			return this.col;
+		}
+		/**
+		 * @param col The col to set.
+		 */
+		public void setCol(int col) {
+			this.col = col;
+		}
+		/**
+		 * @return Returns the row.
+		 */
+		public int getRow() {
+			return this.row;
+		}
+		/**
+		 * @param row The row to set.
+		 */
+		public void setRow(int row) {
+			this.row = row;
+		}
+		/**
+		 * @return Returns the score.
+		 */
+		public float getScore() {
+			return this.score;
+		}
+		/**
+		 * @param score The score to set.
+		 */
+		public void setScore(float score) {
+			this.score = score;
+		}
+		
+		/**
+		 * Sets the row, column and score of the cell.
+		 * @param row The row to set.
+		 * @param col The col to set.
+		 * @param score The score to set.
+		 */
+		public void set(int row, int col, float score) {
+			this.row = row;
+			this.col = col;
+			this.score = score;
+		}
+	}
 }
+/**
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */

@@ -1,11 +1,11 @@
 package japsadev.bio.hts.barcode;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 
-import jaligner.matrix.MatrixLoaderException;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -88,20 +88,10 @@ public class BarCodeAnalysis {
 		SCORE_THRES = ident;
 	}
 	
-	//alignment matrix
-	float[][] scores = {
-		{  2.7f, -4.5f, -4.5f, -4.5f},
-		{ -4.5f,  2.7f, -4.5f, -4.5f},
-		{ -4.5f, -4.5f,  2.7f, -4.5f},
-		{ -4.5f, -4.5f, -4.5f,  2.7f}			
-	};
-	
-	private jaligner.matrix.Matrix 	matrix = jaligner.matrix.MatrixGenerator.generate(2.7f, -4.5f);
-	float openPenalty = 4.7f, extendPenalty = 1.6f;
 	/*
 	 * Trying to clustering MinION read data into different samples based on the barcode
 	 */
-	public void clustering(String dataFile) throws IOException, InterruptedException, MatrixLoaderException{
+	public void clustering(String dataFile) throws IOException, InterruptedException{
 		SequenceReader reader;
 		if(dataFile.equals("-"))
 			reader = SequenceReader.getReader(System.in);
@@ -115,18 +105,15 @@ public class BarCodeAnalysis {
 				rr = new double[nSamples], //right-reversed
 				rf = new double[nSamples]; //right-forward
 		
-		jaligner.Alignment 	alignmentLF = new jaligner.Alignment(),
-							alignmentLR = new jaligner.Alignment(),
-							alignmentRF = new jaligner.Alignment(),
-							alignmentRR = new jaligner.Alignment();
-		jaligner.Sequence js5,js3, jBarcodeLeft, jBarcodeRight;
-		jaligner.Alignment 	bestLeftAlignment = new jaligner.Alignment(),
-							bestRightAlignment = new jaligner.Alignment();
+		SWGAlignment 	alignmentLF = new SWGAlignment(),
+						alignmentLR = new SWGAlignment(),
+						alignmentRF = new SWGAlignment(),
+						alignmentRR = new SWGAlignment();
 
-//		Sequence barcodeSeq = new Sequence(Alphabet.DNA4(),barcodeLen,"barcode");
-//		Sequence tipSeq = new Sequence(Alphabet.DNA4(),SCAN_WINDOW,"tip");
-//
-//		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
+		SWGAlignment 	bestLeftAlignment = new SWGAlignment(),
+						bestRightAlignment = new SWGAlignment();
+
+
 
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
 			if(seq.length() < barcodeLen*4){
@@ -136,7 +123,6 @@ public class BarCodeAnalysis {
 			//alignment algorithm is applied here. For the beginning, Smith-Waterman local pairwise alignment is used
 
 			s5 = seq.subSequence(0, SCAN_WINDOW);
-//			s3=seq.subSequence(seq.length()-SCAN_WINDOW,seq.length());
 			s3 = Alphabet.DNA.complement(seq.subSequence(seq.length()-SCAN_WINDOW,seq.length()));
 
 
@@ -150,29 +136,11 @@ public class BarCodeAnalysis {
 				Sequence barcodeLeft = barCodesLeft.get(i);
 				Sequence barcodeRight = barCodesRight.get(i); //rc of right barcode sequence
 
-//				barcodeAlignment.setBarcodeSequence(barcodeLeft);				
-//				barcodeAlignment.setReadSequence(s5);				
-//				lf[i]=barcodeAlignment.align();				
-//
-//				barcodeAlignment.setReadSequence(Alphabet.DNA.complement(s3));
-//				lr[i]=barcodeAlignment.align();
-//
-//				barcodeAlignment.setBarcodeSequence(barcodeRight);
-//				barcodeAlignment.setReadSequence(Alphabet.DNA.complement(s3));
-//				rr[i]=barcodeAlignment.align();
-//				
-//				barcodeAlignment.setReadSequence(s5);
-//				rf[i]=barcodeAlignment.align();
-				js5 = new jaligner.Sequence(s5.toString());
-				js3 = new jaligner.Sequence(s3.toString());
-				jBarcodeLeft = new jaligner.Sequence(barcodeLeft.toString());
-				jBarcodeRight = new jaligner.Sequence(barcodeRight.toString());
-
 			
-				alignmentLF = jaligner.SmithWatermanGotoh.align(js5, jBarcodeLeft, matrix, openPenalty, extendPenalty);
-				alignmentLR = jaligner.SmithWatermanGotoh.align(js3, jBarcodeLeft, matrix, openPenalty, extendPenalty);
-				alignmentRF = jaligner.SmithWatermanGotoh.align(js5, jBarcodeRight, matrix, openPenalty, extendPenalty);
-				alignmentRR = jaligner.SmithWatermanGotoh.align(js3, jBarcodeRight, matrix, openPenalty, extendPenalty);
+				alignmentLF = SWGAlignment.align(s5, barcodeLeft);
+				alignmentLR = SWGAlignment.align(s3, barcodeLeft);
+				alignmentRF = SWGAlignment.align(s5, barcodeRight);
+				alignmentRR = SWGAlignment.align(s3, barcodeRight);
 				
 				lf[i] = alignmentLF.getIdentity()/(float)Math.max(barcodeLeft.length(),alignmentLF.getLength());
 				lr[i] = alignmentLR.getIdentity()/(float)Math.max(barcodeLeft.length(),alignmentLR.getLength());
@@ -221,10 +189,7 @@ public class BarCodeAnalysis {
 			
 			String retval="";
 			DecimalFormat twoDForm =  new DecimalFormat("#.##");
-			if(bestScore < SCORE_THRES || distance < DIST_THRES 
-//					|| bestLeftAlignment.getLength() < 0.8 * bestLeftAlignment.getOriginalSequence2().length()
-//					|| bestRightAlignment.getLength() < 0.8 * bestRightAlignment.getOriginalSequence2().length()
-					){
+			if(bestScore < SCORE_THRES || distance < DIST_THRES ){
 				//Logging.info("Unknown sequence " + seq.getName());
 				retval = "unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|0-0:0-0|";
 				seq.setName(retval + seq.getName());
@@ -275,9 +240,9 @@ public class BarCodeAnalysis {
 	}
 
 		//display jaligner.Alignment. TODO: convert to ours
-		public void printAlignment(jaligner.Alignment alignment){
-			String 	origSeq1 = alignment.getOriginalSequence1().getSequence(),
-					origSeq2 = alignment.getOriginalSequence2().getSequence(),
+		public void printAlignment(SWGAlignment alignment){
+			String 	origSeq1 = alignment.getOriginalSequence1().toString(),
+					origSeq2 = alignment.getOriginalSequence2().toString(),
 					alnSeq1 = new String(alignment.getSequence1()),
 					alnSeq2 = new String(alignment.getSequence2());
 			int 	start1 = alignment.getStart1(),
