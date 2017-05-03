@@ -16,18 +16,22 @@ public class BarCodeAnalysis {
 	int 	SCAN_WINDOW; 
 	double	DIST_THRES,
 			SCORE_THRES;
-	public static boolean 	print=false,
-							strict=false; // both-ends-matching 
+	public static boolean 	print=false, //whether to print to files
+							script=false, //whether invoke downstream analysis
+							twoends=false; // both-ends-matching 
 	ArrayList<Sequence> barCodesLeft = new ArrayList<Sequence>(); //barcode sequences from left end
 	ArrayList<Sequence> barCodesRight = new ArrayList<Sequence>(); //barcode from right end
 	Process[] processes;
 	int nSamples;
 	int barcodeLen;
-	SequenceOutputStream[] streamToScaffolder, streamToFile;
+	SequenceOutputStream[] streamToScript, streamToFile;
 
 	public BarCodeAnalysis(String barcodeFile, String scriptFile) throws IOException{
+		if(scriptFile!=null)
+			script=true;
+		
 		ArrayList<Sequence> allSeq = SequenceReader.readAll(barcodeFile, Alphabet.DNA());
-		if(strict){
+		if(twoends){
 			allSeq.sort(Comparator.comparing(Sequence::getName));
 			int i = 0;
 			while(i < allSeq.size()){
@@ -44,7 +48,9 @@ public class BarCodeAnalysis {
 		nSamples = barCodesLeft.size();
 
 		processes = new Process[nSamples];
-		streamToScaffolder = new SequenceOutputStream[nSamples];
+		
+		if(script)
+			streamToScript = new SequenceOutputStream[nSamples];
 		if(print)
 			streamToFile = new SequenceOutputStream[nSamples+1]; //unknown sequences included
 
@@ -54,16 +60,17 @@ public class BarCodeAnalysis {
 
 			id = barCode.getName();
 			//System.out.println(i + " >" + id + ":" + barCode);
-
-			ProcessBuilder pb = new ProcessBuilder(scriptFile, id)
-					.redirectError(new File("/dev/null"))
-					.redirectOutput(new File("/dev/null"));
-			pb.directory(new File(System.getProperty("user.dir")));
-			
-			processes[i]  = pb.start();
-
-			Logging.info("Job for " + id  + " started");
-			streamToScaffolder[i] = new SequenceOutputStream(processes[i].getOutputStream());
+			if(script){
+				ProcessBuilder pb = new ProcessBuilder(scriptFile, id)
+						.redirectError(new File("/dev/null"))
+						.redirectOutput(new File("/dev/null"));
+				//pb.directory(new File(System.getProperty("user.dir")));
+				
+				processes[i]  = pb.start();
+	
+				Logging.info("Job for " + id  + " started");
+				streamToScript[i] = new SequenceOutputStream(processes[i].getOutputStream());
+			}
 			barcodeLen += barCodesLeft.get(i).length();
 		}
 		
@@ -72,20 +79,27 @@ public class BarCodeAnalysis {
 		if(print){
 			streamToFile = new SequenceOutputStream[nSamples+1]; // plus unknown
 			for(int i=0;i<nSamples;i++){		
-				streamToFile[i] = SequenceOutputStream.makeOutputStream(barCodesLeft.get(i).getName()+"_clustered.fastq");
+				streamToFile[i] = SequenceOutputStream.makeOutputStream(barCodesLeft.get(i).getName()+".fastq");
 			}
-			streamToFile[nSamples] = SequenceOutputStream.makeOutputStream("unknown_clustered.fastq");
+			streamToFile[nSamples] = SequenceOutputStream.makeOutputStream("unknown.fastq");
 
 		}
 		
 		
 		SCAN_WINDOW = barcodeLen * 3;
-		SCORE_THRES = .7;
-		DIST_THRES = .1;
+		SCORE_THRES = .7; //70%
+		DIST_THRES = .1; //10%
+	}
+	public void setScanWindow(int window){
+		SCAN_WINDOW = window;
 	}
 	
 	public void setThreshold(double ident){
-		SCORE_THRES = ident;
+		SCORE_THRES = ident/100;
+	}
+	
+	public void setDistance(double dist){
+		DIST_THRES= dist/100;
 	}
 	
 	/*
@@ -149,7 +163,7 @@ public class BarCodeAnalysis {
 				
 
 				double myScore = 0.0;
-				if(strict){
+				if(twoends){
 					myScore = Math.max(lf[i] + rr[i] , lr[i] + rf[i])/2;
 				}
 				else{	
@@ -161,7 +175,7 @@ public class BarCodeAnalysis {
 					distance = myScore-bestScore;
 					bestScore = myScore;		
 					bestIndex = i;
-					if(strict){
+					if(twoends){
 						if(lf[i] + rr[i] > lr[i] + rf[i]){
 							bestLeftAlignment = alignmentLF;
 							bestRightAlignment = alignmentRR;
@@ -200,7 +214,7 @@ public class BarCodeAnalysis {
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			else {
 //				Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodesLeft.get(bestIndex).getName() + " with score=" + bestScore);
-				if(bestIndex<nSamples && processes[bestIndex]!=null && processes[bestIndex].isAlive()){
+				if(bestIndex<nSamples){
 					retval = barCodesLeft.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
 					int s1 = bestLeftAlignment.getStart1(),
 						e1 = bestLeftAlignment.getStart1()+bestLeftAlignment.getSequence1().length-bestLeftAlignment.getGaps1(),
@@ -208,30 +222,29 @@ public class BarCodeAnalysis {
 						s2 = seq.length()-1-(bestRightAlignment.getStart1()+bestRightAlignment.getSequence1().length-bestRightAlignment.getGaps1());
 					retval += s1+"-"+e1+":"+s2+"-"+e2+"|";
 					seq.setName(retval + seq.getName());
-
-//					Logging.info("...writing to stream " + bestIndex);
-					System.out.println(seq.getName());
-					printAlignment(bestLeftAlignment);
-					System.out.println();
-					printAlignment(bestRightAlignment);
-					System.out.println("\n==================================================================================\n");
 					
-					seq.print(streamToScaffolder[bestIndex]);
+					if(script && processes[bestIndex]!=null && processes[bestIndex].isAlive())
+						seq.print(streamToScript[bestIndex]);
 					if(print)
 						seq.print(streamToFile[bestIndex]);
 				}
 			}
 
+			System.out.println(seq.getName());
+			printAlignment(bestLeftAlignment);
+			System.out.println();
+			printAlignment(bestRightAlignment);
+			System.out.println("\n==================================================================================\n");
 		}
 
 		System.out.println("Done all input");
 		for (int i = 0; i < nSamples;i++){
-			if(processes[i]!=null && processes[i].isAlive()){
-				streamToScaffolder[i].close();
-				if(print)
-					streamToFile[i].close();
+			if(script && processes[i]!=null && processes[i].isAlive()){
+				streamToScript[i].close();
 				processes[i].waitFor();
 			}
+			if(print)
+				streamToFile[i].close();
 		}
 		if(print)
 			streamToFile[nSamples].close();
