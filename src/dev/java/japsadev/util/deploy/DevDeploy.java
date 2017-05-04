@@ -105,7 +105,6 @@ public class DevDeploy {
 		tools.add(new ConvertProbeCmd());
 		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new VNTRSelectCmd());
-		tools.add(new BarCodeAnalysisCmd());
 		tools.add(new NanoporeBarcodeCmd());
 		tools.add(new NewScarfCmd());
 

@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
-import japsa.bio.np.barcode.*;
+import japsa.bio.np.barcode.BarCodeAnalysis;
 
 
 @Deployable(
@@ -20,8 +20,11 @@ public class BarCodeAnalysisCmd extends CommandLine{
 
 		addString("bcFile", null, "Barcode file",true);		
 		addString("seqFile", null, "Nanopore sequences file",true);
-		addString("scriptRun", null, "Invoke command script to run npScarf",true);
-		addInt("threshold", 24, "Minimum matching score for barcode alignment");
+		addString("scriptRun", null, "Invoke command script to run npScarf");
+		addDouble("threshold", 70, "Minimum identity(%) for barcode alignment");
+		addDouble("distance", 4, "Minimum identity(%) distance between the best alignment to others");
+
+		addBoolean("twoends", false, "Whether a read must contain barcode sequence from both ends or just one end (default)");
 		addBoolean("print", false, "Print out demultiplexed reads to corresponding FASTA file or not.");
 		addStdHelp();
 	}
@@ -32,13 +35,16 @@ public class BarCodeAnalysisCmd extends CommandLine{
 		String bcFile = cmdLine.getStringVal("bcFile");
 		String script = cmdLine.getStringVal("scriptRun");
 		String seqFile = cmdLine.getStringVal("seqFile");
-		Integer threshold = cmdLine.getIntVal("threshold");
-		Boolean p = cmdLine.getBooleanVal("print");
-		BarCodeAnalysis.toPrint = p;
+		Double threshold = cmdLine.getDoubleVal("threshold"),
+				distance = cmdLine.getDoubleVal("distance");
+
+		BarCodeAnalysis.print = cmdLine.getBooleanVal("print");
+		BarCodeAnalysis.twoends = cmdLine.getBooleanVal("twoends");
 
 		
 		BarCodeAnalysis bc = new BarCodeAnalysis(bcFile,script);
 		bc.setThreshold(threshold);
+		bc.setDistance(distance);
 		bc.clustering(seqFile);
 
 		
@@ -66,16 +72,18 @@ A summary of *barcode* usage can be obtained by invoking the --help option::
 
 Input
 =====
- *barcode* takes three files as required input::
+ *barcode* takes 2 files as required input::
 
-	jsa.np.barcode -seq <nanopore reads> -bc <barcode.fasta> -script <analysis_script>
+	jsa.np.barcode -seq <nanopore reads> -bc <barcode.fasta>
 
 <*nanopore reads*> is either the long reads in FASTA/FASTQ file (after MinION sequencing is 
 finished) or standard input ( specified by "-", for real-time analysis). 
 	
 <*barcode.fasta*> is the FASTA file of barcode sequences (given by ONT) with name correspond to the assigned sample id.
 
-<*analysis_script*> is the script call for further action on the de-multiplexed reads. It always take one argument and be
+Missing any file would break down the whole pipeline.
+	
+In addition, one can provide <*analysis_script*> which is the script call for further action on the de-multiplexed reads. It always take one argument and be
 executable by invoking::
 
 	./analysis_script <id>
@@ -83,13 +91,16 @@ executable by invoking::
 in which <*id*> is the identifier of a sample as given in the <barcode.fasta>. The script should read the standard input
 of long-read streams to do further analysis.
 	
-	Missing any file would break down the whole pipeline.
-	
-	*barcode* allows user to set the minimum score of a hit with barcode reference to be considered valid. The default value
-is 24, the length of a single barcode sequence from Nanopore Native Kit. Decreasing the threshold will lead to more reads being
-clustered but with higher risk of false positive while increasing will generate less but more confident of demultiplexed
-reads.
+*barcode* allows user to set the minimum criteria of a hit with barcode reference to be considered valid. The default value
+is 70% for minimum identity. At the same time, 4% distance between the best hit and the second best is necessary for differentiation.
+ Decreasing the thresholds will lead to more reads being clustered but with higher risk of false positive while more stringent parameters 
+ will generate less but more confident of demultiplexed reads.
 
+User can also have control on the matching condition for barcode detection, either one-end match or both-end match. For the first case (default), only the 
+a legal maximal hit from one end of a read is enough to label it while in the later case, we take into account a pair from both 5' and 3'terminus. 
+Thus the input for each use case should be different. The one-end option can take the simple FASTA file of Nanopore barcodes while the two-end need pairs of
+barcode to be specified (e.g. with _F and _R suffix). One of a typical use case for two-end matching is when we want to detect the super-barcode which includes
+also tail- and primer-sequences in pre-defined orientation.
 Output
 ======
 *barcode* output depends on the <*analysis script*> because the de-multiplexed reads are streamed directly to its dedicated process.
