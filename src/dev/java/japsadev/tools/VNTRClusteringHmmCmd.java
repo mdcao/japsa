@@ -32,25 +32,17 @@
  * 15/05/2014 - Minh Duc Cao: Started
  *  
  ****************************************************************************/
-package japsa.tools.bio.hts;
+package japsadev.tools;
 
+import htsjdk.samtools.*;
 import japsa.bio.alignment.MultipleAlignment;
 import japsa.bio.alignment.ProfileDP;
 import japsa.bio.alignment.ProfileDP.EmissionState;
+import japsa.bio.np.ErrorCorrection;
 import japsa.bio.tr.TandemRepeat;
 import japsa.bio.tr.TandemRepeatVariant;
-import japsa.seq.Alphabet;
-import japsa.seq.FastaReader;
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.Sequence;
-import japsa.seq.SequenceReader;
-import japsa.seq.XAFReader;
-import japsa.util.ByteArray;
-import japsa.util.CommandLine;
-import japsa.util.DoubleArray;
-import japsa.util.IntArray;
-import japsa.util.JapsaMath;
-import japsa.util.Logging;
+import japsa.seq.*;
+import japsa.util.*;
 import japsa.util.deploy.Deployable;
 import japsa.xm.expert.Expert;
 import japsa.xm.expert.MarkovExpert;
@@ -61,45 +53,38 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-
 
 /**
  * VNTR typing using long reads
  * 
  */
 
-@Deployable(scriptName = "jsa.tr.longreads", scriptDesc = "VNTR typing using long reads")
-public class VNTRLongReadsCmd  extends CommandLine {
-	public VNTRLongReadsCmd(){
+@Deployable(scriptName = "jsa.dev.clusteringhmm", scriptDesc = "Clustring in the hmm framework")
+public class VNTRClusteringHmmCmd extends CommandLine {
+	public VNTRClusteringHmmCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
-		CommandLine.Option referenceOpt =
+		Option referenceOpt =
 				addString("reference", null, "Name of the reference genome ", true);
 		///addStdInputFile();
-		CommandLine.Option bamFileOpt = 
+		Option bamFileOpt =
 				addString("bamFile", null, "Name of the bam file", true);
 
-		CommandLine.Option outputOpt =
+		Option outputOpt =
 				addString("output", "-",
 						"Name of the output file, -  for stdout");
 
-		CommandLine.Option xafFileOpt =
+		Option xafFileOpt =
 				addString("xafFile", null, "Name of the regions file in xaf",
 						true);
 
-		CommandLine.Option flankingOpt =
+		Option flankingOpt =
 				addInt("flanking", 30, "Size of the flanking regions");
 
-		CommandLine.Option minQualOpt =
+		Option minQualOpt =
 				addInt("qual", 0, "Minimum quality");
 
 		addInt("iteration", 1, "Number of iteration");
@@ -134,7 +119,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 	public static void main(String[] args) throws Exception,
 	InterruptedException {
 		/*********************** Setting up script ****************************/
-		CommandLine cmdLine = new VNTRLongReadsCmd();
+		CommandLine cmdLine = new VNTRClusteringHmmCmd();
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
 		int flanking = cmdLine.getIntVal("flanking");
@@ -301,13 +286,19 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			}// while
 			iter.close();
 			os.close();
-			//readSequences: an array of reads
+			//FIXME: readSequences: an array of reads
+			//clustering of this array,
+			//Get the consensus of each of them using the follwing command
+			//ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign");
 
-			ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);//-1 for 0-index, inclusive
-			processBatch(readSequences, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
+			//write to a file
 
-			outOS.print(trVar.toString(headers));
-			outOS.print('\n');
+			//ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);
+			//-1 for 0-index, inclusive
+			//processBatch(readSequences, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
+
+			//outOS.print(trVar.toString(headers));
+			//outOS.print('\n');
 		}// for
 
 		reader.close();
@@ -770,123 +761,4 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 	}
 
-	/**
-	 * 
-	 * @param seqList
-	 * @param startState
-	 *            : the start index of the list (inclusive)
-	 * @param end
-	 *            : the end index of the list (exclusive)
-	 */
-	static int call(ArrayList<Sequence> seqList, int indexStart, int indexEnd) {
-		if (indexEnd <= indexStart)
-			return 0;	
-
-		// Get consensus
-		int gaps = 0;
-		Sequence nSeq = new Sequence(Alphabet.DNA6(), seqList.get(0).length(),
-				"consensus");
-		int[] votes = new int[6];
-		for (int i = 0; i < nSeq.length(); i++) {			
-			Arrays.fill(votes, 0);
-			for (int s = indexStart; s < indexEnd; s++) {
-				votes[seqList.get(s).symbolAt(i)]++;
-			}
-			byte best = 0;
-			for (byte b = 1; b < 6; b++)
-				if (votes[b] > votes[best])
-					best = b;
-
-			nSeq.setBase(i, best);
-			if (best == 5)
-				gaps++;
-		}// for
-		return gaps;
-	}
-
-	static int call(ArrayList<Sequence> seqList) {
-		return call(seqList,0,seqList.size());
-
-	}
-
-	static void aaa(Sequence seq, TandemRepeat str, int flanking, SamReader reader, int qual, String prefix,  int np) throws IOException, InterruptedException{
-		String cmd = "kalign -gpo 60 -gpe 10 -tgpe 0 -bonus 0 -q -i " + prefix
-				+ "i.fasta -o " + prefix + "o.fasta";
-
-		//cmd = "clustalo --force -i " + prefix + "i.fasta -o " + prefix
-		//			+ "o.fasta";
-
-
-		String chrom = str.getChr();
-		int start = str.getStart() - flanking;
-		int end = str.getEnd() + flanking;
-
-		if (start < 0) start = 0;
-		if (end > seq.length())
-			end = seq.length();
-
-		SAMRecordIterator iter 
-		= reader.query(chrom, start, end, false);
-
-
-		int maxAlign = 300;
-
-		MultipleAlignment ma = new MultipleAlignment(maxAlign, seq);
-		while (iter.hasNext()) {
-			SAMRecord rec = iter.next();
-			// Check qualilty
-			if (rec.getMappingQuality() < qual) {
-				continue;
-			}
-
-			// Only reads that fully span the repeat and flankings
-			if (rec.getAlignmentStart() > start)
-				continue;
-			if (rec.getAlignmentEnd() < end)
-				continue;
-
-			ma.addRead(rec);
-		}// while
-		iter.close();
-		// os.close();
-
-		double var = 0;
-		TandemRepeatVariant trVar = new TandemRepeatVariant();
-		trVar.setTandemRepeat(str);
-
-		if (ma.printFasta(start, end, prefix + "i.fasta") > 0) {
-			Logging.info("Running " + cmd);
-			Process process = Runtime.getRuntime().exec(cmd);
-			process.waitFor();
-			Logging.info("Done " + cmd);
-
-			SequenceReader hmmSeqReader 
-			= FastaReader.getReader(prefix	+ "i.fasta");
-			Sequence readSeq;	
-
-			SequenceReader msaReader
-			= FastaReader.getReader(prefix	+ "o.fasta");
-			ArrayList<Sequence> seqList = new ArrayList<Sequence>();
-			Sequence nSeq = null;
-			while ((nSeq = msaReader.nextSequence(Alphabet.DNA16())) != null) {
-				seqList.add(nSeq);
-			}				 
-			//str.getChr()+"_"+str.getStart()+"_"+str.getEnd();
-
-			if (np >= 2) {
-				trVar.setVar2(var);
-				trVar.addEvidence(seqList.size());
-			} else {// nploidy ==1
-				int llength = seqList.get(0).length();
-
-				int gaps = call(seqList);
-
-				var = (llength - gaps - end + start) * 1.0
-						/ str.getPeriod();
-
-				trVar.setVar(var);
-				trVar.addEvidence(seqList.size());
-			}
-		}// if
-	}
 }

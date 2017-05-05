@@ -117,8 +117,9 @@ public class DevDeploy {
 		tools.add(new ConsensusGenerateCmd());
 		
 		tools.add(new VNTRClusteringCmd());
+		tools.add(new VNTRClusteringHmmCmd());
 		//new 
-		//tools.add(new PhageAnalysis2Cmd());
+		//tools.add(new VNTRClusteringHmmCmd());
 		//
 
 	}
