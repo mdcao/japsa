@@ -32,7 +32,7 @@
  * 22 Nov 2016 - Minh Duc Cao: Started                                 
  *  
  ****************************************************************************/
-package japsa.bio.np.barcode;
+package japsadev.obsolete.np;
 
 
 import japsa.seq.Sequence;

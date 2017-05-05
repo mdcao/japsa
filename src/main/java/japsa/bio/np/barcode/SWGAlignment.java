@@ -1,4 +1,4 @@
-package japsadev.bio.hts.barcode;
+package japsa.bio.np.barcode;
 /**
  * Implement based on jaligner from Ahmed Moustafa
  * See license below
