@@ -58,7 +58,7 @@ public class PhageAnalysis2Cmd extends CommandLine{
 		addString("input", "-", "Name of the input file, - for standard input", true);
 		addString("format", "fasta", "Format of the input: SAM/BAM or FASTA/FASTQ");
 		addString("plasmid", null, "Name of a sample plasmid file in FASTA format", true);
-		addString("output", "out.fasta", "Name of the output file, - for standard input");		
+		addString("output", "out.fasta", "Name of the output file, - for standard output");		
 		
 		addString("bwaExe", "bwa", "Path to BWA mem.");	
 				

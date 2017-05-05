@@ -106,7 +106,7 @@ public class SequenceSortCmd extends CommandLine{
 			if (sortKeyOption.equals("length"))
 				seqL.keyCompare = seq.length();
 			else{
-				String [] toks = seq.getName().split(" ");
+				String [] toks = (seq.getName() + " " +seq.getDesc()).split(" ");
 
 				for (int i = 0; i < toks.length;i++){
 					if (toks[i].startsWith(sortKeyOptionPrefix)){
