@@ -74,6 +74,8 @@ Options
                   (default='false')
   --stats         Generate a report of read statistics
                   (default='false')
+  --time          Extract the sequencing time of each read -- experimental
+                  (default='false')
   --exhaustive    Whether to traverse the input directory exhaustively (albacore) or lazily (metrichor)
                   (default='false')
   --barcode=s     The file containing all barcode sequences for demultiplexing.

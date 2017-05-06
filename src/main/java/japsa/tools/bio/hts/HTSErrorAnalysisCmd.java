@@ -57,7 +57,7 @@ import htsjdk.samtools.ValidationStringency;
  */
 @Deployable(
 	scriptName = "jsa.hts.errorAnalysis",
-	scriptDesc = "Error analysis of HTS sequencing data")
+	scriptDesc = "Error analysis of sequencing data")
 public class HTSErrorAnalysisCmd extends CommandLine{	
 	public HTSErrorAnalysisCmd(){
 		super();
@@ -93,9 +93,6 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
-	 * @param bamFile
-	 * @param pad
-	 * @throws IOException 
 	 */
 	static void errorAnalysis(String bamFile, String refFile, String pattern, int qual) throws IOException{	
 
@@ -133,6 +130,7 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			if (readSeq.length() <= 1){
 				//Logging.warn(sam.getReadName() +" ignored");
+				//TODO: This might be secondary alignment, need to do something about it
 				continue;
 			}			
 
@@ -144,8 +142,13 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 				continue;
 			}
 
-			if (sam.getMappingQuality() < qual)
+			int flag = sam.getFlags();
+
+
+			if (sam.getMappingQuality() < qual) {
+				numNotAligned ++;
 				continue;
+			}
 
 
 
@@ -223,3 +226,17 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 	}
 
 }
+
+/*RST*
+----------------------------------------------------------
+*jsa.hts.errorAnalysis*: Error analysis of sequencing data
+----------------------------------------------------------
+
+*jsa.hts.errorAnalysis* assesses the error profile of sequencing data by getting the numbers
+of errors (mismatches, indels etc) from a bam file. Obviously, it does not distinguish
+sequencing errors from mutations, and hence consider mutations as errors. It is best to use
+with the bam file from aligning sequencing reads to a reliable assembly of the sample.
+
+<usage>
+
+*RST*/

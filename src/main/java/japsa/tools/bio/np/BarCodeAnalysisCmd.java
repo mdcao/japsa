@@ -70,6 +70,7 @@ A summary of *barcode* usage can be obtained by invoking the --help option::
 
     jsa.np.barcode --help
 
+=====
 Input
 =====
  *barcode* takes 2 files as required input::
@@ -93,14 +94,16 @@ of long-read streams to do further analysis.
 	
 *barcode* allows user to set the minimum criteria of a hit with barcode reference to be considered valid. The default value
 is 70% for minimum identity. At the same time, 4% distance between the best hit and the second best is necessary for differentiation.
- Decreasing the thresholds will lead to more reads being clustered but with higher risk of false positive while more stringent parameters 
- will generate less but more confident of demultiplexed reads.
+Decreasing the thresholds will lead to more reads being clustered but with higher risk of false positive while more stringent parameters
+will generate less but more confident of demultiplexed reads.
 
 User can also have control on the matching condition for barcode detection, either one-end match or both-end match. For the first case (default), only the 
 a legal maximal hit from one end of a read is enough to label it while in the later case, we take into account a pair from both 5' and 3'terminus. 
 Thus the input for each use case should be different. The one-end option can take the simple FASTA file of Nanopore barcodes while the two-end need pairs of
 barcode to be specified (e.g. with _F and _R suffix). One of a typical use case for two-end matching is when we want to detect the super-barcode which includes
 also tail- and primer-sequences in pre-defined orientation.
+
+======
 Output
 ======
 *barcode* output depends on the <*analysis script*> because the de-multiplexed reads are streamed directly to its dedicated process.
@@ -121,6 +124,7 @@ This is equivalent to enable the *-p* option::
 	
 that would print out de-multiplexed FASTA sequences <id>\_clustered.fasta	
 
+============================================
 Real-time scaffolding for barcode sequencing
 ============================================
 
@@ -140,4 +144,5 @@ E.g.
 	jsa.np.npscarf -realtime -read 100 -time 1 -b - -seq ${dirname}/contigs.fasta -spadesDir ${dirname} -prefix ${1} > ${1}.log 2>&1
 	
 In this scenario, we assume the output SPAdes folders locate in one directory and the folder names contain the ID of the corresponding samples.
- *RST*/
+
+*RST*/
