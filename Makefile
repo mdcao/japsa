@@ -157,7 +157,7 @@ install: pre-install
 	./install.sh
 
 uninstall:
-	@@java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar japsa.util.deploy.Deploy --mode uninstall --libs $(subst $(SPACE),:, $(EXT_LIBS)) ${O_INS_DIR} && echo "Japsa uninstalled!"
+	@@java -cp $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar:$(LIB_DIR)/slf4j-api-1.7.25.jar:$(LIB_DIR)/slf4j-simple-1.7.25.jar japsa.util.deploy.Deploy --mode uninstall --libs $(subst $(SPACE),:, $(EXT_LIBS)) ${O_INS_DIR} && echo "Japsa uninstalled!"
 
 release: pre-install
 	@@mkdir -p $(RELEASE)/libs/ && \
