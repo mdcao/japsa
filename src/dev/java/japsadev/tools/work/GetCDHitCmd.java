@@ -168,7 +168,11 @@ public class GetCDHitCmd extends CommandLine{
 
         @Override
         public int compareTo(Group o) {
-            return o.count - this.count;
+	        int r = o.count - this.count;
+            if (r == 0)
+                return o.countRead - countRead;
+            else
+                return r;
         }
     }
 }
