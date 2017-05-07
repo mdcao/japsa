@@ -59,7 +59,6 @@ public class DevDeploy {
 		tools.add(new CaptureVNTR());
 		tools.add(new ResGeneGenomesCmd());
 		tools.add(new GetFlankBlast());		
-		tools.add(new CombineProdigalCmd());
 
 		tools.add(new String("Working commands"));
 		tools.add(new TreeHetLinageCmd());		
@@ -70,8 +69,7 @@ public class DevDeploy {
 
 		tools.add(new RepeatPrimerCmd());		
 
-		tools.add(new KmerAnalysisCmd());		
-		tools.add(new ProfileDPCmd());	
+		tools.add(new ProfileDPCmd());
 
 		tools.add(new PlasmaAnalysisCmd());
 		tools.add(new MethylationAnalysisCmd());
@@ -87,12 +85,10 @@ public class DevDeploy {
 		tools.add(new VNTRDepthSumCmd());
 		tools.add(new FixFastqNameCmd());
 		tools.add(new SampleCmd());
-		tools.add(new TestSampleCmd());
 		tools.add(new AnalyseCaptureCmd());
 		tools.add(new BreakPointAnalysisCmd());
 		tools.add(new CaptureProbeDesignCmd());
 		tools.add(new ConvertProbeCmd());
-		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new VNTRSelectCmd());
 		tools.add(new NewScarfCmd());
         tools.add(new GetCDHitCmd());
