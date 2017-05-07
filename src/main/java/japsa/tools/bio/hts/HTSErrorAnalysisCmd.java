@@ -205,7 +205,7 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 		double probDE = (1.0 + totBaseDel - totNumDel) / (2.0 +totBaseDel);
 		double probIE = (1.0 + totBaseIns - totNumIns) / (2.0 +totBaseIns);		
 
-		System.out.printf("Indentity %f %f %f %f\n",1.0 *totMatch/(totMatch + totMisMatch + totBaseDel +totBaseIns),
+		System.out.printf("Identity %f %f %f %f\n",1.0 *totMatch/(totMatch + totMisMatch + totBaseDel +totBaseIns),
 			1.0 *totMisMatch/(totMatch + totMisMatch + totBaseDel +totBaseIns),
 			1.0 *totBaseIns/(totMatch + totMisMatch + totBaseDel +totBaseIns),
 			1.0 *totBaseDel/(totMatch + totMisMatch + totBaseDel +totBaseIns ));

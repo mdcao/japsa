@@ -40,7 +40,8 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -57,6 +58,7 @@ import java.util.Arrays;
  *
  */
 public class ErrorCorrection {
+    private static final Logger LOG = LoggerFactory.getLogger(ErrorCorrection.class);
 
 	public static String prefix = "tmp";
 	public static String msa = "kalign";
@@ -69,10 +71,10 @@ public class ErrorCorrection {
 		String needleOut = prefix + "_alignment.needle";
 		String cmd = "needle -gapopen 10 -gapextend 0.5 -asequence " 
 			+ seq1File + " -bsequence " + seq2File + " -outfile " + needleOut;
-		Logging.info("Running " + cmd);
+		LOG.info("Running " + cmd);
 		Process process = Runtime.getRuntime().exec(cmd);
 		process.waitFor();					
-		Logging.info("Run'ed " + cmd );
+		LOG.info("Run'ed " + cmd );
 
 		BufferedReader scoreBf = new BufferedReader(new FileReader(needleOut));
 		String scoreLine = null;					
@@ -88,7 +90,10 @@ public class ErrorCorrection {
 		return score;		
 	}
 
-	public static Sequence consensusSequence(ArrayList<Sequence> readList, String prefix, String msa) throws IOException, InterruptedException{
+    public static Sequence consensusSequence(ArrayList<Sequence> readList, String prefix, String msa) throws IOException, InterruptedException{
+        return consensusSequence(readList, readList.size(), prefix, msa);
+    }
+	public static Sequence consensusSequence(ArrayList<Sequence> readList, int max, String prefix, String msa) throws IOException, InterruptedException{
 		//String faiFile = prefix + "_" + this.currentReadCount;
 		Sequence consensus = null;
 		if (readList != null && readList.size() > 0){
@@ -101,9 +106,13 @@ public class ErrorCorrection {
 				String faoFile = prefix + "_ao.fasta";//name of fasta files of reads mapped to the gene
 				{
 					SequenceOutputStream faiSt = SequenceOutputStream.makeOutputStream(faiFile);
+					int count = 0;
 					for (Sequence seq:readList){
-						Logging.info(seq.getName() + "  " + seq.length());
+						LOG.info(seq.getName() + "  " + seq.length());
 						seq.writeFasta(faiSt);
+						count ++;
+						if (count >= max)
+						    break;//for
 					}
 					faiSt.close();
 				}
@@ -124,13 +133,14 @@ public class ErrorCorrection {
 					}else if (msa.startsWith("mafft")){
 						cmd = "mafft_wrapper.sh  " + faiFile + " " + faoFile;
 					}else{
-						Logging.exit("Unknown msa function " + msa, 1);
+						LOG.error("Unknown msa function " + msa);
+						return null;
 					}
 
-					Logging.info("Running " + cmd);
+					LOG.info("Running " + cmd);
 					Process process = Runtime.getRuntime().exec(cmd);
 					process.waitFor();
-					Logging.info("Done " + cmd);
+					LOG.info("Done " + cmd);
 				}
 
 
@@ -149,7 +159,7 @@ public class ErrorCorrection {
 						}//if
 					}//while
 					sb.setName("consensus");
-					Logging.info(sb.getName() + "  " + sb.length());
+					LOG.info(sb.getName() + "  " + sb.length());
 					return sb.toSequence();
 				}
 
@@ -196,7 +206,7 @@ public class ErrorCorrection {
 						}//if
 					}//for x
 					sb.setName("consensus");
-					Logging.info(sb.getName() + "  " + sb.length());
+					LOG.info(sb.getName() + "  " + sb.length());
 					consensus = sb.toSequence();
 				}
 			}			
@@ -204,6 +214,4 @@ public class ErrorCorrection {
 		}
 		return consensus;
 	}
-
-
 }
