@@ -36,13 +36,19 @@ algorithms, implementation, documentation and feedback:
 
 ### Other projects based on Japsa
 
+
+
+* [XMas](https://github.com/mdcao/XMas)
+* [eXpert Model](https://github.com/mdcao/xm)
+* [capsim](https://github.com/mdcao/capsim)
 * [npScarf](https://github.com/mdcao/npScarf)
 * [npAnalysis](https://github.com/mdcao/npAnalysis)
 * [npReader](https://github.com/mdcao/npReader)
-* [XMas](https://github.com/mdcao/XMas)
-* [eXpert Model](https://github.com/mdcao/xm)
+* [npBarcode](https://github.com/hsnguyen/npBarcode)
+* [PhageXpress](https://github.com/mdcao/phagexpress)
 
 and more to come.
+
 
 ### License
 Japsa is released under the accompanying BSD-like license.
