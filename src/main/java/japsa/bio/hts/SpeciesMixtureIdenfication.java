@@ -36,7 +36,6 @@ package japsa.bio.hts;
 
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
-import japsa.util.Logging;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
