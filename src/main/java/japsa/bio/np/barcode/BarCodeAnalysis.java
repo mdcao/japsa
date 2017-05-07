@@ -1,18 +1,23 @@
 package japsa.bio.np.barcode;
 
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 
-import japsa.seq.Alphabet;
-import japsa.seq.Sequence;
-import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
-import japsa.util.Logging;
 
 public class BarCodeAnalysis {
+	private static final Logger LOG = LoggerFactory.getLogger(BarCodeAnalysis.class);
+
 	int 	SCAN_WINDOW; 
 	double	DIST_THRES,
 			SCORE_THRES;
@@ -68,7 +73,7 @@ public class BarCodeAnalysis {
 				
 				processes[i]  = pb.start();
 	
-				Logging.info("Job for " + id  + " started");
+				LOG.info("Job for " + id  + " started");
 				streamToScript[i] = new SequenceOutputStream(processes[i].getOutputStream());
 			}
 			barcodeLen += barCodesLeft.get(i).length();
@@ -171,7 +176,7 @@ public class BarCodeAnalysis {
 				}
 				
 				if (myScore > bestScore){
-					//Logging.info("Better score=" + myScore);
+					//LOG.info("Better score=" + myScore);
 					distance = myScore-bestScore;
 					bestScore = myScore;		
 					bestIndex = i;
@@ -204,7 +209,7 @@ public class BarCodeAnalysis {
 			String retval="";
 			DecimalFormat twoDForm =  new DecimalFormat("#.##");
 			if(bestScore < SCORE_THRES || distance < DIST_THRES ){
-				//Logging.info("Unknown sequence " + seq.getName());
+				//LOG.info("Unknown sequence " + seq.getName());
 				retval = "unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|0-0:0-0|";
 				seq.setName(retval + seq.getName());
 
@@ -213,7 +218,7 @@ public class BarCodeAnalysis {
 			}
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			else {
-//				Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodesLeft.get(bestIndex).getName() + " with score=" + bestScore);
+//				LOG.info("Sequence " + seq.getName() + " might belongs to sample " + barCodesLeft.get(bestIndex).getName() + " with score=" + bestScore);
 				if(bestIndex<nSamples){
 					retval = barCodesLeft.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
 					int s1 = bestLeftAlignment.getStart1(),

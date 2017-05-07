@@ -65,8 +65,7 @@ public class DevDeploy {
 	static {
 		//tools.add(new SampleCmd());
 
-		tools.add(new FixRastGFFCmd());
-		tools.add(new CaptureVNTR());		
+		tools.add(new CaptureVNTR());
 		tools.add(new NpReadAnalysys());		
 		tools.add(new ResGeneGenomesCmd());
 		tools.add(new GetFlankBlast());		
@@ -105,14 +104,12 @@ public class DevDeploy {
 		tools.add(new ConvertProbeCmd());
 		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new VNTRSelectCmd());
-		tools.add(new NanoporeBarcodeCmd());
 		tools.add(new NewScarfCmd());
 
 		tools.add(new GapCloserCmd());
 
 		tools.add(new SelectReadsCmd());
 		tools.add(new StructuralVariationCmd());
-		tools.add(new PhageAnalysisCmd());
 		tools.add(new ConsensusGenerateCmd());
 		
 		tools.add(new VNTRClusteringCmd());

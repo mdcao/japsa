@@ -54,6 +54,8 @@ import java.util.HashMap;
 
 import org.rosuda.JRI.REXP;
 import org.rosuda.JRI.Rengine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -63,7 +65,9 @@ import org.rosuda.JRI.Rengine;
  * @author minhduc
  *
  */
-public class SpeciesMixtureIdenfication {	
+public class SpeciesMixtureIdenfication {
+	private static final Logger LOG = LoggerFactory.getLogger(SpeciesMixtureIdenfication.class);
+
 	private double qual = 0;
 	private Rengine rengine;	
 	private int currentReadCount = 0;
@@ -79,12 +83,13 @@ public class SpeciesMixtureIdenfication {
 	public SpeciesMixtureIdenfication(String outputFile, double minQual, double threshold) throws IOException{		
 		rengine = new Rengine (new String [] {"--no-save"}, false, null);
 		if (!rengine.waitForR()){
-			Logging.exit("Cannot load R",1);            
+			LOG.error("Cannot load R");
+			System.exit(1);
 		}    
 		rengine.eval("library(MultinomialCI)");
 		rengine.eval("alpha<-0.05");
 
-		Logging.info("REngine ready");
+		LOG.info("REngine ready");
 
 		if (outputFile.equals("-"))
 			outOS = System.out;
@@ -99,12 +104,7 @@ public class SpeciesMixtureIdenfication {
 		outOS.close();
 		rengine.end();
 	}
-	/**
-	 * @param bamFile
-	 * @param geneFile
-	 * @throws IOException
-	 * @throws InterruptedException 
-	 */
+
 
 
 	public void preTyping(String indexFile)throws IOException{
@@ -126,7 +126,7 @@ public class SpeciesMixtureIdenfication {
 			}			
 		}//while
 		bf.close();
-		Logging.info(seq2Species.size() + "   " + species2Count.size());
+		LOG.info(seq2Species.size() + "   " + species2Count.size());
 		speciesList.addAll(species2Count.keySet());
 
 		//Write header
@@ -176,7 +176,7 @@ public class SpeciesMixtureIdenfication {
 
 		}
 		outOS.flush();
-		//Logging.info(step+"  " + countArray.size());
+		//LOG.info(step+"  " + countArray.size());
 	}
 
 

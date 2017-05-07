@@ -42,7 +42,8 @@ import htsjdk.samtools.SAMRecord;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of multiple aligment of (long) short reads to the reference
@@ -53,6 +54,8 @@ import japsa.util.Logging;
  * 
  */
 public class MultipleAlignment {
+	private static final Logger LOG = LoggerFactory.getLogger(MultipleAlignment.class);
+
 	static Alphabet alphabet = Alphabet.DNA5();
 	// The head and the tail of the list
 	NodeAlignment head = null;// , tail = null;
@@ -72,7 +75,7 @@ public class MultipleAlignment {
 
 	public void addRead(SAMRecord rec) {
 		if (seqIndex >= seqs.length) {
-			Logging.warn("More sequences are added " + seqIndex);
+			LOG.warn("More sequences are added " + seqIndex);
 			return;
 		}
 		Sequence seq = new Sequence(alphabet, rec.getReadLength(),
@@ -141,8 +144,8 @@ public class MultipleAlignment {
 				while (length > 0) {
 					if (current.site[0] != 0) {
 						if (current.site[0] != refBase) {
-							Logging.exit("Fatal error " + refBase + " vs "
-									+ current.site[0], 1);
+							LOG.error("Fatal error " + refBase + " vs " + current.site[0]);
+							System.exit(1);
 						}
 						length--;
 						refBase++;
@@ -201,8 +204,8 @@ public class MultipleAlignment {
 				while (length > 0) {
 					if (current.site[0] != 0) {
 						if (current.site[0] != refBase) {
-							Logging.exit("Fatal error " + refBase + " vs "
-									+ current.site[0], 1);
+							LOG.error("Fatal error " + refBase + " vs "	+ current.site[0]);
+							System.exit(1);
 						}
 						length--;
 						current.site[seqIndex] = readBase;

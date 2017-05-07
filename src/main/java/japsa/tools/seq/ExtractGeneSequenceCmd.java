@@ -41,8 +41,9 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -56,7 +57,9 @@ import java.util.HashMap;
  */
 @Deployable(scriptName = "jsa.seq.gff2fasta",
 scriptDesc = "Extract sequences from a gff annotation")
-public class ExtractGeneSequenceCmd extends CommandLine{	
+public class ExtractGeneSequenceCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(ExtractGeneSequenceCmd.class);
+
 	public ExtractGeneSequenceCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -97,18 +100,18 @@ public class ExtractGeneSequenceCmd extends CommandLine{
 		ArrayList<JapsaAnnotation> annos = JapsaAnnotation.readMGFF(aReader,0,0,type);
 		aReader.close();
 
-		Logging.info("Read " + annos.size());
+		LOG.info("Read " + annos.size());
 
 		SequenceReader reader = SequenceReader.getReader(sequence);
 		Sequence seq = reader.nextSequence(Alphabet.DNA());
 
 		for (JapsaAnnotation anno:annos){	
-			//Logging.info("Read anno " + anno.numFeatures());
+			//LOG.info("Read anno " + anno.numFeatures());
 			while (seq != null && !seq.getName().equals(anno.getAnnotationID())){
 				seq = reader.nextSequence(Alphabet.DNA());
 			}
 			if (seq == null){
-				Logging.error("Sequence " + anno.getAnnotationID() + " not found");
+				LOG.error("Sequence " + anno.getAnnotationID() + " not found");
 				reader.close();
 				out.close();				
 				System.exit(1);
@@ -142,19 +145,19 @@ public class ExtractGeneSequenceCmd extends CommandLine{
 		ArrayList<JapsaAnnotation> annos = JapsaAnnotation.readMGFF(aReader,0,0,type);
 		aReader.close();
 
-		Logging.info("Read " + annos.size());
+		LOG.info("Read " + annos.size());
 
 		SequenceReader reader = SequenceReader.getReader(sequence);
 		Sequence seq = reader.nextSequence(Alphabet.DNA());
 
 		for (JapsaAnnotation anno:annos){	
-			//Logging.info("Read anno " + anno.numFeatures());
+			//LOG.info("Read anno " + anno.numFeatures());
 			while (seq != null && !seq.getName().equals(anno.getAnnotationID())){
 				seq = reader.nextSequence(Alphabet.DNA());
 			}
 
 			if (seq == null){
-				Logging.error("Sequence " + anno.getAnnotationID() + " not found");
+				LOG.error("Sequence " + anno.getAnnotationID() + " not found");
 				reader.close();							
 				System.exit(1);
 			}

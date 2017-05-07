@@ -36,7 +36,7 @@ package japsa.bio.hts;
 
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
-import japsa.util.Logging;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
@@ -54,13 +54,17 @@ import java.util.HashMap;
 
 import org.rosuda.JRI.REXP;
 import org.rosuda.JRI.Rengine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * @author minhduc
  *
  */
-public class SpeciesCoverageIdenfication {	
+public class SpeciesCoverageIdenfication {
+	private static final Logger LOG = LoggerFactory.getLogger(SpeciesCoverageIdenfication.class);
+
 	private double qual = 0;
 	private Rengine rengine;
 	
@@ -78,12 +82,13 @@ public class SpeciesCoverageIdenfication {
 	public SpeciesCoverageIdenfication(String outputFile, double minQual) throws IOException{		
 		rengine = new Rengine (new String [] {"--no-save"}, false, null);
 		if (!rengine.waitForR()){
-			Logging.exit("Cannot load R",1);            
+			LOG.error("Cannot load R");
+			System.exit(1);
 		}    
 		rengine.eval("library(MultinomialCI)");
 		rengine.eval("alpha<-0.05");
 
-		Logging.info("REngine ready");
+		LOG.info("REngine ready");
 		//countsOS = SequenceOutputStream.makeOutputStream(outputFile);
 		if (outputFile.equals("-"))
 			outOS = System.out;
@@ -97,12 +102,8 @@ public class SpeciesCoverageIdenfication {
 		outOS.close();
 		rengine.end();
 	}
-	/**
-	 * @param bamFile
-	 * @param geneFile
-	 * @throws IOException
-	 * @throws InterruptedException 
-	 */
+
+
 	static class SpeciesCount implements Comparable<SpeciesCount>{
 		String species;
 		int count = 0;
@@ -146,7 +147,7 @@ public class SpeciesCoverageIdenfication {
 			}			
 		}//while
 		bf.close();
-		Logging.info(seq2Species.size() + "   " + species2Count.size());
+		LOG.info(seq2Species.size() + "   " + species2Count.size());
 		speciesList.addAll(species2Count.keySet());
 
 		//Write header
@@ -197,7 +198,7 @@ public class SpeciesCoverageIdenfication {
 			
 		}
 		outOS.flush();
-		//Logging.info(step+"  " + countArray.size());
+		//LOG.info(step+"  " + countArray.size());
 	}
 
 	

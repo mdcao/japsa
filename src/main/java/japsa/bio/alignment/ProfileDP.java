@@ -49,7 +49,7 @@ import japsa.util.JapsaMath;
  * @author minhduc
  *
  */
-public class ProfileDP {	
+public class ProfileDP {
 	// cost from a match state
 	double  matProb,
 	insProb,
@@ -85,12 +85,8 @@ public class ProfileDP {
 	Sequence profileSeq;
 	int repStart, repEnd;	
 
-	/**
-	 * @param args
-	 * retStart: inclusive
-	 * repEnd:incluive
-	 *  
-	 */
+
+
 	public ProfileDP(Sequence seq, int repStart, int repEnd){
 		profileSeq    = seq;
 		this.repEnd   = repEnd;
