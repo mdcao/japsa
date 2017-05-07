@@ -40,16 +40,7 @@ import japsa.util.CommandLine;
 import japsa.util.deploy.Deploy;
 import japsadev.tools.*;
 //import japsadev.tools.ConsensusGenerateCmd;
-import japsadev.tools.work.BuildMLSTTreeCmd;
-import japsadev.tools.work.BuildXMTreeCmd;
-import japsadev.tools.work.FixFastqNameCmd;
-import japsadev.tools.work.FixNamesTreeCmd;
-import japsadev.tools.work.MethylationAnalysis2Cmd;
-import japsadev.tools.work.MethylationAnalysisCmd;
-import japsadev.tools.work.NpReadAnalysys;
-import japsadev.tools.work.PlasmaAnalysisCmd;
-import japsadev.tools.work.PlasmaAnalysisCrossCorrelationCmd;
-import japsadev.tools.work.TreeHetLinageCmd;
+import japsadev.tools.work.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,7 +57,6 @@ public class DevDeploy {
 		//tools.add(new SampleCmd());
 
 		tools.add(new CaptureVNTR());
-		tools.add(new NpReadAnalysys());		
 		tools.add(new ResGeneGenomesCmd());
 		tools.add(new GetFlankBlast());		
 		tools.add(new CombineProdigalCmd());
@@ -105,6 +95,7 @@ public class DevDeploy {
 		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new VNTRSelectCmd());
 		tools.add(new NewScarfCmd());
+        tools.add(new GetCDHitCmd());
 
 		tools.add(new GapCloserCmd());
 
@@ -115,7 +106,7 @@ public class DevDeploy {
 		tools.add(new VNTRClusteringCmd());
 		tools.add(new VNTRClusteringHmmCmd());
 		//new 
-		//tools.add(new VNTRClusteringHmmCmd());
+		//tools.add(new GetCDHitCmd());
 		//
 
 	}
