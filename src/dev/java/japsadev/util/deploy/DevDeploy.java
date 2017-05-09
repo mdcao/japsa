@@ -100,8 +100,9 @@ public class DevDeploy {
 		
 		tools.add(new VNTRClusteringCmd());
 		tools.add(new VNTRClusteringHmmCmd());
+        tools.add(new CheckInductionCmd());
 		//new 
-		//tools.add(new GetCDHitCmd());
+		//tools.add(new CheckInductionCmd());
 		//
 
 	}

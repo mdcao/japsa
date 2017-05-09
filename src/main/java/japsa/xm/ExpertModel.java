@@ -479,10 +479,6 @@ public class ExpertModel {
 
 	/**
 	 * Update all experts at this positition
-	 * 
-	 * @param seqArray
-	 * @param i
-	 * @param sid
 	 */
 	protected void updateExperts(int c) {
 		markovEx.update(c);
