@@ -34,60 +34,218 @@
 
 package japsadev.tools;
 
+import japsa.seq.JapsaAnnotation;
+import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.Buffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
 
 /**
  * @author Minh Duc Cao
- * 
+ *
  */
 @Deployable(
-	scriptName = "jsa.dev.mrsainduction",
-	scriptDesc = "Sample script description"
-	)
+        scriptName = "jsa.dev.checkInduction",
+        scriptDesc = "Sample script description"
+)
 public class CheckInductionCmd extends CommandLine{
-	public CheckInductionCmd(){
-		super();
-		Deployable annotation = getClass().getAnnotation(Deployable.class);		
-		setUsage(annotation.scriptName() + " [options]");
-		setDesc(annotation.scriptDesc());
-		
-		addStdInputFile();
-		//addBoolean("reverse",false,"Reverse sort order");
-		addStdHelp();		
-	} 
+    private static final Logger LOG = LoggerFactory.getLogger(CheckInductionCmd.class);
+    public CheckInductionCmd(){
+        super();
+        Deployable annotation = getClass().getAnnotation(Deployable.class);
+        setUsage(annotation.scriptName() + " [options]");
+        setDesc(annotation.scriptDesc());
 
-	public static void main(String[] args) throws IOException {		
+        addString("path",null, "path to the group");
+        addString("list",null, "file contain list of samples");
+        //addBoolean("reverse",false,"Reverse sort order");
+        addStdHelp();
+    }
 
-		/*********************** Setting up script ****************************/		
-		CommandLine cmdLine = new CheckInductionCmd();
-		args = cmdLine.stdParseLine(args);
-		/**********************************************************************/
-		
-		String input = cmdLine.getStringVal("input");
-		
-		BufferedReader reader = SequenceReader.openFile(input);
-		String line = "";
-		while ((line = reader.readLine())!=null){
-			
-			if (line.startsWith("sbatch")){
-				String [] toks = line.split(" ");
-				System.out.println(toks[4]);
-			}else if (line.startsWith("chr")){
-				line = line.trim();
-				String [] toks = line.split(":");
-				System.out.print(line + "\t" + toks[2]);
-				toks = toks[1].split("-");
-				System.out.println(Double.parseDouble(toks[1]) - Double.parseDouble(toks[0]));
-			}			
-		}		
-		reader.close();
-	}	
+    public static void main(String[] args) throws IOException {
+
+        /*********************** Setting up script ****************************/
+        CommandLine cmdLine = new CheckInductionCmd();
+        args = cmdLine.stdParseLine(args);
+        /**********************************************************************/
+
+        String path = cmdLine.getStringVal("path");
+        String list = cmdLine.getStringVal("list");
+
+        BufferedReader reader = SequenceReader.openFile(list);
+        String line = null;
+
+        TreeSet<String> sampleSet = new TreeSet<String>();
+        HashMap<String, Set<String>> geneMap = new HashMap<String, Set<String>>();
+        HashSet<String> unionSet = new HashSet<String>();
+
+        while ((line = reader.readLine())!=null){
+            sampleSet.add(line.trim());
+        }
+        reader.close();
+
+
+        Files.walk(Paths.get(path))
+                .filter(Files::isRegularFile)
+                .filter(p -> p.toString().endsWith("gff"))
+                .filter(p -> sampleSet.contains(getSample(p)))
+                .forEach(p-> {
+                    Set<String> mySet = openGFF(p);
+                    unionSet.addAll(mySet);
+                    geneMap.put(getSample(p), mySet);
+                    LOG.info("Union size " + unionSet.size());
+                });
+        ArrayList<String> unionList = new ArrayList<String>(unionSet);
+        Collections.sort(unionList);
+
+        HashSet<String> coreGene = new HashSet<String>();
+
+        for (String gene:unionSet){
+            System.out.println(gene);
+            boolean good = true;
+            for (Set<String> mySet:geneMap.values()){
+                if (!mySet.contains(gene)){
+                    good = false;
+                    break;
+                }
+            }//for
+            if (good){
+                coreGene.add(gene);
+            }
+        }
+
+        for (String sample:sampleSet){
+            System.out.print(sample);
+            Set<String> mySet = geneMap.get(sample);
+            for (String gene:unionList){
+                if (coreGene.contains(gene))
+                    continue;
+                System.out.print("\t" + (mySet.contains(gene)?"Y":"N"));
+            }
+            System.out.println();
+        }
+
+        System.out.println("====================================================");
+        for (String sample:sampleSet){
+            System.out.print(sample);
+            Set<String> mySet = geneMap.get(sample);
+            for (String gene:unionList){
+                System.out.print("\t" + (mySet.contains(gene)?"Y":"N"));
+            }
+            System.out.println();
+        }
+    }
+
+    public static String getSample(Path filePath){
+        return filePath.getFileName().toString().replace(".gff","");
+    }
+    public static HashSet<String>  openGFF2(Path fileName){
+        HashSet<String> geneSet = new HashSet<String>();
+
+        try {
+            BufferedReader reader = SequenceReader.openFile(fileName.toString());
+            String line = "";
+            while ( (line = reader.readLine())!= null){
+                String  [] toks = line.split("\\t");
+                if (toks.length < 8)
+                    continue;
+                String desc = toks[8];
+                int index = desc.indexOf(":UniProtKB:");
+                if (index >= 0) {
+                    geneSet.add(desc.substring(index + 1, index + 17));
+                    continue;
+                }
+                index = desc.indexOf(":CARD:");
+                if (index >= 0) {
+                    geneSet.add(desc.substring(index + 1, index + 16));
+                    continue;
+                }
+                index = desc.indexOf(":CLUSTERS:");
+                if (index >= 0) {
+                    geneSet.add(desc.substring(index + 1, index + 19));
+                    continue;//for
+                }
+                index = desc.indexOf(":Pfam:");
+                if (index >= 0) {
+                    geneSet.add(desc.substring(index + 1, index + 16));
+                    continue;
+                }
+                index = desc.indexOf(":HAMAP:");
+                if (index >= 0) {
+                    geneSet.add(desc.substring(index + 1, index + 15));
+                    continue;
+                }
+                //LOG.warn("not found " + desc);
+
+            }//for
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        LOG.info("Read " + geneSet.size() + " from " + fileName);
+        return geneSet;
+    }
+    public static HashSet<String>  openGFF(Path fileName){
+
+        HashSet<String> geneSet = new HashSet<String>();
+
+        try {
+            FileInputStream in = new FileInputStream(fileName.toFile());
+            ArrayList<JapsaAnnotation> annoGFF = JapsaAnnotation.readMGFF(in, 0, 0, "CDS");
+            in.close();
+
+            for (JapsaAnnotation anno : annoGFF) {
+                for (JapsaFeature f : anno.getFeatureList()) {
+                    String desc = f.getDesc();
+                    //String [] toks = desc.split(";");
+                    int index = desc.indexOf(":UniProtKB:");
+                    if (index >= 0) {
+                        geneSet.add(desc.substring(index + 1, index + 17));
+                        continue;
+                    }
+                    index = desc.indexOf(":CARD:");
+                    if (index >= 0) {
+                        geneSet.add(desc.substring(index + 1, index + 16));
+                        continue;
+                    }
+                    index = desc.indexOf(":CLUSTERS:");
+                    if (index >= 0) {
+                        geneSet.add(desc.substring(index + 1, index + 19));
+                        continue;//for
+                    }
+                    index = desc.indexOf(":Pfam:");
+                    if (index >= 0) {
+                        geneSet.add(desc.substring(index + 1, index + 16));
+                        continue;
+                    }
+                    index = desc.indexOf(":HAMAP:");
+                    if (index >= 0) {
+                        geneSet.add(desc.substring(index + 1, index + 15));
+                        continue;
+                    }
+                }//for
+            }//for
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        LOG.info("Read " + geneSet.size() + " from " + fileName);
+        return geneSet;
+    }
+
+
 }
 /*RST*
 
