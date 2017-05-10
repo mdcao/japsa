@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -113,7 +112,7 @@ public class CheckInductionCmd extends CommandLine{
         HashSet<String> coreGene = new HashSet<String>();
 
         for (String gene:unionSet){
-            System.out.println(gene);
+           // System.out.println(gene);
             boolean good = true;
             for (Set<String> mySet:geneMap.values()){
                 if (!mySet.contains(gene)){
@@ -126,6 +125,16 @@ public class CheckInductionCmd extends CommandLine{
             }
         }
 
+
+
+        System.out.print("gene");
+        for (String gene:unionList) {
+            if (coreGene.contains(gene))
+                continue;
+            System.out.print("\t" +gene);
+        }
+        System.out.println();
+
         for (String sample:sampleSet){
             System.out.print(sample);
             Set<String> mySet = geneMap.get(sample);
@@ -137,66 +146,21 @@ public class CheckInductionCmd extends CommandLine{
             System.out.println();
         }
 
-        System.out.println("====================================================");
-        for (String sample:sampleSet){
-            System.out.print(sample);
-            Set<String> mySet = geneMap.get(sample);
-            for (String gene:unionList){
-                System.out.print("\t" + (mySet.contains(gene)?"Y":"N"));
-            }
-            System.out.println();
-        }
+        //System.out.println("====================================================");
+        //for (String sample:sampleSet){
+        //   System.out.print(sample);
+        //    Set<String> mySet = geneMap.get(sample);
+        //    for (String gene:unionList){
+        //        System.out.print("\t" + (mySet.contains(gene)?"Y":"N"));
+        //    }
+        //    System.out.println();
+       // }
     }
 
     public static String getSample(Path filePath){
         return filePath.getFileName().toString().replace(".gff","");
     }
-    public static HashSet<String>  openGFF2(Path fileName){
-        HashSet<String> geneSet = new HashSet<String>();
 
-        try {
-            BufferedReader reader = SequenceReader.openFile(fileName.toString());
-            String line = "";
-            while ( (line = reader.readLine())!= null){
-                String  [] toks = line.split("\\t");
-                if (toks.length < 8)
-                    continue;
-                String desc = toks[8];
-                int index = desc.indexOf(":UniProtKB:");
-                if (index >= 0) {
-                    geneSet.add(desc.substring(index + 1, index + 17));
-                    continue;
-                }
-                index = desc.indexOf(":CARD:");
-                if (index >= 0) {
-                    geneSet.add(desc.substring(index + 1, index + 16));
-                    continue;
-                }
-                index = desc.indexOf(":CLUSTERS:");
-                if (index >= 0) {
-                    geneSet.add(desc.substring(index + 1, index + 19));
-                    continue;//for
-                }
-                index = desc.indexOf(":Pfam:");
-                if (index >= 0) {
-                    geneSet.add(desc.substring(index + 1, index + 16));
-                    continue;
-                }
-                index = desc.indexOf(":HAMAP:");
-                if (index >= 0) {
-                    geneSet.add(desc.substring(index + 1, index + 15));
-                    continue;
-                }
-                //LOG.warn("not found " + desc);
-
-            }//for
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-        LOG.info("Read " + geneSet.size() + " from " + fileName);
-        return geneSet;
-    }
     public static HashSet<String>  openGFF(Path fileName){
 
         HashSet<String> geneSet = new HashSet<String>();
@@ -222,12 +186,12 @@ public class CheckInductionCmd extends CommandLine{
                     }
                     index = desc.indexOf(":CLUSTERS:");
                     if (index >= 0) {
-                        geneSet.add(desc.substring(index + 1, index + 19));
+                        geneSet.add(desc.substring(index + 1, index + 18));
                         continue;//for
                     }
                     index = desc.indexOf(":Pfam:");
                     if (index >= 0) {
-                        geneSet.add(desc.substring(index + 1, index + 16));
+                        geneSet.add(desc.substring(index + 1, index + 15));
                         continue;
                     }
                     index = desc.indexOf(":HAMAP:");
