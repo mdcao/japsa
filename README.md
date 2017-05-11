@@ -28,7 +28,7 @@ algorithms, implementation, documentation and feedback:
 * Devika Ganesamoorthy
 * Hoang Anh Nguyen
 * Julia Bernal
-* Lachlan Coin
+* [Lachlan Coin](http://www.imb.uq.edu.au/lachlan-coin)
 * [Lloyd Allison](http://www.allisons.org/ll/)
 * Michael Hall
 * Mikael Boden
