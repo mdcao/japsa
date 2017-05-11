@@ -1,6 +1,8 @@
 package japsa.bio.np.barcode;
 
 import japsa.seq.Alphabet;
+import japsa.seq.FastaReader;
+import japsa.seq.FastqReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
@@ -81,14 +83,13 @@ public class BarCodeAnalysis {
 		
 		barcodeLen /= nSamples;
 		
-		if(print){
-			streamToFile = new SequenceOutputStream[nSamples+1]; // plus unknown
-			for(int i=0;i<nSamples;i++){		
-				streamToFile[i] = SequenceOutputStream.makeOutputStream(barCodesLeft.get(i).getName()+".fastq");
-			}
-			streamToFile[nSamples] = SequenceOutputStream.makeOutputStream("unknown.fastq");
-
-		}
+//		if(print){
+//			for(int i=0;i<nSamples;i++){		
+//				streamToFile[i] = SequenceOutputStream.makeOutputStream(barCodesLeft.get(i).getName()+".fastq");
+//			}
+//			streamToFile[nSamples] = SequenceOutputStream.makeOutputStream("unknown.fastq");
+//
+//		}
 		
 		
 		SCAN_WINDOW = barcodeLen * 3;
@@ -111,12 +112,28 @@ public class BarCodeAnalysis {
 	 * Trying to clustering MinION read data into different samples based on the barcode
 	 */
 	public void clustering(String dataFile) throws IOException, InterruptedException{
+		
 		SequenceReader reader;
 		if(dataFile.equals("-"))
 			reader = SequenceReader.getReader(System.in);
 		else
 			reader = SequenceReader.getReader(dataFile);
 		Sequence seq;
+		String format="";
+		if(print){
+			if(reader instanceof FastaReader)
+				format="fasta";
+			else if (reader instanceof FastqReader)
+				format="fastq";
+			else 
+				format="out";
+			
+			for(int i=0;i<nSamples;i++){		
+				streamToFile[i] = SequenceOutputStream.makeOutputStream(barCodesLeft.get(i).getName()+"." +format);
+			}
+			streamToFile[nSamples] = SequenceOutputStream.makeOutputStream("unknown"+"." +format);
+
+		}
 
 		Sequence s5, s3;
 		final double[] 	lf = new double[nSamples], //left-forward
@@ -213,8 +230,9 @@ public class BarCodeAnalysis {
 				retval = "unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|0-0:0-0|";
 				seq.setName(retval + seq.getName());
 
-				if(print)
-					seq.print(streamToFile[nSamples]);
+				if(print){
+					seq.print(streamToFile[nSamples]);					
+				}
 			}
 			//if the best (sum of both ends) alignment in template sequence is greater than in complement
 			else {
