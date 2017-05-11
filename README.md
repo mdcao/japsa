@@ -20,7 +20,7 @@ in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/lat
 
 ### Authors and Contributors
 Japsa was maintained by Minh Duc Cao (@mdcao). The following 
-people have contributed to the development of Japsa, including ideas, 
+people (in no particular order) have contributed to the development of Japsa, including ideas, 
 algorithms, implementation, documentation and feedback:
 
 * Lachlan Coin
@@ -36,13 +36,18 @@ algorithms, implementation, documentation and feedback:
 
 ### Other projects based on Japsa
 
-* [npScarf](https://github.com/mdcao/npScarf)
-* [npAnalysis](https://github.com/mdcao/npAnalysis)
-* [npReader](https://github.com/mdcao/npReader)
-* [XMas](https://github.com/mdcao/XMas)
-* [eXpert Model](https://github.com/mdcao/xm)
+
+* [eXpert Model](https://github.com/mdcao/xm): The expert model compression model
+* [XMas](https://github.com/mdcao/XMas): Phylogenetic distance method using information theory
+* [capsim](https://github.com/mdcao/capsim): Simulation of capture sequencing
+* [npScarf](https://github.com/mdcao/npScarf): Scaffold and Complete assemblies in real-time fashion
+* [npAnalysis](https://github.com/mdcao/npAnalysis): Realtime identification of bacterial sample
+* [npReader](https://github.com/mdcao/npReader): Real-time extraction and analysis Oxford Nanopore sequencing data
+* [npBarcode](https://github.com/hsnguyen/npBarcode): Demultiplex barcoded Oxford Nanopore sequencing 
+* [PhageXpress](https://github.com/mdcao/phagexpress)
 
 and more to come.
+
 
 ### License
 Japsa is released under the accompanying BSD-like license.

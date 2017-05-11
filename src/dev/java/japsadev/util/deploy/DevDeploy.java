@@ -40,16 +40,7 @@ import japsa.util.CommandLine;
 import japsa.util.deploy.Deploy;
 import japsadev.tools.*;
 //import japsadev.tools.ConsensusGenerateCmd;
-import japsadev.tools.work.BuildMLSTTreeCmd;
-import japsadev.tools.work.BuildXMTreeCmd;
-import japsadev.tools.work.FixFastqNameCmd;
-import japsadev.tools.work.FixNamesTreeCmd;
-import japsadev.tools.work.MethylationAnalysis2Cmd;
-import japsadev.tools.work.MethylationAnalysisCmd;
-import japsadev.tools.work.NpReadAnalysys;
-import japsadev.tools.work.PlasmaAnalysisCmd;
-import japsadev.tools.work.PlasmaAnalysisCrossCorrelationCmd;
-import japsadev.tools.work.TreeHetLinageCmd;
+import japsadev.tools.work.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,12 +56,9 @@ public class DevDeploy {
 	static {
 		//tools.add(new SampleCmd());
 
-		tools.add(new FixRastGFFCmd());
-		tools.add(new CaptureVNTR());		
-		tools.add(new NpReadAnalysys());		
+		tools.add(new CaptureVNTR());
 		tools.add(new ResGeneGenomesCmd());
 		tools.add(new GetFlankBlast());		
-		tools.add(new CombineProdigalCmd());
 
 		tools.add(new String("Working commands"));
 		tools.add(new TreeHetLinageCmd());		
@@ -81,8 +69,7 @@ public class DevDeploy {
 
 		tools.add(new RepeatPrimerCmd());		
 
-		tools.add(new KmerAnalysisCmd());		
-		tools.add(new ProfileDPCmd());	
+		tools.add(new ProfileDPCmd());
 
 		tools.add(new PlasmaAnalysisCmd());
 		tools.add(new MethylationAnalysisCmd());
@@ -98,28 +85,24 @@ public class DevDeploy {
 		tools.add(new VNTRDepthSumCmd());
 		tools.add(new FixFastqNameCmd());
 		tools.add(new SampleCmd());
-		tools.add(new TestSampleCmd());
 		tools.add(new AnalyseCaptureCmd());
 		tools.add(new BreakPointAnalysisCmd());
 		tools.add(new CaptureProbeDesignCmd());
 		tools.add(new ConvertProbeCmd());
-		tools.add(new NanoporeFast5ReaderCmd());
 		tools.add(new VNTRSelectCmd());
-		tools.add(new BarCodeAnalysisCmd());
-		tools.add(new NanoporeBarcodeCmd());
 		tools.add(new NewScarfCmd());
+        tools.add(new GetCDHitCmd());
 
 		tools.add(new GapCloserCmd());
 
 		tools.add(new SelectReadsCmd());
 		tools.add(new StructuralVariationCmd());
-		tools.add(new PhageAnalysisCmd());
-        tools.add(new PhageAnalysis2Cmd());
-		tools.add(new ConsensusGenerateCmd());
 		
 		tools.add(new VNTRClusteringCmd());
+		tools.add(new VNTRClusteringHmmCmd());
+        tools.add(new CheckInductionCmd());
 		//new 
-		//tools.add(new PhageAnalysis2Cmd());
+		//tools.add(new CheckInductionCmd());
 		//
 
 	}

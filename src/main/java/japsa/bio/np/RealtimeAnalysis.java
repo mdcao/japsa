@@ -36,7 +36,8 @@ package japsa.bio.np;
 
 import java.util.Date;
 
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Real time analysis in a thread that runs in parallel with the thread conecting
@@ -46,6 +47,8 @@ import japsa.util.Logging;
  *
  */
 public abstract class RealtimeAnalysis implements Runnable {
+	private static final Logger LOG = LoggerFactory.getLogger(RealtimeAnalysis.class);
+
 
 	private int readPeriod = 0;//Min number of reads before a new analysis
 	private int timePeriod = 0;//Min number of miliseconds before a new analysis	
@@ -62,7 +65,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 	protected String timeNow;
 
 	public void stopWaiting(){	
-		Logging.info("All reads received at " + new Date());
+		LOG.info("All reads received at " + new Date());
 		waiting = false;
 		//TODO: implement notifies if I am sleeping
 	}
@@ -73,7 +76,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 	@Override
 	public void run() {
 		startTime = System.currentTimeMillis();
-		Logging.info("Start analysing data at " + new Date(startTime));
+		LOG.info("Start analysing data at " + new Date(startTime));
 
 		try {
 			Thread.sleep(timePeriod);
@@ -86,7 +89,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 			long timeSleep = timePeriod - (System.currentTimeMillis() - lastTime);
 			if (timeSleep > 0){
 				try {
-					//Logging.info("Not due time, sleep for " + timeSleep/1000.0 + " seconds");
+					//LOG.info("Not due time, sleep for " + timeSleep/1000.0 + " seconds");
 					Thread.sleep(timeSleep);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -97,7 +100,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 			int currentRead = getCurrentRead();
 			if (currentRead - lastReadNumber < readPeriod){
 				try {
-					//Logging.info("Not due read (" + currentRead + "), sleep for " + powerNap/1000.0 + " minutes");
+					//LOG.info("Not due read (" + currentRead + "), sleep for " + powerNap/1000.0 + " minutes");
 					Thread.sleep(powerNap);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -109,7 +112,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 			//assert: read number satisfied
 			timeNow = new Date(lastTime).toString();
 			analysis();
-			Logging.info("RUNTIME\t" + timeNow  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
+			LOG.info("RUNTIME\t" + timeNow  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		}//while
 
 		//perform the final analysis
@@ -117,10 +120,10 @@ public abstract class RealtimeAnalysis implements Runnable {
 		lastReadNumber =  getCurrentRead();
 		timeNow = new Date(lastTime).toString();
 		analysis();
-		Logging.info("RUNTIME\t" + timeNow  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
+		LOG.info("RUNTIME\t" + timeNow  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		//.. and close it
 		close();
-		Logging.info("Real time analysis done");
+		LOG.info("Real time analysis done");
 	}
 
 	abstract protected void close();

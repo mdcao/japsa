@@ -289,9 +289,9 @@ public class NanoporeReaderWindowFX extends Application{
 						return;
 					}
 				}
-				reader.output = _foutput;			
+				reader.output = new File(_foutput).getAbsolutePath();			
 				try{
-					System.setProperty("usr.dir", Paths.get(_foutput).getParent().toString());
+					System.setProperty("usr.dir", Paths.get(reader.output).getParent().toString());
 				}
 				catch(NullPointerException | IllegalArgumentException | SecurityException e ){
 					e.printStackTrace();
@@ -558,9 +558,10 @@ public class NanoporeReaderWindowFX extends Application{
     	
         outputToCombo = new ComboBox<String>();
         outputToCombo.getItems().addAll("to file", "to stdout");   
+        outputToCombo.setValue(reader.output.equals("-")?"to stdout":"to file");
         outputToCombo.valueProperty().addListener((obs_val, old_val, new_val) -> {
         	if(new_val.trim().equals("to file")){
-        		outputTF.setText("");
+        		//outputTF.setText("");
         		outputTF.setDisable(false);
         		outputBrowseButton.setDisable(false);
         	} else{
@@ -581,7 +582,8 @@ public class NanoporeReaderWindowFX extends Application{
         GridPane.setConstraints(outputFormatCombo, 3, 0, 2, 1);
         outputPane.getChildren().add(outputFormatCombo);
     	
-    	outputTF = new TextField(reader.output == null?"":reader.output);
+    	outputTF = new TextField(reader.output);
+    	outputTF.setDisable(reader.output.equals("-"));
     	outputTF.setPromptText("Enter name for output file...");
     	outputTF.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER)  {
@@ -594,6 +596,7 @@ public class NanoporeReaderWindowFX extends Application{
 
     	outputBrowseButton = new ImageButton("icons/folder.png");
     	outputBrowseButton.setPrefSize(10, 10);
+    	outputBrowseButton.setDisable(reader.output.equals("-"));
     	outputBrowseButton.setOnAction((event) -> {
     		FileChooser fileChooser = new FileChooser();
     		fileChooser.setTitle("Save output to file");
@@ -612,17 +615,17 @@ public class NanoporeReaderWindowFX extends Application{
     	outputPane.getChildren().add(outputBrowseButton);
 
     	//init
-        if(reader.output.equals("-")){
-        	outputTF.setText("-");
-        	outputToCombo.setValue("to stdout");
-    		outputTF.setDisable(true);
-    		outputBrowseButton.setDisable(true);
-        }else{
-        	outputTF.setText(reader.output);
-        	outputToCombo.setValue("to file");
-    		outputTF.setDisable(false);
-    		outputBrowseButton.setDisable(false);
-        }
+//        if(reader.output.equals("-")){
+//        	outputTF.setText("-");
+//        	outputToCombo.setValue("to stdout");
+//    		outputTF.setDisable(true);
+//    		outputBrowseButton.setDisable(true);
+//        }else{
+//        	outputTF.setText(reader.output);
+//        	outputToCombo.setValue("to file");
+//    		outputTF.setDisable(false);
+//    		outputBrowseButton.setDisable(false);
+//        }
         
     	
     	serversCB = new CheckBox("Streaming output to server(s)");
@@ -966,6 +969,7 @@ public class NanoporeReaderWindowFX extends Application{
 		txtCompReads.setPrefWidth(100);
 		GridPane.setConstraints(txtCompReads, 1, 5);
         countPane.getChildren().add(txtCompReads);
+
         
         GridPane.setConstraints(countPane, 0, 1);
         mainGrid.getChildren().add(countPane);

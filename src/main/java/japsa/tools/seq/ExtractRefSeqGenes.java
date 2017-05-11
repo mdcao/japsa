@@ -34,13 +34,6 @@
 
 package japsa.tools.seq;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 
 import japsa.bio.BuildSequenceGroupDatabase;
 import japsa.seq.Alphabet;
@@ -50,8 +43,18 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
 
 /**
@@ -63,6 +66,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Extract gene sequences from refseq anotation and group them"
 	)
 public class ExtractRefSeqGenes  extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(ExtractRefSeqGenes.class);
+
 	//CommandLine cmdLine;
 	public ExtractRefSeqGenes(){
 		super();
@@ -133,7 +138,7 @@ public class ExtractRefSeqGenes  extends CommandLine{
 			String strainID = toks[4];
 
 			//if (toks[2].equals(toks[1]) && toks[3].equals("")){
-			//	Logging.info(strainID + " Ignored because of no strain information");
+			//	LOG.info(strainID + " Ignored because of no strain information");
 			//	continue;				
 			//}
 
@@ -146,7 +151,7 @@ public class ExtractRefSeqGenes  extends CommandLine{
 			double n50 = Double.parseDouble(toks[7]);
 
 			if (n50 < 100000){
-				Logging.info(strainID + " Ignored because of low n50 " + n50);
+				LOG.info(strainID + " Ignored because of low n50 " + n50);
 				continue;//while
 			}
 
@@ -165,19 +170,19 @@ public class ExtractRefSeqGenes  extends CommandLine{
 			strainName = strainName.replaceAll("__*", "_");//Make sure no double hyphen
 
 			if (!organismSet.add(organismName)){
-				Logging.info(strainID + " Ignored because of dupNAME\t" + organismName + "\t" + n50);
+				LOG.info(strainID + " Ignored because of dupNAME\t" + organismName + "\t" + n50);
 				continue;
 			}					
 
 
 			if (toks.length >= 14){
 				if (!toks[13].equals("0")){
-					Logging.info(strainID + " Ignored because of not good ST " + toks[13]);
+					LOG.info(strainID + " Ignored because of not good ST " + toks[13]);
 					continue;//while
 				}
 				String ST = toks[12];
 				if (!stSet.add(toks[11])){
-					Logging.info(strainID + " Ignored because of dupST\t" + organismName + "\t" + n50 + " ST_" + ST + " (" + toks[11] +")");
+					LOG.info(strainID + " Ignored because of dupST\t" + organismName + "\t" + n50 + " ST_" + ST + " (" + toks[11] +")");
 					continue;
 				}				
 				
@@ -191,15 +196,15 @@ public class ExtractRefSeqGenes  extends CommandLine{
 				Sequence keySeq = myGenes.get(key);
 				String dbID = mapped.get(key);
 				if (dbID != null)
-					Logging.info("Added " + key + " as "+ dbID +" G");
+					LOG.info("Added " + key + " as "+ dbID +" G");
 				else{
 					dbID = geneDB.addGene(myGenes.get(key));
-					Logging.info("Added " + key + " as "+ dbID +" B");
+					LOG.info("Added " + key + " as "+ dbID +" B");
 				}//else					
 				keySeq.setDesc("JSA=" + dbID+";"+keySeq.getDesc());
 				keySeq.writeFasta(sos);
 			}//for key
-			Logging.info("BIG END " + strainName + " " + geneDB.geneDatabase.size());			
+			LOG.info("BIG END " + strainName + " " + geneDB.geneDatabase.size());
 			/*****************************************************/			
 			System.out.println(strainID + "\t" + strainName + "\t" + species + "\t" + strain + "\t" + toks[8] + "\t" + n50);
 		}
@@ -270,7 +275,7 @@ public class ExtractRefSeqGenes  extends CommandLine{
 			}
 
 			if (seq == null){
-				Logging.info("ERROR: not found sequence for " + anno.getAnnotationID());
+				LOG.info("ERROR: not found sequence for " + anno.getAnnotationID());
 				continue;
 			}
 

@@ -17,6 +17,7 @@ This chapter presents the list of tools provided by Japsa.
    jsa.seq.gff2fasta.rst
    jsa.seq.emalign.rst
    jsa.hts.countReads.rst
+   jsa.hts.errorAnalysis.rst
    jsa.hts.n50.rst
    jsa.np.npreader.rst
    jsa.np.filter.rst

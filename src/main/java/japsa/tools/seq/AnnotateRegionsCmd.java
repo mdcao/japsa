@@ -38,8 +38,9 @@ import japsa.seq.JapsaFeature;
 import japsa.seq.JapsaFileFormat;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -50,7 +51,9 @@ import java.io.IOException;
  */
 @Deployable(scriptName = "jsa.seq.annotate",
 scriptDesc = "Annotate a list of regions using some annotation such as RefSeq")
-public class AnnotateRegionsCmd extends CommandLine{	
+public class AnnotateRegionsCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(AnnotateRegionsCmd.class);
+
 	public AnnotateRegionsCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -77,7 +80,7 @@ public class AnnotateRegionsCmd extends CommandLine{
 		JapsaAnnotation annoAnno = annoF.readAnnotation();
 		while (( inputAnno = inputF.readAnnotation())!=null){
 			//Move the the next annotations if not match
-			Logging.info(inputAnno.getAnnotationID());
+			LOG.info(inputAnno.getAnnotationID());
 			while (!annoAnno.getAnnotationID().equals(inputAnno.getAnnotationID())){
 				annoAnno = annoF.readAnnotation();
 			}

@@ -64,10 +64,6 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 	// Some default ID and description of the sequence
 	private String name = "", desc = "";
 
-	/**
-	 *  
-	 * @param dna
-	 */
 	public AbstractSequence(Alphabet alphabet) {
 		this.alphabet = alphabet;
 	}
@@ -76,12 +72,6 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 		this.alphabet = alphabet;
 		this.name = name;
 	}
-	/**
-	 * Construct a sequence with given dna, name and descriptions
-	 * @param dna
-	 * @param name
-	 * @param desc
-	 */
 
 	public AbstractSequence(Alphabet alphabet, String name, String desc) {
 		this.alphabet = alphabet;
@@ -334,7 +324,8 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 	 * @throws IOException
 	 */
 	public void print(SequenceOutputStream out) throws IOException{
-		writeJSA(out);
+		//writeJSA(out);
+		writeFasta(out);
 	}
 
 	

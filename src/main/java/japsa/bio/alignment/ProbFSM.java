@@ -46,7 +46,8 @@ import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.ByteArray;
 import japsa.util.JapsaMath;
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -61,6 +62,9 @@ import japsa.util.Logging;
  *         - a,b global
  */
 public abstract class ProbFSM {
+	private static final Logger LOG = LoggerFactory.getLogger(ProbFSM.class);
+
+
 	/**
 	 * List of states:
 	 */
@@ -462,7 +466,7 @@ public abstract class ProbFSM {
 			currentEmission = tmp;
 		}
 
-		Logging.info("Hash = " + hash.size());
+		LOG.info("Hash = " + hash.size());
 
 		//timer.systemInfo();
 		//Runtime.getRuntime().gc();

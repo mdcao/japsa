@@ -32,13 +32,7 @@
  * 01/01/2013 - Minh Duc Cao, revised                                       
  ****************************************************************************/
 
-package japsadev.tools;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
+package japsadev.tools.work;
 
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
@@ -47,27 +41,31 @@ import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+
 
 /**
  * @author Minh Duc Cao
  * 
  */
 @Deployable(
-	scriptName = "jsa.dev.fixRastGff",
-	scriptDesc = "Fix rast gff file"
+	scriptName = "jsa.dev.cdhit",
+	scriptDesc = "Sample script description"
 	)
-public class FixRastGFFCmd extends CommandLine{	
-	public FixRastGFFCmd(){
+public class GetCDHitCmd extends CommandLine{
+	public GetCDHitCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		
-		addString("input", null, "Name of gff input file", true);
-		addString("sequence", null, "Name of fasta sequence file", true);
-		addString("output", "-", "Name of output file");
-		
-		
+
+        addString("sequence",null,"sequence",true);
+		addString("input",null,"name",true);
+        addString("output",null,"name",true);
 		//addBoolean("reverse",false,"Reverse sort order");
 		addStdHelp();		
 	} 
@@ -75,90 +73,107 @@ public class FixRastGFFCmd extends CommandLine{
 	public static void main(String[] args) throws IOException {		
 
 		/*********************** Setting up script ****************************/		
-		CommandLine cmdLine = new FixRastGFFCmd();		
+		CommandLine cmdLine = new GetCDHitCmd();
 		args = cmdLine.stdParseLine(args);
 		/**********************************************************************/
-		
+
+        String sequence = cmdLine.getStringVal("sequence");
 		String input = cmdLine.getStringVal("input");
-		String sequence = cmdLine.getStringVal("sequence");
-		String output = cmdLine.getStringVal("output");
-				
-		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
-		sos.print("##gff-version 3\n");
-				
-		SequenceReader reader = SequenceReader.getReader(sequence);
-		
-		Sequence seq;
-		
-		while ((seq = reader.nextSequence(Alphabet.DNA5()))!= null){
-			sos.print("##sequence-region " + seq.getName() + " 1 " + seq.length() + '\n');	
+        String output = cmdLine.getStringVal("output");
+
+		ArrayList<Sequence> seqs = SequenceReader.readAll(sequence, Alphabet.DNA());
+		HashMap<String, Sequence> map = new HashMap<String, Sequence>();
+
+		for (Sequence seq:seqs){
+			map.put(seq.getName(),seq);
 		}
+
+		BufferedReader reader = SequenceReader.openFile(input + ".clstr");
+		ArrayList<Group> groups = new ArrayList<Group>();
+
+		String line = "";
+
+		Group group = null;
+		while ((line = reader.readLine())!=null){
+		    if (line.startsWith(">Cluste")){
+		        if (group != null){
+		            groups.add(group);
+
+                }
+		        group = new Group();
+		        continue;
+            }
+
+            String [] toks = line.trim().split("\\s");
+		    String name = toks[2].substring(1);
+		    name = name.substring(0, name.length()-3);
+		    group.count ++;
+		    group.appendList(name);
+
+
+		    Sequence s = map.get(name);
+		    String desc = s.getDesc();
+		    if (desc != null) {
+                String[] descs = desc.split("\\s");
+                try{
+                    int reads = Integer.parseInt(descs[0]);
+                    group.countRead +=  reads;
+                }catch (Exception e){
+                }
+            }
+
+
+		    if (toks[3].equals("*"))
+		        group.seq = s;
+		}//while
+        if (group != null){
+            groups.add(group);
+        }
+
 		reader.close();
-		
-		BufferedReader bf = new BufferedReader(new FileReader(input));
-		String line;
-		
-		ArrayList<Record> records = new ArrayList<Record>(); 
-		while ((line = bf.readLine()) != null){
-			if (line.startsWith("#"))
-				continue;
-			line = line.trim();
-			String [] toks = line.split("\t");
-			Record rec = new Record();
-			rec.chr = toks[0]; 
-			rec.start = Integer.parseInt(toks[3]);
-			rec.end = Integer.parseInt(toks[4]);
-			rec.str = line;
-			records.add(rec);
-		}
-		bf.close();
-		
-		
-		Collections.sort(records);
-		
-		for (Record rec:records){
-			sos.print(rec.str);
-			sos.println();
-		}		
-		sos.close();		
-	}
-	
-	static class Record implements Comparable<Record>{
-		String chr = "chr";
-		int start, end;
-		String str;
+        Collections.sort(groups);
 
-		/* (non-Javadoc)
-		 * @see java.lang.Comparable#compareTo(java.lang.Object)
-		 */
-		@Override
-		public int compareTo(Record o) {
-			int comp = chr.compareTo(o.chr);
-			
-			if (comp == 0)
-				comp = Integer.compare(start, o.start);
-			
-			if (comp == 0)
-				comp = Integer.compare(end, o.end);
-				
-			return comp;
-		}
-		
-	}
-	
+
+        SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output + ".fasta");
+        SequenceOutputStream sosDat = SequenceOutputStream.makeOutputStream(output + ".dat");
+        int index = 0;
+        for (Group g: groups){
+            index ++;
+            Sequence s = g.seq;
+            s.setName("group"+index);
+
+            s.setDesc(g.count + " " + g.countRead);
+            s.writeFasta(sos);
+
+            sosDat.print("group" + index + " " + g.count + " " + g.countRead + " " + g.list);
+            sosDat.println();
+
+        }
+        sos.close();
+        sosDat.close();
+
+    }
+
+	static class Group implements Comparable<Group>{
+	    Sequence seq = null;
+	    int count = 0;
+	    int countRead = 0;
+	    String list = "";
+
+	    public void appendList(String s){
+	        if (list.length() > 0) list = list + ",";
+	        list = list  + s;
+
+        }
+
+        @Override
+        public int compareTo(Group o) {
+	        int r = o.count - this.count;
+            if (r == 0)
+                return o.countRead - countRead;
+            else
+                return r;
+        }
+    }
 }
-/*RST*
 
-
-
- 
-  
-  
-  
-  
-  
-  
-  
-  
-*RST*/
-  

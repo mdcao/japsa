@@ -114,7 +114,7 @@ import com.google.common.io.Files;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.7-04b";
+	public static String VERSION = "1.7-05b";
 	public static final String FIELD_SEP = "\t";
 
 	public static boolean DEBUG = true;

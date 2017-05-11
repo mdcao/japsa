@@ -52,8 +52,8 @@ public class HTSUtilities {
 	 * Extract read between start and end (on ref)
 	 * @param record
 	 * @param readSequence
-	 * @param startState
-	 * @param end
+	 * @param fromPos
+	 * @param toPos
 	 * @return
 	 */
 	public static Sequence readSequence(SAMRecord record, Sequence readSequence, int fromPos, int toPos){
@@ -421,7 +421,7 @@ public class HTSUtilities {
 	 * @param refPositions
 	 * @return
 	 */
-	public static int[] positionsInRead(SAMRecord sam, int [] refPositions){
+	public static int[] positionsInRead(SAMRecord sam, final int [] refPositions){
 		int readPos = 0;//start from 0					
 		int refPos = sam.getAlignmentStart();//convert to 0-based index		
 		int [] readPositions = new int[refPositions.length];
