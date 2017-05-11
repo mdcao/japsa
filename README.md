@@ -20,19 +20,21 @@ in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/lat
 
 ### Authors and Contributors
 Japsa was maintained by Minh Duc Cao (@mdcao). The following 
-people (in no particular order) have contributed to the development of Japsa, including ideas, 
+people (in alphatical order) have contributed to the development of Japsa, including ideas, 
 algorithms, implementation, documentation and feedback:
 
-* Lachlan Coin
+* Bhuvan Sankar
+* David Powell
 * Devika Ganesamoorthy
-* Michael Hall
-* Son Hoang Nguyen
-* Mikael Boden
-* Lloyd Allison
-* Trevor I Dix
 * Hoang Anh Nguyen
 * Julia Bernal
-* David Powell
+* Lachlan Coin
+* Lloyd Allison
+* Michael Hall
+* Mikael Boden
+* Son Hoang Nguyen
+* Trevor I Dix
+
 
 ### Other projects based on Japsa
 
