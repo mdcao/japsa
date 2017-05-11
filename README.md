@@ -29,7 +29,7 @@ algorithms, implementation, documentation and feedback:
 * Hoang Anh Nguyen
 * Julia Bernal
 * Lachlan Coin
-* Lloyd Allison
+* [Lloyd Allison]
 * Michael Hall
 * Mikael Boden
 * Son Hoang Nguyen
