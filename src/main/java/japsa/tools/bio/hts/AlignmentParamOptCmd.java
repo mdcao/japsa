@@ -228,7 +228,7 @@ public class AlignmentParamOptCmd extends CommandLine{
 
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
-	 
+
 	 */
 	static double[] paramEst(String bamFile, String refFile, int qual) throws IOException{	
 
