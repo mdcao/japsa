@@ -33,8 +33,6 @@
  ****************************************************************************/
 package japsa.seq;
 
-import japsa.seq.Alphabet;
-
 import java.io.IOException;
 import java.util.Arrays;
 

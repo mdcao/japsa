@@ -62,8 +62,8 @@ import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -74,7 +74,7 @@ import org.slf4j.LoggerFactory;
 	scriptDesc = "Multi-locus strain typing"
 	)
 public class MLSTCmd extends CommandLine{
-    private static final Logger LOG = LoggerFactory.getLogger(MLSTCmd.class);
+    //private static final Logger LOG = LoggerFactory.getLogger(MLSTCmd.class);
 	//CommandLine cmdLine;
 	public MLSTCmd(){
 		super();

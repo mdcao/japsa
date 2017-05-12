@@ -325,7 +325,6 @@ public class VNTRDepthCmd extends CommandLine{
 				if (depth){
 					String cmd = "samtools depth -q "+qual+" -r " + chrom + ":" + startSeq + "-" + endRep +"  " + bamFiles[i];
 
-					//Logging.info("Run " + cmd);
 					Process process = Runtime.getRuntime().exec(cmd);
 					BufferedReader depthReader = new BufferedReader (new InputStreamReader(process.getInputStream()));
 					String depthLine = "";

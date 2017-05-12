@@ -121,10 +121,6 @@ public class MLSTyping{
 				index_ = alleleName.lastIndexOf('_');				
 				alleleNo = Integer.parseInt(alleleName.substring(1 + index_));
 				alleleNo2AlleleIndex[i][alleleNo] = x;
-
-				//if (!bitSets[i].get(alleleNo)){
-				//	Logging.warn("Allele " + alleleName + " not used");
-				//}//if
 			}//for
 		}
 	}

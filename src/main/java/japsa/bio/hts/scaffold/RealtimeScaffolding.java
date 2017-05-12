@@ -1,11 +1,5 @@
 package japsa.bio.hts.scaffold;
-import htsjdk.samtools.SAMRecord;
 
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,10 +11,22 @@ import japsa.bio.np.RealtimeAnalysis;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.util.Logging;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+
 
 //Simulate fastq realtime generator: jsa.np.timeEmulate -i <input> -output -
 public class RealtimeScaffolding {
+	private static final Logger LOG = LoggerFactory.getLogger(RealtimeScaffolding.class);
+
 	RealtimeScaffolder scaffolder;
 	public ScaffoldGraphDFS graph;
 	int currentReadCount = 0;
@@ -34,7 +40,7 @@ public class RealtimeScaffolding {
 
 	/**
 	 * MDC tried to include BWA as part
-	 * @param bamFile
+	 * @param inFile
 	 * @param readNumber
 	 * @param timeNumber
 	 * @param minCov
@@ -47,7 +53,7 @@ public class RealtimeScaffolding {
 		scaffolder.setReadPeriod(readNumber);
 		scaffolder.setTimePeriod(timeNumber * 1000);
 
-		Logging.info("Scaffolding ready at " + new Date());
+		LOG.info("Scaffolding ready at " + new Date());
 
 		//...
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -61,7 +67,7 @@ public class RealtimeScaffolding {
 			else
 				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
 		}else{
-			Logging.info("Starting bwa  at " + new Date());
+			LOG.info("Starting bwa  at " + new Date());
 			ProcessBuilder pb = null;
 			if ("-".equals(inFile)){
 				pb = new ProcessBuilder(bwaExe, 
@@ -108,13 +114,13 @@ public class RealtimeScaffolding {
 
 			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
 
-			Logging.info("bwa started x");			
+			LOG.info("bwa started x");
 
 			//SequenceReader seqReader = SequenceReader.getReader(inFile);
 
 			//SequenceOutputStream 
 			//outStrs = new SequenceOutputStream(bwaProcess.getOutputStream());
-			//Logging.info("set up output from bwa");
+			//LOG.info("set up output from bwa");
 
 			//Start a new thread to feed the inFile into bwa input			
 			//Thread thread = new Thread(){
@@ -122,7 +128,7 @@ public class RealtimeScaffolding {
 			//		Sequence seq;
 			//		Alphabet dna = Alphabet.DNA16();
 			//		try {
-			//			Logging.info("Thread to feed bwa started");
+			//			LOG.info("Thread to feed bwa started");
 			//			while ( (seq = seqReader.nextSequence(dna)) !=null){
 			//				seq.writeFasta(outStrs);
 			//			}
@@ -205,7 +211,7 @@ public class RealtimeScaffolding {
 		scaffolder.setReadPeriod(readNumber);
 		scaffolder.setTimePeriod(timeNumber * 1000);
 
-		Logging.info("Scaffolding ready at " + new Date());
+		LOG.info("Scaffolding ready at " + new Date());
 
 		//...
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);

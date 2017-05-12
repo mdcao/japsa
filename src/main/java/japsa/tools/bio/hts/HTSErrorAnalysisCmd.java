@@ -58,7 +58,9 @@ import htsjdk.samtools.ValidationStringency;
 @Deployable(
 	scriptName = "jsa.hts.errorAnalysis",
 	scriptDesc = "Error analysis of sequencing data")
-public class HTSErrorAnalysisCmd extends CommandLine{	
+public class HTSErrorAnalysisCmd extends CommandLine{
+//	private static final Logger LOG = LoggerFactory.getLogger(HTSErrorAnalysisCmd.class);
+
 	public HTSErrorAnalysisCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -129,7 +131,7 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 			//make the read seq			
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			if (readSeq.length() <= 1){
-				//Logging.warn(sam.getReadName() +" ignored");
+				//LOG.warn(sam.getReadName() +" ignored");
 				//TODO: This might be secondary alignment, need to do something about it
 				continue;
 			}			

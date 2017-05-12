@@ -36,8 +36,9 @@ package japsa.tools.bio.hts;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -50,7 +51,9 @@ import java.io.IOException;
 @Deployable(
 	scriptName = "jsa.hts.fqtrim",
 	scriptDesc = "Trim reads from a fastq file and break the file to smaller ones")
-public class FastQTrimCmd extends CommandLine{	
+public class FastQTrimCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(FastQTrimCmd.class);
+
 	public FastQTrimCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -90,7 +93,8 @@ public class FastQTrimCmd extends CommandLine{
 		boolean trim = cmdLine.getBooleanVal("trim");
 
 		if (end > 0 && begin >= end) {
-			Logging.exit("Begin "+(begin) + " must be smaller than end (" + end +")", -1);			
+			LOG.error("Begin "+(begin) + " must be smaller than end (" + end +")", -1);
+			System.exit(1);
 		}	
 
 		if (size == 0)
@@ -171,6 +175,6 @@ public class FastQTrimCmd extends CommandLine{
 			outStream.print('\n');
 		}//while
 		outStream.close();
-		Logging.info("Write " + countAll + " reads to " + index + " files" );		
+		LOG.info("Write " + countAll + " reads to " + index + " files" );
 	}
 }

@@ -40,8 +40,9 @@ import japsa.bio.hts.scaffold.ScaffoldGraph;
 import japsa.bio.hts.scaffold.ScaffoldGraphDFS;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -57,6 +58,7 @@ import java.io.IOException;
 		seeAlso = "jsa.np.npreader, jsa.util.streamServer, jsa.util.streamClient"
 		)
 public class GapCloserCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(GapCloserCmd.class);
 
 	public GapCloserCmd(){
 		super();
@@ -164,9 +166,9 @@ public class GapCloserCmd extends CommandLine{
 		}
 
 		if(spadesFolder !=null && graphFile.exists() && pathFile.exists())
-			Logging.info("===> Use assembly graph and path from SPAdes!");
+			LOG.info("===> Use assembly graph and path from SPAdes!");
 		else{
-			Logging.warn("Not found any legal SPAdes output folder, assembly graph thus not included!");
+			LOG.warn("Not found any legal SPAdes output folder, assembly graph thus not included!");
 			spadesFolder=null;
 		}
 
@@ -188,13 +190,18 @@ public class GapCloserCmd extends CommandLine{
 		minSupport = cmdLine.getIntVal("support"),
 		maxRepeat = cmdLine.getIntVal("maxRepeat");
 		//if(marginThres < 0)
-		//	Logging.exit("Marginal threshold must not be negative", 1);			
-		if(minContig <= 0)
-			Logging.exit("Minimum contig length has to be positive", 1);
-		if(minSupport <= 0)
-			Logging.exit("Minimum supporting reads has to be positive", 1);
-		if(maxRepeat <= 0)
-			Logging.exit("Maximal possible repeat length has to be positive", 1);
+		//	LOG.exit("Marginal threshold must not be negative", 1);
+		if(minContig <= 0) {
+			LOG.error("Minimum contig length has to be positive");
+			System.exit(1);
+
+		}if(minSupport <= 0) {
+			LOG.error("Minimum supporting reads has to be positive");
+			System.exit(1);
+		}
+		if(maxRepeat <= 0) {
+			LOG.error("Maximal possible repeat length has to be positive", 1);
+		}
 
 
 		ScaffoldGraph.minContigLength = minContig;
@@ -206,16 +213,22 @@ public class GapCloserCmd extends CommandLine{
 
 		double cov = cmdLine.getDoubleVal("cov");
 		int qual = cmdLine.getIntVal("qual");
-		if(qual < 0)
-			Logging.exit("Phred score of quality has to be positive", 1);
+		if(qual < 0) {
+			LOG.error("Phred score of quality has to be positive");
+			System.exit(1);
+		}
 
 		int number = cmdLine.getIntVal("read"),
 				time = cmdLine.getIntVal("time");
 
-		if(number <= 0)
-			Logging.exit("Number of reads has to be positive", 1);			
-		if(time < 0)
-			Logging.exit("Sleeping time must not be negative", 1);	
+		if(number <= 0) {
+			LOG.error("Number of reads has to be positive");
+			System.exit(1);
+		}
+		if(time < 0) {
+			LOG.error("Sleeping time must not be negative");
+			System.exit(1);
+		}
 		/**********************************************************************/
 
 		ScaffoldGraph graph;

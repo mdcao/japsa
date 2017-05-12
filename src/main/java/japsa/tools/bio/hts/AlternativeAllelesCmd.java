@@ -54,8 +54,9 @@ import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -66,6 +67,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Filter reads supporting alternative alleles"
 	)
 public class AlternativeAllelesCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(AlternativeAllelesCmd.class);
+
 	//CommandLine cmdLine;
 	public AlternativeAllelesCmd(){
 		super();
@@ -96,12 +99,6 @@ public class AlternativeAllelesCmd extends CommandLine{
 		addSequence(input, vcf, ref, output,threshold);
 
 	}
-	/**
-	 * Error analysis of a bam file. Assume it has been sorted
-	 * @param inFile
-	 * @param pad
-	 * @throws IOException 
-	 */
 
 	public static class VarRecord{
 		String chrom;
@@ -187,7 +184,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 		String myChrom = fVar.chrom;
 		Sequence refSeq = null;
 		{
-			Logging.info("Read reference started");
+			LOG.info("Read reference started");
 			ArrayList<Sequence> seqs = SequenceReader.readAll(reference, Alphabet.DNA());
 			for (Sequence seq:seqs){
 				if (seq.getName().equals(myChrom)){
@@ -195,7 +192,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 					break;
 				}
 			}
-			Logging.info("Read reference done");
+			LOG.info("Read reference done");
 		}
 
 		if(refSeq == null){
@@ -226,9 +223,9 @@ public class AlternativeAllelesCmd extends CommandLine{
 		}
 
 		SAMRecordIterator samIter = samReader.query(refSeq.getName(),0,0,false);
-		Logging.info(" " + samIter.hasNext());
+		LOG.info(" " + samIter.hasNext());
 
-		Logging.info("Chrom = " + myChrom + " RefName = " + refSeq.getName() + " chromIndex = " + myChromIndex);
+		LOG.info("Chrom = " + myChrom + " RefName = " + refSeq.getName() + " chromIndex = " + myChromIndex);
 
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
@@ -351,7 +348,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 					break;
 				case X :
 					//do some thing here
-					Logging.error("Var X is not currently support, please let Minh know if you see this");
+					LOG.error("Var X is not currently support, please let Minh know if you see this");
 					readPos += length;
 					refPos  += length;
 					break;

@@ -40,6 +40,8 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A collection of utilities to analyse HTS, based on HTS library
@@ -47,6 +49,9 @@ import japsa.seq.Sequence;
  *
  */
 public class HTSUtilities {
+	private static final Logger LOG = LoggerFactory.getLogger(HTSUtilities.class);
+
+
 
 	/**
 	 * Extract read between start and end (on ref)
@@ -118,7 +123,8 @@ public class HTSUtilities {
 		}//for	
 
 		if (readFrom ==0 || readTo ==0){
-			Logging.exit("Error at HTSUtilities.readSequence " + readFrom + " " + readTo, 1);
+			LOG.error("Error at HTSUtilities.readSequence " + readFrom + " " + readTo, 1);
+			System.exit(1);
 		}
 		if (record.getReadNegativeStrandFlag()){
 			//Need to complement the read sequence before calling subsequence = calling sub l-e, l-s then complementing
@@ -197,7 +203,7 @@ public class HTSUtilities {
 
 		}// for
 		if (startRead < 0 || endRead < 0){
-			Logging.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
+			LOG.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
 			return null;
 		}		
 
@@ -270,7 +276,7 @@ public class HTSUtilities {
 				readEnd = readLength;//1-index
 
 			if (readLength != readSequence.length()){
-				Logging.error("Error0 " + record.getReadName() + " " + readSequence.length() + " vs estimated " + readLength + " Flag = " + record.getFlags());
+				LOG.error("Error0 " + record.getReadName() + " " + readSequence.length() + " vs estimated " + readLength + " Flag = " + record.getFlags());
 				return null;
 			}
 
@@ -280,7 +286,7 @@ public class HTSUtilities {
 				start = 1;//I am still live in 1-index world
 
 			if (readEnd > readSequence.length()){
-				Logging.error("Error1 " + record.getReadName() + " " + record.getReadLength() + " vs " + readEnd);
+				LOG.error("Error1 " + record.getReadName() + " " + record.getReadLength() + " vs " + readEnd);
 				return null;
 			}
 			int end = readEnd + right;
@@ -289,7 +295,7 @@ public class HTSUtilities {
 				end = readSequence.length();
 
 			if (start >= end){
-				Logging.error("Error2 " + record.getReadName() + " " + record.getReadLength() + " " + start + " " + end);
+				LOG.error("Error2 " + record.getReadName() + " " + record.getReadLength() + " " + start + " " + end);
 				return null;
 			}
 
@@ -307,7 +313,7 @@ public class HTSUtilities {
 			}
 
 		}catch(Exception e){
-			Logging.warn(e.getMessage());
+			LOG.warn(e.getMessage());
 			e.printStackTrace();
 			//continue;//while
 			return null;

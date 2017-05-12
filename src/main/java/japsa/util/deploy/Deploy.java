@@ -218,8 +218,6 @@ public class Deploy {
 		
 		tools.add("==========Testing===============");
 		tools.add(new VNTRLongReadsV2Cmd());
-
-
 		//tools.add(new ResistanceGeneCardCmd());
 	}	
 

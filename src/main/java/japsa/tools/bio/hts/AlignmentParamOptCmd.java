@@ -52,8 +52,9 @@ import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.HTSUtilities;
 import japsa.util.JapsaMath;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -62,6 +63,9 @@ import japsa.util.deploy.Deployable;
 @Deployable(scriptName = "jsa.hts.alignOpt", 
 scriptDesc = "Parameter estimation for alignment of erronenous read data")
 public class AlignmentParamOptCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(AlignmentParamOptCmd.class);
+
+
 	//static Alphabet alphabet = Alphabet.DNA();
 
 	public AlignmentParamOptCmd(){
@@ -183,7 +187,7 @@ public class AlignmentParamOptCmd extends CommandLine{
 		ps.println(bwaCommand);
 		ps.close();		
 
-		Logging.info("Running " + bwaCommand);
+		LOG.info("Running " + bwaCommand);
 		Process process = Runtime.getRuntime().exec("bash ./" + scriptFile);
 
 		process.waitFor();
@@ -213,7 +217,7 @@ public class AlignmentParamOptCmd extends CommandLine{
 		ps.println(bwaCommand);
 		ps.close();		
 
-		Logging.info("Running " + bwaCommand);
+		LOG.info("Running " + bwaCommand);
 		Process process = Runtime.getRuntime().exec("bash ./" + scriptFile);
 
 		process.waitFor();
@@ -224,9 +228,7 @@ public class AlignmentParamOptCmd extends CommandLine{
 
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
-	 * @param bamFile
-	 * @param pad
-	 * @throws IOException 
+	 
 	 */
 	static double[] paramEst(String bamFile, String refFile, int qual) throws IOException{	
 
@@ -273,7 +275,7 @@ public class AlignmentParamOptCmd extends CommandLine{
 			//make the read seq			
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			if (readSeq.length() <= 1){
-				Logging.warn(sam.getReadName() +" ignored");
+				LOG.warn(sam.getReadName() +" ignored");
 				continue;
 			}
 			

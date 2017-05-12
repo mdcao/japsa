@@ -40,8 +40,12 @@ import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 public class Demultiplexer {
+	//private static final Logger LOG = LoggerFactory.getLogger(Demultiplexer.class);
+
 	int 	SCAN_WINDOW, 
 			DIST_THRES,
 			SCORE_THRES; 
@@ -122,7 +126,7 @@ public class Demultiplexer {
 		BarcodeAlignment barcodeAlignment = new BarcodeAlignment(barcodeSeq, tipSeq);
 
 		if(seq.length() < barcodeLen * 2 + 200){
-//			Logging.info("Ignoring short sequence " + seq.getName());
+//			LOG.info("Ignoring short sequence " + seq.getName());
 			if(toPrint)
 				seq.print(streamToFile[nSamples]);
 			seq.setName("unknown:0.0:0.0|" + seq.getName());
@@ -163,7 +167,7 @@ public class Demultiplexer {
 
 			double myScore = Math.max(Math.max(tf[i], tr[i]), Math.max(cf[i], cr[i]));
 			if (myScore > bestScore){
-				//Logging.info("Better score=" + myScore);
+				//LOG.info("Better score=" + myScore);
 				distance = myScore-bestScore;
 				bestScore = myScore;		
 				bestIndex = i;
@@ -178,14 +182,14 @@ public class Demultiplexer {
 		String retval="";
 		DecimalFormat twoDForm =  new DecimalFormat("#.##");
 		if(bestScore < SCORE_THRES || distance < DIST_THRES){
-			//Logging.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
+			//LOG.info("Confounding sequence " + seq.getName() + " with low grouping score " + bestScore);
 			retval = "unknown:"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
 
 			if(toPrint)
 				seq.print(streamToFile[nSamples]);
 		}
 		else {
-			//Logging.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
+			//LOG.info("Sequence " + seq.getName() + " might belongs to sample " + barCodes.get(bestIndex).getName() + " with score=" + bestScore);
 			retval = barCodes.get(bestIndex).getName()+":"+Double.valueOf(twoDForm.format(bestScore))+":"+Double.valueOf(twoDForm.format(distance))+"|";
 
 			if(toPrint)
