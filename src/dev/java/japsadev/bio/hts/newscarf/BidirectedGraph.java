@@ -185,7 +185,19 @@ public class BidirectedGraph extends AdjacencyListGraph{
 //				System.out.println("Before reduce => Node: " + getNodeCount() + " Edge: " + getEdgeCount());
 				
 //				AbstractNode comp=
-				this.reduce(path);
+		    	System.out.print("Checking: ");
+		    	int uniqueCount=0;
+		    	for(Node n:path.getEachNode()){
+		    		if(isUnique(n))
+		    			uniqueCount++;
+		    	}
+		    	if(uniqueCount > 1){
+		    		System.out.println("reducing...");
+		    		this.reduce(path);
+				}else
+		    	{
+		    		System.out.println("ignore path with less than 1 unique contig!");
+		    	}
 
 //				if(comp!=null){
 //					System.out.println("Reverting node: " + comp.getId());
@@ -273,6 +285,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
      * @param v Node to be reverted (1-level reverting)
      */
     public void revert(AbstractNode v){
+    	System.out.println("Reverting...");
     	Path p=v.getAttribute("path");
     	if(p==null) return;
     	

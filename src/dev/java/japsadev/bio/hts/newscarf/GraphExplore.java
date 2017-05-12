@@ -19,7 +19,7 @@ public class GraphExplore {
     }
 
     public GraphExplore() throws IOException{
-    	System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+    	//System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
     	
     	BidirectedGraph graph= new BidirectedGraph();
         graph.addAttribute("ui.quality");
@@ -27,7 +27,7 @@ public class GraphExplore {
         graph.addAttribute("ui.stylesheet", styleSheet);
         graph.display();
         
-        graph.loadFromFile("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/assembly_graph.fastg");
+        graph.loadFromFile("/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/assembly_graph.fastg");
 
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 
@@ -43,7 +43,7 @@ public class GraphExplore {
          * Testing reduce function
          */
         try {
-			graph.readPathsFromSpades("/home/s.hoangnguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/contigs.paths");
+			graph.readPathsFromSpades("/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/contigs.paths");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
