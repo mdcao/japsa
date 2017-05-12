@@ -38,7 +38,8 @@ import japsa.seq.JapsaAnnotation;
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -53,6 +54,8 @@ import java.util.Iterator;
  *
  */
 public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
+	private static final Logger LOG = LoggerFactory.getLogger(TandemRepeatVariant.class);
+
 
 	public static String 
 	varHd    = "var",                 //06
@@ -97,8 +100,9 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 	}
 
 	/**
-	 * @param tandemRepeat the tandemRepeat to set
+	 * @param tr the tandemRepeat to set
 	 */
+
 	public void setTandemRepeat (TandemRepeat tr) {
 		this.tandemRepeat = tr;
 	}
@@ -339,7 +343,7 @@ public class TandemRepeatVariant implements Comparable<TandemRepeatVariant>{
 
 		}//while
 
-		Logging.info("Read in " + trfList.size() + " TRs");
+		LOG.info("Read in " + trfList.size() + " TRs");
 		return trfList;
 	}
 

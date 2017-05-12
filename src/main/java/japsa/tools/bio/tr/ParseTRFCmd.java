@@ -43,8 +43,9 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -58,7 +59,9 @@ import java.util.Iterator;
  */
 @Deployable(scriptName = "jsa.trv.parseTRF",
             scriptDesc = "Parse trf output to jsa, bed or tr format")
-public class ParseTRFCmd extends CommandLine{	
+public class ParseTRFCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(ParseTRFCmd.class);
+
 	public ParseTRFCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -205,10 +208,10 @@ public class ParseTRFCmd extends CommandLine{
 					if (tr.getScore() > lastTR.getScore()){
 						anno.remove(lastTR);
 						skip ++;retain --;
-						Logging.warn("Skip [" + lastTR.getStart() + " " + lastTR.getEnd() + "](" +lastTR.getScore()+") because of [" + tr.getStart() + " " + tr.getEnd() + "](" +tr.getScore() +")");
+						LOG.warn("Skip [" + lastTR.getStart() + " " + lastTR.getEnd() + "](" +lastTR.getScore()+") because of [" + tr.getStart() + " " + tr.getEnd() + "](" +tr.getScore() +")");
 					}else{
 						skip ++;
-						Logging.warn("Skip [" + tr.getStart() + " " + tr.getEnd() + "](" +tr.getScore()+") because of [" + lastTR.getStart() + " " + lastTR.getEnd() + "](" +lastTR.getScore() +")");
+						LOG.warn("Skip [" + tr.getStart() + " " + tr.getEnd() + "](" +tr.getScore()+") because of [" + lastTR.getStart() + " " + lastTR.getEnd() + "](" +lastTR.getScore() +")");
 						continue;
 					}
 				}
@@ -223,7 +226,7 @@ public class ParseTRFCmd extends CommandLine{
 			write(seq, anno, out, format);
 			
 		out.close();			
-		Logging.info(" Retain " + retain + " records, skip " + skip + " because of overlapping and filter "+ filter + " of irrelevant period size");
+		LOG.info(" Retain " + retain + " records, skip " + skip + " because of overlapping and filter "+ filter + " of irrelevant period size");
 	}
 	
 	/**

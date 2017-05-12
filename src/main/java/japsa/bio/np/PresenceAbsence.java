@@ -195,7 +195,7 @@ public class PresenceAbsence {
 			int index1 = nrep - index0 -1;
 			if (index1 <= index0)
 				throw new RuntimeException("Confident interval of " + confidentInterval + " does not work with sample = " + nrep);
-			//Logging.info("YYY " + index0 + " " + index1 + " from " + nrep + " and " +confidentInterval );
+			//LOG.info("YYY " + index0 + " " + index1 + " from " + nrep + " and " +confidentInterval );
 			res[k][0] = samples[index0];
 			res[k][1] = samples[index1];
 		}

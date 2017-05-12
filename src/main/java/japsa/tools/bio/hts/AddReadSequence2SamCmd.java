@@ -44,8 +44,9 @@ import htsjdk.samtools.ValidationStringency;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +64,8 @@ import java.io.IOException;
 		scriptDesc = "Add read sequences to secondary alignment, applied only for"
 				+ "\nsam files by bwa without sorting."
 				+ "\nNote it does not support paired-end at this version")
-public class AddReadSequence2SamCmd extends CommandLine{	
+public class AddReadSequence2SamCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(AddReadSequence2SamCmd.class);
 	public AddReadSequence2SamCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -114,7 +116,7 @@ public class AddReadSequence2SamCmd extends CommandLine{
 			if (!readID.equals(sam.getReadName())){				
 				readSequence = sam.getReadString();
 				if (readSequence.length() < 2){
-					Logging.error("Some thing wrong " + sam.getReadName());
+					LOG.error("Some thing wrong " + sam.getReadName());
 					continue;
 				}
 				readID = sam.getReadName();

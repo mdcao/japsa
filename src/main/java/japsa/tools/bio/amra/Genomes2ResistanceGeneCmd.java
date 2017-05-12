@@ -103,7 +103,7 @@ public class Genomes2ResistanceGeneCmd extends CommandLine {
 			//System.out.println(s);
 			String geneRes = resDB.getRes(s);
 			if (geneRes != null && geneRes.length() > 0){
-				//Logging.info(line + " : " + geneRes);
+				//LOG.info(line + " : " + geneRes);
 				String [] toks = geneRes.split(",");
 				for (String tok:toks){
 					sos.print(tok + "\t" + resDB.getClass(s) + "\n");
