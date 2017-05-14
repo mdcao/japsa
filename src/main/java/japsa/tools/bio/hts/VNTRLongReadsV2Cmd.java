@@ -52,7 +52,6 @@ import japsa.util.CommandLine;
 import japsa.util.DoubleArray;
 import japsa.util.IntArray;
 import japsa.util.JapsaMath;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 import japsa.xm.expert.Expert;
 import japsa.xm.expert.MarkovExpert;
@@ -69,6 +68,8 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -78,6 +79,7 @@ import htsjdk.samtools.ValidationStringency;
 
 @Deployable(scriptName = "jsa.tr.longreadsv2", scriptDesc = "VNTR typing using long reads")
 public class VNTRLongReadsV2Cmd  extends CommandLine {
+	private static final Logger LOG = LoggerFactory.getLogger(VNTRLongReadsV2Cmd.class);
 	public VNTRLongReadsV2Cmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -174,7 +176,7 @@ public class VNTRLongReadsV2Cmd  extends CommandLine {
 
 		String strFile = cmdLine.getStringVal("xafFile");
 
-		Logging.info("Read genome begins");
+		LOG.info("Read genome begins");
 		HashMap <String, Sequence> genome = new HashMap <String, Sequence>();
 		SequenceReader seqReader = SequenceReader.getReader(cmdLine.getStringVal("reference"));
 		Sequence seq;
@@ -182,7 +184,7 @@ public class VNTRLongReadsV2Cmd  extends CommandLine {
 			genome.put(seq.getName(), seq);
 		}
 		seqReader.close();
-		Logging.info("Read genome done");
+		LOG.info("Read genome done");
 
 		/**********************************************************************/
 		XAFReader xafReader = new XAFReader(strFile);
@@ -207,7 +209,8 @@ public class VNTRLongReadsV2Cmd  extends CommandLine {
 			}
 			if (seq == null){
 				xafReader.close();				
-				Logging.exit("Chrom in line " + xafReader.lineNo() + " not found!!!", 1);
+				LOG.error("Chrom in line " + xafReader.lineNo() + " not found!!!", 1);
+				System.exit(1);
 			}			
 
 			int period = str.getPeriod();
@@ -613,7 +616,7 @@ public class VNTRLongReadsV2Cmd  extends CommandLine {
 
 		}// for
 		if (startRead < 0 || endRead < 0){
-			Logging.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
+			LOG.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
 			return null;
 		}		
 
@@ -627,14 +630,8 @@ public class VNTRLongReadsV2Cmd  extends CommandLine {
 
 	}
 
-	/**
-	 * 
-	 * @param seqList
-	 * @param startState
-	 *            : the start index of the list (inclusive)
-	 * @param end
-	 *            : the end index of the list (exclusive)
-	 */
+	/*******************************************************************************
+
 	static int call(ArrayList<Sequence> seqList, int indexStart, int indexEnd) {
 		if (indexEnd <= indexStart)
 			return 0;	
@@ -665,6 +662,6 @@ public class VNTRLongReadsV2Cmd  extends CommandLine {
 		return call(seqList,0,seqList.size());
 
 	}
-
+	 /*******************************************************************************/
 
 }
