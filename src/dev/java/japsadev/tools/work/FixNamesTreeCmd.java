@@ -42,8 +42,9 @@ import java.util.HashSet;
 import japsa.bio.phylo.PhylogenyTree;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filter a bam filem based on some criteria. Input file in bam format assumed
@@ -56,6 +57,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Fix names"
 	)
 public class FixNamesTreeCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(FixNamesTreeCmd.class);
+
 	//CommandLine cmdLine;
 	public FixNamesTreeCmd(){
 		super();
@@ -100,15 +103,15 @@ public class FixNamesTreeCmd extends CommandLine{
 				String lName = leaf.getName();
 				String name = key2Name.get(lName);
 				if (name != null){
-					Logging.info(lName + " found in key ");
+					LOG.info(lName + " found in key ");
 					leaf.setName(name);
 				}else{
 					name = name2Name.get(lName);
 					if (name != null){
-						Logging.info(lName + " found in name ");
+						LOG.info(lName + " found in name ");
 						leaf.setName(name);
 					}else{
-						Logging.info(lName + " not found");
+						LOG.info(lName + " not found");
 					}
 				}
 			}
@@ -131,30 +134,30 @@ public class FixNamesTreeCmd extends CommandLine{
 							int cIndex = parent.getIndex();
 							PhylogenyTree removed = grantParent.removeGrandChild(cIndex, gIndex);
 							if (removed == leaf){
-								Logging.info("Yay, removed " + name);
+								LOG.info("Yay, removed " + name);
 								continue;
 							}else{
-								Logging.info("Some thing not right " + name);
+								LOG.info("Some thing not right " + name);
 							}
 						}else{
-							Logging.warn("GRANT not found of " + name);
+							LOG.warn("GRANT not found of " + name);
 						}
 					}else{
-						Logging.warn("PARENT not found " + name);						
+						LOG.warn("PARENT not found " + name);
 					}					
 
-					//Logging.warn("Once more  " + name);
+					//LOG.warn("Once more  " + name);
 
 					if (tree0.getChild(0) == leaf){
 						tree0 = tree0.getChild(1);
 						tree0.setParent(null);
-						Logging.info("Yay, removed with round" + name);
+						LOG.info("Yay, removed with round" + name);
 					}else if (tree0.getChild(1) == leaf){
 						tree0 = tree0.getChild(0);
 						tree0.setParent(null);
-						Logging.info("Yay, removed with round" + name);
+						LOG.info("Yay, removed with round" + name);
 					}else
-						Logging.warn("CAN not remove " + name);
+						LOG.warn("CAN not remove " + name);
 				}	
 
 
@@ -193,30 +196,30 @@ public class FixNamesTreeCmd extends CommandLine{
 							int cIndex = parent.getIndex();
 							PhylogenyTree removed = grantParent.removeGrandChild(cIndex, gIndex);
 							if (removed == leaf){
-								Logging.info("Yay, removed " + name);
+								LOG.info("Yay, removed " + name);
 								continue;
 							}else{
-								Logging.info("Some thing not right " + name);
+								LOG.info("Some thing not right " + name);
 							}
 						}else{
-							Logging.warn("GRANT not found of " + name);
+							LOG.warn("GRANT not found of " + name);
 						}
 					}else{
-						Logging.warn("PARENT not found " + name);						
+						LOG.warn("PARENT not found " + name);
 					}					
 
-					//Logging.warn("Once more  " + name);
+					//LOG.warn("Once more  " + name);
 
 					if (tree1.getChild(0) == leaf){
 						tree1 = tree1.getChild(1);
 						tree1.setParent(null);
-						Logging.info("Yay, removed with round" + name);
+						LOG.info("Yay, removed with round" + name);
 					}else if (tree1.getChild(1) == leaf){
 						tree1 = tree1.getChild(0);
 						tree1.setParent(null);
-						Logging.info("Yay, removed with round" + name);
+						LOG.info("Yay, removed with round" + name);
 					}else
-						Logging.warn("CAN not remove " + name);
+						LOG.warn("CAN not remove " + name);
 				}					
 
 			}
@@ -235,29 +238,29 @@ public class FixNamesTreeCmd extends CommandLine{
 							int cIndex = parent.getIndex();
 							PhylogenyTree removed = grantParent.removeGrandChild(cIndex, gIndex);
 							if (removed == leaf){
-								Logging.info("Yay, removed " + name);
+								LOG.info("Yay, removed " + name);
 								continue;
 							}else{
-								Logging.info("Some thing not right " + name);
+								LOG.info("Some thing not right " + name);
 							}
 						}else{
-							Logging.warn("GRANT not found of " + name);
+							LOG.warn("GRANT not found of " + name);
 						}
 					}else{
-						Logging.warn("PARENT not found " + name);						
+						LOG.warn("PARENT not found " + name);
 					}					
 
-					//Logging.warn("Once more  " + name);
+					//LOG.warn("Once more  " + name);
 					if (tree0.getChild(0) == leaf){
 						tree0 = tree0.getChild(1);
 						tree0.setParent(null);
-						Logging.info("Yay, removed with round" + name);
+						LOG.info("Yay, removed with round" + name);
 					}else if (tree0.getChild(1) == leaf){
 						tree0 = tree0.getChild(0);
 						tree0.setParent(null);
-						Logging.info("Yay, removed with round" + name);
+						LOG.info("Yay, removed with round" + name);
 					}else
-						Logging.warn("CAN not remove " + name);
+						LOG.warn("CAN not remove " + name);
 				}						
 
 			}//

@@ -36,8 +36,9 @@ package japsadev.tools;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.XAFReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -49,7 +50,9 @@ import java.io.IOException;
  */
 @Deployable(scriptName = "jsa.dev.vntrDepthSum", 
 scriptDesc = "Sum read depth information")
-public class VNTRDepthSumCmd extends CommandLine{	
+public class VNTRDepthSumCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(VNTRDepthSumCmd.class);
+
 	public VNTRDepthSumCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -73,7 +76,8 @@ public class VNTRDepthSumCmd extends CommandLine{
 		
 		
 		if (args.length < 1){
-			Logging.exit("Need to supply some files",1);			
+			LOG.error("Need to supply some files",1);
+			System.exit(1);
 		}
 		
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(output);
