@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsadev.tools;
+package japsadev.tools.work;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;

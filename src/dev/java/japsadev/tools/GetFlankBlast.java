@@ -46,8 +46,9 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -58,6 +59,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Get sequencing with flanking sequences from blastn results"
 	)
 public class GetFlankBlast extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(GetFlankBlast.class);
+
 	// Parse result from /sw/blast/current/bin/blastn -db /DataOnline/Data/Bacterial_Genome/Eskape/ftp.ncbi.nlm.nih.gov/blast/db/refseq_genomic -query F0.fasta -num_threads 16 -out F0_refseq.blastn -outfmt 
 	// '7 qseqid qlen qstart qend sseqid slen sstart send length frames pident nident gaps mismatch score bitscore'
 	 
@@ -100,7 +103,7 @@ public class GetFlankBlast extends CommandLine{
 			boolean myRev = false;
 
 
-			Logging.info("Read information");
+			LOG.info("Read information");
 			while ((line = br.readLine()) != null) {
 				if (line.startsWith("#"))
 					continue;			
@@ -174,19 +177,19 @@ public class GetFlankBlast extends CommandLine{
 			br.close();
 		}
 
-		Logging.info("Read source");
+		LOG.info("Read source");
 		HashMap<String, Sequence> seqMap = new HashMap<String, Sequence>();
 		SequenceReader reader = SequenceReader.getReader(source);
 		Sequence seq;
 		while ( (seq = reader.nextSequence(Alphabet.DNA())) != null){
 			if (seqSet.contains(seq.getName())){
 				if (seqMap.put(seq.getName(), seq) != null){
-					Logging.warn("Sequence " + seq.getName() + " duplicated");
+					LOG.warn("Sequence " + seq.getName() + " duplicated");
 				}	
 			}			
 		}
 		reader.close();
-		Logging.info("Extract");
+		LOG.info("Extract");
 		SequenceOutputStream out = SequenceOutputStream.makeOutputStream(output);
 		//////////////////////////////////////////////////////
 		//	out.print(currentGene + " " + location + "\n");

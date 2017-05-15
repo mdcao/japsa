@@ -41,13 +41,11 @@ import japsa.seq.SequenceReader;
 import japsa.seq.XAFReader;
 import japsa.util.BetaBinomialModel;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 
@@ -60,6 +58,8 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -68,24 +68,10 @@ import htsjdk.samtools.ValidationStringency;
  */
 @Deployable(scriptName = "jsa.dev.captureVNTR", 
 scriptDesc = "VNTR typing using capture sequencing")
-public class CaptureVNTR extends CommandLine{	
-	
-static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg19_SMGcore.LCDG.20140908.006_S6_bmem.rdepth"}, 
-			 new String[] {"Illumina_NA12878_1", "hg19_NA12878_800bp_Post_Capture_S2_bmem.rdepth2"},
-		 new String[] {"Illumina_NA12891" ,  "hg19_NA12891_800bp_Post_Capture_S4_bmem.rdepth2"},
-			 new String[] {"Illumina_NA12877" ,  "hg19_SMGcore.LCDG.20140908.001_S1_bmem.rdepth"  },
-				 new String[] {"Illumina_NA12879" ,  "hg19_SMGcore.LCDG.20140908.002_S2_bmem.rdepth"  },
-					 new String[] {"Illumina_NA12889" ,  "hg19_SMGcore.LCDG.20140908.003_S3_bmem.rdepth"  },
-						 new String[] {"Illumina_NA12890" ,  "hg19_SMGcore.LCDG.20140908.004_S4_bmem.rdepth"  },
-							 new String[] {"Illumina_NA12892"  , "hg19_SMGcore.LCDG.20140908.005_S5_bmem.rdepth"} } ;
+public class CaptureVNTR extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(CaptureVNTR.class);
 
-	static Map<String, String>hm =  new HashMap();
-	static{
-		for(int i=0; i<map.length; i++){
-			hm.put(map[i][1], map[i][0]);
-		}
-	}
-	
+
 	public CaptureVNTR(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -182,12 +168,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 	}
 	/**
 	 * Analyse data resulted from stage 3
-	 * @param xafFile: information of repeats
-	 * @param resample: reference sample
-	 * @param sFiles : analysied samples
-	 * @param outputFile
-	 * @throws IOException
-	 * @throws InterruptedException
+
 	 */
 	static void stage5_readDepthAnalysis(String xafFile, String rData, String[] sFiles, String outputFile, int stat, int readLength) throws IOException, InterruptedException{
 		if (sFiles.length ==0)
@@ -247,7 +228,8 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 
 			rReader.next();
 			if( !ID.equals(rReader.getField("ID"))){
-				Logging.exit("Wrong ID at line " + rReader.lineNo(),1);
+				LOG.error("Wrong ID at line " + rReader.lineNo());
+				System.exit(1);
 			}
 
 			for (int i = 0; i < sFiles.length;i++){
@@ -277,7 +259,8 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 
 			for (int i = 0; i < sFiles.length;i++){
 				if( !ID.equals(sReaders[i].getField("ID"))){
-					Logging.exit("Wrong ID at line " + rReader.lineNo(),1);
+					LOG.error("Wrong ID at line " + rReader.lineNo());
+					System.exit(1);
 				}
 
 				double countS = Double.parseDouble(sReaders[i].getField(repCol));
@@ -332,12 +315,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 
 	/**
 	 * Analyse data resulted from stage 3
-	 * @param xafFile: information of repeats
-	 * @param resample: reference sample
-	 * @param sFiles : analysied samples
-	 * @param outputFile
-	 * @throws IOException
-	 * @throws InterruptedException
+
 	 */
 	static void stage6_readDepthAnalysis(String xafFile, String[] rData, String resAllele, String[] sFiles, String outputFile, int stat, int readLength) throws IOException, InterruptedException{
 		if (sFiles.length ==0)
@@ -404,12 +382,15 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 				rReader[i].next();
 			}
 			if( !ID.equals(rReader[0].getField("ID"))){
-				Logging.exit("Wrong ID at line a " + rReader[0].lineNo(),1);
+				LOG.error("Wrong ID at line a " + rReader[0].lineNo());
+				System.exit(1);
+
 			}
 			
 			rAlleleReader.next();
 			if( !ID.equals(rAlleleReader.getField("ID"))){
-				Logging.exit("Wrong ID at line b " + rAlleleReader.lineNo(),1);
+				LOG.error("Wrong ID at line b " + rAlleleReader.lineNo());
+				System.exit(1);
 			}
 			
 			for (int i = 0; i < sFiles.length;i++){
@@ -459,7 +440,8 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 						String nme = name[name.length-1];
 						System.err.println(nme);
 				if( !ID.equals(sReaders[i].getField("ID"))){
-					Logging.exit("Wrong ID at line " + rReader[0].lineNo(),1);
+					LOG.error("Wrong ID at line " + rReader[0].lineNo());
+					System.exit(1);
 				}
 
 				double countS = Double.parseDouble(sReaders[i].getField(repCol));
@@ -591,12 +573,12 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 			process.waitFor();			
 
 			String cmd = "kalign -q -i f.fasta -o " + target + "o.fasta";
-			Logging.info("Running " + cmd);
+			LOG.info("Running " + cmd);
 
 
 			process = Runtime.getRuntime().exec(cmd);
 			process.waitFor();
-			Logging.info("Done " + cmd);
+			LOG.info("Done " + cmd);
 
 			process = Runtime.getRuntime().exec("hmmbuild --dna " + target +".hmm " + target + "o.fasta");
 			process.waitFor();			
@@ -618,7 +600,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 	 */
 	static void stage1_extractTargetSequence(String referenceFile, String xafFile, String targetFile) throws IOException{
 		//Read in the genome
-		Logging.info("Read genome begins");
+		LOG.info("Read genome begins");
 		HashMap <String, Sequence> genome = new HashMap <String, Sequence>();
 		SequenceReader reader = SequenceReader.getReader(referenceFile);
 		Sequence seq;
@@ -626,7 +608,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 			genome.put(seq.getName(), seq);
 		}
 		reader.close();
-		Logging.info("Read genome done");
+		LOG.info("Read genome done");
 
 		XAFReader xafReader = new XAFReader(xafFile);
 		SequenceOutputStream sos =  SequenceOutputStream.makeOutputStream(targetFile);
@@ -649,7 +631,8 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 			if (seq == null){
 				xafReader.close();
 				sos.close();
-				Logging.exit("Chrom in line " + xafReader.lineNo() + " not found!!!", 1);
+				LOG.error("Chrom in line " + xafReader.lineNo() + " not found!!!");
+				System.exit(1);
 			}
 			Sequence s = seq.subSequence(start - mlflank - 1, end + mrflank);
 			s.setName(chrom+"_"+start+"_"+end+"_"+mlflank);
@@ -670,9 +653,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 	}
 	/**
 	 * Stage 2
-	 * @param bamFile
-	 * @param pad
-	 * @throws IOException 
+
 	 */
 
 	static void stage2_spanRead(String bamFile, String xafFile) throws IOException{		

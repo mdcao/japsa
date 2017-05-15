@@ -117,7 +117,6 @@ public class TandemRepeat extends JapsaFeature{
 	
 	/**
 	 * Get short tandem repeat from a biofeature
-	 * @param id
 	 * @param f
 	 */
 	public TandemRepeat(JapsaFeature f) {
@@ -407,7 +406,7 @@ public class TandemRepeat extends JapsaFeature{
 	/**
 	 * Find the most compact form of japsa.seq (triplet).
 	 * This is a slow implementation.
-	 * @param japsa.seq
+	 * @param seq
 	 * @return
 	 */
 	public static String collapseForm(String seq){

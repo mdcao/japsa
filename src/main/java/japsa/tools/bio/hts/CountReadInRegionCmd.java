@@ -43,8 +43,9 @@ import htsjdk.samtools.ValidationStringency;
 import japsa.seq.JapsaFeature;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +61,9 @@ import java.util.List;
 		scriptName = "jsa.hts.countReads",
 		scriptDesc = "Count the number of reads in some regions from a sorted, indexed bam file"
 		)
-public class CountReadInRegionCmd extends CommandLine{	
+public class CountReadInRegionCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(CountReadInRegionCmd.class);
+
 	public CountReadInRegionCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);
@@ -244,7 +247,7 @@ public class CountReadInRegionCmd extends CommandLine{
 			readers[i].close();
 		}
 		os.close();
-		Logging.info("Ignore " + notCount + " reads");
+		LOG.info("Ignore " + notCount + " reads");
 	}
 }
 /*RST*

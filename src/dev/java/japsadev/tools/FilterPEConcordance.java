@@ -36,7 +36,6 @@
 package japsadev.tools;
 
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.File;
@@ -52,6 +51,8 @@ import htsjdk.samtools.SAMTextWriter;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -61,7 +62,9 @@ import htsjdk.samtools.ValidationStringency;
 	scriptName = "jsa.dev.filterPE", 
 	scriptDesc = "Filter concordance PE reads (keeps only reads having mate mapped within a distance)"
 )
-public class FilterPEConcordance extends CommandLine{ 
+public class FilterPEConcordance extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(FilterPEConcordance.class);
+
 
 	public FilterPEConcordance(){
 		super();
@@ -119,12 +122,12 @@ public class FilterPEConcordance extends CommandLine{
 			if (readIn % 10000000 == 0) {
 				Date date = new Date();
 
-				Logging.info("No. of reads processed : " + readIn + " at "
+				LOG.info("No. of reads processed : " + readIn + " at "
 						+ date.toString());
-				Logging.info("Statistics so far : " + " Total Read    = "
+				LOG.info("Statistics so far : " + " Total Read    = "
 						+ readIn + " Mapped Read   = " + readMapped
 						+ " Out Reads     = " + readOut);
-				Logging.info("Hash = " + hashRec.size() + " List = "
+				LOG.info("Hash = " + hashRec.size() + " List = "
 						+ listRec.size() + " dup = " + dup + " at "
 						+ currentRefIndex);
 				Runtime.getRuntime().gc();
@@ -223,9 +226,9 @@ public class FilterPEConcordance extends CommandLine{
 
 		Date date = new Date();
 
-		Logging.info("Finally No. of reads processed : " + readIn + " at "
+		LOG.info("Finally No. of reads processed : " + readIn + " at "
 				+ date.toString());
-		Logging.info("Statistics so far : " + " Total Read    = " + readIn
+		LOG.info("Statistics so far : " + " Total Read    = " + readIn
 				+ " Mapped Read   = " + readMapped + " Out Reads     = "
 				+ readOut);
 	}

@@ -34,19 +34,16 @@
 
 package japsadev.tools.work;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.util.regex.Pattern;
-
 import japsa.seq.Alphabet;
 import japsa.seq.FastqReader;
 import japsa.seq.FastqSequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 
 /**
  * @author Minh Duc Cao
@@ -56,7 +53,8 @@ import japsa.util.deploy.Deployable;
 		scriptName = "jsa.dev.fixfastq",
 		scriptDesc = "Fix fastq files for the plasmaDNA samples"
 		)
-public class FixFastqNameCmd extends CommandLine{	
+public class FixFastqNameCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(FixFastqNameCmd.class);
 	public FixFastqNameCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -133,7 +131,8 @@ public class FixFastqNameCmd extends CommandLine{
 					readNo2 = 0;				
 
 			}else{
-				Logging.exit("Dont understand this " + readNo1 + " vs " + readNo2, 1);
+				LOG.error("Dont understand this " + readNo1 + " vs " + readNo2);
+				System.exit(1);
 			}
 		}//while
 		reader1.close();reader2.close();out.close();out1.close();out2.close();

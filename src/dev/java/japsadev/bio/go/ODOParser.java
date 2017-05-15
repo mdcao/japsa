@@ -34,12 +34,11 @@
  ****************************************************************************/
 package japsadev.bio.go;
 
-import japsa.bio.gene.GeneDatabase;
-import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
-import japsa.util.Logging;
 import japsadev.bio.go.GoTerm.GoRelationship;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -52,6 +51,8 @@ import java.util.HashSet;
  *
  */
 public class ODOParser {
+	private static final Logger LOG = LoggerFactory.getLogger(ODOParser.class);
+
 	HashMap<String, GoTerm> terms = new HashMap<String,GoTerm>();
 
 	HashMap<String,TypeRelationship> relTypes = 
@@ -155,7 +156,7 @@ public class ODOParser {
 						if (term != null)
 							currentTerm.addRelationShip(relationship, term);
 						else
-							Logging.warn("Term " + toks[1] + " not found at line " + lineNo);
+							LOG.warn("Term " + toks[1] + " not found at line " + lineNo);
 
 					}
 					if (line.startsWith("relationship: ")){
@@ -166,7 +167,7 @@ public class ODOParser {
 						if (term != null)
 							currentTerm.addRelationShip(relationship, term);
 						else
-							Logging.warn("Term " + toks[2] + " not found at line " + lineNo);
+							LOG.warn("Term " + toks[2] + " not found at line " + lineNo);
 
 					}//if								
 				}//while
@@ -510,19 +511,19 @@ public class ODOParser {
 			if (gene2Groups.containsKey(geneID)){
 				HashSet<String> ggroup = gene2Groups.get(geneID);	
 				if (agroup == null){
-					Logging.error(alleleID + " xx  " + geneID );
+					LOG.error(alleleID + " xx  " + geneID );
 				}
 
 				if (!ggroup.containsAll(agroup))
-					Logging.error( alleleID + " <>  " + geneID );
+					LOG.error( alleleID + " <>  " + geneID );
 
 				if (!agroup.containsAll(ggroup))
-					Logging.error(alleleID  + " #  " + geneID );
+					LOG.error(alleleID  + " #  " + geneID );
 
 				GeneDatabase.GeneFamily  dbFamily = geneDB.getFamily(gene2dbGeneID.get(geneID));
 				
 				if (dbFamily == null)
-					Logging.error("Problem finding " + geneID );
+					LOG.error("Problem finding " + geneID );
 				else{
 					dbFamily.addSequence(allele2Sequence.get(alleleID));					
 				}
@@ -546,7 +547,7 @@ public class ODOParser {
 		geneDB.write2File("F.fasta", false);
 		geneDB.write2File("A.fasta", true);
 		
-		Logging.info(gene2Groups.size() + " group ");
+		LOG.info(gene2Groups.size() + " group ");
 
 
 		

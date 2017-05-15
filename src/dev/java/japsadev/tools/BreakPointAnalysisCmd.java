@@ -49,8 +49,9 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Analysis of break-point patterns
@@ -64,6 +65,8 @@ import japsa.util.deploy.Deployable;
 		scriptDesc = "Analysis of break point pattern"
 		)
 public class BreakPointAnalysisCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(BreakPointAnalysisCmd.class);
+
 	public BreakPointAnalysisCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -153,7 +156,7 @@ public class BreakPointAnalysisCmd extends CommandLine{
 			}//while
 			samIter.close();
 
-			Logging.info("Write");
+			LOG.info("Write");
 			SequenceOutputStream tCount = SequenceOutputStream.makeOutputStream(output + "_" + chrom +"_through.bedgraph");
 			SequenceOutputStream bCount = SequenceOutputStream.makeOutputStream(output + "_" + chrom +"_breaks.bedgraph");
 			tCount.print("track type=bedGraph\n");		

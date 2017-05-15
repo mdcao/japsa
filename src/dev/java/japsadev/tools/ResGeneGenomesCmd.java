@@ -49,8 +49,9 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.tools.bio.amra.Genomes2ResistanceGeneCmd;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -62,6 +63,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Extract resistance classes from sequences"
 	)
 public class ResGeneGenomesCmd  extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(ResGeneGenomesCmd.class);
+
 	//CommandLine cmdLine;
 	public ResGeneGenomesCmd(){
 		super();
@@ -110,7 +113,7 @@ public class ResGeneGenomesCmd  extends CommandLine{
 		gSos.print("#strainID\tstrainName\tstrainType\tclasses\n");
 		
 		if (!processDB(db, thread)){
-			Logging.error("Job queue for too long");
+			LOG.error("Job queue for too long");
 		}
 		gSos.close();
 	}
@@ -137,17 +140,17 @@ public class ResGeneGenomesCmd  extends CommandLine{
 			double n50 = Double.parseDouble(toks[7]);
 
 			if (n50 < 100000){
-				Logging.info(strainID + " Ignored because of low n50 " + n50);
+				LOG.info(strainID + " Ignored because of low n50 " + n50);
 				continue;//while
 			}
 
 			if (toks.length < 14){
-				Logging.info(strainID + " Ignored because of malform " + toks.length);
+				LOG.info(strainID + " Ignored because of malform " + toks.length);
 				continue;//while
 			}
 
 			if (!toks[13].equals("0")){
-				Logging.info(strainID + " Ignored because of not good ST " + toks[13]);
+				LOG.info(strainID + " Ignored because of not good ST " + toks[13]);
 				continue;//while
 			}
 
