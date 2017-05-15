@@ -185,19 +185,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
 //				System.out.println("Before reduce => Node: " + getNodeCount() + " Edge: " + getEdgeCount());
 				
 //				AbstractNode comp=
-		    	System.out.print("Checking: ");
-		    	int uniqueCount=0;
-		    	for(Node n:path.getEachNode()){
-		    		if(isUnique(n))
-		    			uniqueCount++;
-		    	}
-		    	if(uniqueCount > 1){
-		    		System.out.println("reducing...");
-		    		this.reduce(path);
-				}else
-		    	{
-		    		System.out.println("ignore path with less than 1 unique contig!");
-		    	}
+
+		    	this.reduce(path);
+
 
 //				if(comp!=null){
 //					System.out.println("Reverting node: " + comp.getId());
@@ -227,6 +217,18 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	//do nothing if the path has only one node
     	if(p==null || p.getEdgeCount()<1)
     		return null;
+    	
+    	//now only work with path containing more than 2 unique nodes
+    	int uniqueCount=0;
+    	for(Node n:p.getEachNode()){
+    		if(isUnique(n))
+    			uniqueCount++;
+    	}
+    	if(uniqueCount < 2)
+    	{
+    		System.out.println("ignore path with less than 1 unique contig!");
+    		return null;
+    	}
     	//add the new composite Node to the graph
     	//compare id from sense & anti-sense to get the unique one
     	AbstractNode comp = addNode(p.getId().compareTo(p.getReversedComplemented().getId())>0?

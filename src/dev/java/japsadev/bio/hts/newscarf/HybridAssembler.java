@@ -14,24 +14,26 @@ import htsjdk.samtools.ValidationStringency;
 import japsa.util.Logging;
 
 public class HybridAssembler {
-	BidirectedGraph graph;
+	BidirectedGraph origGraph, simGraph; //original and simplified graph should be separated???
 	
 	public HybridAssembler(){
-		graph=new BidirectedGraph();
+		origGraph=new BidirectedGraph();
+		simGraph=new BidirectedGraph();
 	}
 	
 	public HybridAssembler(BidirectedGraph graph){
-		this.graph=graph;
+		origGraph=graph;
+		//simGraph=graph;
 	}
 	
 	public HybridAssembler(String graphFile) throws IOException{
-		graph=new BidirectedGraph();
-		graph.loadFromFile(graphFile);
+		origGraph=new BidirectedGraph();
+		origGraph.loadFromFile(graphFile);
 	}
 	
 	public HybridAssembler(String graphFile, String pathFile) throws IOException{
 		this(graphFile);
-		graph.readPathsFromSpades(pathFile);
+		origGraph.readPathsFromSpades(pathFile);
 	}
 	
 	
@@ -58,7 +60,7 @@ public class HybridAssembler {
 				continue;
 			
 			String refID = rec.getReferenceName().split("_")[1];
-			Alignment myRec = new Alignment(rec, graph.getNode(refID)); //FIXME: optimize
+			Alignment myRec = new Alignment(rec, origGraph.getNode(refID)); //FIXME: optimize
 
 			//////////////////////////////////////////////////////////////////
 			// make list of alignments of the same (Nanopore) read. 
@@ -66,10 +68,10 @@ public class HybridAssembler {
 			//not the first occurrance				
 			if (!readID.equals("") && !readID.equals(myRec.readID)) {		
 				//Collections.sort(samList);
-				p=graph.pathFinding(samList);
+				p=origGraph.pathFinding(samList);
 				if(p!=null)
 					System.out.println("Final path found: " + p.getId());
-				//graph.reduce(p);
+				origGraph.reduce(p);
 				samList = new ArrayList<Alignment>();
 				//readID = myRec.readID;	
 			}	
@@ -84,12 +86,12 @@ public class HybridAssembler {
 	
 	}
 
-//	public static void main(String[] argv) throws IOException{
-//		HybridAssembler hbAss = new HybridAssembler("/home/hoangnguyen/workspace/data/spades/EcK12S-careful/assembly_graph.fastg");
-//		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
-//		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
-//		//TODO: need to make this easier
-//		hbAss.assembly("/home/hoangnguyen/workspace/data/spades/bwa/EcK12S.sam", 0);
-//	}
+	public static void main(String[] argv) throws IOException{
+		HybridAssembler hbAss = new HybridAssembler(GraphExplore.spadesFolder+"EcK12S-careful/assembly_graph.fastg");
+		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
+		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
+		//TODO: need to make this easier
+		hbAss.assembly(GraphExplore.spadesFolder+"bwa/EcK12S-careful.sam", 0);
+	}
 	
 }
