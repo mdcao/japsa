@@ -14,16 +14,16 @@ import htsjdk.samtools.ValidationStringency;
 import japsa.util.Logging;
 
 public class HybridAssembler {
-	BidirectedGraph origGraph, simGraph; //original and simplified graph should be separated???
+	BidirectedGraph origGraph;
+	//BidirectedGraph simGraph; //original and simplified graph should be separated, no???
 	
 	public HybridAssembler(){
 		origGraph=new BidirectedGraph();
-		simGraph=new BidirectedGraph();
+		//simGraph=new BidirectedGraph();
 	}
 	
 	public HybridAssembler(BidirectedGraph graph){
 		origGraph=graph;
-		//simGraph=graph;
 	}
 	
 	public HybridAssembler(String graphFile) throws IOException{
