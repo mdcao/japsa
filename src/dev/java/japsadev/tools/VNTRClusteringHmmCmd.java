@@ -46,6 +46,7 @@ import japsa.util.*;
 import japsa.util.deploy.Deployable;
 import japsa.xm.expert.Expert;
 import japsa.xm.expert.MarkovExpert;
+import japsadev.bio.hts.clustering.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -239,6 +240,8 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			SAMRecordIterator iter = reader.query(str.getParent(), start, end, false);
 
 			String fileName = prefix + "_" + str.getID() + "_i.fasta";
+			String tempFile = str.getID();	
+			
 			SequenceOutputStream os = SequenceOutputStream.makeOutputStream(fileName);
 
 			//			double var = 0;
@@ -288,8 +291,67 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			os.close();
 			//FIXME: readSequences: an array of reads
 			//clustering of this array,
-			//Get the consensus of each of them using the follwing command
+			
+			//
+			HashMap<String, String> tempReadSequences = new HashMap<String, String>();
+			
+			
+			
+			for(int x = 0;x<readSequences.size();x++){
+				Sequence temp = readSequences.get(x);
+				tempReadSequences.put(temp.toString(), temp.getName());
+			}
+			ArrayList<String> tempReads = new ArrayList<String>(tempReadSequences.keySet());
+			
+			
+						
+			ArrayList<ArrayList<String>> clusterResult = new ArrayList<ArrayList<String>>();
+			
+			KmeanClusteringWithReads clusterObj1 = new KmeanClusteringWithReads();
+			
+			 
+			
+			clusterResult = clusterObj1.Clustering(tempReads);
+			
+			ArrayList<String> cluster1String = new ArrayList<String>();
+			ArrayList<String> cluster2String = new ArrayList<String>();
+			
+			cluster1String = clusterResult.get(1);
+			cluster2String = clusterResult.get(2);
+			
+			ArrayList<Sequence> cluster1Sequence = new ArrayList<Sequence>();
+			ArrayList<Sequence> cluster2Sequence = new ArrayList<Sequence>();
+			Sequence tempSeq1;Sequence tempSeq2;
+			
+			//seq = new Sequence(Alphabet.DNA16(), sequenceString, sequenceName)
+			
+			for(int x=0; x<cluster1String.size();x++){
+				String str1 = cluster1String.get(x);
+				tempSeq1 = new Sequence(dna, str1,  tempReadSequences.get(str1));
+				cluster1Sequence.add(tempSeq1);
+			}
+			
+			for(int x=0; x<cluster2String.size();x++){
+				String str2 = cluster2String.get(x);
+				tempSeq2 = new Sequence(dna, str2,  tempReadSequences.get(str2));
+				cluster2Sequence.add(tempSeq2);
+			}
+			
+			Sequence cluster1Consensus  = ErrorCorrection.consensusSequence(cluster1Sequence, "tmp1_"+tempFile, "kalign");
+			Sequence cluster2Consensus  = ErrorCorrection.consensusSequence(cluster2Sequence, "tmp2_"+tempFile, "kalign");
+			
+			WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
+			clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
+			
+			
+			
+			//System.out.print("char seq: "+clusterResult.get(1).get(0));
+			
+			
+			//Get the consensus of each of them using the following command
+			//ErrorCorrection.consensusSequence(clusterResult.get(index), "tmp", "kalign");
 			//ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign");
+			//System.out.println("consensus" + ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign"));
 
 			//write to a file
 

@@ -14,19 +14,12 @@ import japsadev.bio.hts.clustering.GettingTreadsFromFasta;
 
 public class KmeanClusteringWithReads {	
 	
-	public static void Clustering() throws Exception{
-		FileInputStream file1 = new FileInputStream("TRfile.fasta");
-		BufferedReader br = new BufferedReader(new InputStreamReader(file1));
-		String line = null;
-		while((line = br.readLine())!=null){
-			ArrayList<String> descript = new ArrayList<String>();
-			ArrayList<String> reads = new ArrayList<String>();
-			//ArrayList<Integer> MaxReadLn = new ArrayList<Integer>();
+	public static ArrayList<ArrayList<String>> 
+		Clustering(ArrayList<String> reads) throws Exception{
+		
 			int MaxReadLn = 0;
-			int Nreads;
-			String FileName;
-			int NumberElements;
-			int ClustElements;
+			int MinReadLn = 1000000;		
+			
 			int n;	
 			int d[];
 			int k[][];
@@ -40,47 +33,41 @@ public class KmeanClusteringWithReads {
 			int index1=0;
 			int index2=0;	
 			int count1=0,count2=0;
-			long startTime = System.nanoTime();
+			long startTime = System.nanoTime();		
 			
+			n = reads.size();					
 			
-			GettingTreadsFromFasta.DestReads(line);
-			//GettingTreadsFromFasta.DestReads();
-			descript = GettingTreadsFromFasta.GetRname();
-			reads = GettingTreadsFromFasta.GetTReads();
-			Nreads = GettingTreadsFromFasta.NumberReads();
-			FileName = GettingTreadsFromFasta.GetFileName();
-			NumberElements = GettingTreadsFromFasta.SeqLength();
-			ClustElements = GettingTreadsFromFasta.NelementsClustering();			
+			double[][] table = new double[n][n];	
+			ArrayList<String> readsLengthRange = new ArrayList<String>();
 			
-			double[][] table = new double[Nreads][Nreads];	
-			
-			for (int i=0; i<Nreads; ++i){
-				for(int j=0;j<Nreads;++j){
-					table[i][j]=0;
+			for (int x=0; x<n; ++x){
+				for(int y=0;y<n;++y){
+					table[x][y]=0;
 				}
 			}
 
-			for (int i = 0; i < reads.size(); i++) {
+			for (int x = 0; x < n; x++) {
 				int temp = 0;
-				for (int j = i + 1; j < reads.size(); j++) {				
-					String x = reads.get(i);
-					String y = reads.get(j);				
-					PairDistance.EditDistanceResult result = PairDistance.compute(x, y);
+				for (int y = x + 1; y < n; y++) {				
+					String r1 = reads.get(x);
+					String r2 = reads.get(y);				
+					PairDistance.EditDistanceResult result = PairDistance.compute(r1, r2);
 					double normdist = ((double) result.getDistance())
-							/ Math.max(x.length(), y.length());				
-					table[i][j]=normdist; 
-					temp = x.length();
+							/ Math.max(r1.length(), r2.length());				
+					table[x][y]=normdist; 
+					temp = r1.length();
 				}
 				MaxReadLn = Math.max(MaxReadLn, temp);
-				
+				MinReadLn = Math.min(MinReadLn, temp);
 			}
-			
-			n=Nreads;
+			readsLengthRange.add(""+MinReadLn);
+			readsLengthRange.add(""+MaxReadLn);
+						
 			d=new int[n];
 			
 			 //name of the reads		
-			for(int i=0;i<n;++i){
-				d[i]=i;
+			for(int x=0;x<n;++x){
+				d[x]=x;
 			}	
 			
 			 //Initialising arrays 
@@ -89,13 +76,13 @@ public class KmeanClusteringWithReads {
 			m=new int [p];
 				
 			
-			for (int i = 0; i < n; i++) {
-				for (int j = i + 1; j < n; j++) {
-					temp1 = table[i][j];
+			for (int x = 0; x < n; x++) {
+				for (int y = x + 1; y < n; y++) {
+					temp1 = table[x][y];
 					if(max < temp1){
 						max = temp1;
-						index1=i;
-						index2=j;
+						index1=x;
+						index2=y;
 					}
 				}
 			}			
@@ -108,19 +95,19 @@ public class KmeanClusteringWithReads {
 			int flag=0;
 			
 			do{
-				for(int i=0;i<p;++i){
-					for(int j=0;j<n;++j){
-						k[i][j]=-1;					
+				for(int x=0;x<p;++x){
+					for(int y=0;y<n;++y){
+						k[x][y]=-1;					
 					}
 				}
 				
-				for(int i=0;i<n;++i){
-					temp=NewCluster(d[i], table, m);					
+				for(int x=0;x<n;++x){
+					temp=NewCluster(d[x], table, m);					
 					if(temp==0){
-						k[temp][count1++]=d[i];					
+						k[temp][count1++]=d[x];					
 					}
 					else if(temp==1){
-						k[temp][count2++]=d[i];					
+						k[temp][count2++]=d[x];					
 					}					 
 				}
 				
@@ -128,63 +115,35 @@ public class KmeanClusteringWithReads {
 				flag = VerifyEqual(n, k, tempk); // check if terminating condition is satisfied.
 				if(flag!=1){
 					/*Take backup of k in tempk so that you can check for equivalence in next step*/
-					for(int i=0;i<p;++i){
-						for(int j=0;j<n;++j){
-							tempk[i][j]=k[i][j];
+					for(int x=0;x<p;++x){
+						for(int y=0;y<n;++y){
+							tempk[x][y]=k[x][y];
 						}
 					}				
 				}
 				
-				System.out.println("\nClusters Results:");
-				for(int i=0;i<p;++i){
-					System.out.print("C"+(i+1)+"{ ");
-					for(int j=0;k[i][j]!=-1 && j<n-1;++j)
-					System.out.print(k[i][j]+" ");
-					System.out.println("}");
-				}
-				//end of for loop
-				
-				System.out.println("\nCentroid of the clusters are: ");
-				for(int i=0;i<p;++i){
-					System.out.print("m"+(i+1)+"="+m[i]+"  ");
-				}
 				
 				
 				count1=0;count2=0;
 				Nclusters += 1;
 			}
 			while(flag==0);
-			long t = System.nanoTime()-startTime;
-			double estimateTime = (double)t/1000000000.0;
-			File file = new File("ClusterResult_"+FileName);
-			FileWriter fw = new FileWriter(file.getAbsoluteFile());
-			BufferedWriter bw = new BufferedWriter(fw);
+			long time = System.nanoTime()-startTime;
+			double estimateTime = (double)time/1000000000.0;
 			
-			bw.write("Number of Reads: "+ Nreads);
-			bw.newLine();
-			bw.write("Maximum Read Length: "+ MaxReadLn);
-			bw.newLine();
-			bw.write("Number of Iterations: "+ Nclusters);		
-			bw.newLine();		
-			bw.write("Estimated Time: "+estimateTime+" ms");
-			bw.newLine();			
-			bw.write("Two clusters elements are: ");
-			bw.newLine();
-			for(int i=0;i<p;++i){
-				String s = "C"+(i+1)+"{ ";
-				bw.write(s);
-				for(int j=0;k[i][j]!=-1 && j<n-1;++j){
-					bw.write(descript.get(k[i][j]));
-					bw.newLine();
+			
+			ArrayList<ArrayList<String>> clusterList = 
+					new ArrayList<ArrayList<String>>();
+			clusterList.add(readsLengthRange);
+			
+			for(int x=0;x<p;++x){
+				ArrayList<String> tempcluster = new ArrayList<String>();				
+				for(int y=0;k[x][y]!=-1 && y<n-1;++y){
+					tempcluster.add(reads.get(k[x][y]));					
 				}
-				bw.write("}");
-				bw.newLine();
+				clusterList.add(tempcluster);				
 			}
-			bw.close();
-		}
-		br.close();
-		
-				
+		return clusterList;	
 	}
 	
 
@@ -282,18 +241,7 @@ public class KmeanClusteringWithReads {
 		return 1;
 	}	
 
-	public static void main(String[] args) throws Exception {
-		
-		// TODO Auto-generated method stub
-		Clustering();
-		// C:\Users\buvan.suji\workspace\Distance\SampleData\results\TR_Fasta\OutputReads\chr11119005_1121390.fasta
-		// C:\Users\buvan.suji\workspace\Distance\SampleData\results\TR_Fasta\OutputReads\chr1842862036_42864557.fasta
-		//C:/Users/Subashchandran/Marseclipse/workspace/Data/TrResults/Finished Cluster/chr11119005_1121390.fasta
-		//C:/Users/Subashchandran/Marseclipse/workspace/Data/TrResults/chr2440992_444078.fasta
-		//C:/Users/Subashchandran/Marseclipse/workspace/Data/TrResults/chr68826819_8829365.fasta
-		//C:/Users/Subashchandran/Marseclipse/workspace/Data/TrResults/FinishedCluster/chr11119005_1121390.fasta
-		//C:\Users\Subashchandran\Marseclipse\workspace\OldData\TrResults\Finished Cluster\chr11119005_1121390.fasta
-	}
+	
 
 
 
