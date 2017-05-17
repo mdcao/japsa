@@ -34,7 +34,8 @@
 
 package japsa.seq;
 
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -53,6 +54,8 @@ import java.util.HashMap;
  */
 
 public class XAFReader implements Closeable {
+	private static final Logger LOG = LoggerFactory.getLogger(XAFReader.class);
+
 	String sep = "\t";
 	public static final String XAF_HEADER = "#XAF";
 	public static final String ROW_HEADER = "#H:";
@@ -145,13 +148,13 @@ public class XAFReader implements Closeable {
 		FieldHeader header = headerPool.get(fieldName);
 		if (header == null || header.index < 0) {
 			//throw new RuntimeException("Field " + fieldName + " not found");
-			//Logging.warn("Field " + fieldName + " not found");
+			//LOG.warn("Field " + fieldName + " not found");
 			return null;
 		}
 
 		if (header.index >= fields.length) {
 			//throw new RuntimeException("Only " + fields.length	+ " fields at line " + lineNo);
-			//Logging.warn("Only " + fields.length	+ " fields at line " + lineNo);
+			//LOG.warn("Only " + fields.length	+ " fields at line " + lineNo);
 			return null;
 		}
 		return fields[header.index];
@@ -164,7 +167,7 @@ public class XAFReader implements Closeable {
 	public String getField(int fieldNo) {
 		if (fieldNo >= fields.length) {
 			//throw new RuntimeException("Only " + fields.length	+ " fields at line " + lineNo);
-			Logging.warn("Only " + fields.length	+ " fields at line " + lineNo);
+			LOG.warn("Only " + fields.length	+ " fields at line " + lineNo);
 			return null;
 		}
 		return fields[fieldNo];
@@ -226,7 +229,7 @@ public class XAFReader implements Closeable {
 					for (int i = 0; i < toks.length; i++) {
 						FieldHeader header = headerPool.get(toks[i]);
 						if (header == null) {
-							Logging.warn("Header " + toks[i] + " not defined");
+							LOG.warn("Header " + toks[i] + " not defined");
 							header = new FieldHeader();
 							header.headerStr = toks[i];
 							headerPool.put(toks[i], header);

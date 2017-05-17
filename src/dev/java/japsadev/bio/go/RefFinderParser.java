@@ -38,7 +38,9 @@ import japsa.bio.gene.GeneDatabase;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
-import japsa.util.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,11 +51,12 @@ import java.util.HashMap;
  * @author minhduc
  *
  */
-public class RefFinderParser {	
+public class RefFinderParser {
+	private static final Logger LOG = LoggerFactory.getLogger(RefFinderParser.class);
+
 	public RefFinderParser(String fileName) throws IOException{
 
 	}
-
 	
 
 	/**
@@ -93,16 +96,16 @@ public class RefFinderParser {
 				String ggroup = gene2Groups.get(geneID);
 				
 				if (agroup == null){
-					Logging.error(alleleID + " xx  " + geneID );
+					LOG.error(alleleID + " xx  " + geneID );
 				}
 
 				if (!ggroup.equals(agroup))
-					Logging.error( alleleID + " <>  " + geneID );
+					LOG.error( alleleID + " <>  " + geneID );
 
 				GeneDatabase.GeneFamily  dbFamily = geneDB.getFamily(gene2dbGeneID.get(geneID));
 				
 				if (dbFamily == null)
-					Logging.error("Problem finding " + geneID );
+					LOG.error("Problem finding " + geneID );
 				else{
 					dbFamily.addSequence(allele2Sequence.get(alleleID));					
 				}
@@ -122,7 +125,7 @@ public class RefFinderParser {
 		geneDB.write2File("F.fasta", false);
 		geneDB.write2File("A.fasta", true);
 		
-		Logging.info(gene2Groups.size() + " group ");
+		LOG.info(gene2Groups.size() + " group ");
 
 		/********************************************************
 		for (String relID:odo.relTypes.keySet()){

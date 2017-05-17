@@ -190,7 +190,7 @@ public class NanoporeReaderStream{
 
 
 	public boolean readFastq2(String fileName) throws JapsaException, IOException{
-		//Logging.info("Open " + fileName);
+		//LOG.info("Open " + fileName);
 		try{					
 			Fast5NPReader npReader = new Fast5NPReader(fileName);
 			npReader.readFastq();

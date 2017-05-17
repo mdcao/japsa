@@ -81,7 +81,7 @@ public class Fast5NPReader{
 			throw new JapsaException("Cannot read HDF5 file, possily because JHI5 is not installed or configured. Please refer to npReader installation guide or contact the deverlopers.");
 		}
 
-		//Logging.info("Open " + fileName);
+		//LOG.info("Open " + fileName);
 		f5File = fileFormat.createInstance(fileName, FileFormat.READ);
 		if (f5File == null) 
 			throw new RuntimeException("Unable to open file " + fileName);
@@ -202,10 +202,10 @@ public class Fast5NPReader{
 				if (fullName.endsWith("Fastq")){
 					Object  data = ((H5ScalarDS) member).getData();
 					if (data != null){
-						//Logging.info(fullName);
+						//LOG.info(fullName);
 						//out.print(((String[]) data)[0]);
 						//out.println();						
-						//Logging.info("Read " + fullName);
+						//LOG.info("Read " + fullName);
 
 						String [] toks = ((String[]) data)[0].split("\n",2);						
 						if  (fullName.contains("BaseCalled_2D")){							
@@ -246,7 +246,7 @@ public class Fast5NPReader{
 					Object  data = ((H5ScalarDS) member).getData();
 					String group = fullName.split("/")[2];					
 					if (data != null){
-						//Logging.info("Read " + fullName);
+						//LOG.info("Read " + fullName);
 						String [] toks = ((String[]) data)[0].split("\n");						
 						if  (fullName.contains("BaseCalled_2D")){
 							toks[0] = toks[0].substring(1) + "_twodimentional" + " length=" + toks[1].length() + " group=" + group;

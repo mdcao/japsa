@@ -32,7 +32,7 @@
  *  
  ****************************************************************************/
 
-package japsadev.tools;
+package japsadev.tools.work;
 
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.Alphabet;
@@ -40,8 +40,9 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -55,6 +56,8 @@ import java.util.HashMap;
 @Deployable(scriptName = "jsa.dev.primerTR", 
 scriptDesc = "Design primers for repeats. Each primer is added 30 bases for mapping")
 public class RepeatPrimerCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(RepeatPrimerCmd.class);
+
 	public RepeatPrimerCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -95,14 +98,14 @@ public class RepeatPrimerCmd extends CommandLine{
 				.makeOutputStream(primerFile);
 		Sequence wSeq = null;
 
-		Logging.info("Read sequence from " + input);
+		LOG.info("Read sequence from " + input);
 		while ((seq = reader.nextSequence(Alphabet.DNA16())) != null) {
 			genomes.put(seq.getName(), seq);
 			if (wSeq == null)
 				wSeq = seq;
 		}
 		reader.close();
-		Logging.info("Read sequence done");
+		LOG.info("Read sequence done");
 
 		seq = wSeq;
 		// Reader in tr
@@ -112,7 +115,7 @@ public class RepeatPrimerCmd extends CommandLine{
 
 		// Get sequence information
 		for (TandemRepeat tr : trList) {
-			Logging.info("Process  " + tr.getID());
+			LOG.info("Process  " + tr.getID());
 			if (!seq.getName().equals(tr.getChr())) {
 				seq = genomes.get(tr.getChr());
 			}
@@ -159,10 +162,11 @@ public class RepeatPrimerCmd extends CommandLine{
 		Process process = pb.start();
 		int status = process.waitFor();
 		if (status ==0 ){			
-			Logging.info("Successfully run primer3");
+			LOG.info("Successfully run primer3");
 			//continue;
 		}else{
-			Logging.exit("Run primer 3 FAIL",1);
+			LOG.error("Run primer 3 FAIL");
+			System.exit(1);
 		}
 
 		// Reat the output
@@ -274,7 +278,7 @@ public class RepeatPrimerCmd extends CommandLine{
 				"1.fq"
 				).redirectErrorStream(true).redirectOutput(tmpFile);
 
-		Logging.info("Run: " + pb.command());
+		LOG.info("Run: " + pb.command());
 		process = pb.start();
 		status = process.waitFor();
 
@@ -292,7 +296,7 @@ public class RepeatPrimerCmd extends CommandLine{
 				"2.fq"
 				).redirectErrorStream(true).redirectOutput(tmpFile);
 
-		Logging.info("Run: " + pb.command());
+		LOG.info("Run: " + pb.command());
 		process = pb.start();
 		status = process.waitFor();		
 
@@ -310,7 +314,7 @@ public class RepeatPrimerCmd extends CommandLine{
 				).redirectErrorStream(true)
 				.redirectOutput(tmpFile);
 
-		Logging.info("Run: " + pb.command());
+		LOG.info("Run: " + pb.command());
 		process = pb.start();
 		status = process.waitFor();
 	}

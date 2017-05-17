@@ -45,8 +45,9 @@ import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filter a bam filem based on some criteria. Input file in bam format assumed
@@ -59,6 +60,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Build tree of MLST profiles"
 	)
 public class BuildMLSTTreeCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(BuildXMTreeCmd.class);
+
 	//CommandLine cmdLine;
 	public BuildMLSTTreeCmd(){
 		super();
@@ -94,7 +97,7 @@ public class BuildMLSTTreeCmd extends CommandLine{
 			
 			String profile = toks[1] + "#" + toks[4];
 			if (!profileMap.containsKey(profile)){
-				Logging.info("Profile " + profile);
+				LOG.info("Profile " + profile);
 				SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA4(), 1000, toks[3]);
 				String [] genesNames = toks[4].split("\\|");
 				for (int x =0; x < 7;x++){
@@ -103,9 +106,10 @@ public class BuildMLSTTreeCmd extends CommandLine{
 					int alleleIndex = mlst.alleleNo2AlleleIndex(x, alleleNo);
 					Sequence seq = mlst.alleles(x).get(alleleIndex);
 					if (!genesNames[x].equals(seq.getName())){
-						Logging.exit("Error at " + genesNames[x] + " vs " + seq.getName(), 1);
+						LOG.error("Error at " + genesNames[x] + " vs " + seq.getName());
+						System.exit(1);
 					}
-					Logging.info("Found " + seq.getName());
+					LOG.info("Found " + seq.getName());
 					sb.append(seq);
 				}
 				profileMap.put(profile, sb);

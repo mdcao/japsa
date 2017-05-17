@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 
 import org.graphstream.graph.*;
 public class GraphExplore {
+	public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/";
+	
 	public static void main(String args[]) {
     	try {
 			new GraphExplore();
@@ -27,7 +29,7 @@ public class GraphExplore {
         graph.addAttribute("ui.stylesheet", styleSheet);
         graph.display();
         
-        graph.loadFromFile("/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/assembly_graph.fastg");
+        graph.loadFromFile(spadesFolder+"EcK12S-careful/assembly_graph.fastg");
 
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 
@@ -43,7 +45,9 @@ public class GraphExplore {
          * Testing reduce function
          */
         try {
-			graph.readPathsFromSpades("/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/EcK12S-careful/contigs.paths");
+			graph.readPathsFromSpades(spadesFolder+"EcK12S-careful/contigs.paths");
+			HybridAssembler ass =  new HybridAssembler(graph);
+			ass.assembly(GraphExplore.spadesFolder+"bwa/EcK12S-careful.sam", 0);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

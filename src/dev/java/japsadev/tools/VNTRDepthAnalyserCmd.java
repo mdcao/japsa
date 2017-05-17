@@ -37,13 +37,14 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.XAFReader;
 import japsa.util.BetaBinomialModel;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -52,7 +53,9 @@ import org.apache.commons.math3.distribution.NormalDistribution;
  */
 @Deployable(scriptName = "jsa.dev.vntrDepthAnalyser", 
 scriptDesc = "VNTR typing using coverage depth information of Illumina capture sequencing")
-public class VNTRDepthAnalyserCmd extends CommandLine{	
+public class VNTRDepthAnalyserCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(VNTRDepthAnalyserCmd.class);
+
 	public VNTRDepthAnalyserCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -88,15 +91,6 @@ public class VNTRDepthAnalyserCmd extends CommandLine{
 		depthAnalysis(xafFile,resample, resAllele, args, output, readLength,  model);
 	}
 
-
-	/**
-	 * @param xafFile: information of repeats
-	 * @param resample: reference sample counts 
-	 * @param sFiles : array of sample counts
-	 * @param outputFile
-	 * @throws IOException
-	 * @throws InterruptedException
-	 */
 	static void depthAnalysis(String xafFile, String rData, String resAllele, String[] sFiles, String outputFile, int readLength, String model) throws IOException, InterruptedException{
 		if (sFiles.length ==0)
 			return;	
@@ -158,12 +152,14 @@ public class VNTRDepthAnalyserCmd extends CommandLine{
 
 			rReader.next();
 			if( !ID.equals(rReader.getField("ID"))){
-				Logging.exit("Wrong ID at line a " + rReader.lineNo(),1);
+				LOG.error("Wrong ID at line a " + rReader.lineNo());
+				System.exit(1);
 			}
 
 			rAlleleReader.next();
 			if( !ID.equals(rAlleleReader.getField("ID"))){
-				Logging.exit("Wrong ID at line b " + rAlleleReader.lineNo(),1);
+				LOG.error("Wrong ID at line b " + rAlleleReader.lineNo());
+				System.exit(1);
 			}
 
 			for (int i = 0; i < sFiles.length;i++){
@@ -204,7 +200,8 @@ public class VNTRDepthAnalyserCmd extends CommandLine{
 
 			for (int i = 0; i < sFiles.length;i++){
 				if( !ID.equals(sReaders[i].getField("ID"))){
-					Logging.exit("Wrong ID at line " + rReader.lineNo(),1);
+					LOG.error("Wrong ID at line " + rReader.lineNo());
+					System.exit(1);
 				}
 
 				double countS = Double.parseDouble(sReaders[i].getField(repCol));

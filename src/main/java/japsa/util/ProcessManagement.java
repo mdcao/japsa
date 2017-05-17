@@ -49,7 +49,7 @@ import java.io.InputStreamReader;
 public class ProcessManagement {
 	private static final Logger LOG = LoggerFactory.getLogger(ProcessManagement.class);
 	/**
-	 * To start a process, redirect output and error to Logging.info, print out
+	 * To start a process, redirect output and error to LOG.info, print out
 	 * a message and return the status
 	 * @param pb
 	 * @return

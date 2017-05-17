@@ -185,19 +185,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
 //				System.out.println("Before reduce => Node: " + getNodeCount() + " Edge: " + getEdgeCount());
 				
 //				AbstractNode comp=
-		    	System.out.print("Checking: ");
-		    	int uniqueCount=0;
-		    	for(Node n:path.getEachNode()){
-		    		if(isUnique(n))
-		    			uniqueCount++;
-		    	}
-		    	if(uniqueCount > 1){
-		    		System.out.println("reducing...");
-		    		this.reduce(path);
-				}else
-		    	{
-		    		System.out.println("ignore path with less than 1 unique contig!");
-		    	}
+
+		    	this.reduce(path);
+
 
 //				if(comp!=null){
 //					System.out.println("Reverting node: " + comp.getId());
@@ -227,6 +217,18 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	//do nothing if the path has only one node
     	if(p==null || p.getEdgeCount()<1)
     		return null;
+    	
+    	//now only work with path containing more than 2 unique nodes
+    	int uniqueCount=0;
+    	for(Node n:p.getEachNode()){
+    		if(isUnique(n))
+    			uniqueCount++;
+    	}
+    	if(uniqueCount < 2)
+    	{
+    		System.out.println("ignore path with less than 1 unique contig!");
+    		return null;
+    	}
     	//add the new composite Node to the graph
     	//compare id from sense & anti-sense to get the unique one
     	AbstractNode comp = addNode(p.getId().compareTo(p.getReversedComplemented().getId())>0?
@@ -280,6 +282,80 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	//TODO: remove bubbles...
     	return comp;
     }
+    
+    /**
+     * Another reduce that doesn't remove the unique nodes
+     * Instead redundant edges are removed on a path way
+     * @param p Path to be grouped as a virtually vertex
+     */
+    public void reduce(BidirectedPath p, boolean keepTrack){
+    	//do nothing if the path has only one node
+    	if(p==null || p.getEdgeCount()<1)
+    		return;
+    	
+    	//now only work with path containing more than 2 unique nodes
+    	int uniqueCount=0;
+    	for(Node n:p.getEachNode()){
+    		if(isUnique(n))
+    			uniqueCount++;
+    	}
+    	if(uniqueCount < 2)
+    	{
+    		System.out.println("ignore path with less than 1 unique contig!");
+    		return;
+    	}
+    	//add the new composite Node to the graph
+    	//compare id from sense & anti-sense to get the unique one
+    	AbstractNode comp = addNode(p.getId().compareTo(p.getReversedComplemented().getId())>0?
+    								p.getReversedComplemented().getId():p.getId());
+    	
+    	comp.addAttribute("path", p);
+    	comp.addAttribute("seq", p.spelling());
+        comp.addAttribute("ui.label", comp.getId());
+        comp.setAttribute("ui.style", "text-offset: -10;"); 
+        comp.setAttribute("ui.class", "marked");
+        try { Thread.sleep(100); } catch (Exception e) {}
+
+    	//store unique nodes on p for removing
+    	ArrayList<String> tobeRemoved=new ArrayList<String>();
+    	for(Node n:p.getEachNode()){
+    		if(isUnique(n))
+    			tobeRemoved.add(n.getId());
+    	}
+    	BidirectedNode 	start = (BidirectedNode) p.getRoot(),
+    					end = (BidirectedNode) p.peekNode();
+    	boolean startDir = ((BidirectedEdge) p.getEdgePath().get(0)).getDir(start), 
+    			endDir = ((BidirectedEdge) p.peekEdge()).getDir(end);
+    	//set neighbors of the composite Node
+    	Iterator<Edge> startEdges = startDir?start.getEnteringEdgeIterator():start.getLeavingEdgeIterator(),
+    					endEdges = endDir?end.getEnteringEdgeIterator():end.getLeavingEdgeIterator();
+    	while(startEdges.hasNext()){
+    		BidirectedEdge e = (BidirectedEdge) startEdges.next();
+    		BidirectedNode opNode = e.getOpposite(start);
+    		boolean opDir = e.getDir(opNode);
+    		//Edge tmp=
+    		addEdge(BidirectedEdge.createID(comp, opNode, false, opDir), comp, opNode);//always into start node
+    		//System.out.println("From " + start.getId() + ": " + tmp.getId() + " added!");
+    	}
+    	
+    	while(endEdges.hasNext()){
+    		BidirectedEdge e = (BidirectedEdge) endEdges.next();
+    		BidirectedNode opNode = e.getOpposite(end);
+    		boolean opDir = e.getDir(opNode);
+    		//Edge tmp=
+    		addEdge(BidirectedEdge.createID(comp, opNode, true, opDir), comp, opNode);//always out of end node
+    	
+    		//System.out.println("From " + end.getId() + ": " + tmp.getId() + " added!");
+
+    	}
+
+    	for(String nLabel:tobeRemoved){
+    		//System.out.println("About to remove " + nLabel);
+    		removeNode(nLabel);
+    	}
+
+    }
+    
     /**
      * 
      * @param v Node to be reverted (1-level reverting)

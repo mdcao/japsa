@@ -46,8 +46,9 @@ import java.util.HashMap;
 
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filter a bam filem based on some criteria. Input file in bam format assumed
@@ -60,7 +61,8 @@ import japsa.util.deploy.Deployable;
 	scriptDesc = "Build tree of XM"
 	)
 public class BuildXMTreeCmd extends CommandLine{
-	//CommandLine cmdLine;
+	private static final Logger LOG = LoggerFactory.getLogger(BuildXMTreeCmd.class);
+
 	public BuildXMTreeCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -83,7 +85,7 @@ public class BuildXMTreeCmd extends CommandLine{
 		ArrayList<String> idList = new ArrayList<String>();
 		ArrayList<String> nameList = new ArrayList<String>();
 
-		Logging.info("point 1");
+		LOG.info("point 1");
 		String line;
 		int noTaxa = 0;
 		while ((line = br.readLine())!=null){
@@ -107,7 +109,7 @@ public class BuildXMTreeCmd extends CommandLine{
 		double [][] disMeasure1 = new double[noTaxa][];
 		double [][] disMeasure2 = new double[noTaxa][];
 
-		Logging.info("point 2");
+		LOG.info("point 2");
 		int index = 0;		
 		while (index < noTaxa){
 			File file = new File("rdistance."+index+".out");
@@ -115,7 +117,7 @@ public class BuildXMTreeCmd extends CommandLine{
 				break;//no more
 			}
 
-			Logging.info("Read " + index);
+			LOG.info("Read " + index);
 
 			BufferedReader reader = new BufferedReader(new FileReader(file));
 			line = reader.readLine();

@@ -41,8 +41,9 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.DoubleArray;
-import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Compute cross correllation between two datasets in bedgraph format
@@ -56,6 +57,8 @@ import japsa.util.deploy.Deployable;
 		scriptDesc = "Analysis of plasma sequencing using Cross correlation"
 		)
 public class PlasmaAnalysisCrossCorrelationCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(PlasmaAnalysisCrossCorrelationCmd.class);
+
 	//CommandLine cmdLine;
 	public PlasmaAnalysisCrossCorrelationCmd(){
 		super();
@@ -83,7 +86,7 @@ public class PlasmaAnalysisCrossCorrelationCmd extends CommandLine{
 		int window = cmdLine.getIntVal("window");
 		int lag = cmdLine.getIntVal("lag");
 
-		Logging.info("read file 1");
+		LOG.info("read file 1");
 		BufferedReader bf = SequenceReader.openFile(xFile);
 		DoubleArray array = new DoubleArray();
 
@@ -109,7 +112,7 @@ public class PlasmaAnalysisCrossCorrelationCmd extends CommandLine{
 		double [] x = array.toArray();
 		array.clear();
 
-		Logging.info("read file 2");
+		LOG.info("read file 2");
 		bf = SequenceReader.openFile(yFile);		
 		while ( (line = bf.readLine())!= null){
 			// skip the header
@@ -125,16 +128,16 @@ public class PlasmaAnalysisCrossCorrelationCmd extends CommandLine{
 		double [] y = array.toArray();
 
 		double [] crr = new double[x.length];
-		Logging.info("Run 0");
+		LOG.info("Run 0");
 		cross_correlation(x,y,window,0,crr);		
 		for (int i=1; i < lag; i++){
-			Logging.info("Run " + i);
+			LOG.info("Run " + i);
 			cross_correlation(x,y,window,i,crr);
-			Logging.info("Run -" + i);
+			LOG.info("Run -" + i);
 			cross_correlation(y,x,window,i,crr);		
 		}
 
-		Logging.info("Write");
+		LOG.info("Write");
 		SequenceOutputStream fCount = SequenceOutputStream.makeOutputStream(output);
 		fCount.print("track type=bedGraph\n");		
 		char sep = '\t';		
