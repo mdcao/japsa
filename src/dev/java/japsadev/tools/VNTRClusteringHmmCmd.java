@@ -343,7 +343,7 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
 			clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
 			
-			
+	
 			
 			//System.out.print("char seq: "+clusterResult.get(1).get(0));
 			
