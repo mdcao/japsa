@@ -47,6 +47,8 @@ import japsa.util.deploy.Deployable;
 import japsa.xm.expert.Expert;
 import japsa.xm.expert.MarkovExpert;
 import japsadev.bio.hts.clustering.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,6 +64,8 @@ import java.util.HashMap;
 
 @Deployable(scriptName = "jsa.dev.clusteringhmm", scriptDesc = "Clustring in the hmm framework")
 public class VNTRClusteringHmmCmd extends CommandLine {
+	private static final Logger LOG = LoggerFactory.getLogger(VNTRClusteringHmmCmd.class);
+
 	public VNTRClusteringHmmCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -155,7 +159,7 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 
 		String strFile = cmdLine.getStringVal("xafFile");
 
-		Logging.info("Read genome begins");
+		LOG.info("Read genome begins");
 		HashMap <String, Sequence> genome = new HashMap <String, Sequence>();
 		SequenceReader seqReader = SequenceReader.getReader(cmdLine.getStringVal("reference"));
 		Sequence seq;
@@ -163,7 +167,7 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			genome.put(seq.getName(), seq);
 		}
 		seqReader.close();
-		Logging.info("Read genome done");
+		LOG.info("Read genome done");
 
 		/**********************************************************************/
 		XAFReader xafReader = new XAFReader(strFile);
@@ -189,7 +193,8 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			}
 			if (seq == null){
 				xafReader.close();				
-				Logging.exit("Chrom in line " + xafReader.lineNo() + " not found!!!", 1);
+				LOG.error("Chrom in line " + xafReader.lineNo() + " not found!!!");
+				System.exit(1);
 			}
 
 			if (end > seq.length())
@@ -336,8 +341,11 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			
 			Sequence cluster1Consensus
 					= ErrorCorrection.consensusSequence(cluster1Sequence, prefix + "tmp1_"+tempFile, "kalign");
+
+			cluster1Consensus.setName("consensus1");
 			Sequence cluster2Consensus
 					= ErrorCorrection.consensusSequence(cluster2Sequence, prefix + "tmp2_"+tempFile, "kalign");
+			cluster1Consensus.setName("consensus2");
 			
 			//WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
 			//clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
@@ -365,7 +373,7 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			}else
 				outOS.print("##No cluster found for 1");
 
-			outOS.print("####Allele 2");
+			outOS.print("####Allele 2\n");
 			if (cluster2Consensus != null)
 				processRead(cluster2Consensus, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
 			else
@@ -827,7 +835,7 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 
 		}// for
 		if (startRead < 0 || endRead < 0){
-			Logging.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
+			LOG.warn(" " + refPos + "  " + readPos + " " + startRead + " " + endRead);
 			return null;
 		}		
 
