@@ -59,7 +59,7 @@ public class Sequence extends AbstractSequence implements Cloneable {
 	/**
 	 * Create an empty sequence with a specified length
 	 * 
-	 * @param dna
+	 * @param alphabet
 	 * 
 	 */
 	public Sequence(Alphabet alphabet, int length) {
@@ -74,7 +74,7 @@ public class Sequence extends AbstractSequence implements Cloneable {
 
 	/**
 	 * Construct a sequence from a sequence of characters.
-	 * @param dna
+	 * @param alphabet
 	 * @param charSeq
 	 * @param name
 	 */	
@@ -101,7 +101,7 @@ public class Sequence extends AbstractSequence implements Cloneable {
 	/**
 	 * Copy the byte array up to the length
 	 * 
-	 * @param dna
+	 * @param alphabet
 	 * @param byteArray
 	 * @param length
 	 */
@@ -132,8 +132,8 @@ public class Sequence extends AbstractSequence implements Cloneable {
 	/**
 	 * Construct a sequence with an dna from the string represent the 
 	 * sequence and the name
-	 * @param dna
-	 * @param seqStr
+	 * @param alphabet
+	 * @param seqString
 	 * @param name
 	 */
 	
@@ -215,7 +215,7 @@ public class Sequence extends AbstractSequence implements Cloneable {
 	
 	/**
 	 * Create a random sequence with some length and some frequency distribution
-	 * @param dna
+	 * @param alphabet
 	 * @param length
 	 * @param freqs
 	 * @param rand a random generator
@@ -255,7 +255,7 @@ public class Sequence extends AbstractSequence implements Cloneable {
 	}
 	/**
 	 * Create a random sequence
-	 * @param dna
+	 * @param alphabet
 	 * @param length
 	 * @param freqs
 	 * @return

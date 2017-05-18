@@ -313,11 +313,8 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			
 			clusterResult = clusterObj1.Clustering(tempReads);
 			
-			ArrayList<String> cluster1String = new ArrayList<String>();
-			ArrayList<String> cluster2String = new ArrayList<String>();
-			
-			cluster1String = clusterResult.get(1);
-			cluster2String = clusterResult.get(2);
+			ArrayList<String> cluster1String = clusterResult.get(1);
+			ArrayList<String> cluster2String = clusterResult.get(2);
 			
 			ArrayList<Sequence> cluster1Sequence = new ArrayList<Sequence>();
 			ArrayList<Sequence> cluster2Sequence = new ArrayList<Sequence>();
@@ -337,14 +334,14 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 				cluster2Sequence.add(tempSeq2);
 			}
 			
-			Sequence cluster1Consensus  = ErrorCorrection.consensusSequence(cluster1Sequence, "tmp1_"+tempFile, "kalign");
-			Sequence cluster2Consensus  = ErrorCorrection.consensusSequence(cluster2Sequence, "tmp2_"+tempFile, "kalign");
+			Sequence cluster1Consensus
+					= ErrorCorrection.consensusSequence(cluster1Sequence, prefix + "tmp1_"+tempFile, "kalign");
+			Sequence cluster2Consensus
+					= ErrorCorrection.consensusSequence(cluster2Sequence, prefix + "tmp2_"+tempFile, "kalign");
 			
-			WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
-			clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
-			
-	
-			
+			//WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
+			//clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
+
 			//System.out.print("char seq: "+clusterResult.get(1).get(0));
 			
 			
@@ -355,9 +352,28 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 
 			//write to a file
 
-			//ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);
+
+			ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);
 			//-1 for 0-index, inclusive
-			//processBatch(readSequences, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
+			outOS.print("####Allele 1\n");
+			if (cluster1Consensus != null)
+				processRead(cluster1Consensus, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
+			else
+				outOS.print("##No consensus found  for 1");
+			if (cluster1Sequence.size() >= 1) {
+				processBatch(cluster1Sequence, dpBatch, fraction, hmmFlank, hmmPad, period, outOS);
+			}else
+				outOS.print("##No cluster found for 1");
+
+			outOS.print("####Allele 2");
+			if (cluster2Consensus != null)
+				processRead(cluster2Consensus, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
+			else
+				outOS.print("##No consensus found  for 2");
+			if (cluster2Sequence.size() >= 1) {
+				processBatch(cluster2Sequence, dpBatch, fraction, hmmFlank, hmmPad, period, outOS);
+			}else
+				outOS.print("##No cluster found for 2");
 
 			//outOS.print(trVar.toString(headers));
 			//outOS.print('\n');
@@ -390,7 +406,8 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			double matP = (countMG + countMB + 1.0) /sum;
 			double matchP = (countMG + 1.0) / (countMG + countMB + 2.0);
 			double misMatchP = 1 - matchP;
-			System.out.printf("Total: %3d %3d %3d %3d %8.4f %8.4f %8.4f %8.4f\n", countMG, countMB, countIns, countDel,  insP, delP,  misMatchP,myCost);
+			outOS.print(String.format("Total: %3d %3d %3d %3d %8.4f %8.4f %8.4f %8.4f\n", countMG, countMB, countIns,
+					countDel, 	insP, delP,  misMatchP,myCost));
 			dpBatch.setTransitionProbability(matP, insP, delP);
 			dpBatch.setMatchProbability(matchP);			
 		}//round
