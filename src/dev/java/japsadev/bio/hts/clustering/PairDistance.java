@@ -90,13 +90,13 @@ public class PairDistance {
 
         for (int j = 1; j <= n; ++j) {
             for (int i = 1; i <= m; ++i) {            	
-                final int delta = (s.charAt(j - 1) == z.charAt(i - 1)) ? 0 : 1; 
+                final int delta = (s.charAt(j - 1) == z.charAt(i - 1)) ? 1 : -1; 
 
-                int tentativeDistance = d[i - 1][j] + 2;//gap penalty
+                int tentativeDistance = d[i - 1][j] - 1;//gap penalty
                 EditOperation editOperation = EditOperation.INSERT;
 
-                if (tentativeDistance > d[i][j - 1] + 2) {
-                    tentativeDistance = d[i][j - 1] + 2;
+                if (tentativeDistance > d[i][j - 1] - 1) {
+                    tentativeDistance = d[i][j - 1] - 1;
                     editOperation = EditOperation.DELETE;
                 }
 
