@@ -326,18 +326,22 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			Sequence tempSeq1;Sequence tempSeq2;
 			
 			//seq = new Sequence(Alphabet.DNA16(), sequenceString, sequenceName)
-			
-			for(int x=0; x<cluster1String.size();x++){
-				String str1 = cluster1String.get(x);
-				tempSeq1 = new Sequence(dna, str1,  tempReadSequences.get(str1));
-				cluster1Sequence.add(tempSeq1);
+			if(cluster1String.size()>0){
+				for(int x=0; x<cluster1String.size();x++){
+					String str1 = cluster1String.get(x);
+					tempSeq1 = new Sequence(dna, str1,  tempReadSequences.get(str1));
+					cluster1Sequence.add(tempSeq1);
+				}
 			}
 			
-			for(int x=0; x<cluster2String.size();x++){
-				String str2 = cluster2String.get(x);
-				tempSeq2 = new Sequence(dna, str2,  tempReadSequences.get(str2));
-				cluster2Sequence.add(tempSeq2);
-			}
+			
+			if(cluster2String.size()>0){
+				for(int x=0; x<cluster2String.size();x++){
+					String str2 = cluster2String.get(x);
+					tempSeq2 = new Sequence(dna, str2,  tempReadSequences.get(str2));
+					cluster2Sequence.add(tempSeq2);
+				}
+			}			
 			
 			Sequence cluster1Consensus
 					= ErrorCorrection.consensusSequence(cluster1Sequence, prefix + "_cluster1_"+tempFile, "kalign");
