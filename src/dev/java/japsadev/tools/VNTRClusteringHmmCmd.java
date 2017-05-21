@@ -345,8 +345,8 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			
 			Sequence cluster1Consensus
 					= ErrorCorrection.consensusSequence(cluster1Sequence, prefix + "_cluster1_"+tempFile, "kalign");
-
 			cluster1Consensus.setName("consensus1");
+
 			Sequence cluster2Consensus
 					= ErrorCorrection.consensusSequence(cluster2Sequence, prefix + "_cluster2_"+tempFile, "kalign");
 			cluster2Consensus.setName("consensus2");
