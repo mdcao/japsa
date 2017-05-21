@@ -121,6 +121,8 @@ public class KmeanClusteringWithReads {
 					}
 					
 					NewMean(table, m, n, k); // call to method which will calculate mean at this step.
+					
+					
 					flag = VerifyEqual(n, k, tempk); // check if terminating condition is satisfied.
 					if(flag!=1){
 						/*Take backup of k in tempk so that you can check for equivalence in next step*/
@@ -203,39 +205,42 @@ public class KmeanClusteringWithReads {
 					t.add(k[i][j]);
 				}
 			}
+			if(t.size()>1){
+				ArrayList<Double> s = new ArrayList<Double>();				
 				
-			ArrayList<Double> s = new ArrayList<Double>();				
-				
-			for(int x1 = 0; x1<t.size();++x1){
-				double sum = 0;					
-				for(int x2=0;x2<t.size();++x2){
-					if(t.get(x1)<t.get(x2)){
-						sum = sum+(list[t.get(x1)][t.get(x2)]*list[t.get(x1)][t.get(x2)]);
+				for(int x1 = 0; x1<t.size();++x1){
+					double sum = 0;					
+					for(int x2=0;x2<t.size();++x2){
+						if(t.get(x1)<t.get(x2)){
+							sum = sum+(list[t.get(x1)][t.get(x2)]*list[t.get(x1)][t.get(x2)]);
+						}
+						else if(t.get(x1)>t.get(x2)){
+							sum = sum+(list[t.get(x2)][t.get(x1)]*list[t.get(x2)][t.get(x1)]);
+						}
+						else{
+							sum = sum+0;
+						}	
 					}
-					else if(t.get(x1)>t.get(x2)){
-						sum = sum+(list[t.get(x2)][t.get(x1)]*list[t.get(x2)][t.get(x1)]);
-					}
-					else{
-						sum = sum+0;
-					}	
+						//System.out.println(sum);					
+						s.add(sum/t.size());					
 				}
-					//System.out.println(sum);					
-					s.add(sum/t.size());					
-			}
-			//System.out.println(s.size());
-			double min=s.get(0);	
-			int d2 = 0;
-			for(int x3=1;x3<s.size();++x3){					
-				if(min>s.get(x3)){
-					min = s.get(x3);
-					d2  = x3;
-				}					
-			}	
+				//System.out.println(s.size());
+				double min=s.get(0);	
+				int d2 = 0;
+				for(int x3=1;x3<s.size();++x3){					
+					if(min>s.get(x3)){
+						min = s.get(x3);
+						d2  = x3;
+					}					
+				}	
+					
 				
-			
-			m[i]=t.get(d2);
-			s.clear();
-			t.clear();
+				m[i]=t.get(d2);
+				s.clear();
+				t.clear();				
+			}else{
+				m[i]=t.get(0);
+			}	
 			
 		}
 	}
