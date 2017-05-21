@@ -101,11 +101,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Scanner;
 
-import com.google.common.io.Files;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 
 /**
  * This class is used to deploy tools: create a makefile to generate scripts
@@ -250,10 +253,11 @@ public class Deploy {
 		}
 
 		//Get the classpath now that the directory of installation is known
-		File from = new File(japsaJar);
+        File from = new File(japsaJar);
+
 		File to = new File (japsaLib.getCanonicalPath()  + File.separator + japsaJar);
 		try{
-			Files.copy(from,to);
+			Files.copy(from.toPath(),to.toPath(),REPLACE_EXISTING);
 		}catch (IOException e){
 			System.err.println(e.getMessage());
 			return null;
@@ -267,7 +271,8 @@ public class Deploy {
 				from = new File("libs" + File.separator + l);
 				to = new File (japsaLib.getCanonicalPath()  + File.separator + l);
 				try{
-					Files.copy(from,to);
+                    Files.copy(from.toPath(),to.toPath(),REPLACE_EXISTING);
+					//Files.copy(from,to);
 				}catch (IOException e){
 					System.err.println(e.getMessage());
 					return null;
@@ -561,12 +566,7 @@ public class Deploy {
 	}
 
 
-	/**
-	 * 
-	 * @param masterScript
-	 * @throws IOException
-	 */
-	public static void setUpGalaxyScripts(ArrayList<Object> toolList) 
+	public static void setUpGalaxyScripts(ArrayList<Object> toolList)
 			throws IOException{		
 		System.out.println("Set galaxy wrapper :");
 		PrintStream masterFile = new PrintStream(new File("galaxy"  + File.separator + "japsa.xml"));

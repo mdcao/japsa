@@ -341,24 +341,11 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			
 			Sequence cluster1Consensus
 					= ErrorCorrection.consensusSequence(cluster1Sequence, prefix + "tmp1_"+tempFile, "kalign");
-
 			cluster1Consensus.setName("consensus1");
+
 			Sequence cluster2Consensus
 					= ErrorCorrection.consensusSequence(cluster2Sequence, prefix + "tmp2_"+tempFile, "kalign");
 			cluster1Consensus.setName("consensus2");
-			
-			//WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
-			//clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
-
-			//System.out.print("char seq: "+clusterResult.get(1).get(0));
-			
-			
-			//Get the consensus of each of them using the following command
-			//ErrorCorrection.consensusSequence(clusterResult.get(index), "tmp", "kalign");
-			//ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign");
-			//System.out.println("consensus" + ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign"));
-
-			//write to a file
 
 
 			ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);
@@ -382,6 +369,20 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 				processBatch(cluster2Sequence, dpBatch, fraction, hmmFlank, hmmPad, period, outOS);
 			}else
 				outOS.print("##No cluster found for 2");
+
+
+            //WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
+            //clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
+
+            //System.out.print("char seq: "+clusterResult.get(1).get(0));
+
+
+            //Get the consensus of each of them using the following command
+            //ErrorCorrection.consensusSequence(clusterResult.get(index), "tmp", "kalign");
+            //ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign");
+            //System.out.println("consensus" + ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign"));
+
+            //write to a file
 
 			//outOS.print(trVar.toString(headers));
 			//outOS.print('\n');
