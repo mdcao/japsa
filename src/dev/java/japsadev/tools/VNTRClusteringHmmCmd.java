@@ -326,26 +326,43 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			Sequence tempSeq1;Sequence tempSeq2;
 			
 			//seq = new Sequence(Alphabet.DNA16(), sequenceString, sequenceName)
-			
-			for(int x=0; x<cluster1String.size();x++){
-				String str1 = cluster1String.get(x);
-				tempSeq1 = new Sequence(dna, str1,  tempReadSequences.get(str1));
-				cluster1Sequence.add(tempSeq1);
+			if(cluster1String.size()>0){
+				for(int x=0; x<cluster1String.size();x++){
+					String str1 = cluster1String.get(x);
+					tempSeq1 = new Sequence(dna, str1,  tempReadSequences.get(str1));
+					cluster1Sequence.add(tempSeq1);
+				}
 			}
 			
-			for(int x=0; x<cluster2String.size();x++){
-				String str2 = cluster2String.get(x);
-				tempSeq2 = new Sequence(dna, str2,  tempReadSequences.get(str2));
-				cluster2Sequence.add(tempSeq2);
-			}
+			
+			if(cluster2String.size()>0){
+				for(int x=0; x<cluster2String.size();x++){
+					String str2 = cluster2String.get(x);
+					tempSeq2 = new Sequence(dna, str2,  tempReadSequences.get(str2));
+					cluster2Sequence.add(tempSeq2);
+				}
+			}			
 			
 			Sequence cluster1Consensus
-					= ErrorCorrection.consensusSequence(cluster1Sequence, prefix + "tmp1_"+tempFile, "kalign");
-			cluster1Consensus.setName("consensus1");
+					= ErrorCorrection.consensusSequence(cluster1Sequence, prefix + "_cluster1_"+tempFile, "kalign");
 
+			cluster1Consensus.setName("consensus1");
 			Sequence cluster2Consensus
-					= ErrorCorrection.consensusSequence(cluster2Sequence, prefix + "tmp2_"+tempFile, "kalign");
-			cluster1Consensus.setName("consensus2");
+					= ErrorCorrection.consensusSequence(cluster2Sequence, prefix + "_cluster2_"+tempFile, "kalign");
+			cluster2Consensus.setName("consensus2");
+			
+			//WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
+			//clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
+
+			//System.out.print("char seq: "+clusterResult.get(1).get(0));
+			
+			
+			//Get the consensus of each of them using the following command
+			//ErrorCorrection.consensusSequence(clusterResult.get(index), "tmp", "kalign");
+			//ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign");
+			//System.out.println("consensus" + ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign"));
+
+			//write to a file
 
 
 			ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);
@@ -369,20 +386,6 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 				processBatch(cluster2Sequence, dpBatch, fraction, hmmFlank, hmmPad, period, outOS);
 			}else
 				outOS.print("##No cluster found for 2");
-
-
-            //WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
-            //clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
-
-            //System.out.print("char seq: "+clusterResult.get(1).get(0));
-
-
-            //Get the consensus of each of them using the following command
-            //ErrorCorrection.consensusSequence(clusterResult.get(index), "tmp", "kalign");
-            //ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign");
-            //System.out.println("consensus" + ErrorCorrection.consensusSequence(readSequences, "tmp", "kalign"));
-
-            //write to a file
 
 			//outOS.print(trVar.toString(headers));
 			//outOS.print('\n');
