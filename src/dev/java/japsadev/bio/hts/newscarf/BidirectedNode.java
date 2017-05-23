@@ -16,6 +16,8 @@ import org.graphstream.graph.implementations.*;
  * 
  */
 public class BidirectedNode extends AbstractNode {
+	protected int COPY=1;
+	
 	protected static final int INITIAL_EDGE_CAPACITY;
 	protected static final double GROWTH_FACTOR = 1.1;
 
@@ -29,7 +31,7 @@ public class BidirectedNode extends AbstractNode {
 		INITIAL_EDGE_CAPACITY = initialEdgeCapacity;
 	}
 	//edges are bidirected, here are 4 sub-types (name based on direction of the arrow relative to the corresponding node):
-	//node that neighbor edges here will treat their root node as *left* node, the opposite node as *right* node
+	//note that neighbor edges here will treat their root node as *left* node, the opposite node as *right* node
 	protected static final byte OO_EDGE = 0b00; // src-->--<--dst
 	protected static final byte OI_EDGE = 0b01; // src-->-->--dst
 	protected static final byte IO_EDGE = 0b10; // src--<--<--dst

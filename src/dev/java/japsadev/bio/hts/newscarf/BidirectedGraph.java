@@ -111,7 +111,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 	 * ****************************Algorithms go from here*****************************
 	 */
     public BidirectedGraph(){
-    	this("Assembly graph",true,false,1000,100000);
+    	this("Assembly graph",true,false,200000,1000000);
         setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
     }
     //TODO: read from ABySS assembly graph (graph of final contigs, not like SPAdes)
@@ -138,8 +138,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
 			
 			if(dir0){
 				seq.setName(name);
-				//current.setSequence(seq);
 				node.setAttribute("seq", seq);
+				double cov = Double.parseDouble(name.split("_")[5]);
+				node.setAttribute("cov", cov);
 			}
 			if (adjList.length > 1){
 				String[] nbList = adjList[1].split(",");
@@ -292,68 +293,49 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	//do nothing if the path has only one node
     	if(p==null || p.getEdgeCount()<1)
     		return;
-    	
-    	//now only work with path containing more than 2 unique nodes
     	int uniqueCount=0;
+		int len=0;
+		double res=0;
     	for(Node n:p.getEachNode()){
-    		if(isUnique(n))
+    		if(isUnique(n)){
     			uniqueCount++;
+				Sequence seq = (Sequence) n.getAttribute("seq");
+				double cov = Double.parseDouble(seq.getName().split("_")[5]);
+				len+=(n==p.getRoot())?seq.length():seq.length()-BidirectedGraph.getKmerSize();
+				res+=seq.length()*cov;
+    		}
     	}
     	if(uniqueCount < 2)
     	{
     		System.out.println("ignore path with less than 1 unique contig!");
     		return;
     	}
-    	//add the new composite Node to the graph
-    	//compare id from sense & anti-sense to get the unique one
-    	AbstractNode comp = addNode(p.getId().compareTo(p.getReversedComplemented().getId())>0?
-    								p.getReversedComplemented().getId():p.getId());
-    	
-    	comp.addAttribute("path", p);
-    	comp.addAttribute("seq", p.spelling());
-        comp.addAttribute("ui.label", comp.getId());
-        comp.setAttribute("ui.style", "text-offset: -10;"); 
-        comp.setAttribute("ui.class", "marked");
-        try { Thread.sleep(100); } catch (Exception e) {}
+    	//TODO: a lot
+    	double cov = res/len;
+    	if(cov > 0){
+    		for(Node n:p.getEachNode()){
+    			double covLeft=(Double)n.getAttribute("cov")-cov;
+    			if(Math.abs(covLeft) < .5*cov){
+    				
+    			}else{
+    				//make a clone of corresponding repeat node
+    				String name = n.getAttribute("name");
+    				String cloneID = name.split("_")[1]+"_"+((BidirectedNode)n).COPY++;
+    				AbstractNode nodeClone = addNode(cloneID);
+    				nodeClone.setAttribute("name", name);
+    				nodeClone.setAttribute("seq", n.getAttribute("seq"));
+    				nodeClone.setAttribute("cov", cov);//necessary??
+    				
+    				//now set the edges of this cloned node
+    				
 
-    	//store unique nodes on p for removing
-    	ArrayList<String> tobeRemoved=new ArrayList<String>();
-    	for(Node n:p.getEachNode()){
-    		if(isUnique(n))
-    			tobeRemoved.add(n.getId());
+    				//remove edges from this repeat node that has coverage = cov
+    				
+    				//subtract the coverage of original node
+    				n.setAttribute("cov", covLeft);
+    			}	
+    		}
     	}
-    	BidirectedNode 	start = (BidirectedNode) p.getRoot(),
-    					end = (BidirectedNode) p.peekNode();
-    	boolean startDir = ((BidirectedEdge) p.getEdgePath().get(0)).getDir(start), 
-    			endDir = ((BidirectedEdge) p.peekEdge()).getDir(end);
-    	//set neighbors of the composite Node
-    	Iterator<Edge> startEdges = startDir?start.getEnteringEdgeIterator():start.getLeavingEdgeIterator(),
-    					endEdges = endDir?end.getEnteringEdgeIterator():end.getLeavingEdgeIterator();
-    	while(startEdges.hasNext()){
-    		BidirectedEdge e = (BidirectedEdge) startEdges.next();
-    		BidirectedNode opNode = e.getOpposite(start);
-    		boolean opDir = e.getDir(opNode);
-    		//Edge tmp=
-    		addEdge(BidirectedEdge.createID(comp, opNode, false, opDir), comp, opNode);//always into start node
-    		//System.out.println("From " + start.getId() + ": " + tmp.getId() + " added!");
-    	}
-    	
-    	while(endEdges.hasNext()){
-    		BidirectedEdge e = (BidirectedEdge) endEdges.next();
-    		BidirectedNode opNode = e.getOpposite(end);
-    		boolean opDir = e.getDir(opNode);
-    		//Edge tmp=
-    		addEdge(BidirectedEdge.createID(comp, opNode, true, opDir), comp, opNode);//always out of end node
-    	
-    		//System.out.println("From " + end.getId() + ": " + tmp.getId() + " added!");
-
-    	}
-
-    	for(String nLabel:tobeRemoved){
-    		//System.out.println("About to remove " + nLabel);
-    		removeNode(nLabel);
-    	}
-
     }
     
     /**
@@ -573,7 +555,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     public static boolean isUnique(Node node){
     	boolean res = false;
     	if(node.getDegree()<=2){
-    		if(((Sequence)node.getAttribute("seq")).length() > 5000 || node.getDegree()==0)
+//    		if(((Sequence)node.getAttribute("seq")).length() > 5000 || node.getDegree()==0)
     			res=true;
     	}
     		

@@ -15,7 +15,8 @@ import org.graphstream.graph.implementations.AbstractNode;
 
 public class BidirectedPath extends Path{
 	int deviation; //how this path differ to long read data (todo: by multiple-alignment??)
-
+//	double coverage=0; //representative coverage of this path (belongs to the unique nodes on the path)
+	
 	public BidirectedPath(){
 		super();
 	}
@@ -26,6 +27,8 @@ public class BidirectedPath extends Path{
 			for(Edge e:p.getEdgePath())
 				add(e);
 		}
+		deviation=p.deviation;
+//		coverage=p.coverage;
 	}
 	public BidirectedPath(BidirectedGraph graph, String paths){
 		super();
@@ -118,7 +121,9 @@ public class BidirectedPath extends Path{
 			Logging.error("Conflict direction from the first node " + bridge.getRoot().getId());
 			return;
 		}
-		
+		//TODO: need a way to check coverage consistent
+
+			
 		for(Edge e:bridge.getEdgePath()){
 			add(e);
 		}
@@ -139,13 +144,16 @@ public class BidirectedPath extends Path{
 		int len=0;
 		double res=0;
 		for(Node n:getNodePath()){
-			Sequence seq = (Sequence) n.getAttribute("seq");
-			double cov = Double.parseDouble(seq.getName().split("_")[5]);
-			len+=(n==getRoot())?seq.length():seq.length()-BidirectedGraph.getKmerSize();
-			res+=seq.length()*cov;
+			if(BidirectedGraph.isUnique(n)){
+				Sequence seq = (Sequence) n.getAttribute("seq");
+				double cov = Double.parseDouble(seq.getName().split("_")[5]);
+				len+=(n==getRoot())?seq.length():seq.length()-BidirectedGraph.getKmerSize();
+				res+=seq.length()*cov;
+			}
 		}
 		return res/len;
 	}
+
 	public int length() {
 		int retval = 0;
 		for(Node n:getNodePath()){
