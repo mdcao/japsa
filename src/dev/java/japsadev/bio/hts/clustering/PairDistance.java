@@ -16,22 +16,22 @@ public class PairDistance {
 	public static final String GAP = "-";
 	
 	public static final class EditDistanceResult {
-        private final int distance;
+        private final double distance;
         private final String editSequence;
         private final String topAlignmentRow;
         private final String bottomAlignmentRow;
 
-        EditDistanceResult(final int distance,
+        EditDistanceResult(final double d,
                                       final String editSequence,
                                       final String topAlignmentRow,
                                       final String bottomAlignmentRow) {
-            this.distance           = distance;
+            this.distance           = d;
             this.editSequence       = editSequence;
             this.topAlignmentRow    = topAlignmentRow;
             this.bottomAlignmentRow = bottomAlignmentRow;
         }
 
-        public int getDistance() {
+        public double getDistance() {
             return distance;
         }
 
@@ -74,7 +74,7 @@ public class PairDistance {
         
         final int n = s.length();
         final int m = z.length();        
-        final int[][] d = new int[m + 1][n + 1];
+        final double[][] d = new double[m + 1][n + 1];
         final Map<Point, Point> parentMap = new HashMap<>();
 
         for (int i = 1; i <= m; ++i) {
@@ -90,13 +90,13 @@ public class PairDistance {
 
         for (int j = 1; j <= n; ++j) {
             for (int i = 1; i <= m; ++i) {            	
-                final int delta = (s.charAt(j - 1) == z.charAt(i - 1)) ? 1 : -1; 
+                final int delta = (s.charAt(j - 1) == z.charAt(i - 1)) ? 0 : 1; 
 
-                int tentativeDistance = d[i - 1][j] - 1;//gap penalty
+                double tentativeDistance = d[i - 1][j] +0.5;//gap penalty
                 EditOperation editOperation = EditOperation.INSERT;
 
-                if (tentativeDistance > d[i][j - 1] - 1) {
-                    tentativeDistance = d[i][j - 1] - 1;
+                if (tentativeDistance > d[i][j - 1] +0.5) {
+                    tentativeDistance = d[i][j - 1] +0.5;
                     editOperation = EditOperation.DELETE;
                 }
 
