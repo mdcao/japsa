@@ -90,11 +90,12 @@ public class SimulateCaptureCmd extends CommandLine{
 		addInt("fmedian", 2000 , "Median of fragment size at shearing");
 		addDouble("fshape", 6, "Shape parameter of the fragment size distribution");
 
-		addInt("smedian", 1300 , "Median of fragment size distribution");
-		addDouble("sshape", 6, "Shape parameter of the fragment size distribution");
+		//addInt("smedian", 1300 , "Median of fragment size distribution");
+		//addDouble("sshape", 6, "Shape parameter of the fragment size distribution");
 
-		addInt("tmedian", 0 , "Median of target fragment size (the fragment size of the data).\n If specified, will override fmedian and smedian.\n Othersise will be estimated");
-		addDouble("tshape", 0, "Shape parameter of the effective fragment size distribution");
+		//addInt("tmedian", 0 , "Median of target fragment size (the fragment size of the data).\n If specified, " +
+		//		"will override fmedian and smedian.\n Othersise will be estimated");
+		//addDouble("tshape", 0, "Shape parameter of the effective fragment size distribution");
 
 		addInt("num", 1000000, "Number of fragments ");
 
@@ -104,11 +105,10 @@ public class SimulateCaptureCmd extends CommandLine{
 		//addDouble("extension",0.01,"probability of indel extention");
 		//Specific parameter for each sequencing technology
 
-
 		addInt("pblen", 30000, "PacBio: Average (polymerase) read length");
 
 		addInt("illen", 300, "Illumina: read length");
-		addString("ilmode", "pe", "Illumina: Sequencing mode: pe = paired-end, mp=mate-paired and se=singled-end");
+		//addString("ilmode", "pe", "Illumina: Sequencing mode: pe = paired-end, mp=mate-paired and se=singled-end");
 
 		addInt("seed", 0, "Random seed, 0 for a random seed");
 		addStdHelp();
@@ -123,14 +123,11 @@ public class SimulateCaptureCmd extends CommandLine{
 		String ID       =  cmdLine.getStringVal("ID");
 		String referenceFile =  cmdLine.getStringVal("reference");
 
-		int fmedian =  cmdLine.getIntVal("fmedian");
-		double fshape = cmdLine.getDoubleVal("fshape");
+		//int smedian =  cmdLine.getIntVal("smedian");
+		//double sshape = cmdLine.getDoubleVal("sshape");
 
-		int smedian =  cmdLine.getIntVal("smedian");
-		double sshape = cmdLine.getDoubleVal("sshape");
-
-		int tmedian =  cmdLine.getIntVal("smedian");
-		double tshape = cmdLine.getDoubleVal("sshape");
+		//int tmedian =  cmdLine.getIntVal("tmedian");
+		//double tshape = cmdLine.getDoubleVal("tshape");
 
 		int seed =  cmdLine.getIntVal("seed");		
 		int num =   cmdLine.getIntVal("num");
@@ -139,7 +136,7 @@ public class SimulateCaptureCmd extends CommandLine{
 		int pbshape = 6;
 
 		String miseq       =  cmdLine.getStringVal("miseq");
-		String pacbio       =  cmdLine.getStringVal("pacbio");
+		String pacbio      =  cmdLine.getStringVal("pacbio");
 
 		if (miseq == null && pacbio == null){
 			System.err.println("One of miseq or pacbio must be set\n" + cmdLine.usageString());			
@@ -147,26 +144,29 @@ public class SimulateCaptureCmd extends CommandLine{
 		}
 
 		if (miseq != null && pacbio != null){
-			System.err.println("One of miseq or pacbio must be set\n" + cmdLine.usageString());			
+			System.err.println("Only one of miseq or pacbio can be set\n" + cmdLine.usageString());
 			System.exit(-1);
 		}
+
+		int fmedian =  cmdLine.getIntVal("fmedian");
+		double fshape = cmdLine.getDoubleVal("fshape");
 
 		int flank = fmedian  + (fmedian / 4);
 		double hybridizationRatio = 0.5;
 
-		double [] dist2 = null;
-		if (tmedian <=0){
-			LOG.info("Estimating target distribution");
-			dist2 = new double[fmedian*6];		
-		}else{
-			dist2 = new double[tmedian*6];
-			double max = 0;
-			for (int i = 0; i < dist2.length;i++){
-				dist2[i] = Simulation.logLogisticPDF(i + 1, smedian, sshape);
-				if (dist2[i] > max)
-					max = dist2[i];			
-			}
-		}
+		//double [] dist2 = null;
+		//if (tmedian <=0){
+		//	LOG.info("Estimating target distribution");
+		//	dist2 = new double[fmedian*6];
+		//}else{
+		//	dist2 = new double[tmedian*6];
+		//	double max = 0;
+		//	for (int i = 0; i < dist2.length;i++){
+		//		dist2[i] = Simulation.logLogisticPDF(i + 1, smedian, sshape);
+		//		if (dist2[i] > max)
+		//			max = dist2[i];
+		//	}
+		//}
 
 		//double [] dist2 = new double[smedian*4];
 		//double max = 0.0;
@@ -525,3 +525,19 @@ public class SimulateCaptureCmd extends CommandLine{
 	}
 
 }
+
+
+/*RST*
+----------------------------------------------------------------------------
+*capsim*: Simulating the Dynamics of Targeted Capture Sequencing with CapSim
+----------------------------------------------------------------------------
+
+*capsim* (jsa.sim.capsim) is a tool to simulate target capture sequencing.
+
+<usage>
+
+~~~~~~~~~~~~~
+Usage samples
+~~~~~~~~~~~~~
+
+*RST*/
