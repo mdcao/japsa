@@ -293,49 +293,24 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	//do nothing if the path has only one node
     	if(p==null || p.getEdgeCount()<1)
     		return;
-    	int uniqueCount=0;
-		int len=0;
-		double res=0;
-    	for(Node n:p.getEachNode()){
-    		if(isUnique(n)){
-    			uniqueCount++;
-				Sequence seq = (Sequence) n.getAttribute("seq");
-				double cov = Double.parseDouble(seq.getName().split("_")[5]);
-				len+=(n==p.getRoot())?seq.length():seq.length()-BidirectedGraph.getKmerSize();
-				res+=seq.length()*cov;
-    		}
-    	}
-    	if(uniqueCount < 2)
-    	{
-    		System.out.println("ignore path with less than 1 unique contig!");
-    		return;
-    	}
-    	//TODO: a lot
-    	double cov = res/len;
-    	if(cov > 0){
-    		for(Node n:p.getEachNode()){
-    			double covLeft=(Double)n.getAttribute("cov")-cov;
-    			if(Math.abs(covLeft) < .5*cov){
-    				
-    			}else{
-    				//make a clone of corresponding repeat node
-    				String name = n.getAttribute("name");
-    				String cloneID = name.split("_")[1]+"_"+((BidirectedNode)n).COPY++;
-    				AbstractNode nodeClone = addNode(cloneID);
-    				nodeClone.setAttribute("name", name);
-    				nodeClone.setAttribute("seq", n.getAttribute("seq"));
-    				nodeClone.setAttribute("cov", cov);//necessary??
-    				
-    				//now set the edges of this cloned node
-    				
-
-    				//remove edges from this repeat node that has coverage = cov
-    				
-    				//subtract the coverage of original node
-    				n.setAttribute("cov", covLeft);
-    			}	
-    		}
-    	}
+    	
+    	//loop over the edges of path (like spelling())
+    	BidirectedNode markerNode = null;
+    	//search for an unique node as the marker. 
+    	for(Edge e:p.getEdgePath()){
+ 
+			if(markerNode==null){
+				
+			}
+	    	//as the next marker coming, connect it to 
+	    	//the previous marker by an edge bind with corresponding path. TODO:check conflict!!! 
+			else{
+				
+			}
+		}
+    	
+    	//remove appropriate edges
+    	
     }
     
     /**
@@ -392,7 +367,8 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		}
     	//finally remove the composite node
     	removeNode(v);
-    	}
+	}
+    
     /*
      * This function deduces a full path in this graph between 2 nodes aligned with a long read
      */
