@@ -287,7 +287,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     /**
      * Another reduce that doesn't remove the unique nodes
      * Instead redundant edges are removed on a path way
-     * @param p Path to be grouped as a virtually vertex
+     * @param p Path to simplify the graph
      */
     public void reduce(BidirectedPath p, boolean keepTrack){
     	//do nothing if the path has only one node
