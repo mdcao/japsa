@@ -91,7 +91,11 @@ public class ErrorCorrection {
 	}
 
     public static Sequence consensusSequence(ArrayList<Sequence> readList, String prefix, String msa) throws IOException, InterruptedException{
-        return consensusSequence(readList, readList.size(), prefix, msa);
+    	if (readList != null && readList.size() > 0)
+    		return consensusSequence(readList, readList.size(), prefix, msa);
+    	else
+    		return null;
+    	
     }
 	public static Sequence consensusSequence(ArrayList<Sequence> readList, int max, String prefix, String msa) throws IOException, InterruptedException{
 		//String faiFile = prefix + "_" + this.currentReadCount;
