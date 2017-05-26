@@ -284,34 +284,6 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	return comp;
     }
     
-    /**
-     * Another reduce that doesn't remove the unique nodes
-     * Instead redundant edges are removed on a path way
-     * @param p Path to simplify the graph
-     */
-    public void reduce(BidirectedPath p, boolean keepTrack){
-    	//do nothing if the path has only one node
-    	if(p==null || p.getEdgeCount()<1)
-    		return;
-    	
-    	//loop over the edges of path (like spelling())
-    	BidirectedNode markerNode = null;
-    	//search for an unique node as the marker. 
-    	for(Edge e:p.getEdgePath()){
- 
-			if(markerNode==null){
-				
-			}
-	    	//as the next marker coming, connect it to 
-	    	//the previous marker by an edge bind with corresponding path. TODO:check conflict!!! 
-			else{
-				
-			}
-		}
-    	
-    	//remove appropriate edges
-    	
-    }
     
     /**
      * 
@@ -530,12 +502,23 @@ public class BidirectedGraph extends AdjacencyListGraph{
      */
     public static boolean isUnique(Node node){
     	boolean res = false;
-    	if(node.getDegree()<=2){
-//    		if(((Sequence)node.getAttribute("seq")).length() > 5000 || node.getDegree()==0)
-    			res=true;
+    	if(node.getDegree()<=2){ // not always true, e.g. unique node in a repetitive component
+   			res=true;
     	}
     		
     	return res;
     }
-
+    /*	need more powerful function:
+     * A-statistics?
+     * Mixture of Poisson distributions??? Kalman filter idea...
+     */
+//    public static boolean isUnique(Node node, double cov){
+//    	boolean res = false;
+//    	if(node.getDegree()<=2 || Math.abs(node.getAttribute("cov" )) < cov){
+////    		if(((Sequence)node.getAttribute("seq")).length() > 5000 || node.getDegree()==0)
+//    			res=true;
+//    	}
+//    		
+//    	return res;
+//    }
 }

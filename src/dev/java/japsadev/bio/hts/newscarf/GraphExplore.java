@@ -21,16 +21,15 @@ public class GraphExplore {
     }
 
     public GraphExplore() throws IOException{
-    	//System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
-    	
-    	BidirectedGraph graph= new BidirectedGraph();
+    	//System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer"); 
+
+        HybridAssembler ass = new HybridAssembler(spadesFolder+"EcK12S-careful/assembly_graph.fastg");
+    	BidirectedGraph graph= ass.simGraph;
         graph.addAttribute("ui.quality");
         graph.addAttribute("ui.antialias");
         graph.addAttribute("ui.stylesheet", styleSheet);
         graph.display();
         
-        graph.loadFromFile(spadesFolder+"EcK12S-careful/assembly_graph.fastg");
-
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 
         
@@ -45,9 +44,8 @@ public class GraphExplore {
          * Testing reduce function
          */
         try {
-			graph.readPathsFromSpades(spadesFolder+"EcK12S-careful/contigs.paths");
-			HybridAssembler ass =  new HybridAssembler(graph);
-			ass.assembly(GraphExplore.spadesFolder+"bwa/EcK12S-careful.sam", 0);
+			ass.reduceFromSPAdesPaths(spadesFolder+"EcK12S-careful/contigs.paths");
+			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 50);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
