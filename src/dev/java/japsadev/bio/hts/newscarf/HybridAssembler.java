@@ -117,7 +117,7 @@ public class HybridAssembler {
     /**
      * Another reduce that doesn't remove the unique nodes
      * Instead redundant edges are removed on a path way
-     * @param p Path to simplify the graph (from base graph)
+     * @param p Path to simplify the graph (from origGraph)
      * @param target Subjected graph for the simplification
      */
     private void reduce(BidirectedPath p){
@@ -127,13 +127,15 @@ public class HybridAssembler {
     	
     	//loop over the edges of path (like spelling())
     	BidirectedNode 	markerNode = null,
-    					curNode = (BidirectedNode) p.getRoot();
+    					curNodeFromOrigGraph = (BidirectedNode) p.getRoot();
 
+    	BidirectedNode curNodeFromSimGraph = simGraph.getNode(curNodeFromOrigGraph.getId()); //change back to Node belong to simGraph (instead of origGraph)
+    	
     	BidirectedPath curPath= null;
-    	if(BidirectedGraph.isUnique(curNode)){
-    		markerNode=curNode;
+    	if(BidirectedGraph.isUnique(curNodeFromOrigGraph)){
+    		markerNode=curNodeFromOrigGraph;
     		curPath = new BidirectedPath();
-    		curPath.setRoot(curNode);
+    		curPath.setRoot(curNodeFromOrigGraph);
     	}
     	
     	boolean markerDir=true, curDir=true;
@@ -141,14 +143,18 @@ public class HybridAssembler {
     	ArrayList<Edge> tobeRemoved = new ArrayList<Edge>();
     	for(Edge e:p.getEdgePath()){
     			
-    		curNode=e.getOpposite(curNode);
-    		curDir=((BidirectedEdge) e).getDir(curNode);
-    		if(BidirectedGraph.isUnique(curNode)){
+    		curNodeFromOrigGraph=e.getOpposite(curNodeFromOrigGraph);
+    		curDir=((BidirectedEdge) e).getDir(curNodeFromOrigGraph);
+    		
+    		curNodeFromSimGraph = simGraph.getNode(curNodeFromOrigGraph.getId()); //change back to Node belong to simGraph (instead of origGraph)
+
+    		
+    		if(BidirectedGraph.isUnique(curNodeFromSimGraph)){
         		
 				if(markerNode!=null){
 					curPath.add(e);	
 					//create an edge connect markerNode to curNode with curPath
-					Edge reducedEdge = simGraph.addEdge(markerNode, curNode, markerDir, curDir);
+					Edge reducedEdge = simGraph.addEdge(markerNode, curNodeFromSimGraph, markerDir, curDir);
 					if(reducedEdge!=null){
 						reducedEdge.addAttribute("path", new BidirectedPath(curPath));
 						reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
@@ -157,25 +163,28 @@ public class HybridAssembler {
 					//and do necessary things
 					
 				}
-				markerNode=curNode;
+				markerNode=curNodeFromSimGraph;
         		markerDir=curDir;
 				curPath= new BidirectedPath();
-				curPath.setRoot(curNode);
+				curPath.setRoot(curNodeFromOrigGraph);
     		}
     		else{
     			if(markerNode!=null){
     				curPath.add(e);
-    				//curNode.setAttribute("cov", (double)curNode.getAttribute("cov")-(double)markerNode.getAttribute("cov"));
+
     			}
     		}
     		
-    		if(BidirectedGraph.isUnique(curNode) || BidirectedGraph.isUnique(e.getOpposite(curNode)))
+    		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) == BidirectedGraph.isUnique(simGraph.getNode(e.getOpposite(curNodeFromOrigGraph).getId())))
     			tobeRemoved.add(e);
 		}
     	
     	//remove appropriate edges
-    	for(Edge e:tobeRemoved)
-    		simGraph.removeEdge(e);
+    	for(Edge e:tobeRemoved){
+    		simGraph.removeEdge(e.getId());
+    	}
+		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) && markerNode != null)
+			curNodeFromSimGraph.setAttribute("cov", curNodeFromSimGraph.getNumber("cov")-markerNode.getNumber("cov"));
     }
     
 	public static void main(String[] argv) throws IOException{

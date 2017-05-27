@@ -36,6 +36,8 @@ public class GraphExplore {
         for (Node node : graph) {
             node.addAttribute("ui.label", node.getId());
             node.setAttribute("ui.style", "text-offset: -10;"); 
+            if(BidirectedGraph.isUnique(node))
+            	node.setAttribute("ui.class", "marked");
         }
         
         //explore(graph.getNode("A"));
@@ -45,11 +47,18 @@ public class GraphExplore {
          */
         try {
 			ass.reduceFromSPAdesPaths(spadesFolder+"EcK12S-careful/contigs.paths");
-			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 50);
+			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 10);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+        
+//        //remove dead-end nodes
+//        for (Node node : graph) {
+//            if(node.getInDegree() == 0 || node.getOutDegree() == 0)
+//            	graph.removeNode(node);
+//        }
+        
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 
         /*
@@ -87,6 +96,9 @@ public class GraphExplore {
         "	fill-color: black;" +
         "}" +
         "node.marked {" +
+        "	fill-color: red;" +
+        "}" +
+        "edge.marked {" +
         "	fill-color: red;" +
         "}";
     	

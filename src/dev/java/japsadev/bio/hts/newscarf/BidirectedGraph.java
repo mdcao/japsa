@@ -115,6 +115,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
         setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
     }
     //TODO: read from ABySS assembly graph (graph of final contigs, not like SPAdes)
+    private static double aveCov; //TODO: replaced with more accurate method
     public void loadFromFile(String graphFile) throws IOException{
         setAutoCreate(true);
         setStrict(false);
@@ -122,6 +123,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		SequenceReader reader = new FastaReader(graphFile);
 		Sequence seq;
 		int shortestLen = 10000;
+		int totReadLen=0, totGenomeLen=0;
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
 			if(seq.length()<shortestLen)
 				shortestLen=seq.length();
@@ -141,6 +143,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				node.setAttribute("seq", seq);
 				double cov = Double.parseDouble(name.split("_")[5]);
 				node.setAttribute("cov", cov);
+				
+				totReadLen += cov*seq.length();
+				totGenomeLen += seq.length();
 			}
 			if (adjList.length > 1){
 				String[] nbList = adjList[1].split(",");
@@ -164,6 +169,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		if((shortestLen-1) != getKmerSize())
 			setKmerSize(shortestLen-1);
 		
+		aveCov = totReadLen/totGenomeLen;
 		reader.close();
     }
     /*
@@ -502,8 +508,11 @@ public class BidirectedGraph extends AdjacencyListGraph{
      */
     public static boolean isUnique(Node node){
     	boolean res = false;
+    	
     	if(node.getDegree()<=2){ // not always true, e.g. unique node in a repetitive component
-   			res=true;
+    		Sequence seq = node.getAttribute("seq");
+    		if(seq.length() > 7000 || node.getNumber("cov")/aveCov < 1.3)
+    			res=true;
     	}
     		
     	return res;

@@ -34,6 +34,7 @@
 
 package japsa.bio.np;
 
+import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
@@ -46,8 +47,11 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -83,7 +87,10 @@ public class RealtimeSpeciesTyping {
 	HashMap<String, String> seq2Species = new HashMap<String, String>();
 	HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
 	ArrayList<String> speciesList = new ArrayList<String>(); 
-
+	
+	//to output binned sequences
+	public static boolean OUTSEQ=false;
+	HashMap<String, ArrayList<String>> species2Seqs = new HashMap<String, ArrayList<String>>();
 
 	public RealtimeSpeciesTyping(String indexFile, String output)throws IOException{
 		typer = new RealtimeSpeciesTyper(this, output);		
@@ -173,6 +180,7 @@ public class RealtimeSpeciesTyping {
 		Thread thread = new Thread(typer);
 		thread.start();		
 
+		boolean changedFlag = false;
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
 			//if (firstReadTime <=0)
@@ -184,12 +192,13 @@ public class RealtimeSpeciesTyping {
 
 			if (!sam.getReadName().equals(readName)){
 				readName = sam.getReadName();
-
+				changedFlag = true;
 				synchronized(this){
 					currentReadCount ++;
 					currentBaseCount += sam.getReadLength();
 				}
-			}
+			} else
+				changedFlag = false;
 
 			if (sam.getReadUnmappedFlag()){				
 				continue;			
@@ -212,6 +221,13 @@ public class RealtimeSpeciesTyping {
 			synchronized(this) {
 				currentReadAligned ++;
 				sCount.count ++;
+				
+				if(OUTSEQ && changedFlag){
+					ArrayList<String> readList = species2Seqs.get(species);
+					if( readList == null)
+						readList = new ArrayList<String>();
+					readList.add(readName);
+				}
 			}
 		}//while
 
@@ -223,6 +239,130 @@ public class RealtimeSpeciesTyping {
 		samReader.close();
 	}	
 
+//	public void typing(String inFile, String format, String bwaExe, int bwaThread, String bwaIndex, int readNumber, int timeNumber, int qual) throws IOException, InterruptedException{
+//		typer.setReadPeriod(readNumber);
+//		typer.setTimePeriod(timeNumber * 1000);
+//
+//		LOG.info("Species typing ready at " + new Date());
+//
+//		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+//		SamReader samReader = null;
+//
+//		Process bwaProcess = null;
+//
+//		if (format.endsWith("am")){//bam or sam
+//			if ("-".equals(inFile))
+//				samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+//			else
+//				samReader = SamReaderFactory.makeDefault().open(new File(inFile));	
+//		}else{//fastq or fasta file
+//			LOG.info("Starting bwa  at " + new Date());
+//			ProcessBuilder pb = null;
+//			if ("-".equals(inFile)){
+//				pb = new ProcessBuilder(bwaExe, 
+//						"mem",
+//						"-t",
+//						"" + bwaThread,
+//						"-k11",
+//						"-W20",
+//						"-r10",
+//						"-A1",
+//						"-B1",
+//						"-O1",
+//						"-E1",
+//						"-L0",
+//						"-a",
+//						"-Y",
+//						"-K",
+//						"20000",
+//						bwaIndex,
+//						"-"
+//						).
+//						redirectInput(Redirect.INHERIT);
+//			}else{
+//				pb = new ProcessBuilder(bwaExe, 
+//						"mem",
+//						"-t",
+//						"" + bwaThread,
+//						"-k11",
+//						"-W20",
+//						"-r10",
+//						"-A1",
+//						"-B1",
+//						"-O1",
+//						"-E1",
+//						"-L0",
+//						"-a",
+//						"-Y",
+//						"-K",
+//						"20000",
+//						bwaIndex,
+//						inFile
+//						);
+//			}
+//
+//			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+//
+//			LOG.info("bwa started x");
+//			samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
+//
+//		}
+//		
+//		SAMRecordIterator samIter = samReader.iterator();
+//
+//		Thread thread = new Thread(typer);
+//		thread.start();		
+//		String readID = "";
+//		while (samIter.hasNext()){
+//			SAMRecord sam = samIter.next();
+//			//if (firstReadTime <=0)
+//			//	firstReadTime = System.currentTimeMillis();
+//
+//			if (this.twoDOnly && !sam.getReadName().contains("twodim")){
+//				continue;
+//			}
+//
+//			if (!sam.getReadName().equals(readID)){
+//				readID = sam.getReadName();
+//
+//				synchronized(this){
+//					currentReadCount ++;
+//					currentBaseCount += sam.getReadLength();
+//				}
+//			}
+//
+//			if (sam.getReadUnmappedFlag()){				
+//				continue;			
+//			}
+//
+//			if (sam.getMappingQuality() < this.minQual)
+//				continue;
+//
+//			String refSequence = sam.getReferenceName();
+//			String species = seq2Species.get(refSequence);
+//			if (species == null){
+//				throw new RuntimeException(" Can find species with ref " + refSequence + " line " + currentReadCount );
+//			}
+//
+//			SpeciesCount sCount = species2Count.get(species);
+//			if (sCount == null){
+//				throw new RuntimeException(" Can find record with species " + species + " line " + currentReadCount );
+//			}
+//
+//			synchronized(this) {
+//				currentReadAligned ++;
+//				sCount.count ++;
+//			}
+//		}//while
+//
+//		//final run
+//		//typer.simpleAnalysisCurrent();
+//
+//		typer.stopWaiting();//Tell typer to stop
+//		samIter.close();
+//		samReader.close();
+//	}	
+	
 	public static class RealtimeSpeciesTyper extends RealtimeAnalysis{
 		Rengine rengine;
 		RealtimeSpeciesTyping typing;
@@ -324,6 +464,23 @@ public class RealtimeSpeciesTyping {
 				countsOS.close();
 			}catch (Exception e){
 				e.printStackTrace();
+			}
+			
+			//print out
+			if(OUTSEQ){
+				try (BufferedWriter bw = new BufferedWriter(new FileWriter("species2reads.map"))) {
+					for(String sp:typing.species2Seqs.keySet()){
+						bw.write(">"+sp+"\n");
+						ArrayList<String> readList = typing.species2Seqs.get(sp);
+						for(String read:readList)
+							bw.write(read+"\n");
+					}			
+
+				} catch (IOException e) {
+
+					e.printStackTrace();
+
+				}
 			}
 		}
 

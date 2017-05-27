@@ -68,7 +68,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		addInt("time", 30,   "Minimum number of seconds between analyses");
 
 		addBoolean("web", false, "Whether to use Web visualization.");
-
+		addBoolean("log", false, "Whether to write mapping details to species2reads.map.");
 		addStdHelp();		
 	} 
 	/**
@@ -91,7 +91,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		double qual      = cmdLine.getDoubleVal("qual");				
 		boolean twoOnly      = cmdLine.getBooleanVal("twodonly");
 		RealtimeSpeciesTyping.JSON = cmdLine.getBooleanVal("web");
-
+		RealtimeSpeciesTyping.OUTSEQ = cmdLine.getBooleanVal("log");
+		
 		RealtimeSpeciesTyping paTyping = new RealtimeSpeciesTyping(indexFile, output);
 		paTyping.setMinQual(qual);
 		paTyping.setTwoOnly(twoOnly);		
