@@ -166,7 +166,7 @@ public class RealtimeSpeciesTyping {
 
 		LOG.info("Species typing ready at " + new Date());
 
-		String readName = "";
+		String readName = "", refName = "";
 		//Read the bam file		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader;
@@ -197,9 +197,12 @@ public class RealtimeSpeciesTyping {
 					currentReadCount ++;
 					currentBaseCount += sam.getReadLength();
 				}
-			} else
+			} else if(!refName.equals(sam.getReferenceName())){
+				changedFlag = true;
+			}
+			else
 				changedFlag = false;
-
+			
 			if (sam.getReadUnmappedFlag()){				
 				continue;			
 			}
@@ -207,15 +210,15 @@ public class RealtimeSpeciesTyping {
 			if (sam.getMappingQuality() < this.minQual)
 				continue;
 
-			String refSequence = sam.getReferenceName();
-			String species = seq2Species.get(refSequence);
+			refName = sam.getReferenceName();
+			String species = seq2Species.get(refName);
 			if (species == null){
-				throw new RuntimeException(" Can find species with ref " + refSequence + " line " + currentReadCount );
+				throw new RuntimeException(" Can't find species with ref " + refName + " line " + currentReadCount );
 			}
 
 			SpeciesCount sCount = species2Count.get(species);
 			if (sCount == null){
-				throw new RuntimeException(" Can find record with species " + species + " line " + currentReadCount );
+				throw new RuntimeException(" Can't find record with species " + species + " line " + currentReadCount );
 			}
 
 			synchronized(this) {
@@ -224,8 +227,10 @@ public class RealtimeSpeciesTyping {
 				
 				if(OUTSEQ && changedFlag){
 					ArrayList<String> readList = species2Seqs.get(species);
-					if( readList == null)
+					if( readList == null){
 						readList = new ArrayList<String>();
+						species2Seqs.put(species, readList);
+					}
 					readList.add(readName);
 				}
 			}
@@ -371,6 +376,11 @@ public class RealtimeSpeciesTyping {
 		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, String output) throws IOException{
 			typing = t;
 			//Set up Rengine
+			if (!Rengine.versionCheck()) {
+				LOG.error("** JRI R-Engine: Version mismatch - Java files don't match library version.");
+				System.exit(1);
+			}
+			//Rengine.DEBUG=1;
 			rengine = new Rengine (new String [] {"--no-save"}, false, null);
 			if (!rengine.waitForR()){
 				LOG.error("Cannot load R");

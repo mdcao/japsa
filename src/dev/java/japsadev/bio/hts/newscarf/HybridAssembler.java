@@ -19,7 +19,7 @@ import japsa.util.Logging;
 
 public class HybridAssembler {
 	final BidirectedGraph origGraph;
-	BidirectedGraph simGraph; //original and simplified graph should be separated, no???
+	public BidirectedGraph simGraph; //original and simplified graph should be separated, no???
 	
 	public HybridAssembler(){
 		origGraph=new BidirectedGraph();
