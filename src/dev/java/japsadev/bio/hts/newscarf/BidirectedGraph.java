@@ -11,6 +11,9 @@ import java.util.List;
 
 import org.graphstream.graph.*;
 import org.graphstream.graph.implementations.*;
+import org.jfree.util.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
@@ -24,6 +27,9 @@ public class BidirectedGraph extends AdjacencyListGraph{
     static final int D_LIMIT=200;
     static final double ER_LOWERBOUND=.5,
     					ER_UPPERBOUND=1.5;
+    
+    private static final Logger LOG = LoggerFactory.getLogger(BidirectedGraph.class);
+
     // *** Constructors ***
 	/**
 	 * Creates an empty graph.
@@ -514,7 +520,12 @@ public class BidirectedGraph extends AdjacencyListGraph{
     		if(seq.length() > 7000 || node.getNumber("cov")/aveCov < 1.3)
     			res=true;
     	}
-    		
+    	
+//    	if(res)
+//    		LOG.info(node.getAttribute("name") + " with coverage " + node.getNumber("cov") + " is a marker!");
+//    	else
+//    		LOG.info(node.getAttribute("name") + " with coverage " + node.getNumber("cov") + " is NOT a marker!");
+
     	return res;
     }
     /*	need more powerful function:

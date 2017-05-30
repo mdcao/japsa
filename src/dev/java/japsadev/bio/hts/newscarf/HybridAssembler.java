@@ -6,8 +6,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Scanner;
 
 import org.graphstream.graph.Edge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -15,9 +18,12 @@ import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import japsa.bio.np.RealtimeSpeciesTyping;
 import japsa.util.Logging;
 
 public class HybridAssembler {
+    private static final Logger LOG = LoggerFactory.getLogger(HybridAssembler.class);
+	
 	final BidirectedGraph origGraph;
 	public BidirectedGraph simGraph; //original and simplified graph should be separated, no???
 	
@@ -140,12 +146,12 @@ public class HybridAssembler {
     	
     	boolean markerDir=true, curDir=true;
     	//search for an unique node as the marker. 
-    	ArrayList<Edge> tobeRemoved = new ArrayList<Edge>();
+    	ArrayList<BidirectedEdge> 	tobeRemoved = new ArrayList<BidirectedEdge>(),
+    								tobeAdded = new ArrayList<BidirectedEdge>();
     	for(Edge e:p.getEdgePath()){
     			
     		curNodeFromOrigGraph=e.getOpposite(curNodeFromOrigGraph);
-    		curDir=((BidirectedEdge) e).getDir(curNodeFromOrigGraph);
-    		
+    		curDir=((BidirectedEdge) e).getDir(curNodeFromOrigGraph);   		
     		curNodeFromSimGraph = simGraph.getNode(curNodeFromOrigGraph.getId()); //change back to Node belong to simGraph (instead of origGraph)
 
     		
@@ -154,15 +160,22 @@ public class HybridAssembler {
 				if(markerNode!=null){
 					curPath.add(e);	
 					//create an edge connect markerNode to curNode with curPath
-					Edge reducedEdge = simGraph.addEdge(markerNode, curNodeFromSimGraph, markerDir, curDir);
-					if(reducedEdge!=null){
-						reducedEdge.addAttribute("path", new BidirectedPath(curPath));
-						reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
-						reducedEdge.setAttribute("ui.class", "marked");
-					}
-					//and do necessary things
+					//Edge reducedEdge = simGraph.addEdge(markerNode, curNodeFromSimGraph, markerDir, curDir);
+					BidirectedEdge reducedEdge = new BidirectedEdge(markerNode, curNodeFromSimGraph, markerDir, curDir);
+
+//					if(reducedEdge!=null){
+//						reducedEdge.addAttribute("path", new BidirectedPath(curPath));
+//						reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
+//						reducedEdge.setAttribute("ui.class", "marked");
+//					}
+					tobeAdded.add(reducedEdge);
+					LOG.info("Processing path " + curPath.getId());
 					
+		    		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) == BidirectedGraph.isUnique(simGraph.getNode(e.getOpposite(curNodeFromOrigGraph).getId())))
+		    			tobeRemoved.add((BidirectedEdge)e);
 				}
+				
+				
 				markerNode=curNodeFromSimGraph;
         		markerDir=curDir;
 				curPath= new BidirectedPath();
@@ -171,22 +184,47 @@ public class HybridAssembler {
     		else{
     			if(markerNode!=null){
     				curPath.add(e);
-
+		    		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) == BidirectedGraph.isUnique(simGraph.getNode(e.getOpposite(curNodeFromOrigGraph).getId())))
+		    			tobeRemoved.add((BidirectedEdge)e);
     			}
     		}
     		
-    		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) == BidirectedGraph.isUnique(simGraph.getNode(e.getOpposite(curNodeFromOrigGraph).getId())))
-    			tobeRemoved.add(e);
+    		
+//    		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) && markerNode != null)
+//    			curNodeFromSimGraph.setAttribute("cov", curNodeFromSimGraph.getNumber("cov")-markerNode.getNumber("cov"));   		
+//    		LOG.info("...coverage of " + curNodeFromSimGraph.getAttribute("name") + " now is " + curNodeFromSimGraph.getNumber("cov"));
 		}
     	
     	//remove appropriate edges
     	for(Edge e:tobeRemoved){
     		simGraph.removeEdge(e.getId());
+    		LOG.info("removed edge from simplified graph: " + e.getId());
     	}
-		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) && markerNode != null)
-			curNodeFromSimGraph.setAttribute("cov", curNodeFromSimGraph.getNumber("cov")-markerNode.getNumber("cov"));
+    	
+    	//add appropriate edges
+    	for(BidirectedEdge e:tobeAdded){
+    		Edge reducedEdge = simGraph.addEdge(e.getSourceNode(),e.getTargetNode(),e.getDir0(),e.getDir1());
+			if(reducedEdge!=null){
+				reducedEdge.addAttribute("path", new BidirectedPath(curPath));
+				reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
+				reducedEdge.setAttribute("ui.class", "marked");
+			}
+    		LOG.info("added edge to simplified graph: " + e.getId());
+    	}
+
+		//promptEnterKey();
     }
     
+    public void promptEnterKey(){
+    	   System.out.println("Press \"ENTER\" to continue...");
+    	   Scanner scanner = new Scanner(System.in);
+    	   scanner.nextLine();
+    	}
+    
+    protected void sleep() {
+        try { Thread.sleep(1000); } catch (Exception e) {}
+    }
+
 	public static void main(String[] argv) throws IOException{
 		HybridAssembler hbAss = new HybridAssembler(GraphExplore.spadesFolder+"EcK12S-careful/assembly_graph.fastg");
 		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
