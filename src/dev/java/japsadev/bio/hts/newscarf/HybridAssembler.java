@@ -71,7 +71,9 @@ public class HybridAssembler {
 			//not the first occurrance				
 			if (!readID.equals("") && !readID.equals(myRec.readID)) {		
 				//Collections.sort(samList);
-				p=origGraph.pathFinding(samList);
+				//p=origGraph.pathFinding(samList);
+				p=simGraph.pathFinding(samList);
+
 				if(p!=null)
 					System.out.println("Final path found: " + p.getId());
 				reduce(p);
@@ -103,7 +105,8 @@ public class HybridAssembler {
 				flag=s.contains("'")?false:true;
 				continue;
 			}else if(flag){
-				BidirectedPath path=new BidirectedPath(origGraph, s);
+				//BidirectedPath path=new BidirectedPath(origGraph, s);
+				BidirectedPath path=new BidirectedPath(simGraph, s);
 
 		    	reduce(path);
 
@@ -158,21 +161,25 @@ public class HybridAssembler {
     		if(BidirectedGraph.isUnique(curNodeFromSimGraph)){
         		
 				if(markerNode!=null){
+					//this is when we have 1 jumping path (both ends are markers)
 					curPath.add(e);	
+					LOG.info("Processing path " + curPath.getId());
 					//create an edge connect markerNode to curNode with curPath
 					//Edge reducedEdge = simGraph.addEdge(markerNode, curNodeFromSimGraph, markerDir, curDir);
 					BidirectedEdge reducedEdge = new BidirectedEdge(markerNode, curNodeFromSimGraph, markerDir, curDir);
 
-//					if(reducedEdge!=null){
-//						reducedEdge.addAttribute("path", new BidirectedPath(curPath));
-//						reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
-//						reducedEdge.setAttribute("ui.class", "marked");
-//					}
+					if(reducedEdge!=null)
+						reducedEdge.addAttribute("path", new BidirectedPath(curPath));
+				
 					tobeAdded.add(reducedEdge);
-					LOG.info("Processing path " + curPath.getId());
 					
-		    		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) == BidirectedGraph.isUnique(simGraph.getNode(e.getOpposite(curNodeFromOrigGraph).getId())))
-		    			tobeRemoved.add((BidirectedEdge)e);
+					//loop over curPath to find out edges needed to be removed
+					for(Edge ep:curPath.getEdgePath()){
+						if(!BidirectedGraph.isUnique(ep.getNode0()) == BidirectedGraph.isUnique(ep.getNode1())){
+			    			tobeRemoved.add((BidirectedEdge)ep);
+						}
+					}
+
 				}
 				
 				
@@ -184,8 +191,6 @@ public class HybridAssembler {
     		else{
     			if(markerNode!=null){
     				curPath.add(e);
-		    		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) == BidirectedGraph.isUnique(simGraph.getNode(e.getOpposite(curNodeFromOrigGraph).getId())))
-		    			tobeRemoved.add((BidirectedEdge)e);
     			}
     		}
     		
@@ -197,22 +202,28 @@ public class HybridAssembler {
     	
     	//remove appropriate edges
     	for(Edge e:tobeRemoved){
+    		LOG.info("REMOVING EDGE " + e.getId());
+    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     		simGraph.removeEdge(e.getId());
-    		LOG.info("removed edge from simplified graph: " + e.getId());
+    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     	}
     	
     	//add appropriate edges
     	for(BidirectedEdge e:tobeAdded){
+    		LOG.info("ADDING EDGE " + e.getId());
+    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    		
     		Edge reducedEdge = simGraph.addEdge(e.getSourceNode(),e.getTargetNode(),e.getDir0(),e.getDir1());
 			if(reducedEdge!=null){
-				reducedEdge.addAttribute("path", new BidirectedPath(curPath));
+				reducedEdge.addAttribute("path", new BidirectedPath(e.getAttribute("path")));
 				reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
 				reducedEdge.setAttribute("ui.class", "marked");
 			}
-    		LOG.info("added edge to simplified graph: " + e.getId());
+    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+
     	}
 
-		//promptEnterKey();
+		promptEnterKey();
     }
     
     public void promptEnterKey(){

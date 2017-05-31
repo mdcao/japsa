@@ -290,4 +290,5 @@ public class BidirectedNode extends AbstractNode {
 	public <T extends Edge> Iterator<T> getLeavingEdgeIterator() {
 		return new EdgeIterator<T>(1);
 	}
+	
 }

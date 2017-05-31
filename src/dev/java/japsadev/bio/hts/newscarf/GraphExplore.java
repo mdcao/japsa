@@ -47,7 +47,7 @@ public class GraphExplore {
          */
         try {
 			ass.reduceFromSPAdesPaths(spadesFolder+"EcK12S-careful/contigs.paths");
-			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 30);
+			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 50);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

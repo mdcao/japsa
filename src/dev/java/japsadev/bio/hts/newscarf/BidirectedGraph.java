@@ -113,6 +113,19 @@ public class BidirectedGraph extends AdjacencyListGraph{
 //			System.out.println(s1 + " ---> " + tmp);
 		return tmp;
 	}
+	
+	public String printEdgesOfNode(BidirectedNode node){
+		Iterator<BidirectedEdge> 	ins = node.getEnteringEdgeIterator(),
+									outs = node.getLeavingEdgeIterator();
+		String retval=node.getId() + ": IN={";
+		while(ins.hasNext())
+			retval += ins.next().getId() + " ";
+		retval+="}; OUT={";
+		while(outs.hasNext())
+			retval += outs.next().getId() + " ";	
+		retval+="}";
+		return retval;		
+	}
 	/**********************************************************************************
 	 * ****************************Algorithms go from here*****************************
 	 */
