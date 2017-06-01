@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Scanner;
 
 import org.graphstream.graph.Edge;
+import org.graphstream.graph.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +29,8 @@ public class HybridAssembler {
 	public BidirectedGraph simGraph; //original and simplified graph should be separated, no???
 	
 	public HybridAssembler(){
-		origGraph=new BidirectedGraph();
-		simGraph=new BidirectedGraph();
+		origGraph=new BidirectedGraph("batch");
+		simGraph=new BidirectedGraph("real");
 	}
 	
 	
@@ -63,7 +64,7 @@ public class HybridAssembler {
 				continue;
 			
 			String refID = rec.getReferenceName().split("_")[1];
-			Alignment myRec = new Alignment(rec, origGraph.getNode(refID)); //FIXME: optimize
+			Alignment myRec = new Alignment(rec, simGraph.getNode(refID)); //FIXME: optimize
 
 			//////////////////////////////////////////////////////////////////
 			// make list of alignments of the same (Nanopore) read. 
@@ -72,7 +73,7 @@ public class HybridAssembler {
 			if (!readID.equals("") && !readID.equals(myRec.readID)) {		
 				//Collections.sort(samList);
 				//p=origGraph.pathFinding(samList);
-				p=simGraph.pathFinding(samList);
+				p=simGraph.pathFinding(samList); // the graph MUST be the same as from new Alignment(...)
 
 				if(p!=null)
 					System.out.println("Final path found: " + p.getId());
@@ -141,8 +142,8 @@ public class HybridAssembler {
     	BidirectedNode curNodeFromSimGraph = simGraph.getNode(curNodeFromOrigGraph.getId()); //change back to Node belong to simGraph (instead of origGraph)
     	
     	BidirectedPath curPath= null;
-    	if(BidirectedGraph.isUnique(curNodeFromOrigGraph)){
-    		markerNode=curNodeFromOrigGraph;
+    	if(BidirectedGraph.isUnique(curNodeFromSimGraph)){
+    		markerNode=curNodeFromSimGraph;
     		curPath = new BidirectedPath();
     		curPath.setRoot(curNodeFromOrigGraph);
     	}
@@ -174,10 +175,20 @@ public class HybridAssembler {
 					tobeAdded.add(reducedEdge);
 					
 					//loop over curPath to find out edges needed to be removed
+					Node  	n0 = curPath.getRoot(),
+							n1 = null;
 					for(Edge ep:curPath.getEdgePath()){
-						if(!BidirectedGraph.isUnique(ep.getNode0()) == BidirectedGraph.isUnique(ep.getNode1())){
+						n1 = ep.getOpposite(n0);
+						if(!BidirectedGraph.isUnique(n0) == BidirectedGraph.isUnique(n1)){
 			    			tobeRemoved.add((BidirectedEdge)ep);
 						}
+
+//			    		if(!BidirectedGraph.isUnique(n1)){			    			
+//			    			n1.setAttribute("cov", n1.getNumber("cov")-markerNode.getNumber("cov"));   		
+//			    			LOG.info("...coverage of " + n1.getAttribute("name") + " now is " + n1.getNumber("cov"));
+//			    		}
+						
+			    		n0=n1;
 					}
 
 				}
@@ -186,7 +197,7 @@ public class HybridAssembler {
 				markerNode=curNodeFromSimGraph;
         		markerDir=curDir;
 				curPath= new BidirectedPath();
-				curPath.setRoot(curNodeFromOrigGraph);
+				curPath.setRoot(curNodeFromSimGraph);
     		}
     		else{
     			if(markerNode!=null){
@@ -194,24 +205,20 @@ public class HybridAssembler {
     			}
     		}
     		
-    		
-//    		if(!BidirectedGraph.isUnique(curNodeFromSimGraph) && markerNode != null)
-//    			curNodeFromSimGraph.setAttribute("cov", curNodeFromSimGraph.getNumber("cov")-markerNode.getNumber("cov"));   		
-//    		LOG.info("...coverage of " + curNodeFromSimGraph.getAttribute("name") + " now is " + curNodeFromSimGraph.getNumber("cov"));
 		}
     	
     	//remove appropriate edges
-    	for(Edge e:tobeRemoved){
-    		LOG.info("REMOVING EDGE " + e.getId());
-    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    	for(BidirectedEdge e:tobeRemoved){
+//    		LOG.info("REMOVING EDGE " + e.getId() + " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
+//    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     		simGraph.removeEdge(e.getId());
-    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+//    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     	}
     	
     	//add appropriate edges
     	for(BidirectedEdge e:tobeAdded){
-    		LOG.info("ADDING EDGE " + e.getId());
-    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    		//LOG.info("ADDING EDGE " + e.getId()+ " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
+    		//LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     		
     		Edge reducedEdge = simGraph.addEdge(e.getSourceNode(),e.getTargetNode(),e.getDir0(),e.getDir1());
 			if(reducedEdge!=null){
@@ -219,11 +226,11 @@ public class HybridAssembler {
 				reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
 				reducedEdge.setAttribute("ui.class", "marked");
 			}
-    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    		//LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
 
     	}
 
-		promptEnterKey();
+//		promptEnterKey();
     }
     
     public void promptEnterKey(){

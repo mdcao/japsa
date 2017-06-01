@@ -24,7 +24,7 @@ import japsa.seq.SequenceReader;
 public class BidirectedGraph extends AdjacencyListGraph{
     static int kmer=127;
     static final int TOLERATE=500;
-    static final int D_LIMIT=200;
+    static final int D_LIMIT=1000;
     static final double ER_LOWERBOUND=.5,
     					ER_UPPERBOUND=1.5;
     
@@ -95,9 +95,14 @@ public class BidirectedGraph extends AdjacencyListGraph{
 	 *            Unique identifier of the graph.
 	 */
 	public BidirectedGraph(String id) {
-		this(id, true, false);
+		this(id, true, false, 10000, 100000);
 	}
 	
+    public BidirectedGraph(){
+    	this("Assembly graph",true,false, 10000, 100000);
+        setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
+    }
+    
 	//just to make AbstractGraph.removeEdge(AbstractEdge, boolean, boolean, boolean) visible
 	protected void removeEdgeDup(AbstractEdge edge, boolean graphCallback,
 			boolean sourceCallback, boolean targetCallback) {
@@ -115,8 +120,8 @@ public class BidirectedGraph extends AdjacencyListGraph{
 	}
 	
 	public String printEdgesOfNode(BidirectedNode node){
-		Iterator<BidirectedEdge> 	ins = node.getEnteringEdgeIterator(),
-									outs = node.getLeavingEdgeIterator();
+		Iterator<BidirectedEdge> 	ins = getNode(node.getId()).getEnteringEdgeIterator(),
+									outs = getNode(node.getId()).getLeavingEdgeIterator();
 		String retval=node.getId() + ": IN={";
 		while(ins.hasNext())
 			retval += ins.next().getId() + " ";
@@ -129,10 +134,6 @@ public class BidirectedGraph extends AdjacencyListGraph{
 	/**********************************************************************************
 	 * ****************************Algorithms go from here*****************************
 	 */
-    public BidirectedGraph(){
-    	this("Assembly graph",true,false,200000,1000000);
-        setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
-    }
     //TODO: read from ABySS assembly graph (graph of final contigs, not like SPAdes)
     private static double aveCov; //TODO: replaced with more accurate method
     public void loadFromFile(String graphFile) throws IOException{
@@ -530,7 +531,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	
     	if(node.getDegree()<=2){ // not always true, e.g. unique node in a repetitive component
     		Sequence seq = node.getAttribute("seq");
-    		if(seq.length() > 7000 || node.getNumber("cov")/aveCov < 1.3)
+    		if(seq.length() > 10000 || node.getNumber("cov")/aveCov < 1.3)
     			res=true;
     	}
     	

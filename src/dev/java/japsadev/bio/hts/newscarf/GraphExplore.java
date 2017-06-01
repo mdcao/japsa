@@ -46,8 +46,10 @@ public class GraphExplore {
          * Testing reduce function
          */
         try {
+        	//TODO: debug: search output for 125657_channel_96_read_33_twodimentional 
+        	// assign distance to edge (not just -127 anymore but the path)
 			ass.reduceFromSPAdesPaths(spadesFolder+"EcK12S-careful/contigs.paths");
-			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 50);
+			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 10);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

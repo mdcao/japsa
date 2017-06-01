@@ -11,6 +11,8 @@ import java.util.NoSuchElementException;
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 /**
  * Similar to {@link AdjacencyListNode}
  * 
@@ -20,6 +22,8 @@ public class BidirectedNode extends AbstractNode {
 	
 	protected static final int INITIAL_EDGE_CAPACITY;
 	protected static final double GROWTH_FACTOR = 1.1;
+	
+    private static final Logger LOG = LoggerFactory.getLogger(BidirectedNode.class);
 
 	static {
 		String p = "org.graphstream.graph.node.initialEdgeCapacity";
@@ -111,6 +115,7 @@ public class BidirectedNode extends AbstractNode {
 
 	@Override
 	protected boolean addEdgeCallback(AbstractEdge edge) {
+		//LOG.info("Adding edge callback " + edge.getId() + " from graph " + getGraph().getId());
 		AbstractNode opposite = edge.getOpposite(this);
 		List<BidirectedEdge> l = neighborMap.get(opposite);
 		if (l == null) {
@@ -141,6 +146,8 @@ public class BidirectedNode extends AbstractNode {
 
 	@Override
 	protected void removeEdgeCallback(AbstractEdge edge) {
+		//LOG.info("Removing edge callback " + edge.getId() + " from graph " + getGraph().getId());
+
 		// locate the edge first
 		byte type = edgeType((BidirectedEdge) edge);
 		int i = 0;
