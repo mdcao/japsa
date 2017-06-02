@@ -194,19 +194,24 @@ public class AlternativeAllelesCmd extends CommandLine{
 		///////////////////////////////////////////////////////////
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
-		
 		SAMFileHeader samHeader = samReader.getFileHeader();		
 		SAMTextWriter samWriter = outFile.equals("-")?	(new SAMTextWriter(System.out))	:(new SAMTextWriter(new File(outFile)));
 		samWriter.setSortOrder(SortOrder.unsorted, false);		
 		samWriter.writeHeader( samHeader.getTextHeader());
 		MultiChromVCFReader bf =  new MultiChromVCFReader(vcfFile);
-		while(bf.fVar!=null){
+		for(int i=0; bf.fVar!=null; i++){
+			if(i > 0){
+				 // need to refresh Sam Reader for every chromosome.  I am sure this could be more efficient - LC
+				 samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
+				 samHeader = samReader.getFileHeader();	
+			}
 			String myChrom = bf.updateChrom();
 			addSequence(inFile, bf, reference,  samReader,samHeader, samWriter, threshold);
+			samReader.close();
 		}
 		bf.close();
 		samWriter.close();
-		samReader.close();
+		
 		///////////////////////////////////////////////////////////
 	}
 	
