@@ -3,7 +3,6 @@ package japsadev.bio.hts.newscarf;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
-import japsa.util.Logging;
 
 
 import java.util.List;
@@ -12,11 +11,14 @@ import org.graphstream.graph.Edge;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.Path;
 import org.graphstream.graph.implementations.AbstractNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BidirectedPath extends Path{
 	int deviation; //how this path differ to long read data (todo: by multiple-alignment??)
 //	double coverage=0; //representative coverage of this path (belongs to the unique nodes on the path)
-	
+    private static final Logger LOG = LoggerFactory.getLogger(BidirectedPath.class);
+
 	public BidirectedPath(){
 		super();
 	}
@@ -30,6 +32,9 @@ public class BidirectedPath extends Path{
 		deviation=p.deviation;
 //		coverage=p.coverage;
 	}
+	
+	//This constructor is only used to load in contigs.path from SPAdes
+	//So no recursive path here (path contains all primitive edges)
 	public BidirectedPath(BidirectedGraph graph, String paths){
 		super();
 		paths=paths.replace(";", ""); //optimized it!
@@ -60,19 +65,19 @@ public class BidirectedPath extends Path{
 			rcPath.add(edges.get(i));
 		return rcPath;
 	}
-	
+	//It is not really ID because Path doesn't need an ID
 	public String getId(){
 		//need to make the Id unique for both sense and antisense spelling???
 		BidirectedNode curNode = (BidirectedNode) getRoot();
 		if(getEdgeCount()<1)
-			return curNode.getId()+"+";
+			return curNode.getId();
 
 		String 	retval=curNode.getId(),
 				curDir=((BidirectedEdge) getEdgePath().get(0)).getDir(curNode)?"+":"-";
 		retval+=curDir;
 		for(Edge e:getEdgePath()){
 			curNode=e.getOpposite(curNode);
-			retval+=curNode.getId();
+			retval+=","+curNode.getId();
 			curDir=((BidirectedEdge) e).getDir(curNode)?"-":"+"; //note that curNode is target node
 			retval+=curDir;
 		}
@@ -80,31 +85,36 @@ public class BidirectedPath extends Path{
 		return retval.trim();
 	}
 	
+	public String toString(){
+		return "(" + getId() + ")";
+	}
 	 
-	 public Sequence spelling(){
-
-			BidirectedNode curNode = (BidirectedNode) getRoot();
-			if(getEdgeCount()<1)
-				return curNode.getAttribute("seq");
-			
-			SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024,  this.toString());
-			Sequence curSeq = curNode.getAttribute("seq");
-			boolean curDir=((BidirectedEdge) getEdgePath().get(0)).getDir(curNode);
-			curSeq = curDir?curSeq:Alphabet.DNA.complement(curSeq);
-
-			seq.append(curSeq.subSequence(0, curSeq.length()-BidirectedGraph.getKmerSize()));
-			for(Edge e:getEdgePath()){
+	public Sequence spelling(){
+	
+		BidirectedNode curNode = (BidirectedNode) getRoot();
+		Sequence curSeq = curNode.getAttribute("seq");
+	
+		if(getEdgeCount()<1)
+			return curSeq;
+		
+		SequenceBuilder seq = new SequenceBuilder(Alphabet.DNA16(), 1024*1024,  this.toString());
+		boolean curDir=((BidirectedEdge) getEdgePath().get(0)).getDir(curNode);
+		curSeq = curDir?curSeq:Alphabet.DNA.complement(curSeq);
+	
+		seq.append(curSeq.subSequence(0, curSeq.length()-BidirectedGraph.getKmerSize()));
+		for(Edge edge:getEdgePath()){
+			for(Edge e:((BidirectedEdge) edge).getPath().getEdgePath()){			
 				curNode=e.getOpposite(curNode);
 				curSeq= curNode.getAttribute("seq");
 				curDir=!((BidirectedEdge) e).getDir(curNode);
 				curSeq = curDir?curSeq:Alphabet.DNA.complement(curSeq);
-
+		
 				seq.append(curSeq.subSequence(0, curSeq.length()-(curNode==peekNode()?
 						0:BidirectedGraph.getKmerSize())));
-				
 			}
-		 return seq.toSequence();
-	 }
+		}
+	 return seq.toSequence();
+	}
 	 /*
 	  * Add a path to the current path. The path to be added must start with the last node
 	  * of the current path.
@@ -113,12 +123,12 @@ public class BidirectedPath extends Path{
 		if(bridge==null || bridge.size() <=1)
 			return;
 		if(bridge.getRoot() != peekNode()){
-			Logging.error("Cannot join path with disagreed first node " + bridge.getRoot().getId());
+			LOG.error("Cannot join path with disagreed first node " + bridge.getRoot().getId());
 			return;
 		}
 		if(((BidirectedEdge) bridge.getEdgePath().get(0)).getDir((AbstractNode) bridge.getRoot())
 			== ((BidirectedEdge) peekEdge()).getDir((AbstractNode) peekNode())){
-			Logging.error("Conflict direction from the first node " + bridge.getRoot().getId());
+			LOG.error("Conflict direction from the first node " + bridge.getRoot().getId());
 			return;
 		}
 		//TODO: need a way to check coverage consistent

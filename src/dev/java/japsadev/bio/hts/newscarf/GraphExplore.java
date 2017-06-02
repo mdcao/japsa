@@ -2,10 +2,8 @@ package japsadev.bio.hts.newscarf;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.graphstream.graph.*;
+
 public class GraphExplore {
 	public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/";
 	
@@ -49,6 +47,7 @@ public class GraphExplore {
         	//TODO: debug: search output for 125657_channel_96_read_33_twodimentional 
         	// assign distance to edge (not just -127 anymore but the path)
 			ass.reduceFromSPAdesPaths(spadesFolder+"EcK12S-careful/contigs.paths");
+//			HybridAssembler.promptEnterKey();
 			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 10);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

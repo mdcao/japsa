@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Scanner;
 
 import org.graphstream.graph.Edge;
@@ -19,8 +18,6 @@ import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import japsa.bio.np.RealtimeSpeciesTyping;
-import japsa.util.Logging;
 
 public class HybridAssembler {
     private static final Logger LOG = LoggerFactory.getLogger(HybridAssembler.class);
@@ -137,40 +134,41 @@ public class HybridAssembler {
     	
     	//loop over the edges of path (like spelling())
     	BidirectedNode 	markerNode = null,
-    					curNodeFromOrigGraph = (BidirectedNode) p.getRoot();
-
-    	BidirectedNode curNodeFromSimGraph = simGraph.getNode(curNodeFromOrigGraph.getId()); //change back to Node belong to simGraph (instead of origGraph)
-    	
+    			curNodeFromSimGraph = (BidirectedNode) p.getRoot();
+	
     	BidirectedPath curPath= null;
+    	boolean markerDir=true, curDir;
+    	
     	if(BidirectedGraph.isUnique(curNodeFromSimGraph)){
     		markerNode=curNodeFromSimGraph;
+    		markerDir=((BidirectedEdge) p.peekEdge()).getDir(markerNode);
     		curPath = new BidirectedPath();
-    		curPath.setRoot(curNodeFromOrigGraph);
+    		curPath.setRoot(curNodeFromSimGraph);
     	}
     	
-    	boolean markerDir=true, curDir=true;
+
     	//search for an unique node as the marker. 
     	ArrayList<BidirectedEdge> 	tobeRemoved = new ArrayList<BidirectedEdge>(),
     								tobeAdded = new ArrayList<BidirectedEdge>();
     	for(Edge e:p.getEdgePath()){
     			
-    		curNodeFromOrigGraph=e.getOpposite(curNodeFromOrigGraph);
-    		curDir=((BidirectedEdge) e).getDir(curNodeFromOrigGraph);   		
-    		curNodeFromSimGraph = simGraph.getNode(curNodeFromOrigGraph.getId()); //change back to Node belong to simGraph (instead of origGraph)
-
+    		curNodeFromSimGraph=e.getOpposite(curNodeFromSimGraph);
+    		   		
+//    		curNodeFromSimGraph = simGraph.getNode(curNodeFromOrigGraph.getId()); //change back to Node belong to simGraph (instead of origGraph)
+    		curDir=((BidirectedEdge) e).getDir(curNodeFromSimGraph);
     		
     		if(BidirectedGraph.isUnique(curNodeFromSimGraph)){
         		
 				if(markerNode!=null){
 					//this is when we have 1 jumping path (both ends are markers)
 					curPath.add(e);	
-					LOG.info("Processing path " + curPath.getId());
+//					LOG.info("Processing path {} with marker {}:{}:{} and curNode {}:{}:{}", curPath.getId(), markerNode.getId(), markerDir?"out":"in", markerNode.getGraph().getId(), curNodeFromSimGraph.getId(), curDir?"out":"in", curNodeFromSimGraph.getGraph().getId());
 					//create an edge connect markerNode to curNode with curPath
 					//Edge reducedEdge = simGraph.addEdge(markerNode, curNodeFromSimGraph, markerDir, curDir);
 					BidirectedEdge reducedEdge = new BidirectedEdge(markerNode, curNodeFromSimGraph, markerDir, curDir);
 
-					if(reducedEdge!=null)
-						reducedEdge.addAttribute("path", new BidirectedPath(curPath));
+//					if(reducedEdge!=null)
+//						reducedEdge.addAttribute("path", new BidirectedPath(curPath));
 				
 					tobeAdded.add(reducedEdge);
 					
@@ -195,7 +193,7 @@ public class HybridAssembler {
 				
 				
 				markerNode=curNodeFromSimGraph;
-        		markerDir=curDir;
+        		markerDir=!curDir; //in-out, out-in
 				curPath= new BidirectedPath();
 				curPath.setRoot(curNodeFromSimGraph);
     		}
@@ -217,23 +215,24 @@ public class HybridAssembler {
     	
     	//add appropriate edges
     	for(BidirectedEdge e:tobeAdded){
-    		//LOG.info("ADDING EDGE " + e.getId()+ " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
-    		//LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+//    		LOG.info("ADDING EDGE " + e.getId()+ " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
+//    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     		
     		Edge reducedEdge = simGraph.addEdge(e.getSourceNode(),e.getTargetNode(),e.getDir0(),e.getDir1());
 			if(reducedEdge!=null){
-				reducedEdge.addAttribute("path", new BidirectedPath(e.getAttribute("path")));
+//				reducedEdge.addAttribute("path", new BidirectedPath(e.getAttribute("path")));
 				reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
 				reducedEdge.setAttribute("ui.class", "marked");
 			}
-    		//LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+//    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
 
     	}
 
 //		promptEnterKey();
     }
     
-    public void promptEnterKey(){
+    @SuppressWarnings("resource")
+	public static void promptEnterKey(){
     	   System.out.println("Press \"ENTER\" to continue...");
     	   Scanner scanner = new Scanner(System.in);
     	   scanner.nextLine();
