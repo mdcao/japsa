@@ -22,18 +22,18 @@ import htsjdk.samtools.ValidationStringency;
 public class HybridAssembler {
     private static final Logger LOG = LoggerFactory.getLogger(HybridAssembler.class);
 	
-	final BidirectedGraph origGraph;
+//	final BidirectedGraph origGraph;
 	public BidirectedGraph simGraph; //original and simplified graph should be separated, no???
 	
 	public HybridAssembler(){
-		origGraph=new BidirectedGraph("batch");
+//		origGraph=new BidirectedGraph("batch");
 		simGraph=new BidirectedGraph("real");
 	}
 	
 	
 	public HybridAssembler(String graphFile) throws IOException{
 		this();
-		origGraph.loadFromFile(graphFile);
+//		origGraph.loadFromFile(graphFile);
 		simGraph.loadFromFile(graphFile);
 	}
 	
@@ -141,7 +141,7 @@ public class HybridAssembler {
     	
     	if(BidirectedGraph.isUnique(curNodeFromSimGraph)){
     		markerNode=curNodeFromSimGraph;
-    		markerDir=((BidirectedEdge) p.peekEdge()).getDir(markerNode);
+    		markerDir=((BidirectedEdge) p.getEdgePath().get(0)).getDir(markerNode);
     		curPath = new BidirectedPath();
     		curPath.setRoot(curNodeFromSimGraph);
     	}
@@ -207,16 +207,16 @@ public class HybridAssembler {
     	
     	//remove appropriate edges
     	for(BidirectedEdge e:tobeRemoved){
-//    		LOG.info("REMOVING EDGE " + e.getId() + " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
-//    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    		LOG.info("REMOVING EDGE " + e.getId() + " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
+    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     		simGraph.removeEdge(e.getId());
-//    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     	}
     	
     	//add appropriate edges
     	for(BidirectedEdge e:tobeAdded){
-//    		LOG.info("ADDING EDGE " + e.getId()+ " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
-//    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    		LOG.info("ADDING EDGE " + e.getId()+ " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
+    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
     		
     		Edge reducedEdge = simGraph.addEdge(e.getSourceNode(),e.getTargetNode(),e.getDir0(),e.getDir1());
 			if(reducedEdge!=null){
@@ -224,7 +224,7 @@ public class HybridAssembler {
 				reducedEdge.setAttribute("ui.style", "text-offset: -10;"); 
 				reducedEdge.setAttribute("ui.class", "marked");
 			}
-//    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
 
     	}
 
@@ -247,7 +247,7 @@ public class HybridAssembler {
 		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
 		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
 		//TODO: need to make this easier
-		hbAss.assembly(GraphExplore.spadesFolder+"bwa/EcK12S-careful.sam", 0);
+		hbAss.assembly(GraphExplore.spadesFolder+"bwa/EcK12S-careful.sam", 30);
 	}
 	
 }

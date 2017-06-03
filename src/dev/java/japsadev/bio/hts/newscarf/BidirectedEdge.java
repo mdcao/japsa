@@ -74,7 +74,7 @@ public class BidirectedEdge extends AbstractEdge{
 	protected BidirectedEdge(String id, AbstractNode source, AbstractNode dest){
 	super(id, source, dest, false);
 	
-	assert (source.getGraph() != dest.getGraph()):"Nodes come from different graph";
+	assert (source.getGraph() == dest.getGraph()):"Nodes come from different graph " + source.getGraph().getId() + " and " + dest.getGraph().getId();
 	BidirectedGraph g = (BidirectedGraph) source.getGraph();	
 	path = new BidirectedPath(g,id);
 	
@@ -157,7 +157,7 @@ public class BidirectedEdge extends AbstractEdge{
 	
 	//TODO: include the case of tandem repeats
 	public boolean getDir(AbstractNode node){
-		assert node==getSourceNode()||node==getTargetNode():"Node does not belong to this edge!";
+		assert node==getSourceNode()||node==getTargetNode():"Node " + node.getId() + " does not belong to this edge src=" + getSourceNode().getId() + " dst=" + getTargetNode().getId();
 		return node==getSourceNode()?getDir0():getDir1();
 	}
 	

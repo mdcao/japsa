@@ -64,7 +64,7 @@ public class NewScarfCmd extends CommandLine{
 
         try {
         	hbAss.reduceFromSPAdesPaths(fastgFile);
-        	hbAss.assembly(samFile, 50);
+        	hbAss.assembly(samFile, 30);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

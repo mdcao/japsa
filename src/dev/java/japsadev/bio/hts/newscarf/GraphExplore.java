@@ -48,7 +48,7 @@ public class GraphExplore {
         	// assign distance to edge (not just -127 anymore but the path)
 			ass.reduceFromSPAdesPaths(spadesFolder+"EcK12S-careful/contigs.paths");
 //			HybridAssembler.promptEnterKey();
-			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 10);
+			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 30);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
