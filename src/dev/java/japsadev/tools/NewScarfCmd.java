@@ -1,7 +1,9 @@
 package japsadev.tools;
 import java.io.IOException;
 
+import org.graphstream.graph.Edge;
 import org.graphstream.graph.Node;
+import org.graphstream.ui.view.Viewer;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -33,7 +35,10 @@ public class NewScarfCmd extends CommandLine{
 		String samFile = cmdLine.getStringVal("sam");
 		String styleSheet =
 			        "node {" +
-			        "	fill-color: black;" +
+			        "	fill-color: black; z-index: 0;" +
+			        "}" +
+			        "edge {" +
+			        "	text-alignment: along;" +
 			        "}" +
 			        "node.marked {" +
 			        "	fill-color: red;" +
@@ -47,10 +52,11 @@ public class NewScarfCmd extends CommandLine{
 		//TODO: need to make this easier
 		BidirectedGraph graph= hbAss.simGraph;
 		
-        graph.addAttribute("ui.quality");
-        graph.addAttribute("ui.antialias");
+        //graph.addAttribute("ui.quality");
+        //graph.addAttribute("ui.antialias");
         graph.addAttribute("ui.stylesheet", styleSheet);
-        graph.display();
+        Viewer viewer = graph.display();
+        // Let the layout work ...
         
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 
@@ -58,9 +64,12 @@ public class NewScarfCmd extends CommandLine{
         for (Node node : graph) {
             node.addAttribute("ui.label", node.getId());
             node.setAttribute("ui.style", "text-offset: -10;"); 
+            node.addAttribute("layout.weight", 100); 
+
             if(BidirectedGraph.isUnique(node))
             	node.setAttribute("ui.class", "marked");
         }
+
 
         try {
         	hbAss.reduceFromSPAdesPaths(fastgFile);
@@ -69,6 +78,16 @@ public class NewScarfCmd extends CommandLine{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+        
+
+        for (Edge edge: graph.getEdgeSet()){
+        	if(edge.hasAttribute("isReducedEdge"))
+        		edge.addAttribute("layout.weight", 10); 
+        }
+        
+        
+        HybridAssembler.promptEnterKey();
+        viewer.disableAutoLayout();
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 	}
 }
