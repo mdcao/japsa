@@ -23,7 +23,7 @@ public class NewScarfCmd extends CommandLine{
 
 		addString("fastg", null, "Assembly graph fastg file",true);		
 		addString("sam", null, "Sam file alignment of assembly graph to long reads",true);
-
+		addString("path", null, "SPAdes contigs path file");
 		addStdHelp();
 	}
 		    	
@@ -33,6 +33,8 @@ public class NewScarfCmd extends CommandLine{
 
 		String fastgFile = cmdLine.getStringVal("fastg");
 		String samFile = cmdLine.getStringVal("sam");
+		String pathFile = cmdLine.getStringVal("path");
+		
 		String styleSheet =
 			        "node {" +
 			        "	fill-color: black; z-index: 0;" +
@@ -72,7 +74,8 @@ public class NewScarfCmd extends CommandLine{
 
 
         try {
-        	hbAss.reduceFromSPAdesPaths(fastgFile);
+        	if(pathFile!=null)
+        		hbAss.reduceFromSPAdesPaths(pathFile);
         	hbAss.assembly(samFile, 30);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
