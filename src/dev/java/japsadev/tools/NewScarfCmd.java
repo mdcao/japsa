@@ -23,6 +23,7 @@ public class NewScarfCmd extends CommandLine{
 
 		addString("fastg", null, "Assembly graph fastg file",true);		
 		addString("sam", null, "Sam file alignment of assembly graph to long reads",true);
+		addInt("qual", 30, "Minimum quality of alignment to considered");
 		addString("path", null, "SPAdes contigs path file");
 		addStdHelp();
 	}
@@ -31,6 +32,7 @@ public class NewScarfCmd extends CommandLine{
 		CommandLine cmdLine = new NewScarfCmd ();
 		args = cmdLine.stdParseLine(args);
 
+		int qual = cmdLine.getIntVal("qual");
 		String fastgFile = cmdLine.getStringVal("fastg");
 		String samFile = cmdLine.getStringVal("sam");
 		String pathFile = cmdLine.getStringVal("path");
@@ -48,6 +50,7 @@ public class NewScarfCmd extends CommandLine{
 			        "edge.marked {" +
 			        "	fill-color: red;" +
 			        "}";
+		System.setProperty("java.awt.headless", "false");
 		HybridAssembler hbAss = new HybridAssembler(fastgFile);
 		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
 		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
@@ -76,7 +79,7 @@ public class NewScarfCmd extends CommandLine{
         try {
         	if(pathFile!=null)
         		hbAss.reduceFromSPAdesPaths(pathFile);
-        	hbAss.assembly(samFile, 30);
+        	hbAss.assembly(samFile, qual);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

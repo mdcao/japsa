@@ -8,7 +8,7 @@ import htsjdk.samtools.SAMRecord;
 import japsa.seq.Sequence;
 
 public class Alignment implements Comparable<Alignment> {
-	public final static int OVERHANG_THRES=700; 
+	public final static int OVERHANG_THRES=1000; 
 	
 	int score;
 

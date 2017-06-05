@@ -20,8 +20,10 @@ public class GraphExplore {
 
     public GraphExplore() throws IOException{
     	//System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer"); 
+//    	String sample="EcK12S-careful";
+    	String sample="W303-careful";
 
-        HybridAssembler ass = new HybridAssembler(spadesFolder+"EcK12S-careful/assembly_graph.fastg");
+        HybridAssembler ass = new HybridAssembler(spadesFolder+sample+"/assembly_graph.fastg");
     	BidirectedGraph graph= ass.simGraph;
         graph.addAttribute("ui.quality");
         graph.addAttribute("ui.antialias");
@@ -46,9 +48,9 @@ public class GraphExplore {
         try {
         	//TODO: debug: search output for 125657_channel_96_read_33_twodimentional 
         	// assign distance to edge (not just -127 anymore but the path)
-			ass.reduceFromSPAdesPaths(spadesFolder+"EcK12S-careful/contigs.paths");
-//			HybridAssembler.promptEnterKey();
-			ass.assembly(spadesFolder+"bwa/EcK12S-careful.sam", 30);
+			ass.reduceFromSPAdesPaths(spadesFolder+sample+"/contigs.paths");
+			HybridAssembler.promptEnterKey();
+			ass.assembly(spadesFolder+sample+"/assembly_graph.sam", 30);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

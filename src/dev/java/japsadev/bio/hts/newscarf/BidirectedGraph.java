@@ -21,9 +21,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     static int kmer=127;
     static final int TOLERATE=500;
     static final int D_LIMIT=10000;
-    static final int S_LIMIT=100;
-    static final double ER_LOWERBOUND=.5,
-    					ER_UPPERBOUND=1.5;
+    static final int S_LIMIT=50;
     
     private static final Logger LOG = LoggerFactory.getLogger(BidirectedGraph.class);
 
@@ -184,11 +182,16 @@ public class BidirectedGraph extends AdjacencyListGraph{
 		}
 
 		//rough estimation of kmer used
-		if((shortestLen-1) != getKmerSize())
+		if((shortestLen-1) != getKmerSize()){
 			setKmerSize(shortestLen-1);
+			for(Edge e:getEdgeSet()){
+				((BidirectedEdge)e).changeKmerSize(kmer);
+			}
+		}
 		
 		aveCov = totReadLen/totGenomeLen;
 		reader.close();
+
     }
     
 	
@@ -419,7 +422,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	while(ite.hasNext()){
     		BidirectedEdge e = ite.next();
 			path.add(e);
-
+			
 			int toTarget=Math.abs(distance-e.getLength());
 			if(e.getOpposite(currentNode)==dst && e.getDir(dst)!=dstDir && toTarget < TOLERATE){
 		    	BidirectedPath 	curPath=curResult.isEmpty()?new BidirectedPath():curResult.get(0), //the best path saved among all possible paths from the list curResult
@@ -433,6 +436,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				System.out.println("Hit added: "+path.getId()+"(candidate deviation: "+toTarget+")");
 			}else{
 				int newDistance = distance - ((Sequence) e.getOpposite(currentNode).getAttribute("seq")).length() - e.getLength();
+				System.out.println("adding edge: " + e.getId() + " length=" + e.getLength() +" -> distance=" + newDistance);
 				if (newDistance - e.getLength() < -TOLERATE){
 					System.out.println("Stop go to edge " + e.getPath() + " from path with distance "+newDistance+" already! : "+path.getId());
 				}else

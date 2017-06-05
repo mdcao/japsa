@@ -151,6 +151,10 @@ public class BidirectedEdge extends AbstractEdge{
 	public boolean getDir1(){
 		return dir1;
 	}
+	//if kmer!=127 we need to set initial lengths of edges again (easy+tedious way)
+	public void changeKmerSize(int kmer){
+		length=-kmer;
+	}
 	public int getLength(){
 		return length;
 	}

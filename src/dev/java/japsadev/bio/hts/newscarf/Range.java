@@ -1,6 +1,8 @@
 package japsadev.bio.hts.newscarf;
 
 public class Range implements Comparable<Range>{
+    static final double ER_UPPERBOUND=2;
+    
 	int left, right;
 	Range(){
 		left=right=0;
@@ -31,7 +33,7 @@ public class Range implements Comparable<Range>{
 		Range 	ref=(order<0?this:other), 
 				qry=(order<0?other:this);
 		
-		if(ref.right-qry.left > BidirectedGraph.ER_UPPERBOUND*BidirectedGraph.getKmerSize())
+		if(ref.right-qry.left > ER_UPPERBOUND*BidirectedGraph.getKmerSize())
 			retval=true;
 		else 
 			retval=(qry.right<=ref.right);
