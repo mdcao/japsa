@@ -207,7 +207,12 @@ public class AlternativeAllelesCmd extends CommandLine{
 				 samHeader = samReader.getFileHeader();	
 			}
 			String myChrom = bf.updateChrom();
-			addSequence(inFile, bf, reference,  samReader,samHeader, samWriter, threshold);
+			if(myChrom.startsWith("GL")){
+				VarRecord var = bf.nextRecord();
+				while(var!=null) var = bf.nextRecord();
+			}else{
+				addSequence(inFile, bf, reference,  samReader,samHeader, samWriter, threshold);
+			}
 			samReader.close();
 		}
 		bf.close();
@@ -215,6 +220,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 		
 		///////////////////////////////////////////////////////////
 	}
+	
+	
 	
 	static void addSequence(String inFile, MultiChromVCFReader bf, String reference,   SamReader samReader, SAMFileHeader samHeader, SAMTextWriter samWriter, int threshold) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
