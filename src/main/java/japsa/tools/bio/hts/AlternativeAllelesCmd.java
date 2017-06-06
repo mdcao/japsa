@@ -170,6 +170,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 		}
 		public VarRecord nextRecord()  throws IOException{
 			fVar = AlternativeAllelesCmd.nextRecord(bf);
+			if(fVar ==null) return null;
 			if(!fVar.chrom.equals(myChrom)) finishedChrom = true; // this means we have moved to next chrom
 			if(finishedChrom) return null;
 			// TODO Auto-generated method stub
