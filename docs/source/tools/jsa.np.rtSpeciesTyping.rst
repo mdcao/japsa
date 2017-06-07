@@ -43,6 +43,8 @@ Options
                   (default='30')
   --web           Whether to use Web visualization.
                   (default='false')
+  --log           Whether to write mapping details to species2reads.map.
+                  (default='false')
   --help          Display this usage and exit
                   (default='false')
 

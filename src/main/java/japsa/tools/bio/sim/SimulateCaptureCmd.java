@@ -532,7 +532,8 @@ public class SimulateCaptureCmd extends CommandLine{
 *capsim*: Simulating the Dynamics of Targeted Capture Sequencing with CapSim
 ----------------------------------------------------------------------------
 
-*capsim* (jsa.sim.capsim) is a tool to simulate target capture sequencing.
+*capsim* (jsa.sim.capsim) is a tool to simulate target capture sequencing. Its
+simulates the dynamics of capture process
 
 <usage>
 

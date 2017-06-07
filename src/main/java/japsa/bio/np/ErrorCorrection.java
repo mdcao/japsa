@@ -213,8 +213,7 @@ public class ErrorCorrection {
 					LOG.info(sb.getName() + "  " + sb.length());
 					consensus = sb.toSequence();
 				}
-			}			
-
+			}
 		}
 		return consensus;
 	}
