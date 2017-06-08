@@ -73,6 +73,7 @@ public class GapCloserCmd extends CommandLine{
 		addString("bwaExe", "bwa", "Path to bwa");
 		addInt("bwaThread", 4, "Theads used by bwa");
 		addBoolean("long", false, "Whether report all sequences, including short/repeat contigs (default) or only long/unique/completed sequences.");
+		addBoolean("selective", false, "If set to true, only output contigs that mapped to the long read data. Useful for metagenomic reference.");
 		addBoolean("eukaryotic", false, "Whether eukaryotic or bacterial (default) genomes");
 		addBoolean("update", true, "Whether output genome sequences in real-time or not.");
 		
@@ -84,7 +85,7 @@ public class GapCloserCmd extends CommandLine{
 		addString("resistGene", null , "Realtime annotation: name of antibiotic resistance gene fasta file");
 		addString("insertSeq", null , "Realtime annotation: name of IS fasta file");
 		addString("oriRep", null, "Realtime annotation: name of fasta file containing possible origin of replication");
-		addInt("minContig", 300, "Minimum contigs length that are used in scaffolding."); 
+		addInt("minContig", 200, "Minimum contigs length that are used in scaffolding."); 
 		addInt("maxRepeat", 7500, "Maximum length of repeat in considering species."); 
 
 		addDouble("cov", 0, "Expected average coverage of Illumina, <=0 to estimate");
@@ -110,6 +111,7 @@ public class GapCloserCmd extends CommandLine{
 		ScaffoldGraph.reportAll = !cmdLine.getBooleanVal("long");
 		ScaffoldGraph.eukaryotic = cmdLine.getBooleanVal("eukaryotic");
 		ScaffoldGraph.updateGenome = cmdLine.getBooleanVal("update");
+		ScaffoldGraph.select = cmdLine.getBooleanVal("selective");
 		
 		
 		String prefix = cmdLine.getStringVal("prefix");
@@ -157,10 +159,10 @@ public class GapCloserCmd extends CommandLine{
 				}	
 				bf.close();
 				if (version.length() == 0){
-					System.err.println(bwaExe + " is not the rith path to bwa. bwa is required");
+					System.err.println(bwaExe + " is not the right path to bwa. bwa is required");
 					System.exit(1);
 				}else{
-					if (!version.startsWith("0.7.1")){
+					if (version.compareTo("0.7.1") < 0){
 						System.err.println(" Require bwa of 0.7.11 or above");
 						System.exit(1);
 					}

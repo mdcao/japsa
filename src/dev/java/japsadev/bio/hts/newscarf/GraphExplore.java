@@ -21,7 +21,7 @@ public class GraphExplore {
     public GraphExplore() throws IOException{
     	//System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer"); 
 //    	String sample="EcK12S-careful";
-    	String sample="W303-careful";
+    	String sample="Kp2146-careful";
 
         HybridAssembler ass = new HybridAssembler(spadesFolder+sample+"/assembly_graph.fastg");
     	BidirectedGraph graph= ass.simGraph;
@@ -50,7 +50,7 @@ public class GraphExplore {
         	// assign distance to edge (not just -127 anymore but the path)
 			ass.reduceFromSPAdesPaths(spadesFolder+sample+"/contigs.paths");
 			HybridAssembler.promptEnterKey();
-			ass.assembly(spadesFolder+sample+"/assembly_graph.sam", 30);
+			ass.assembly(spadesFolder+sample+"/assembly_graph.sam", 10);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

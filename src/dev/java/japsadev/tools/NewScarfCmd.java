@@ -69,7 +69,7 @@ public class NewScarfCmd extends CommandLine{
         for (Node node : graph) {
             node.addAttribute("ui.label", node.getId());
             node.setAttribute("ui.style", "text-offset: -10;"); 
-            node.addAttribute("layout.weight", 100); 
+            node.addAttribute("layout.weight", 10); 
 
             if(BidirectedGraph.isUnique(node))
             	node.setAttribute("ui.class", "marked");
@@ -86,10 +86,10 @@ public class NewScarfCmd extends CommandLine{
 		}
         
 
-        for (Edge edge: graph.getEdgeSet()){
-        	if(edge.hasAttribute("isReducedEdge"))
-        		edge.addAttribute("layout.weight", 10); 
-        }
+//        for (Edge edge: graph.getEdgeSet()){
+//        	if(edge.hasAttribute("isReducedEdge"))
+//        		edge.addAttribute("layout.weight", 10); 
+//        }
         
         
         HybridAssembler.promptEnterKey();

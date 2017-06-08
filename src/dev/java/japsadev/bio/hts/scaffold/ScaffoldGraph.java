@@ -63,12 +63,15 @@ import java.util.HashMap;
 public abstract class ScaffoldGraph{
 	public static volatile int maxRepeatLength=7500; //for ribosomal repeat cluster in bacteria (Koren S et al 2013), it's 9.1kb for yeast.
 	public static volatile int marginThres = 1000;
-	public static volatile int minContigLength = 300;
+	public static volatile int minContigLength = 200;
 	public static volatile int minSupportReads = 1;
 	public static volatile boolean verbose = false;
 	public static volatile boolean reportAll = false;
 	public static volatile boolean updateGenome = true;
 	public static volatile boolean eukaryotic = false;
+	public static volatile boolean select = false;
+
+	
 	public volatile boolean annotation = false;
 	public static volatile byte assembler =0b00; // 0 for SPAdes, 1 for ABySS
 	
@@ -244,6 +247,10 @@ public abstract class ScaffoldGraph{
 //		}
 		for (int i = 0; i < scaffolds.length;i++){
 			if(scaffolds[i].isEmpty()) continue;
+			
+			if(select && !contigs.get(i).isMapped())
+				continue;
+			
 			int len = scaffolds[i].length();
 			
 			if(contigs.get(i).head == i){
@@ -389,9 +396,15 @@ public abstract class ScaffoldGraph{
 				continue;
 			if (rec.getMappingQuality() < qual)
 				continue;
-
-			AlignmentRecord myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
 			
+			Contig tmp = contigs.get(rec.getReferenceIndex());
+			if(tmp==null){
+				Logging.error("Contig " + rec.getReferenceIndex() + " doesn't exist!");
+				System.exit(1);
+			}
+				
+			AlignmentRecord myRec = new AlignmentRecord(rec, tmp);
+			Arrays.fill(tmp.isMapped, myRec.refStart, myRec.refEnd, 1);
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
 
@@ -993,7 +1006,12 @@ public abstract class ScaffoldGraph{
 			SequenceOutputStream aout = SequenceOutputStream.makeOutputStream(prefix+".anno.japsa");
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
+				
+				if(select && !contigs.get(i).isMapped())
+					continue;
+				
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
+				
 				if(contigs.get(i).head == i ){
 					if(!reportAll && isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null)
 						continue;			
@@ -1043,6 +1061,10 @@ public abstract class ScaffoldGraph{
 //			}
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
+				
+				if(select && !contigs.get(i).isMapped())
+					continue;
+				
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
 
 				if(contigs.get(i).head == i ){

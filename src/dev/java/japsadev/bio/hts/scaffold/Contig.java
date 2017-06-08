@@ -35,7 +35,10 @@
 package japsadev.bio.hts.scaffold;
 
 import java.util.ArrayList;
+import java.util.stream.IntStream;
+
 import japsa.seq.Sequence;
+import japsa.util.Logging;
 import japsa.seq.JapsaFeature;
 
 public class Contig{
@@ -47,6 +50,7 @@ public class Contig{
 	double prevScore=0, nextScore=0;
 	int cirProb = -1; //measure how likely the contig itself is circular
 
+	int[] isMapped; //which bases is mapped by any long reads
 	//for annotation
 	ArrayList<JapsaFeature> genes,				//genes list
 							oriRep,				//origin of replication: indicator of plasmid for bacteria
@@ -67,6 +71,8 @@ public class Contig{
 	public Contig(int index, Sequence seq){
 		this.index = index;
 		contigSequence = seq;
+		isMapped = new int[seq.length()];
+		
 		myVector = new ScaffoldVector(0,1);
 		
 		genes = new ArrayList<JapsaFeature>();
@@ -84,7 +90,8 @@ public class Contig{
 
 		ctg.head = this.head; //update later
 		ctg.cirProb = this.cirProb;
-
+		ctg.isMapped = this.isMapped;
+		
 		ctg.genes = this.genes;
 		ctg.oriRep = this.oriRep;
 		ctg.insertSeq = this.insertSeq;
@@ -217,6 +224,11 @@ public class Contig{
 		return coverage;
 	}
 	
+
+	public boolean isMapped(){
+		int sum = IntStream.of(isMapped).sum();
+		return ((double)sum/length()) > .8;
+	}
 	/*
 	 * Operators related to Path
 	 */

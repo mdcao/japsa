@@ -436,7 +436,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 				System.out.println("Hit added: "+path.getId()+"(candidate deviation: "+toTarget+")");
 			}else{
 				int newDistance = distance - ((Sequence) e.getOpposite(currentNode).getAttribute("seq")).length() - e.getLength();
-				System.out.println("adding edge: " + e.getId() + " length=" + e.getLength() +" -> distance=" + newDistance);
+//				System.out.println("adding edge: " + e.getId() + " length=" + e.getLength() +" -> distance=" + newDistance);
 				if (newDistance - e.getLength() < -TOLERATE){
 					System.out.println("Stop go to edge " + e.getPath() + " from path with distance "+newDistance+" already! : "+path.getId());
 				}else
