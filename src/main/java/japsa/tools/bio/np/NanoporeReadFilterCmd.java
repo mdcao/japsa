@@ -73,10 +73,10 @@ public class NanoporeReadFilterCmd extends CommandLine{
 		addInt("lenMax", Integer.MAX_VALUE, "Minimum sequence length");
 
 		CommandLine.Option qualMinOpt =
-				addInt("qualMin", 0, "Minimum average quality");
+				addDouble("qualMin", 0.0, "Minimum average quality");
 
 		//CommandLine.Option qualMaxOpt =
-		addInt("qualMax", 1000, "Maximum average quality");
+		addDouble("qualMax", 1000.0, "Maximum average quality");
 
 		CommandLine.Option groupOpt =
 				addString("group", "", "Group need to be extracted, leave blank for selecting all groups");
@@ -101,8 +101,8 @@ public class NanoporeReadFilterCmd extends CommandLine{
 
 		lenMinOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
 		//lenMaxOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
-		qualMinOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
-		//qualMaxOpt.setGalaxySetting(new GalaxySetting("integer", null,false));
+		qualMinOpt.setGalaxySetting(new GalaxySetting("double", null,false));
+		//qualMaxOpt.setGalaxySetting(new GalaxySetting("double", null,false));
 
 		excl2DOpt.setGalaxySetting(new GalaxySetting("boolean", null,false));
 		exclTempOpt.setGalaxySetting(new GalaxySetting("boolean", null,false));
@@ -125,8 +125,8 @@ public class NanoporeReadFilterCmd extends CommandLine{
 		String input = cmdLine.getStringVal("input");
 		int lenMin  = cmdLine.getIntVal("lenMin");
 		int lenMax  = cmdLine.getIntVal("lenMax");
-		int qualMin  = cmdLine.getIntVal("qualMin");
-		int qualMax  = cmdLine.getIntVal("qualMax");
+		double qualMin  = cmdLine.getDoubleVal("qualMin");
+		double qualMax  = cmdLine.getDoubleVal("qualMax");
 
 		boolean exclude2D =  cmdLine.getBooleanVal("excl2D");
 		boolean excludeTemplate =  cmdLine.getBooleanVal("exclTemp");
@@ -158,14 +158,14 @@ public class NanoporeReadFilterCmd extends CommandLine{
 			double qual = -1;
 
 			//min quality
-			if (qualMin > 0){
+			if (qualMin > 0.0){
 				qual = NanoporeReaderStream.averageQuality(seq);
 				if (qual < qualMin)
 					continue;				
 			}
 
 			//max quality			
-			if (qualMax < 1000){
+			if (qualMax < 1000.0){
 				if (qual < 0)
 					qual = NanoporeReaderStream.averageQuality(seq);
 				if (qual >= qualMax)
