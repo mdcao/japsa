@@ -144,6 +144,8 @@ else
 O_SERVER=
 endif
 
+docs: jar
+	java -cp  $(JAR_FILE):$(LIB_DIR)/guava-18.0.jar:$(LIB_DIR)/slf4j-api-1.7.25.jar:$(LIB_DIR)/slf4j-simple-1.7.25.jar japsa.util.deploy.GenDocs && cd docs && make html
 
 RELEASE=JapsaRelease
 

@@ -299,8 +299,7 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			
 			//
 			HashMap<String, String> tempReadSequences = new HashMap<String, String>();
-			
-			
+
 			
 			for(int x = 0;x<readSequences.size();x++){
 				Sequence temp = readSequences.get(x);
@@ -314,8 +313,7 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			
 			KmeanClusteringWithReads clusterObj1 = new KmeanClusteringWithReads();
 			
-			 
-			
+
 			clusterResult = clusterObj1.Clustering(tempReads);
 			
 			ArrayList<String> cluster1String = clusterResult.get(1);
@@ -372,20 +370,22 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 				processRead(cluster1Consensus, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
 			else
 				outOS.print("##No consensus found  for 1");
-			if (cluster1Sequence.size() >= 1) {
-				processBatch(cluster1Sequence, dpBatch, fraction, hmmFlank, hmmPad, period, outOS);
-			}else
-				outOS.print("##No cluster found for 1");
+
+            //speed//MDC comment this out to improve speed now that we only use consensus
+			//speed//if (cluster1Sequence.size() >= 1) {
+            //speed//	processBatch(cluster1Sequence, dpBatch, fraction, hmmFlank, hmmPad, period, outOS);
+            //speed//}else
+            //speed//	outOS.print("##No cluster found for 1");
 
 			outOS.print("####Allele 2\n");
 			if (cluster2Consensus != null)
 				processRead(cluster2Consensus, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
 			else
 				outOS.print("##No consensus found  for 2");
-			if (cluster2Sequence.size() >= 1) {
-				processBatch(cluster2Sequence, dpBatch, fraction, hmmFlank, hmmPad, period, outOS);
-			}else
-				outOS.print("##No cluster found for 2");
+            //speed//if (cluster2Sequence.size() >= 1) {
+            //speed//	processBatch(cluster2Sequence, dpBatch, fraction, hmmFlank, hmmPad, period, outOS);
+            //speed//}else
+            //speed//	outOS.print("##No cluster found for 2");
 
 			//outOS.print(trVar.toString(headers));
 			//outOS.print('\n');

@@ -133,10 +133,6 @@ public class Fragment2TRVCmd extends CommandLine{
 	
 	/**
 	 * Assume both inserts and annotations are sorted by the start position
-	 * 
-	 * @param iFile
-	 * @param aFile
-	 * @throws IOException
 	 */
 
 	static int bsearch(JapsaAnnotation anno, int start, int end, int gap){
