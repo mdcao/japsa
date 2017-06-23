@@ -74,7 +74,7 @@ public class RealtimeSpeciesTyping {
 	/**
 	 * Minimum quality of alignment
 	 */
-	private double minQual = 0;
+	private double minQual = 1;
 	private boolean twoDOnly = false;
 
 

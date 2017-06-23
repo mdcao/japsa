@@ -94,8 +94,22 @@ public final class Scaffold extends LinkedList<Contig>{
 		if(this.peekFirst().getIndex() == bridge.firstContig.getIndex())
 			last2first = ScaffoldVector.reverse(last2first);
 		circle = ScaffoldVector.composition(last2first, circle);
+		
+//		change magnitute of vector to positive for convenience, a.k.a the direction of head contig
+		circle.magnitude = Math.abs(circle.magnitude);
+		
 		//bridge.setContigScores();
 		//closed = true;
+	}
+	
+	/**
+	 * Return the vector of a contig after move it forward or backward 1 circular length
+	 * @param ScaffoldVector v of the contig
+	 * @param boolean direction to move: true to move forward, false for backward (w.r.t. head contig)
+	 * @return ScaffoldVector of contig after moving
+	 */
+	public ScaffoldVector rotate(ScaffoldVector v, boolean direction){
+		return (direction && (v.direction>0))?ScaffoldVector.composition(circle, v):ScaffoldVector.composition(ScaffoldVector.reverse(circle), v);
 	}
 
 	/**

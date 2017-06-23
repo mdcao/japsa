@@ -61,7 +61,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		addString("bamFile", null,  "The bam file",true);		
 		addString("indexFile", null,  "indexFile ",true);
 		
-		addDouble("qual", 0,  "Minimum alignment quality");
+		addDouble("qual", 1,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
 
 		addInt("read", 50,  "Minimum number of reads between analyses");		
