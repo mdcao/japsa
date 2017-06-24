@@ -605,7 +605,7 @@ public class ScaffoldGraph{
 		if(prevMarker != null){
 			ScaffoldVector toPrev = ScaffoldVector.composition(prevMarker.getVector(),rev); //contigF->prevMarker
 			if(scaffoldF.indexOf(prevMarker) > scaffoldF.indexOf(contigF) && scaffoldF.closeBridge != null)
-				toPrev = ScaffoldVector.composition(ScaffoldVector.reverse(scaffoldF.circle), toPrev);
+				toPrev = scaffoldF.rotate(toPrev, false);
 			ScaffoldVector headT2Prev = ScaffoldVector.composition(toPrev, headT2contigF);
 			int rEndPrev = prevMarker.rightMost(headT2Prev),
 					lEndPrev = prevMarker.leftMost(headT2Prev);
@@ -636,7 +636,7 @@ public class ScaffoldGraph{
 		if(nextMarker != null){
 			ScaffoldVector toNext = ScaffoldVector.composition(nextMarker.getVector(),rev); //contigF->nextMarker
 			if(scaffoldF.indexOf(nextMarker) < scaffoldF.indexOf(contigF) && scaffoldF.closeBridge != null)
-				toNext = ScaffoldVector.composition(scaffoldF.circle, toNext);
+				toNext = scaffoldF.rotate(toNext, true);
 			ScaffoldVector headT2Next = ScaffoldVector.composition(toNext, headT2contigF);
 			int rEndNext = nextMarker.rightMost(headT2Next),
 					lEndNext = nextMarker.leftMost(headT2Next);
@@ -758,7 +758,7 @@ public class ScaffoldGraph{
 					brg = scaffoldF.closeBridge;
 
 					while(true){
-						ctg.myVector = ScaffoldVector.composition(ScaffoldVector.reverse(scaffoldF.circle),ctg.myVector);
+						ctg.myVector = scaffoldF.rotate(ctg.myVector, false);
 						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
 						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
@@ -837,7 +837,7 @@ public class ScaffoldGraph{
 					ctg = scaffoldF.removeFirst();
 					brg = scaffoldF.closeBridge;
 					while(true){
-						ctg.myVector = ScaffoldVector.composition(scaffoldF.circle,ctg.myVector);
+						ctg.myVector = scaffoldF.rotate(ctg.myVector, true);
 						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
 						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
@@ -917,7 +917,7 @@ public class ScaffoldGraph{
 				newScf.bridges.add(getReversedBridge(scf.bridges.removeLast()));
 			if(scf.closeBridge != null){
 				newScf.closeBridge = getReversedBridge(scf.closeBridge);
-				newScf.circle = ScaffoldVector.reverse(scf.circle);
+				newScf.circle = scf.circle;
 			}
 		}
 
