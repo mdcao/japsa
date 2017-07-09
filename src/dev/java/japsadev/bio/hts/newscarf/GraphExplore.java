@@ -5,8 +5,8 @@ import java.util.Iterator;
 import org.graphstream.graph.*;
 
 public class GraphExplore {
-	public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/";
-	
+	//public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/";
+	public static String spadesFolder="/home/hoangnguyen/workspace/data/spades/"; //sony
 	public static void main(String args[]) {
     	try {
 			new GraphExplore();
@@ -49,8 +49,8 @@ public class GraphExplore {
         	//TODO: debug: search output for 125657_channel_96_read_33_twodimentional 
         	// assign distance to edge (not just -127 anymore but the path)
 			ass.reduceFromSPAdesPaths(spadesFolder+sample+"/contigs.paths");
-			HybridAssembler.promptEnterKey();
-			ass.assembly(spadesFolder+sample+"/assembly_graph.sam", 1);
+//			HybridAssembler.promptEnterKey();
+			ass.assembly(spadesFolder+sample+"/assembly_graph.sam");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

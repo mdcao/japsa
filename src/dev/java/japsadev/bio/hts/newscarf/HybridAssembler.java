@@ -38,7 +38,7 @@ public class HybridAssembler {
 	}
 	
 	
-	public void assembly(String bamFile, int qual) throws IOException{
+	public void assembly(String bamFile) throws IOException{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 
 		SamReader reader;
@@ -57,8 +57,8 @@ public class HybridAssembler {
 			SAMRecord rec = iter.next();
 			if (rec.getReadUnmappedFlag())
 				continue;
-			if (rec.getMappingQuality() < qual)
-				continue;
+//			if (rec.getMappingQuality() < qual)
+//				continue;
 			
 			String refID = rec.getReferenceName().split("_")[1];
 			Alignment myRec = new Alignment(rec, simGraph.getNode(refID)); //FIXME: optimize
@@ -249,7 +249,7 @@ public class HybridAssembler {
 		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
 		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
 		//TODO: need to make this easier
-		hbAss.assembly(GraphExplore.spadesFolder+"bwa/EcK12S-careful.sam", 30);
+		hbAss.assembly(GraphExplore.spadesFolder+"bwa/EcK12S-careful.sam");
 	}
 	
 }

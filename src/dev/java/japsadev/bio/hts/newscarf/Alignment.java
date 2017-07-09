@@ -9,8 +9,11 @@ import japsa.seq.Sequence;
 
 public class Alignment implements Comparable<Alignment> {
 	public final static int OVERHANG_THRES=1000; 
-	
-	int score;
+	public final static int GOOD_QUAL=60; 
+
+	public static int MIN_QUAL=20; //TODO: reduce this by doing self-correction 
+
+	int alignLength, quality;
 
 	public String readID;
 	BidirectedNode node;
@@ -37,23 +40,10 @@ public class Alignment implements Comparable<Alignment> {
 	//public int readLeft, readRight, readAlign, refLeft, refRight, refAlign;
 	//left and right are in the direction of the reference sequence
 	
-	public Alignment(String readID, int refStart, int refEnd, int readLength, 
-			int readStart, int readEnd, boolean strand, boolean useful, BidirectedNode node, int score){
-		this.readID = readID;
-		this.node = node;
-		this.refStart = refStart;
-		this.refEnd = refEnd;
-		
-		this.readLength = readLength;
-		this.readStart = readStart;//1-index
-		this.readEnd = readEnd;//1-index
-		this.strand = strand;
-		this.useful = useful;			
-		this.score = score;
-	}
 	public Alignment(SAMRecord sam, BidirectedNode node) {
 //		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
 		readID = sam.getReadName();
+		quality = sam.getMappingQuality();
 		prime=!sam.getNotPrimaryAlignmentFlag();
 		this.node = node;
 
@@ -104,7 +94,7 @@ public class Alignment implements Comparable<Alignment> {
 		int refLeft = refStart - 1;
 		int refRight = ((Sequence) node.getAttribute("seq")).length() - refEnd;
 		
-		score = refEnd + 1 - refStart;
+		alignLength = refEnd + 1 - refStart;
 		if (sam.getReadNegativeStrandFlag()){			
 			strand = false;
 			//need to convert the alignment position on read the correct direction 
@@ -118,9 +108,10 @@ public class Alignment implements Comparable<Alignment> {
 			)
 			goodMargin=true;
 		
-		if(		goodMargin	&&
+	if	(		goodMargin
 				//prime && //TODO: should be separated as another attribute for further consideration??
-				score > BidirectedGraph.getKmerSize() //FIXME: 
+				&& alignLength > BidirectedGraph.getKmerSize() //FIXME: 
+				&& quality >= MIN_QUAL
 			)
 			useful = true;
 
