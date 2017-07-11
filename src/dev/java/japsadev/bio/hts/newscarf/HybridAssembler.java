@@ -249,7 +249,9 @@ public class HybridAssembler {
 		//For SAM file, run bwa first on the edited assembly_graph.fastg by running:
 		//awk -F '[:;]' -v q=\' 'BEGIN{flag=0;}/^>/{if(index($1,q)!=0) flag=0; else flag=1;}{if(flag==1) print $1;}' ../EcK12S-careful/assembly_graph.fastg > Eck12-careful.fasta
 		//TODO: need to make this easier
-		hbAss.assembly(GraphExplore.spadesFolder+"bwa/EcK12S-careful.sam");
+
+		hbAss.assembly(GraphExplore.spadesFolder+"EcK12S-careful/assembly_graph.sam");
+
 	}
 	
 }
