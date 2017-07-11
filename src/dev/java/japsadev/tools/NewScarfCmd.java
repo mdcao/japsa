@@ -7,6 +7,7 @@ import org.graphstream.ui.view.Viewer;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+import japsadev.bio.hts.newscarf.Alignment;
 import japsadev.bio.hts.newscarf.BidirectedGraph;
 import japsadev.bio.hts.newscarf.HybridAssembler;
 
@@ -32,7 +33,7 @@ public class NewScarfCmd extends CommandLine{
 		CommandLine cmdLine = new NewScarfCmd ();
 		args = cmdLine.stdParseLine(args);
 
-		int qual = cmdLine.getIntVal("qual");
+		Alignment.MIN_QUAL = cmdLine.getIntVal("qual");
 		String fastgFile = cmdLine.getStringVal("fastg");
 		String samFile = cmdLine.getStringVal("sam");
 		String pathFile = cmdLine.getStringVal("path");
@@ -79,7 +80,7 @@ public class NewScarfCmd extends CommandLine{
         try {
         	if(pathFile!=null)
         		hbAss.reduceFromSPAdesPaths(pathFile);
-        	hbAss.assembly(samFile, qual);
+        	hbAss.assembly(samFile);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

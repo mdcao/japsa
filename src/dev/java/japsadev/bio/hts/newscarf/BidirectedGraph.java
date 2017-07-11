@@ -386,8 +386,23 @@ public class BidirectedGraph extends AdjacencyListGraph{
     	//traverse(tmp, dest, retval, distance+source.getSeq().length()+dest.getSeq().length());
     	traverse(tmp, dstNode, possiblePaths, distance, from.strand, to.strand, 0);
     	//only get the best ones
-    	if(possiblePaths.isEmpty())
-    		return null;
+    	if(possiblePaths.isEmpty()){
+    		//if a path couldn't be found between 2 dead-ends but alignments quality are insane high
+    		//FIXME: return a pseudo path having an nanopore edge
+    		if(isUnique(srcNode) && isUnique(dstNode) && srcNode.getDegree() == 1 && dstNode.getDegree()==1 &&
+				Math.min(from.quality, to.quality) >= Alignment.GOOD_QUAL)
+    		{
+    			BidirectedEdge pseudoEdge = new BidirectedEdge(srcNode, dstNode, from.strand, to.strand);
+    			//TODO: save the corresponding content of long reads to this edge
+    			pseudoEdge.setAttribute("pseudo", distance);
+    			tmp.add(pseudoEdge);
+    			retval.add(tmp);
+    			System.out.println("pseudo path from " + srcNode.getId() + " to " + dstNode.getId());
+//    			HybridAssembler.promptEnterKey();
+    			return retval;
+    		}else
+    			return null;
+    	}
     	double bestScore=possiblePaths.get(0).getDeviation();
     	for(int i=0;i<possiblePaths.size();i++){
     		BidirectedPath p = possiblePaths.get(i);
