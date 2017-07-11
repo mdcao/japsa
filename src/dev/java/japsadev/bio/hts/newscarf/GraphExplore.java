@@ -3,14 +3,16 @@ package japsadev.bio.hts.newscarf;
 import java.io.IOException;
 import java.util.Iterator;
 import org.graphstream.graph.*;
-
 import japsa.seq.Sequence;
 
+
 public class GraphExplore {
-	//public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/"; //imb desktop
+
+//	public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/"; //imb desktop
 //	public static String spadesFolder="/home/hoangnguyen/workspace/data/spades/"; //sony
 	public static String spadesFolder="/home/s_hoangnguyen/Projects/scaffolding/test-graph/spades/"; //dell
 	
+
 	public static void main(String args[]) {
     	try {
 			new GraphExplore();
