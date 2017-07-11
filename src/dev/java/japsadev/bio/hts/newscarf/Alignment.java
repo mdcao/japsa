@@ -11,7 +11,7 @@ public class Alignment implements Comparable<Alignment> {
 	public final static int OVERHANG_THRES=1000; 
 	public final static int GOOD_QUAL=60; 
 
-	public static int MIN_QUAL=20; //TODO: reduce this by doing self-correction 
+	public static int MIN_QUAL=30; //TODO: reduce this by doing self-correction 
 
 	int alignLength, quality;
 

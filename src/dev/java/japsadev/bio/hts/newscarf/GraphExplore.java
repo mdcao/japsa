@@ -3,10 +3,14 @@ package japsadev.bio.hts.newscarf;
 import java.io.IOException;
 import java.util.Iterator;
 import org.graphstream.graph.*;
+import org.graphstream.ui.graphicGraph.GraphicGraph;
+import org.graphstream.ui.view.Viewer;
+
+import japsa.seq.Sequence;
 
 public class GraphExplore {
-	//public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/";
-	public static String spadesFolder="/home/hoangnguyen/workspace/data/spades/"; //sony
+	public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/";
+//	public static String spadesFolder="/home/hoangnguyen/workspace/data/spades/"; //sony
 	public static void main(String args[]) {
     	try {
 			new GraphExplore();
@@ -25,10 +29,12 @@ public class GraphExplore {
 
         HybridAssembler ass = new HybridAssembler(spadesFolder+sample+"/assembly_graph.fastg");
     	BidirectedGraph graph= ass.simGraph;
-        graph.addAttribute("ui.quality");
-        graph.addAttribute("ui.antialias");
+//        graph.addAttribute("ui.quality");
+//        graph.addAttribute("ui.antialias");
         graph.addAttribute("ui.stylesheet", styleSheet);
         graph.addAttribute("ui.default.title", "New real-time hybrid assembler");
+       
+
         graph.display();
         
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
@@ -47,22 +53,28 @@ public class GraphExplore {
          * Testing reduce function
          */
         try {
-        	//TODO: debug: search output for 125657_channel_96_read_33_twodimentional 
-        	// assign distance to edge (not just -127 anymore but the path)
 			ass.reduceFromSPAdesPaths(spadesFolder+sample+"/contigs.paths");
 //			HybridAssembler.promptEnterKey();
 			ass.assembly(spadesFolder+sample+"/assembly_graph.sam");
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
         
-//        //remove dead-end nodes
-//        for (Node node : graph) {
-//            if(node.getInDegree() == 0 || node.getOutDegree() == 0)
-//            	graph.removeNode(node);
-//        }
-        
+        //TODO: thorough cleaning... should have flag dead for each node
+        boolean dead=true;
+        while(dead){
+        	dead=false;
+	        for (Node node : graph) {
+	            if((!node.hasAttribute("ui.class") && node.getDegree() < 2) 
+	            	|| (node.getDegree()==0 && ((Sequence)node.getAttribute("seq")).length() < 1000)){
+	            	graph.removeNode(node);
+	            	dead=true;
+	            }
+	            	
+	        }
+        }
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 
         /*

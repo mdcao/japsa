@@ -26,6 +26,8 @@ public class NewScarfCmd extends CommandLine{
 		addString("sam", null, "Sam file alignment of assembly graph to long reads",true);
 		addInt("qual", 30, "Minimum quality of alignment to considered");
 		addString("path", null, "SPAdes contigs path file");
+		addString("title", "Scaffolding using assembly graph", "Title of GUI window");
+
 		addStdHelp();
 	}
 		    	
@@ -37,6 +39,7 @@ public class NewScarfCmd extends CommandLine{
 		String fastgFile = cmdLine.getStringVal("fastg");
 		String samFile = cmdLine.getStringVal("sam");
 		String pathFile = cmdLine.getStringVal("path");
+		String name = cmdLine.getStringVal("title");
 		
 		String styleSheet =
 			        "node {" +
@@ -61,6 +64,8 @@ public class NewScarfCmd extends CommandLine{
         //graph.addAttribute("ui.quality");
         //graph.addAttribute("ui.antialias");
         graph.addAttribute("ui.stylesheet", styleSheet);
+        graph.addAttribute("ui.default.title", name);
+
         Viewer viewer = graph.display();
         // Let the layout work ...
         
