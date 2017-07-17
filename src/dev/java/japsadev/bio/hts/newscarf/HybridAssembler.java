@@ -74,7 +74,7 @@ public class HybridAssembler {
 
 				if(p!=null)
 					System.out.println("Final path found: " + p.getId());
-				reduce(p);
+				reduce2(p);
 				samList = new ArrayList<Alignment>();
 				//readID = myRec.readID;	
 			}	
@@ -106,7 +106,7 @@ public class HybridAssembler {
 				//BidirectedPath path=new BidirectedPath(origGraph, s);
 				BidirectedPath path=new BidirectedPath(simGraph, s);
 
-		    	reduce(path);
+		    	reduce2(path);
 
 //				if(comp!=null){
 //					System.out.println("Reverting node: " + comp.getId());
@@ -230,8 +230,62 @@ public class HybridAssembler {
 
     	}
 
-//		promptEnterKey();
     }
+    /**
+     * Another reduce that doesn't need to know unique contig
+     * @param p Path to simplify the graph (from origGraph)
+     * @param target Subjected graph for the simplification
+     */
+    private void reduce2(BidirectedPath p){
+    	//do nothing if the path has only one node
+    	if(p==null || p.getEdgeCount()<1)
+    		return;
+    	double coverage = p.getCoverage();
+    	//loop over the edges of path (like spelling())
+    	BidirectedNode 	firstNode = (BidirectedNode) p.getRoot(),
+    					lastNode = (BidirectedNode) p.peekNode();
+  	
+    	boolean firstDir=((BidirectedEdge)p.getEdgePath().get(0)).getDir(firstNode),
+    			lastDir=((BidirectedEdge)p.peekEdge()).getDir(lastNode);
+
+    	//search for an unique node as the marker. 
+    	ArrayList<BidirectedEdge> 	tobeRemoved = new ArrayList<BidirectedEdge>();
+    	BidirectedNode curNode = firstNode;
+    	boolean curDir;
+    	for(Edge e:p.getEdgePath()){
+    		
+    		double 	curCoverage=curNode.getNumber("cov"),
+    				nextCoverage=e.getOpposite(curNode).getNumber("cov");
+    		//if current node has the same coverage as path coverage
+    		if(covLeft(curCoverage, coverage)==0 || covLeft(nextCoverage, coverage)==0){
+    			tobeRemoved.add((BidirectedEdge) e);
+    		}
+    		
+    		curNode=e.getOpposite(curNode);	
+		}
+    	
+    	//remove appropriate edges
+    	for(BidirectedEdge e:tobeRemoved){
+    		LOG.info("REMOVING EDGE " + e.getId() + " from " + e.getNode0().getGraph().getId() + "-" + e.getNode1().getGraph().getId());
+    		LOG.info("before: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    		simGraph.removeEdge(e.getId());
+    		LOG.info("after: \n\t" + simGraph.printEdgesOfNode(e.getNode0()) + "\n\t" + simGraph.printEdgesOfNode(e.getNode1()));
+    	}
+    	
+    	//add appropriate edges
+    	Edge reducedEdge = simGraph.addEdge(firstNode,lastNode,firstDir,lastDir);
+    	
+
+    }
+    private double covLeft(double cov, double pathCov){
+    	double retval=0;
+    	//TODO: need statistics here...
+    	if((cov-pathCov)/pathCov > .2){
+    		retval=cov-pathCov;
+    	}
+    	return retval;
+    }
+    
     
     @SuppressWarnings("resource")
 	public static void promptEnterKey(){

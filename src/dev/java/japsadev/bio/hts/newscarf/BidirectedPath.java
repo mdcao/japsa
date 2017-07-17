@@ -16,9 +16,20 @@ import org.slf4j.LoggerFactory;
 
 public class BidirectedPath extends Path{
 	int deviation; //how this path differ to long read data (todo: by multiple-alignment??)
-//	double coverage=0; //representative coverage of this path (belongs to the unique nodes on the path)
+	private double coverage=-1; //representative coverage of this path (basically the lowest cov from its nodes)
     private static final Logger LOG = LoggerFactory.getLogger(BidirectedPath.class);
-
+    
+    @Override
+    public void add(Edge edge) {
+    	super.add(edge);
+    	
+    	double newCoverage = popNode().getNumber("cov");
+    	if(coverage<=0)
+    		coverage=newCoverage;
+    	else
+    		coverage=Math.min(coverage, newCoverage);
+    }
+    
 	public BidirectedPath(){
 		super();
 	}
@@ -30,7 +41,6 @@ public class BidirectedPath extends Path{
 				add(e);
 		}
 		deviation=p.deviation;
-//		coverage=p.coverage;
 	}
 	
 	//This constructor is only used to load in contigs.path from SPAdes
@@ -137,6 +147,8 @@ public class BidirectedPath extends Path{
 		for(Edge e:bridge.getEdgePath()){
 			add(e);
 		}
+		
+		coverage=Math.min(coverage, bridge.coverage);
 	}
 	
 	public int getDeviation(){
@@ -146,23 +158,26 @@ public class BidirectedPath extends Path{
 		this.deviation=deviation;
 	}
 
+	public double getCoverage(){
+		return coverage;
+	}
 	/**
 	 * 
 	 * @return average depth of this path
 	 */
-	public double averageCov(){
-		int len=0;
-		double res=0;
-		for(Node n:getNodePath()){
-			if(BidirectedGraph.isUnique(n)){
-				Sequence seq = (Sequence) n.getAttribute("seq");
-				double cov = Double.parseDouble(seq.getName().split("_")[5]);
-				len+=(n==getRoot())?seq.length():seq.length()-BidirectedGraph.getKmerSize();
-				res+=seq.length()*cov;
-			}
-		}
-		return res/len;
-	}
+//	public double averageCov(){
+//		int len=0;
+//		double res=0;
+//		for(Node n:getNodePath()){
+//			if(BidirectedGraph.isUnique(n)){
+//				Sequence seq = (Sequence) n.getAttribute("seq");
+//				double cov = Double.parseDouble(seq.getName().split("_")[5]);
+//				len+=(n==getRoot())?seq.length():seq.length()-BidirectedGraph.getKmerSize();
+//				res+=seq.length()*cov;
+//			}
+//		}
+//		return res/len;
+//	}
 
 	public int length() {
 		int retval = 0;

@@ -8,9 +8,9 @@ import japsa.seq.Sequence;
 
 public class GraphExplore {
 
-//	public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/"; //imb desktop
+	public static String spadesFolder="/home/sonhoanghguyen/Projects/scaffolding/data/spades_3.7/"; //imb desktop
 //	public static String spadesFolder="/home/hoangnguyen/workspace/data/spades/"; //sony
-	public static String spadesFolder="/home/s_hoangnguyen/Projects/scaffolding/test-graph/spades/"; //dell
+//	public static String spadesFolder="/home/s_hoangnguyen/Projects/scaffolding/test-graph/spades/"; //dell
 	
 
 	public static void main(String args[]) {
@@ -55,6 +55,7 @@ public class GraphExplore {
          * Testing reduce function
          */
         try {
+//        	HybridAssembler.promptEnterKey();
 			ass.reduceFromSPAdesPaths(spadesFolder+sample+"/contigs.paths");
 //			HybridAssembler.promptEnterKey();
 			ass.assembly(spadesFolder+sample+"/assembly_graph.sam");
@@ -65,18 +66,19 @@ public class GraphExplore {
 		}
         
         //TODO: thorough cleaning... should have flag dead for each node
-        boolean dead=true;
-        while(dead){
-        	dead=false;
-	        for (Node node : graph) {
-	            if((!node.hasAttribute("ui.class") && node.getDegree() < 2) 
-	            	|| (node.getDegree()==0 && ((Sequence)node.getAttribute("seq")).length() < 1000)){
-	            	graph.removeNode(node);
-	            	dead=true;
-	            }
-	            	
-	        }
-        }
+//        boolean dead=true;
+//        while(dead){
+//        	dead=false;
+//	        for (Node node : graph) {
+//	            if((node.getDegree() < 2) 
+////	            	|| (node.getDegree()==0 && ((Sequence)node.getAttribute("seq")).length() < 1000)
+//	            	){
+//	            	graph.removeNode(node);
+//	            	dead=true;
+//	            }
+//	            	
+//	        }
+//        }
         System.out.println("Node: " + graph.getNodeCount() + " Edge: " + graph.getEdgeCount());
 
         /*
