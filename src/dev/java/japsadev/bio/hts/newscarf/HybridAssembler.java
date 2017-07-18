@@ -95,25 +95,20 @@ public class HybridAssembler {
 
 		BufferedReader pathReader = new BufferedReader(new FileReader(paths));
 		
-		String s;
+		String s="", curpath="";
 		//Read contigs from contigs.paths and refer themselves to contigs.fasta
 		boolean flag=false;
 		while((s=pathReader.readLine()) != null){
 			if(s.contains("NODE")){
+				if(flag){
+					BidirectedPath path=new BidirectedPath(simGraph, curpath);
+			    	reduce2(path);
+				}
 				flag=s.contains("'")?false:true;
+				curpath=new String();
 				continue;
 			}else if(flag){
-				//BidirectedPath path=new BidirectedPath(origGraph, s);
-				BidirectedPath path=new BidirectedPath(simGraph, s);
-
-		    	reduce2(path);
-
-//				if(comp!=null){
-//					System.out.println("Reverting node: " + comp.getId());
-//					revert(comp);
-//			        System.out.println("After revert => Node: " + getNodeCount() + " Edge: " + getEdgeCount());
-//
-//				}
+				curpath+=s;
 			}	
 				
 

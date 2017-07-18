@@ -23,11 +23,12 @@ public class BidirectedPath extends Path{
     public void add(Edge edge) {
     	super.add(edge);
     	
-    	double newCoverage = popNode().getNumber("cov");
+    	double newCoverage = peekNode().getNumber("cov");
     	if(coverage<=0)
     		coverage=newCoverage;
     	else
     		coverage=Math.min(coverage, newCoverage);
+    	
     }
     
 	public BidirectedPath(){
@@ -47,7 +48,7 @@ public class BidirectedPath extends Path{
 	//So no recursive path here (path contains all primitive edges)
 	public BidirectedPath(BidirectedGraph graph, String paths){
 		super();
-		paths=paths.replace(";", ""); //optimized it!
+		paths=paths.replace(";", ","); //optimized it!
 		String[] comps = paths.split(",");
 		if(comps.length<1)
 			return;

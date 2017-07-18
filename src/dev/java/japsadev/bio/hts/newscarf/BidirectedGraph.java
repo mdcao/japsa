@@ -173,6 +173,7 @@ public class BidirectedGraph extends AdjacencyListGraph{
 					
 					String neighborID = neighbor.split("_")[1];
 					AbstractNode nbr = addNode(neighborID);
+					nbr.setAttribute("cov", Double.parseDouble(neighbor.split("_")[5]));
 					
 					addEdge(node, nbr, dir0, dir1);
 					//e.addAttribute("ui.label", e.getId());

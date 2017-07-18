@@ -72,29 +72,28 @@ public class BidirectedEdge extends AbstractEdge{
 	 * To adapt Graph class from GraphStream library (called by newInstance())
 	 */
 	protected BidirectedEdge(String id, AbstractNode source, AbstractNode dest){
-	super(id, source, dest, false);
-	
-	assert (source.getGraph() == dest.getGraph()):"Nodes come from different graph " + source.getGraph().getId() + " and " + dest.getGraph().getId();
-	BidirectedGraph g = (BidirectedGraph) source.getGraph();	
-	path = new BidirectedPath(g,id);
-	
-	BidirectedNode 	n0 = (BidirectedNode) path.getRoot(),
-					n1 = (BidirectedNode) path.peekNode();
-	
-	BidirectedEdge 	firstEdge = (BidirectedEdge) path.getEdgePath().get(0),
-					lastEdge = (BidirectedEdge) path.peekEdge();
-	if(n0.getId().equals(source.getId())){
-		dir0 = firstEdge.getDir(n0);
-		dir1 = lastEdge.getDir(n1);
-	}else if(n0.getId().equals(dest.getId())){
-		dir1 = firstEdge.getDir(n0);
-		dir0 = lastEdge.getDir(n1);
-		path = path.getReversedComplemented();
-	}else{
-		LOG.error("Path {} conflicts with src={} dst={}!", id, source.getId(), dest.getId());
-		System.exit(1);
+		super(id, source, dest, false);
+		
+		assert (source.getGraph() == dest.getGraph()):"Nodes come from different graph " + source.getGraph().getId() + " and " + dest.getGraph().getId();
+		BidirectedGraph g = (BidirectedGraph) source.getGraph();	
+		path = new BidirectedPath(g,id);
+		BidirectedNode 	n0 = (BidirectedNode) path.getRoot(),
+						n1 = (BidirectedNode) path.peekNode();
+		
+		BidirectedEdge 	firstEdge = (BidirectedEdge) path.getEdgePath().get(0),
+						lastEdge = (BidirectedEdge) path.peekEdge();
+		if(n0.getId().equals(source.getId())){
+			dir0 = firstEdge.getDir(n0);
+			dir1 = lastEdge.getDir(n1);
+		}else if(n0.getId().equals(dest.getId())){
+			dir1 = firstEdge.getDir(n0);
+			dir0 = lastEdge.getDir(n1);
+			path = path.getReversedComplemented();
+		}else{
+			LOG.error("Path {} conflicts with src={} dst={}!", id, source.getId(), dest.getId());
+			System.exit(1);
+		}
 	}
-}
 		
 //	public static String createID(AbstractNode source, AbstractNode dst, boolean dir0, boolean dir1){
 //		String 	srcDes = "["+source.getId()+"]"+(dir0 ? "o":"i"),

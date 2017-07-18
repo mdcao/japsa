@@ -26,8 +26,8 @@ public class GraphExplore {
 
     public GraphExplore() throws IOException{
     	//System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer"); 
-//    	String sample="EcK12S-careful";
-    	String sample="Kp2146-careful";
+    	String sample="EcK12S-careful";
+//    	String sample="Kp2146-careful";
 
         HybridAssembler ass = new HybridAssembler(spadesFolder+sample+"/assembly_graph.fastg");
     	BidirectedGraph graph= ass.simGraph;
@@ -55,7 +55,7 @@ public class GraphExplore {
          * Testing reduce function
          */
         try {
-//        	HybridAssembler.promptEnterKey();
+        	HybridAssembler.promptEnterKey();
 			ass.reduceFromSPAdesPaths(spadesFolder+sample+"/contigs.paths");
 //			HybridAssembler.promptEnterKey();
 			ass.assembly(spadesFolder+sample+"/assembly_graph.sam");
