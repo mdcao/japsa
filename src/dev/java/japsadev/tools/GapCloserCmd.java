@@ -47,6 +47,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author sonnguyen, minhduc
@@ -66,12 +68,14 @@ public class GapCloserCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addString("seqFile", null, "Name of the assembly file (sorted by length)",true);
-		//addString("bamFile", null, "Name of the bam file", true);
 
 		addString("input", "-", "Name of the input file, - for stdin", true);
-		addString("format", "fastq/fasta", "format of the input fastq/fasta or sam/bam");
+		addString("format", "sam", "format of the input fastq/fasta or sam/bam");
+		addBoolean("index", true, "Whether to index the contigs sequence by the aligner or not.");
+		
 		addString("bwaExe", "bwa", "Path to bwa");
 		addInt("bwaThread", 4, "Theads used by bwa");
+		
 		addBoolean("long", false, "Whether report all sequences, including short/repeat contigs (default) or only long/unique/completed sequences.");
 		addBoolean("selective", false, "If set to true, only output contigs that mapped to the long read data. Useful for metagenomic reference.");
 		addBoolean("eukaryotic", false, "Whether eukaryotic or bacterial (default) genomes");
@@ -149,21 +153,42 @@ public class GapCloserCmd extends CommandLine{
 				ProcessBuilder pb = new ProcessBuilder(bwaExe).redirectErrorStream(true);
 				Process process =  pb.start();
 				BufferedReader bf = SequenceReader.openFile(process.getInputStream());
+				if(process.waitFor()!=0){
+					System.err.println("bwa failed!");//???
+					System.exit(1);
+				}
 				String line;
 				String version = "";
-				while ((line = bf.readLine())!=null){
-					if (line.startsWith("Version: ")){
-						version = line.substring(9).trim();
-						break;//while
-					}				
+				Pattern versionPattern = Pattern.compile("^Version:\\s(\\d+\\.\\d+\\.\\d+).*");
+				while ((line = bf.readLine())!=null){				
+					System.out.println(line);
+					Matcher matcher =versionPattern.matcher(line);
+					if (matcher.find()){
+						System.out.print(line);
+					    version = matcher.group(1);
+					}
+					break;//while
+									
 				}	
 				bf.close();
+				
 				if (version.length() == 0){
 					System.err.println(bwaExe + " is not the right path to bwa. bwa is required");
 					System.exit(1);
 				}else{
-					if (version.compareTo("0.7.1") < 0){
+					System.out.println("bwa version: " + version);
+					if (version.compareTo("0.7.11") < 0){
 						System.err.println(" Require bwa of 0.7.11 or above");
+						System.exit(1);
+					}
+				}
+				
+				//run indexing 
+				if(cmdLine.getBooleanVal("index")){
+					ProcessBuilder pb2 = new ProcessBuilder(bwaExe,"index",sequenceFile);
+					Process indexProcess =  pb2.start();
+					if(indexProcess.waitFor()!=0){
+						System.err.println("Indexing failed!");
 						System.exit(1);
 					}
 				}
