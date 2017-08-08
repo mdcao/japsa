@@ -83,6 +83,13 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		this.score = score;
 	}
 	public AlignmentRecord(SAMRecord sam, Contig ctg) {
+		if(!sam.getReferenceName().equals(ctg.getName())){
+			System.err.println("Reference in SAM file doesn't agree with contigs name: "
+							+ sam.getReferenceName() + " != " + ctg.getName());
+			System.err.println("Hint: SAM file must resulted from alignment between long reads and contigs!");
+			System.exit(1);
+		}
+		
 //		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
 		readID = sam.getReadName();
 

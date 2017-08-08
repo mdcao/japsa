@@ -74,7 +74,8 @@ public class HybridAssembler {
 
 				if(p!=null)
 					System.out.println("Final path found: " + p.getId());
-				reduce2(p);
+				reduce(p);
+//				reduce2(p);
 				samList = new ArrayList<Alignment>();
 				//readID = myRec.readID;	
 			}	
@@ -102,7 +103,8 @@ public class HybridAssembler {
 			if(s.contains("NODE")){
 				if(flag){
 					BidirectedPath path=new BidirectedPath(simGraph, curpath);
-			    	reduce2(path);
+			    	reduce(path);
+//			    	reduce2(path);
 				}
 				flag=s.contains("'")?false:true;
 				curpath=new String();

@@ -47,6 +47,8 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author sonnguyen, minhduc
@@ -67,10 +69,11 @@ public class GapCloserCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addString("seqFile", null, "Name of the assembly file (sorted by length)",true);
-		//addString("bamFile", null, "Name of the bam file", true);
 
 		addString("input", "-", "Name of the input file, - for stdin", true);
-		addString("format", "fastq/fasta", "format of the input fastq/fasta or sam/bam");
+		addString("format", "sam", "Format of the input: fastq/fasta or sam/bam", true);
+		addBoolean("index", true, "Whether to index the contigs sequence by the aligner or not.");
+		
 		addString("bwaExe", "bwa", "Path to bwa");
 		addInt("bwaThread", 4, "Theads used by bwa");
 		addBoolean("long", false, "Whether report all sequences, including short/repeat contigs (default) or only long/unique/completed sequences.");
@@ -135,23 +138,42 @@ public class GapCloserCmd extends CommandLine{
 				ProcessBuilder pb = new ProcessBuilder(bwaExe).redirectErrorStream(true);
 				Process process =  pb.start();
 				BufferedReader bf = SequenceReader.openFile(process.getInputStream());
+
+
 				String line;
 				String version = "";
-				while ((line = bf.readLine())!=null){
-					if (line.startsWith("Version: ")){
-						version = line.substring(9).trim();
-						break;//while
-					}				
+				Pattern versionPattern = Pattern.compile("^Version:\\s(\\d+\\.\\d+\\.\\d+).*");
+				Matcher matcher=versionPattern.matcher("");
+				
+				while ((line = bf.readLine())!=null){				
+					matcher.reset(line);
+					if (matcher.find()){
+					    version = matcher.group(1);
+					    break;//while
+					}
+					
+									
 				}	
 				bf.close();
+				
 				if (version.length() == 0){
-					System.err.println(bwaExe + " is not the rith path to bwa. bwa is required");
+					LOG.error(bwaExe + " is not the right path to bwa. bwa is required");
 					System.exit(1);
 				}else{
-					if (!version.startsWith("0.7.1")){
-						System.err.println(" Require bwa of 0.7.11 or above");
+					LOG.info("bwa version: " + version);
+					if (version.compareTo("0.7.11") < 0){
+						LOG.error(" Require bwa of 0.7.11 or above");
 						System.exit(1);
 					}
+				}
+				
+				//run indexing 
+				if(cmdLine.getBooleanVal("index")){
+					LOG.info("bwa index running...");
+					ProcessBuilder pb2 = new ProcessBuilder(bwaExe,"index",sequenceFile);
+					Process indexProcess =  pb2.start();
+					indexProcess.waitFor();
+					LOG.info("bwa index finished!");
 				}
 			}catch (IOException e){
 				System.err.println(e.getMessage());
@@ -161,7 +183,7 @@ public class GapCloserCmd extends CommandLine{
 		}else if (format.startsWith("sam") || format.startsWith("bam")){
 			// no problem
 		}else{
-			System.err.println("I dont understand format " + format);
+			LOG.error("Unrecognized format: " + format);
 			System.exit(1);
 		}
 

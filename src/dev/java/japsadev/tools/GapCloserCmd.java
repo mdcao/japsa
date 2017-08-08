@@ -70,7 +70,7 @@ public class GapCloserCmd extends CommandLine{
 		addString("seqFile", null, "Name of the assembly file (sorted by length)",true);
 
 		addString("input", "-", "Name of the input file, - for stdin", true);
-		addString("format", "sam", "format of the input fastq/fasta or sam/bam");
+		addString("format", "sam", "Format of the input: fastq/fasta or sam/bam", true);
 		addBoolean("index", true, "Whether to index the contigs sequence by the aligner or not.");
 		
 		addString("bwaExe", "bwa", "Path to bwa");
@@ -153,21 +153,20 @@ public class GapCloserCmd extends CommandLine{
 				ProcessBuilder pb = new ProcessBuilder(bwaExe).redirectErrorStream(true);
 				Process process =  pb.start();
 				BufferedReader bf = SequenceReader.openFile(process.getInputStream());
-				if(process.waitFor()!=0){
-					System.err.println("bwa failed!");//???
-					System.exit(1);
-				}
+
+
 				String line;
 				String version = "";
 				Pattern versionPattern = Pattern.compile("^Version:\\s(\\d+\\.\\d+\\.\\d+).*");
+				Matcher matcher=versionPattern.matcher("");
+				
 				while ((line = bf.readLine())!=null){				
-					System.out.println(line);
-					Matcher matcher =versionPattern.matcher(line);
+					matcher.reset(line);
 					if (matcher.find()){
-						System.out.print(line);
 					    version = matcher.group(1);
+					    break;//while
 					}
-					break;//while
+					
 									
 				}	
 				bf.close();
@@ -187,10 +186,7 @@ public class GapCloserCmd extends CommandLine{
 				if(cmdLine.getBooleanVal("index")){
 					ProcessBuilder pb2 = new ProcessBuilder(bwaExe,"index",sequenceFile);
 					Process indexProcess =  pb2.start();
-					if(indexProcess.waitFor()!=0){
-						System.err.println("Indexing failed!");
-						System.exit(1);
-					}
+					indexProcess.waitFor();
 				}
 			}catch (IOException e){
 				System.err.println(e.getMessage());

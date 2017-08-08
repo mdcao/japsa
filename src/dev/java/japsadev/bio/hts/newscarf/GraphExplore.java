@@ -26,8 +26,10 @@ public class GraphExplore {
 
     public GraphExplore() throws IOException{
     	//System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer"); 
-    	String sample="EcK12S-careful";
+//    	String sample="EcK12S-careful";
 //    	String sample="Kp2146-careful";
+//    	String sample="meta-careful";
+    	String sample="cp_S5";
 
         HybridAssembler ass = new HybridAssembler(spadesFolder+sample+"/assembly_graph.fastg");
     	BidirectedGraph graph= ass.simGraph;
@@ -43,8 +45,8 @@ public class GraphExplore {
 
         
         for (Node node : graph) {
-            node.addAttribute("ui.label", node.getId());
-            node.setAttribute("ui.style", "text-offset: -10;"); 
+//            node.addAttribute("ui.label", node.getId());
+//            node.setAttribute("ui.style", "text-offset: -10;"); 
             if(BidirectedGraph.isUnique(node))
             	node.setAttribute("ui.class", "marked");
         }
@@ -57,7 +59,7 @@ public class GraphExplore {
         try {
         	HybridAssembler.promptEnterKey();
 			ass.reduceFromSPAdesPaths(spadesFolder+sample+"/contigs.paths");
-//			HybridAssembler.promptEnterKey();
+			HybridAssembler.promptEnterKey();
 			ass.assembly(spadesFolder+sample+"/assembly_graph.sam");
 			
 		} catch (IOException e) {
