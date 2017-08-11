@@ -2,7 +2,9 @@
 
 Japsa is a Java Package for Sequence Analysis. As the name implies, Japsa was 
 written primarily in Java. It contains a large number of ready to run programs 
-as well as a Java API.
+as well as a Java API. Please note that from our newest versions, it is required 
+Java 8 to compile and run from the source code. Prebuilt releases would need 
+JVM 1.8.0_144 or newer to run properly.
 
 ### Installation and Usage
 Quick installation guide:
