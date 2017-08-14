@@ -71,7 +71,7 @@ SPACE:= $(SPACE) $(SPACE)
 LIBS:=$(subst $(SPACE),:, $(addprefix $(LIB_DIR)/, $(EXT_LIBS)))
 
 ##Get all the packages in $(SRC_DIR). 
-PACKAGE_DIRS := $(shell echo `cd $(SRC_DIR);find . -type d | grep -v 'nanopore'`)
+PACKAGE_DIRS := $(shell echo `cd $(SRC_DIR);find . -type d`)
 SRC_DIRS := $(addprefix $(SRC_DIR)/, $(PACKAGE_DIRS))
 
 ##For each package directory, get its equivalent class directory
