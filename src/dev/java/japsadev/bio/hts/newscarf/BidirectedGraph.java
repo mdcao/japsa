@@ -20,7 +20,7 @@ import japsa.seq.SequenceReader;
 public class BidirectedGraph extends AdjacencyListGraph{
     static int kmer=127;
     static final int TOLERATE=500;
-    static final int D_LIMIT=10000;
+    static final int D_LIMIT=10000; //distance bigger than this will be ignored
     static final int S_LIMIT=50;
     
     private static final Logger LOG = LoggerFactory.getLogger(BidirectedGraph.class);
