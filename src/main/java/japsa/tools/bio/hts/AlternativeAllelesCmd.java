@@ -151,6 +151,37 @@ public class AlternativeAllelesCmd extends CommandLine{
 		}
 	}
 
+	/*This class is used to make a single buffered reader of a multichrom VCF look like a series of single chrom VCF files */
+	public static class MultiChromVCFReader{
+		BufferedReader bf;
+		String myChrom;
+		boolean finishedChrom = false;
+		VarRecord fVar;// = nextRecord(bf);
+		MultiChromVCFReader(String vcfFile) throws IOException{
+			bf =  SequenceReader.openFile(vcfFile);
+			bf.readLine();//dont care the first line
+			fVar = AlternativeAllelesCmd.nextRecord(bf);
+			
+		}
+		String updateChrom(){
+			myChrom = fVar.chrom;
+			finishedChrom = false;
+			return myChrom;
+		}
+		public VarRecord nextRecord()  throws IOException{
+			fVar = AlternativeAllelesCmd.nextRecord(bf);
+			if(fVar ==null) return null;
+			if(!fVar.chrom.equals(myChrom)) finishedChrom = true; // this means we have moved to next chrom
+			if(finishedChrom) return null;
+			// TODO Auto-generated method stub
+			else return fVar;
+		}
+		public void close() throws IOException{
+			bf.close();
+			
+		}
+	}
+	
 	static VarRecord nextRecord(BufferedReader br) throws IOException{
 		String line = br.readLine();
 		if (line == null)
@@ -160,7 +191,32 @@ public class AlternativeAllelesCmd extends CommandLine{
 
 	}
 
-	static void addSequence(String inFile, String vcfFile, String reference, String outFile, int threshold) throws IOException{		
+	static void addSequence(String inFile, String vcfFile, String reference,String outFile,  int threshold) throws IOException{
+		///////////////////////////////////////////////////////////
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
+		SAMFileHeader samHeader = samReader.getFileHeader();		
+		SAMTextWriter samWriter = outFile.equals("-")?	(new SAMTextWriter(System.out))	:(new SAMTextWriter(new File(outFile)));
+		samWriter.setSortOrder(SortOrder.unsorted, false);		
+		samWriter.writeHeader( samHeader.getTextHeader());
+		MultiChromVCFReader bf =  new MultiChromVCFReader(vcfFile);
+		for(int i=0; bf.fVar!=null; i++){
+			if(i > 0){
+				 // need to refresh Sam Reader for every chromosome.  I am sure this could be more efficient - LC
+				 samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
+				 samHeader = samReader.getFileHeader();	
+			}
+			String myChrom = bf.updateChrom();
+			addSequence(inFile, bf, reference,  samReader,samHeader, samWriter, threshold);
+			samReader.close();
+		}
+		bf.close();
+		samWriter.close();
+		
+		///////////////////////////////////////////////////////////
+	}
+	
+	static void addSequence(String inFile, MultiChromVCFReader bf, String reference,   SamReader samReader, SAMFileHeader samHeader, SAMTextWriter samWriter, int threshold) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
 		//int countGood = 0, countBad = 0, countUgly = 0;
 		//int countALLGood = 0, countALLBad = 0, countALLUgly = 0;
@@ -170,18 +226,16 @@ public class AlternativeAllelesCmd extends CommandLine{
 		//Ugly: insertSize=0
 		
 		HashSet<String> somaticSet = new HashSet<String>(); 
-
-
-		BufferedReader bf =  SequenceReader.openFile(vcfFile);
-		bf.readLine();//dont care the first line
+		
+		
 
 		LinkedList<VarRecord> varList = new  LinkedList<VarRecord>();
 
-		VarRecord fVar = nextRecord(bf);
+		String myChrom = bf.myChrom;
 
-		varList.add(fVar);
+		varList.add(bf.fVar);
 
-		String myChrom = fVar.chrom;
+	//	String myChrom = fVar.chrom;
 		Sequence refSeq = null;
 		{
 			LOG.info("Read reference started");
@@ -202,17 +256,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 
 		boolean hasVar = true;
 
-		///////////////////////////////////////////////////////////
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
-
-
-		SAMFileHeader samHeader = samReader.getFileHeader();		
-		SAMTextWriter samWriter = outFile.equals("-")?	(new SAMTextWriter(System.out))	:(new SAMTextWriter(new File(outFile)));
-
-		samWriter.setSortOrder(SortOrder.unsorted, false);		
-		samWriter.writeHeader( samHeader.getTextHeader());	
-		///////////////////////////////////////////////////////////
+		
 
 		int myChromIndex = samHeader.getSequenceIndex(myChrom);
 		if(myChromIndex < 0){
@@ -316,7 +360,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 								break;//for i
 
 							while (currentVarPos < refPos + i && hasVar){
-								VarRecord var = nextRecord(bf);
+								VarRecord var = bf.nextRecord();
 								if (var == null){
 									hasVar = false;
 									break;
@@ -385,9 +429,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 			}
 		}
 		
-		samWriter.close();
-		samReader.close();
-		bf.close();
+		
+	//	bf.close();
 		/**********************************************************************
 		
 		System.out.println("================ ALL DATA===================");

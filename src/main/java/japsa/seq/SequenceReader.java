@@ -33,11 +33,10 @@
  ****************************************************************************/
 package japsa.seq;
 
-import japsa.seq.Alphabet;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.Closeable;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -343,6 +342,10 @@ public abstract class SequenceReader implements Closeable{
 	public static ArrayList<Sequence> readAll(String fileName, Alphabet alphabet) throws IOException{
 		ArrayList<Sequence> seqs = new ArrayList<Sequence>();
 		SequenceReader reader = getReader(fileName);
+		File f = new File(fileName);
+		if(!f.exists()) throw new IOException ("File does not exist "+fileName);
+		if(reader ==null) throw new IOException("Reader is null");
+		if(alphabet ==null) throw new IOException("alphabet is null");
 		while (true){
 			Sequence seq = reader.nextSequence(alphabet);
 			if (seq == null)
