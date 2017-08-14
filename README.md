@@ -32,7 +32,7 @@ algorithms, implementation, documentation and feedback:
 * Julia Bernal
 * [Lachlan Coin](http://www.imb.uq.edu.au/lachlan-coin)
 * [Lloyd Allison](http://www.allisons.org/ll/)
-* Michael Hall
+* [Michael Hall](https://github.com/mbhall88)
 * Mikael Boden
 * [Son Hoang Nguyen](https://github.com/hsnguyen)
 * Trevor I Dix
