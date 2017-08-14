@@ -56,8 +56,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
-import org.rosuda.JRI.REXP;
-import org.rosuda.JRI.Rengine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +72,7 @@ public class RealtimeSpeciesTyping {
 	/**
 	 * Minimum quality of alignment
 	 */
-	private double minQual = 0;
+	private double minQual = 1;
 	private boolean twoDOnly = false;
 
 
@@ -369,27 +367,16 @@ public class RealtimeSpeciesTyping {
 //	}	
 	
 	public static class RealtimeSpeciesTyper extends RealtimeAnalysis{
-		Rengine rengine;
+		MultinomialCI rengine;
 		RealtimeSpeciesTyping typing;
 		public SequenceOutputStream countsOS;
 
 		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, String output) throws IOException{
 			typing = t;
 			//Set up Rengine
-			if (!Rengine.versionCheck()) {
-				LOG.error("** JRI R-Engine: Version mismatch - Java files don't match library version.");
-				System.exit(1);
-			}
-			//Rengine.DEBUG=1;
-			rengine = new Rengine (new String [] {"--no-save"}, false, null);
-			if (!rengine.waitForR()){
-				LOG.error("Cannot load R");
-				System.exit(1);
-			}    
-			rengine.eval("library(MultinomialCI)");
-			rengine.eval("alpha<-0.05");
+			rengine = new MultinomialCI(0.05);
 
-			LOG.info("REngine ready");
+			
 			countsOS = SequenceOutputStream.makeOutputStream(output);
 			if(!JSON)
 				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
@@ -425,10 +412,10 @@ public class RealtimeSpeciesTyping {
 			countArray.add(1);
 			speciesArray.add("others");		
 
-			rengine.assign("count", countArray.toArray());
-			rengine.eval("tab = multinomialCI(count,alpha)");        
-			REXP tab  = rengine.eval("tab",true);  
-			double [][] results = tab.asDoubleMatrix();
+			rengine.assignCount(countArray.toArray());
+			rengine.eval();        
+			//REXP tab  = rengine.eval("tab",true);  
+			double [][] results =rengine.tab();
 
 
 			if(JSON)
@@ -470,7 +457,7 @@ public class RealtimeSpeciesTyping {
 
 		protected void close(){
 			try{
-				rengine.end();
+				//rengine.end();
 				countsOS.close();
 			}catch (Exception e){
 				e.printStackTrace();
