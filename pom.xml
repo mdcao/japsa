@@ -7,6 +7,9 @@
     <groupId>japsa</groupId>
     <artifactId>japsa</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 <repositories>
   <repository>
     <id>libs</id>
@@ -102,26 +105,6 @@
     <artifactId>arithcode</artifactId>
     <version>1.1</version>
 </dependency>
-        <dependency>
-            <groupId>org.functionaljava</groupId>
-            <artifactId>functionaljava</artifactId>
-            <version>4.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.functionaljava</groupId>
-            <artifactId>functionaljava-java8</artifactId>
-            <version>4.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.functionaljava</groupId>
-            <artifactId>functionaljava-quickcheck</artifactId>
-            <version>4.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.functionaljava</groupId>
-            <artifactId>functionaljava-java-core</artifactId>
-            <version>4.7</version>
-        </dependency>
 
 <!--
 JRI.jar
@@ -160,6 +143,17 @@ jhdfobj.jar
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.9</version>
+                <configuration>
+                    <testSourceDirectory>src/test/java</testSourceDirectory>
+                    <systemPropertyVariables>
+                        <log4j.configuration>file:${project.build.testOutputDirectory}/log4j-surefire.properties</log4j.configuration>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
