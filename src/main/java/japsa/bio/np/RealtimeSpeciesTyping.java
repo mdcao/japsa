@@ -34,6 +34,7 @@
 
 package japsa.bio.np;
 
+import com.google.common.base.Charsets;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
@@ -46,16 +47,15 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import org.apache.commons.io.input.ReaderInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,10 +91,14 @@ public class RealtimeSpeciesTyping {
 	HashMap<String, ArrayList<String>> species2Seqs = new HashMap<String, ArrayList<String>>();
 
 	public RealtimeSpeciesTyping(String indexFile, String output)throws IOException{
-		typer = new RealtimeSpeciesTyper(this, output);		
-		preTyping(indexFile);
+		typer = new RealtimeSpeciesTyper(this, output);
+		preTyping(new BufferedReader(SequenceReader.openFile(indexFile)));
 	}
 
+	public RealtimeSpeciesTyping(Reader indexReader, String output) throws IOException {
+		typer = new RealtimeSpeciesTyper(this, output);
+		preTyping(new BufferedReader(indexReader));
+	}
 
 	static class SpeciesCount implements Comparable<SpeciesCount>{
 		String species;
@@ -115,8 +119,7 @@ public class RealtimeSpeciesTyping {
 	}
 
 
-	private void preTyping(String indexFile)throws IOException{
-		BufferedReader bf = SequenceReader.openFile(indexFile);
+	private void preTyping(BufferedReader bf) throws IOException{
 		String line = "";
 		while ( (line = bf.readLine())!=null){
 			if (line.startsWith("#"))
@@ -155,7 +158,17 @@ public class RealtimeSpeciesTyping {
 		this.twoDOnly = twoOnly;
 	}
 
-	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException{
+	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException {
+		Reader bamReader;
+		if ("-".equals(bamFile))
+			bamReader = new InputStreamReader(System.in);
+		else
+			bamReader = new FileReader(bamFile);
+
+		typing(bamReader, readNumber, timeNumber);
+	}
+
+	public void typing(Reader bamReader, int readNumber, int timeNumber) throws IOException, InterruptedException {
 		//if (readNumber <= 0)
 		//	readNumber = 1;			
 
@@ -167,12 +180,8 @@ public class RealtimeSpeciesTyping {
 		String readName = "", refName = "";
 		//Read the bam file		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader;
-		if ("-".equals(bamFile))
-			samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
-		else
-			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
-
+		InputStream is = new ReaderInputStream(bamReader, Charsets.UTF_8);
+		SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(is));
 		SAMRecordIterator samIter = samReader.iterator();
 
 		Thread thread = new Thread(typer);
