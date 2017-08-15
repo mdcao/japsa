@@ -34,6 +34,15 @@
 
 package japsa.bio.hts;
 
+import japsa.seq.SequenceReader;
+import japsa.util.DoubleArray;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -42,18 +51,10 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.rosuda.JRI.REXP;
+import org.rosuda.JRI.Rengine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-import japsa.bio.np.MultinomialCI;
-import japsa.seq.SequenceReader;
-import japsa.util.DoubleArray;
 
 
 /**
@@ -67,7 +68,7 @@ public class SpeciesMixtureIdenfication {
 	private static final Logger LOG = LoggerFactory.getLogger(SpeciesMixtureIdenfication.class);
 
 	private double qual = 0;
-	private MultinomialCI rengine;	
+	private Rengine rengine;	
 	private int currentReadCount = 0;
 	private int currentReadAligned = 0;
 	private double threshold = 0.02;
@@ -79,8 +80,13 @@ public class SpeciesMixtureIdenfication {
 
 
 	public SpeciesMixtureIdenfication(String outputFile, double minQual, double threshold) throws IOException{		
-		
-		rengine = new MultinomialCI(0.05);
+		rengine = new Rengine (new String [] {"--no-save"}, false, null);
+		if (!rengine.waitForR()){
+			LOG.error("Cannot load R");
+			System.exit(1);
+		}    
+		rengine.eval("library(MultinomialCI)");
+		rengine.eval("alpha<-0.05");
 
 		LOG.info("REngine ready");
 
@@ -95,7 +101,7 @@ public class SpeciesMixtureIdenfication {
 
 	public void close() throws IOException{
 		outOS.close();
-	//	rengine.end();
+		rengine.end();
 	}
 
 
@@ -152,10 +158,10 @@ public class SpeciesMixtureIdenfication {
 		countArray.add(1);
 		speciesArray.add("others");		
 
-		rengine.assignCount( countArray.toArray());
-		//rengine.eval("tab = multinomialCI(count,alpha)");        
-		//REXP tab  = rengine.eval("tab",true);  
-		double [][] results = rengine.tab();//.asDoubleMatrix();
+		rengine.assign("count", countArray.toArray());
+		rengine.eval("tab = multinomialCI(count,alpha)");        
+		REXP tab  = rengine.eval("tab",true);  
+		double [][] results = tab.asDoubleMatrix();
 
 		for (int i = 0; i < results.length;i++){
 			if (results[i][0] <= 0.00001)
