@@ -7,18 +7,25 @@ Java 8 to compile and run from the source code. Prebuilt releases would need
 JVM 1.8.0_144 or newer to run properly.
 
 ### Installation and Usage
-Quick installation guide:
 
-    git clone https://github.com/mdcao/japsa
-    cd japsa
-    make install \
-      [INSTALL_DIR=~/.usr/local \] 
-      [MXMEM=7000m \] 
-      [SERVER=true \] 
-      [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
+Quick installation guide:
+```
+git clone https://github.com/mdcao/japsa
+cd japsa
+make install \
+  [INSTALL_DIR=~/.usr/local \] 
+  [MXMEM=7000m \] 
+  [SERVER=true \] 
+  [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
+```
 
 Details of installation (including for Windows) and usage of Japsa can be found 
 in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/latest/index.html) 
+
+Alternatively, build with Maven.
+```
+mvn clean package install
+```
 
 ### Authors and Contributors
 Japsa was maintained by Minh Duc Cao (@mdcao). The following 
