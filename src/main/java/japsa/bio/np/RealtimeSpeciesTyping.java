@@ -35,7 +35,6 @@
 package japsa.bio.np;
 
 import com.google.common.base.Charsets;
-import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
@@ -48,14 +47,11 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 
 import java.io.*;
-import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
 
-
+import org.apache.commons.io.input.ReaderInputStream;
 import org.rosuda.JRI.REXP;
 import org.rosuda.JRI.Rengine;
 
