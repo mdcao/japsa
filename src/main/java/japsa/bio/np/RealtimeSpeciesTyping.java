@@ -34,34 +34,17 @@
 
 package japsa.bio.np;
 
-import com.google.common.base.Charsets;
-import japsa.seq.Sequence;
+import htsjdk.samtools.*;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
-
-
-import org.apache.commons.io.input.ReaderInputStream;
-import org.rosuda.JRI.REXP;
-import org.rosuda.JRI.Rengine;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Minh Duc Cao, Son Hoang Nguyen
@@ -71,7 +54,10 @@ public class RealtimeSpeciesTyping {
     private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTyping.class);
 
 	public static boolean JSON=false;
-	RealtimeSpeciesTyper typer;
+
+	private RealtimeSpeciesTyper typer;
+	private OutputStream outputStream;
+	private BufferedReader indexBufferedReader;
 
 	/**
 	 * Minimum quality of alignment
@@ -94,17 +80,35 @@ public class RealtimeSpeciesTyping {
 	public static boolean OUTSEQ=false;
 	HashMap<String, ArrayList<String>> species2Seqs = new HashMap<String, ArrayList<String>>();
 
-	public RealtimeSpeciesTyping(String indexFile, String output)throws IOException{
-		typer = new RealtimeSpeciesTyper(this, output);
-		preTyping(new BufferedReader(SequenceReader.openFile(indexFile)));
+	public RealtimeSpeciesTyping(String indexFile, String outputFile) throws IOException{
+		this.indexBufferedReader = SequenceReader.openFile(indexFile);
+		this.outputStream = SequenceOutputStream.makeOutputStream(outputFile);
+		typer = new RealtimeSpeciesTyper(this, outputStream);
+		preTyping();
 	}
 
-	public RealtimeSpeciesTyping(Reader indexReader, String output) throws IOException {
-		typer = new RealtimeSpeciesTyper(this, output);
-		preTyping(new BufferedReader(indexReader));
+	public RealtimeSpeciesTyping(String indexFile, OutputStream outputStream) throws IOException {
+		this.indexBufferedReader = SequenceReader.openFile(indexFile);
+		this.outputStream = outputStream;
+		typer = new RealtimeSpeciesTyper(this, outputStream);
+		preTyping();
 	}
 
-	static class SpeciesCount implements Comparable<SpeciesCount>{
+	public RealtimeSpeciesTyping(BufferedReader indexBufferedReader, String outputFile) throws IOException {
+		this.indexBufferedReader = indexBufferedReader;
+		this.outputStream = SequenceOutputStream.makeOutputStream(outputFile);
+		typer = new RealtimeSpeciesTyper(this, outputStream);
+		preTyping();
+	}
+
+	public RealtimeSpeciesTyping(BufferedReader indexBufferedReader, OutputStream outputStream) throws IOException {
+		this.indexBufferedReader = indexBufferedReader;
+		this.outputStream = outputStream;
+		typer = new RealtimeSpeciesTyper(this, outputStream);
+		preTyping();
+	}
+
+		static class SpeciesCount implements Comparable<SpeciesCount>{
 		String species;
 		int count = 0;
 
@@ -123,9 +127,9 @@ public class RealtimeSpeciesTyping {
 	}
 
 
-	private void preTyping(BufferedReader bf) throws IOException{
+	private void preTyping()throws IOException{
 		String line = "";
-		while ( (line = bf.readLine())!=null){
+		while ( (line = indexBufferedReader.readLine())!=null){
 			if (line.startsWith("#"))
 				continue;
 
@@ -140,7 +144,7 @@ public class RealtimeSpeciesTyping {
 				species2Count.put(sp,new SpeciesCount(sp));
 			}			
 		}//while
-		bf.close();
+		indexBufferedReader.close();
 		LOG.info(seq2Species.size() + "   " + species2Count.size());
 		speciesList.addAll(species2Count.keySet());
 
@@ -162,17 +166,7 @@ public class RealtimeSpeciesTyping {
 		this.twoDOnly = twoOnly;
 	}
 
-	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException {
-		Reader bamReader;
-		if ("-".equals(bamFile))
-			bamReader = new InputStreamReader(System.in);
-		else
-			bamReader = new FileReader(bamFile);
-
-		typing(bamReader, readNumber, timeNumber);
-	}
-
-	public void typing(Reader bamReader, int readNumber, int timeNumber) throws IOException, InterruptedException {
+	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException{
 		//if (readNumber <= 0)
 		//	readNumber = 1;			
 
@@ -184,8 +178,12 @@ public class RealtimeSpeciesTyping {
 		String readName = "", refName = "";
 		//Read the bam file		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		InputStream is = new ReaderInputStream(bamReader, Charsets.UTF_8);
-		SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(is));
+		SamReader samReader;
+		if ("-".equals(bamFile))
+			samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+		else
+			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
+
 		SAMRecordIterator samIter = samReader.iterator();
 
 		Thread thread = new Thread(typer);
@@ -380,28 +378,17 @@ public class RealtimeSpeciesTyping {
 //	}	
 	
 	public static class RealtimeSpeciesTyper extends RealtimeAnalysis{
-		Rengine rengine;
+		MultinomialCI rengine;
 		RealtimeSpeciesTyping typing;
 		public SequenceOutputStream countsOS;
 
-		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, String output) throws IOException{
+		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, OutputStream outputStream) throws IOException{
 			typing = t;
 			//Set up Rengine
-			if (!Rengine.versionCheck()) {
-				LOG.error("** JRI R-Engine: Version mismatch - Java files don't match library version.");
-				System.exit(1);
-			}
-			//Rengine.DEBUG=1;
-			rengine = new Rengine (new String [] {"--no-save"}, false, null);
-			if (!rengine.waitForR()){
-				LOG.error("Cannot load R");
-				System.exit(1);
-			}    
-			rengine.eval("library(MultinomialCI)");
-			rengine.eval("alpha<-0.05");
+			rengine = new MultinomialCI(0.05);
 
-			LOG.info("REngine ready");
-			countsOS = SequenceOutputStream.makeOutputStream(output);
+
+			countsOS = new SequenceOutputStream(outputStream);
 			if(!JSON)
 				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
 
@@ -436,10 +423,10 @@ public class RealtimeSpeciesTyping {
 			countArray.add(1);
 			speciesArray.add("others");		
 
-			rengine.assign("count", countArray.toArray());
-			rengine.eval("tab = multinomialCI(count,alpha)");        
-			REXP tab  = rengine.eval("tab",true);  
-			double [][] results = tab.asDoubleMatrix();
+			rengine.assignCount(countArray.toArray());
+			rengine.eval();        
+			//REXP tab  = rengine.eval("tab",true);  
+			double [][] results =rengine.tab();
 
 
 			if(JSON)
@@ -481,7 +468,7 @@ public class RealtimeSpeciesTyping {
 
 		protected void close(){
 			try{
-				rengine.end();
+				//rengine.end();
 				countsOS.close();
 			}catch (Exception e){
 				e.printStackTrace();
