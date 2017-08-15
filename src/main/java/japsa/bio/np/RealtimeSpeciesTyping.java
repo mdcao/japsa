@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+import org.apache.commons.io.input.ReaderInputStream;
 import org.rosuda.JRI.REXP;
 import org.rosuda.JRI.Rengine;
 
