@@ -34,7 +34,6 @@
 
 package japsa.bio.hts;
 
-import japsa.bio.np.MultinomialCI;
 import japsa.seq.SequenceReader;
 import japsa.util.DoubleArray;
 
@@ -53,7 +52,8 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-
+import org.rosuda.JRI.REXP;
+import org.rosuda.JRI.Rengine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ public class SpeciesCoverageIdenfication {
 	private static final Logger LOG = LoggerFactory.getLogger(SpeciesCoverageIdenfication.class);
 
 	private double qual = 0;
-	private MultinomialCI rengine;
+	private Rengine rengine;
 	
 	private int currentReadCount = 0;
 	private int currentReadAligned = 0;
@@ -80,9 +80,15 @@ public class SpeciesCoverageIdenfication {
 	private PrintStream outOS;
 
 	public SpeciesCoverageIdenfication(String outputFile, double minQual) throws IOException{		
-		
-		rengine = new MultinomialCI(0.05);
+		rengine = new Rengine (new String [] {"--no-save"}, false, null);
+		if (!rengine.waitForR()){
+			LOG.error("Cannot load R");
+			System.exit(1);
+		}    
+		rengine.eval("library(MultinomialCI)");
+		rengine.eval("alpha<-0.05");
 
+		LOG.info("REngine ready");
 		//countsOS = SequenceOutputStream.makeOutputStream(outputFile);
 		if (outputFile.equals("-"))
 			outOS = System.out;
@@ -94,7 +100,7 @@ public class SpeciesCoverageIdenfication {
 
 	public void close() throws IOException{
 		outOS.close();
-		//rengine.end();
+		rengine.end();
 	}
 
 
@@ -175,10 +181,10 @@ public class SpeciesCoverageIdenfication {
 		countArray.add(1);
 		speciesArray.add("others");		
 
-		rengine.assignCount(countArray.toArray());
-		rengine.eval();        
-	//	REXP tab  = rengine.eval("tab",true);  
-		double [][] results = rengine.tab();
+		rengine.assign("count", countArray.toArray());
+		rengine.eval("tab = multinomialCI(count,alpha)");        
+		REXP tab  = rengine.eval("tab",true);  
+		double [][] results = tab.asDoubleMatrix();
 		
 		for (int i = 0; i < results.length;i++){
 			if (results[i][0] <= 0.00001)
