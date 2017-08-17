@@ -48,6 +48,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Provides functionality for error correction and find the best allele/sequence.
@@ -90,14 +91,14 @@ public class ErrorCorrection {
 		return score;		
 	}
 
-    public static Sequence consensusSequence(ArrayList<Sequence> readList, String prefix, String msa) throws IOException, InterruptedException{
+    public static Sequence consensusSequence(List<Sequence> readList, String prefix, String msa) throws IOException, InterruptedException{
     	if (readList != null && readList.size() > 0)
     		return consensusSequence(readList, readList.size(), prefix, msa);
     	else
     		return null;
     	
     }
-	public static Sequence consensusSequence(ArrayList<Sequence> readList, int max, String prefix, String msa) throws IOException, InterruptedException{
+	public static Sequence consensusSequence(List<Sequence> readList, int max, String prefix, String msa) throws IOException, InterruptedException{
 		//String faiFile = prefix + "_" + this.currentReadCount;
 		Sequence consensus = null;
 		if (readList != null && readList.size() > 0){
