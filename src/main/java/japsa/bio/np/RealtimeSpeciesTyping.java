@@ -54,8 +54,7 @@ import java.util.*;
  */
 public class RealtimeSpeciesTyping {
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTyping.class);
-
-	public static boolean JSON=false;
+	public static boolean JSON = false;
 
 	private RealtimeSpeciesTyper typer;
 	private OutputStream outputStream;
@@ -171,7 +170,18 @@ public class RealtimeSpeciesTyping {
 		this.twoDOnly = twoOnly;
 	}
 
-	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException{
+	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException {
+		InputStream bamInputStream;
+
+		if ("-".equals(bamFile))
+			bamInputStream = System.in;
+		else
+			bamInputStream = new FileInputStream(bamFile);
+
+		typing(bamInputStream, readNumber, timeNumber);
+	}
+
+	public void typing(InputStream bamInputStream, int readNumber, int timeNumber) throws IOException, InterruptedException{
 		//if (readNumber <= 0)
 		//	readNumber = 1;			
 
@@ -181,22 +191,15 @@ public class RealtimeSpeciesTyping {
 		LOG.info("Species typing ready at " + new Date());
 
 		String readName = "", refName = "";
-		//Read the bam file		
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader;
-		if ("-".equals(bamFile)) {
-			LOG.debug("read from stdin");
-			samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
-		}
-		else {
-			LOG.debug("read from file");
-			samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
-		}
 
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
 		SAMRecordIterator samIter = samReader.iterator();
 
 		Thread thread = new Thread(typer);
-		thread.start();		
+		LOG.info("starting RealtimeSpeciesTyper thread");
+		thread.start();
+		LOG.info("started  RealtimeSpeciesTyper thread");
 
 		boolean changedFlag = false;
 		while (samIter.hasNext()){
