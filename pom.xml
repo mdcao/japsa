@@ -163,7 +163,10 @@
                 <configuration>
                     <testSourceDirectory>src/test/java</testSourceDirectory>
                     <systemPropertyVariables>
+                        <log4j.configuration>log4j.properties</log4j.configuration>
+<!--
                         <log4j.configuration>file:${project.build.testOutputDirectory}/log4j-surefire.properties</log4j.configuration>
+-->
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
