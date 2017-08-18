@@ -29,8 +29,10 @@ Options
                   (REQUIRED)
   --input=s       Name of the input file, - for stdin
                   (REQUIRED)
-  --format=s      format of the input fastq/fasta or sam/bam
-                  (default='fastq/fasta')
+  --format=s      Format of the input: fastq/fasta or sam/bam
+                  (REQUIRED)
+  --index         Whether to index the contigs sequence by the aligner or not.
+                  (default='true')
   --bwaExe=s      Path to bwa
                   (default='bwa')
   --bwaThread=i   Theads used by bwa
