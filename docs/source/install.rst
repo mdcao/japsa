@@ -47,9 +47,6 @@ agree with its suggestion, just type Enter. The questions are:
   download from https://support.hdfgroup.org/ftp/HDF5/releases/HDF-JAVA/hdf-java-2.10.1/bin/
   
 
-* *Path to JRI library:* Enter path to JRI library. This is required only for
-  running real-time species typing (jsa.np.speciesTyping).
-
 ------------------------------
 Obtain source code and compile
 ------------------------------
@@ -66,7 +63,7 @@ First, download the latest source code::
 or download from a release (Check out https://github.com/mdcao/japsa/releases
 for the latest releases)::
 
-   wget https://github.com/mdcao/japsa/releases/download/v1.5-11a/JapsaRelease.tar.gz   
+   wget https://github.com/mdcao/japsa/releases/download/v1.7-08a/JapsaRelease.tar.gz   
    tar zxvf JapsaRelease.tar.gz
    cd JapsaRelease
    
@@ -76,15 +73,14 @@ and run `make' to compile and install japsa::
      [INSTALL_DIR=~/.usr/local \] 
      [MXMEM=7000m \] 
      [SERVER=true \]
-     [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
+     [JLP=/usr/lib/jni]
 
 This will install japsa according the directives:
 
 * *INSTALL_DIR*: specifies the directory to install japsa
 * *MXMEM*: specifies the default memory allocated to the java virtual machine
 * *SERVER*: specifies whether to launch the java virtual machine in server mode
-* *JLP*: specifies paths to *libjhdf5*  (needed for npReader) and *libjri.so*
-  (needed for real-time species typing).
+* *JLP*: specifies paths to *libjhdf5*  (needed for npReader)
 
 If any of the above directives are not specified, the installation will ask
 during the installation.
