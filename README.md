@@ -16,13 +16,13 @@ make install \
   [INSTALL_DIR=~/.usr/local \] 
   [MXMEM=7000m \] 
   [SERVER=true \] 
-  [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
+  [JLP=/usr/lib/jni]
 ```
 
 Details of installation (including for Windows) and usage of Japsa can be found 
 in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/latest/index.html) 
 
-Alternatively, build with Maven. 
+Alternatively, build with maven. 
 First you need to manually install a JAR file that is not available on Maven
 public repo to your local repo
 ```
