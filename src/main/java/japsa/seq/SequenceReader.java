@@ -33,7 +33,10 @@
  ****************************************************************************/
 package japsa.seq;
 
+import japsa.bio.np.RealtimeResistanceGene;
 import japsa.seq.Alphabet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -54,6 +57,7 @@ import java.util.zip.GZIPInputStream;
  *
  */
 public abstract class SequenceReader implements Closeable{
+	private static final Logger LOG = LoggerFactory.getLogger(SequenceReader.class);
 
 	/**
 	 * Provide a skeleton of a sequence file reader. Assume that the file
@@ -91,7 +95,7 @@ public abstract class SequenceReader implements Closeable{
 	 * 
 	 * Construct the reader from a file
 	 */
-	public SequenceReader(InputStream ins) throws IOException{
+	public SequenceReader(InputStream ins) throws IOException {
 		/**************************************************************/
 		if (!ins.markSupported()) {
 			ins = new BufferedInputStream(ins);
@@ -115,7 +119,7 @@ public abstract class SequenceReader implements Closeable{
 	 * @param fileName
 	 * @throws IOException
 	 */
-	public SequenceReader(String fileName) throws IOException{
+	public SequenceReader(String fileName) throws IOException {
 		this(new FileInputStream(fileName));
 	}
 	
@@ -124,7 +128,7 @@ public abstract class SequenceReader implements Closeable{
 	 * @throws IOException
 	 */
 
-	public void close() throws IOException{		
+	public void close() throws IOException {
 		in.close();
 	}	
 	
@@ -136,7 +140,7 @@ public abstract class SequenceReader implements Closeable{
 	 * @return
 	 */
 	
-	protected int nextLine() throws IOException{	
+	protected int nextLine() throws IOException {
 		if (eof) return 0;
 		nextLineLength = 0;
 		if (currentByte != LF && currentByte != CR)
@@ -247,9 +251,13 @@ public abstract class SequenceReader implements Closeable{
 		else
 			is = new BufferedInputStream(new FileInputStream(fileName));
 		
-		return openFile(is);
+		return openInputStream(is);
 	}
 	
+
+	public static BufferedReader openInputStream(InputStream is) throws IOException {
+		return new BufferedReader(new InputStreamReader(is));
+	}
 
 	/**
 	 * Open an input stream for other read operations. If stream is zipped, this method
@@ -261,7 +269,7 @@ public abstract class SequenceReader implements Closeable{
 	 * @throws IOException
 	 */
 	
-	public static BufferedReader openFile(InputStream is) throws IOException {
+	public static BufferedReader openGzipInputStream(InputStream is) throws IOException {
 		int magic;		
 		
 		is.mark(4);
@@ -296,7 +304,7 @@ public abstract class SequenceReader implements Closeable{
 	 * null if the format is not recognised.
 	 * This class currently only recognises JAPSA, Fasta and Fastq format. 
 	 * 
-	 * @param filename
+	 * @param ins
 	 * @return the file reader, or null if the format is not recognised
 	 * @throws IOException
 	 */	
@@ -336,7 +344,7 @@ public abstract class SequenceReader implements Closeable{
 	 * Read all sequences and return an array list
 	 * 
 	 * @param fileName
-	 * @param dna
+	 * @param alphabet
 	 * @return
 	 * @throws IOException
 	 */

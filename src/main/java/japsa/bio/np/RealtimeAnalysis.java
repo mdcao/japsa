@@ -59,9 +59,9 @@ public abstract class RealtimeAnalysis implements Runnable {
 
 	private boolean waiting = true;
 
-	protected long lastTime;//The last time an analysis is done
-	protected long startTime;
-	protected int lastReadNumber;
+	protected Long lastTime = 0L;//The last time an analysis is done
+	protected Long startTime;
+	protected Integer lastReadNumber = 0;
 	protected String timeNow;
 
 	public void stopWaiting(){	
@@ -78,18 +78,12 @@ public abstract class RealtimeAnalysis implements Runnable {
 		startTime = System.currentTimeMillis();
 		LOG.info("Start analysing data at " + new Date(startTime));
 
-		try {
-			Thread.sleep(timePeriod);
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
-
 		while (waiting){
 			//Need to wait if timing is not right
 			long timeSleep = timePeriod - (System.currentTimeMillis() - lastTime);
 			if (timeSleep > 0){
 				try {
-					//LOG.info("Not due time, sleep for " + timeSleep/1000.0 + " seconds");
+					LOG.info("Not due time, sleep for " + timeSleep/1000.0 + " seconds");
 					Thread.sleep(timeSleep);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -100,7 +94,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 			int currentRead = getCurrentRead();
 			if (currentRead - lastReadNumber < readPeriod){
 				try {
-					//LOG.info("Not due read (" + currentRead + "), sleep for " + powerNap/1000.0 + " minutes");
+					LOG.info("Not due read (" + currentRead + "), sleep for " + powerNap/1000.0 + " seconds");
 					Thread.sleep(powerNap);
 				} catch (InterruptedException e) {
 					e.printStackTrace();

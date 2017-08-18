@@ -137,7 +137,8 @@ public class GapCloserCmd extends CommandLine{
 			try{
 				ProcessBuilder pb = new ProcessBuilder(bwaExe).redirectErrorStream(true);
 				Process process =  pb.start();
-				BufferedReader bf = SequenceReader.openFile(process.getInputStream());
+				//BWA process doesn't produce gzip-compressed output
+				BufferedReader bf = SequenceReader.openInputStream(process.getInputStream());
 
 
 				String line;
