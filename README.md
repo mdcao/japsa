@@ -22,7 +22,7 @@ make install \
 Details of installation (including for Windows) and usage of Japsa can be found 
 in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/latest/index.html) 
 
-Alternatively, build with maven. 
+Alternatively, build with maven (experimental). 
 First you need to manually install a JAR file that is not available on Maven
 public repo to your local repo
 ```
