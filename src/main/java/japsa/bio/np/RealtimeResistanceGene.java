@@ -296,7 +296,7 @@ public class RealtimeResistanceGene {
         }
 			  else {
           JsonObject jo = new JsonObject();
-          jo.addProperty("timeStamp", timeNow);
+          jo.addProperty("timestamp", timeNow);
           jo.addProperty("timeLast", this.lastTime);
           jo.addProperty("timeStart", this.startTime);
           jo.addProperty("timeWaited", (this.lastTime - this.startTime));

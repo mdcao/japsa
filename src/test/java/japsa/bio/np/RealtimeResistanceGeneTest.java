@@ -42,13 +42,13 @@ public class RealtimeResistanceGeneTest {
     assertTrue(bamReader0.ready());
 
     ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    RealtimeResistanceGene typing = new RealtimeResistanceGene(readNumber, timeNumber, outStream, resDBInputStream0, fastaInputStream0, recordPrefix);
+    RealtimeResistanceGene rg = new RealtimeResistanceGene(readNumber, timeNumber, outStream, resDBInputStream0, fastaInputStream0, recordPrefix);
     RealtimeResistanceGene.JSON = true;
-    typing.setScoreThreshold(scoreThreshold);
-    typing.typing(bamInputStream0);
+    rg.setScoreThreshold(scoreThreshold);
+    rg.typing(bamInputStream0);
 
     try {
-      Thread.sleep(5000);
+      Thread.sleep(10000);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
