@@ -95,6 +95,7 @@ public class RealtimeSpeciesTypingTest extends TestCase {
     assertTrue(jsonLine.indexOf("others") > 0);
 
     jsonLine = outReader.readLine();
+    LOG.info(jsonLine);
     assertTrue(jsonLine.indexOf("Mesorhizobium ciceri") > 0);
 
     element = gson.fromJson(jsonLine, JsonElement.class);
