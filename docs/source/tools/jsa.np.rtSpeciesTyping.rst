@@ -34,7 +34,7 @@ Options
   --indexFile=s   indexFile 
                   (REQUIRED)
   --qual=d        Minimum alignment quality
-                  (default='0.0')
+                  (default='1.0')
   --twodonly      Use only two dimentional reads
                   (default='false')
   --read=i        Minimum number of reads between analyses

@@ -16,22 +16,40 @@ make install \
   [INSTALL_DIR=~/.usr/local \] 
   [MXMEM=7000m \] 
   [SERVER=true \] 
-  [JLP=/usr/lib/jni:/usr/lib/R/site-library/rJava/jri]
+  [JLP=/usr/lib/jni]
 ```
 
 Details of installation (including for Windows) and usage of Japsa can be found 
 in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/latest/index.html) 
 
-Alternatively, build with Maven.
+Alternatively, build with maven (experimental). 
+First you need to manually install a JAR file that is not available on Maven
+public repo to your local repo
+```
+mvn install:install-file \
+ 	-Dfile=./libs/colloquial.jar \
+	-DgroupId=com.colloquial \
+	-DartifactId=arithcode \
+	-Dversion=1.1 \
+	-Dpackaging=jar
+```
+then 
 ```
 mvn clean package install
 ```
+you might need to try packaging Japsa again if failed. A SNAPSHOT is then created and you can invoke
+tool, e.g. species typer, by
+```
+java -cp ./target/japsa-1.0-SNAPSHOT.jar japsa.tools.bio.np.RealtimeSpeciesTypingCmd --bam <bam> --index <index>
+```
+Convenient scripts (like install by make) would be added soon.
 
 ### Authors and Contributors
 Japsa was maintained by Minh Duc Cao (@mdcao). The following 
 people (in alphatical order) have contributed to the development of Japsa, including ideas, 
 algorithms, implementation, documentation and feedback:
 
+* Allen Day
 * Bhuvan Sankar
 * David Powell
 * Devika Ganesamoorthy

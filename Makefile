@@ -52,8 +52,8 @@ JAR_FILE=japsa.jar
 LIB_DIR=libs
 
 #List of external libraries
-##EXT_LIBS=colloquial.jar commons-math3-3.0.jar jhdf5.jar jhdfobj.jar htsjdk-2.10.1.jar guava-18.0.jar jcommon-1.0.23.jar jfreechart-1.0.19.jar JRIEngine.jar JRI.jar
-EXT_LIBS=colloquial.jar commons-io-2.5.jar commons-math3-3.0.jar jhdf5.jar jhdfobj.jar htsjdk-2.10.1.jar guava-18.0.jar jcommon-1.0.23.jar jfreechart-1.0.19.jar JRIEngine.jar JRI.jar gs-core-1.3.jar gs-ui-1.3.jar gs-algo-1.3.jar javax.json-api-1.0.jar javax.json-1.0.4.jar slf4j-api-1.7.25.jar slf4j-simple-1.7.25.jar jfxrt.jar
+##EXT_LIBS=colloquial.jar commons-io-2.5.jar commons-math3-3.0.jar jhdf5.jar jhdfobj.jar htsjdk-2.10.1.jar guava-18.0.jar jcommon-1.0.23.jar jfreechart-1.0.19.jar JRIEngine.jar JRI.jar gs-core-1.3.jar gs-ui-1.3.jar gs-algo-1.3.jar javax.json-api-1.0.jar javax.json-1.0.4.jar slf4j-api-1.7.25.jar slf4j-simple-1.7.25.jar jfxrt.jar gson-2.3.jar
+EXT_LIBS=colloquial.jar commons-io-2.5.jar commons-math3-3.0.jar jhdf5.jar jhdfobj.jar htsjdk-2.10.1.jar guava-18.0.jar jcommon-1.0.23.jar jfreechart-1.0.19.jar gs-core-1.3.jar gs-ui-1.3.jar gs-algo-1.3.jar javax.json-api-1.0.jar javax.json-1.0.4.jar slf4j-api-1.7.25.jar slf4j-simple-1.7.25.jar jfxrt.jar gson-2.3.jar
 
 ###########################################################################
 ##What this scripts does:

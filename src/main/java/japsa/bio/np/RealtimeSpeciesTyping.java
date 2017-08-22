@@ -204,7 +204,7 @@ public class RealtimeSpeciesTyping {
 		boolean changedFlag = false;
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
-			LOG.info("sam read name = "+sam.getReadName());
+			//LOG.info("sam read name = "+sam.getReadName());
 			//if (firstReadTime <=0)
 			//	firstReadTime = System.currentTimeMillis();
 
