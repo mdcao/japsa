@@ -10,7 +10,7 @@ JVM 1.8.0_144 or newer to run properly.
 
 Quick installation guide:
 ```
-git clone https://github.com/mdcao/japsa
+git clone https://github.com/mdcao/japsa.git
 cd japsa
 make install \
   [INSTALL_DIR=~/.usr/local \] 
