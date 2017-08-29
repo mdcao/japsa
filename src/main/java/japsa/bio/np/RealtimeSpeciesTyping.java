@@ -71,15 +71,15 @@ public class RealtimeSpeciesTyping {
 	Integer currentReadAligned = 0;
 	Long currentBaseCount = 0L;
 
-	//long startTime;
 
+	//seq ID to species name (from index ref file)
 	HashMap<String, String> seq2Species = new HashMap<String, String>();
-	HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
+	//HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
 	ArrayList<String> speciesList = new ArrayList<String>(); 
 	
 	//to output binned sequences
 	public static boolean OUTSEQ=false;
-	HashMap<String, ArrayList<String>> species2Seqs = new HashMap<String, ArrayList<String>>();
+	HashMap<String, ArrayList<String>> species2ReadList = new HashMap<String, ArrayList<String>>();
 
 	public RealtimeSpeciesTyping(String indexFile, String outputFile) throws IOException{
 		LOG.debug("string string");
@@ -113,23 +113,23 @@ public class RealtimeSpeciesTyping {
 		preTyping();
 	}
 
-	static class SpeciesCount implements Comparable<SpeciesCount> {
-		String species;
-		int count = 0;
-
-		SpeciesCount (String s){
-			species = s;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Comparable#compareTo(java.lang.Object)
-		 */
-		@Override
-		public int compareTo(SpeciesCount o) {		
-			return o.count - count;
-		}
-
-	}
+//	static class SpeciesCount implements Comparable<SpeciesCount> {
+//		String species;
+//		int count = 0;
+//
+//		SpeciesCount (String s){
+//			species = s;
+//		}
+//
+//		/* (non-Javadoc)
+//		 * @see java.lang.Comparable#compareTo(java.lang.Object)
+//		 */
+//		@Override
+//		public int compareTo(SpeciesCount o) {		
+//			return o.count - count;
+//		}
+//
+//	}
 
 	private void preTyping() throws IOException{
 		String line = "";
@@ -144,14 +144,14 @@ public class RealtimeSpeciesTyping {
 			if (seq2Species.put(seq, sp) != null)
 				throw new RuntimeException("sequence " + seq +" presents multiple time");
 
-			if (species2Count.get(sp) == null){
+			if (species2ReadList.get(sp) == null){
 				LOG.debug("add species: "+sp);
-				species2Count.put(sp,new SpeciesCount(sp));
+				species2ReadList.put(sp,new ArrayList<String>());
 			}			
 		}//while
 		indexBufferedReader.close();
-		LOG.info(seq2Species.size() + "   " + species2Count.size());
-		speciesList.addAll(species2Count.keySet());
+		LOG.info(seq2Species.size() + "   " + species2ReadList.size());
+		speciesList.addAll(species2ReadList.keySet());
 
 		//Write header				
 	}
@@ -201,7 +201,6 @@ public class RealtimeSpeciesTyping {
 		thread.start();
 		LOG.info("started  RealtimeSpeciesTyper thread");
 
-		boolean changedFlag = false;
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
 			//LOG.info("sam read name = "+sam.getReadName());
@@ -214,16 +213,11 @@ public class RealtimeSpeciesTyping {
 
 			if (!sam.getReadName().equals(readName)){
 				readName = sam.getReadName();
-				changedFlag = true;
 				synchronized(this){
 					currentReadCount ++;
 					currentBaseCount += sam.getReadLength();
 				}
-			} else if(!refName.equals(sam.getReferenceName())){
-				changedFlag = true;
-			}
-			else
-				changedFlag = false;
+			} 
 			
 			if (sam.getReadUnmappedFlag()){
 				LOG.debug("failed unmapped check");
@@ -241,24 +235,18 @@ public class RealtimeSpeciesTyping {
 				throw new RuntimeException(" Can't find species with ref " + refName + " line " + currentReadCount );
 			}
 
-			SpeciesCount sCount = species2Count.get(species);
-			if (sCount == null){
+			//SpeciesCount sCount = species2Count.get(species);
+			ArrayList<String> readList = species2ReadList.get(species);
+			if (readList == null){
 				throw new RuntimeException(" Can't find record with species " + species + " line " + currentReadCount );
 			}
+			if(readList.size()==0 || !readList.contains(readName))
+				synchronized(this) {
+					currentReadAligned ++;			
 
-			synchronized(this) {
-				currentReadAligned ++;
-				sCount.count ++;
-				
-				if(OUTSEQ && changedFlag){
-					ArrayList<String> readList = species2Seqs.get(species);
-					if( readList == null){
-						readList = new ArrayList<String>();
-						species2Seqs.put(species, readList);
-					}
 					readList.add(readName);
+	
 				}
-			}
 		}//while
 
 		//final run
@@ -268,131 +256,6 @@ public class RealtimeSpeciesTyping {
 		samIter.close();
 		samReader.close();
 	}	
-
-//	public void typing(String inFile, String format, String bwaExe, int bwaThread, String bwaIndex, int readNumber, int timeNumber, int qual) throws IOException, InterruptedException{
-//		typer.setReadPeriod(readNumber);
-//		typer.setTimePeriod(timeNumber * 1000);
-//
-//		LOG.info("Species typing ready at " + new Date());
-//
-//		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-//		SamReader samReader = null;
-//
-//		Process bwaProcess = null;
-//
-//		if (format.endsWith("am")){//bam or sam
-//			if ("-".equals(inFile))
-//				samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
-//			else
-//				samReader = SamReaderFactory.makeDefault().open(new File(inFile));	
-//		}else{//fastq or fasta file
-//			LOG.info("Starting bwa  at " + new Date());
-//			ProcessBuilder pb = null;
-//			if ("-".equals(inFile)){
-//				pb = new ProcessBuilder(bwaExe, 
-//						"mem",
-//						"-t",
-//						"" + bwaThread,
-//						"-k11",
-//						"-W20",
-//						"-r10",
-//						"-A1",
-//						"-B1",
-//						"-O1",
-//						"-E1",
-//						"-L0",
-//						"-a",
-//						"-Y",
-//						"-K",
-//						"20000",
-//						bwaIndex,
-//						"-"
-//						).
-//						redirectInput(Redirect.INHERIT);
-//			}else{
-//				pb = new ProcessBuilder(bwaExe, 
-//						"mem",
-//						"-t",
-//						"" + bwaThread,
-//						"-k11",
-//						"-W20",
-//						"-r10",
-//						"-A1",
-//						"-B1",
-//						"-O1",
-//						"-E1",
-//						"-L0",
-//						"-a",
-//						"-Y",
-//						"-K",
-//						"20000",
-//						bwaIndex,
-//						inFile
-//						);
-//			}
-//
-//			bwaProcess  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
-//
-//			LOG.info("bwa started x");
-//			samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bwaProcess.getInputStream()));
-//
-//		}
-//		
-//		SAMRecordIterator samIter = samReader.iterator();
-//
-//		Thread thread = new Thread(typer);
-//		thread.start();		
-//		String readID = "";
-//		while (samIter.hasNext()){
-//			SAMRecord sam = samIter.next();
-//			//if (firstReadTime <=0)
-//			//	firstReadTime = System.currentTimeMillis();
-//
-//			if (this.twoDOnly && !sam.getReadName().contains("twodim")){
-//				continue;
-//			}
-//
-//			if (!sam.getReadName().equals(readID)){
-//				readID = sam.getReadName();
-//
-//				synchronized(this){
-//					currentReadCount ++;
-//					currentBaseCount += sam.getReadLength();
-//				}
-//			}
-//
-//			if (sam.getReadUnmappedFlag()){				
-//				continue;			
-//			}
-//
-//			if (sam.getMappingQuality() < this.minQual)
-//				continue;
-//
-//			String refSequence = sam.getReferenceName();
-//			String species = seq2Species.get(refSequence);
-//			if (species == null){
-//				throw new RuntimeException(" Can find species with ref " + refSequence + " line " + currentReadCount );
-//			}
-//
-//			SpeciesCount sCount = species2Count.get(species);
-//			if (sCount == null){
-//				throw new RuntimeException(" Can find record with species " + species + " line " + currentReadCount );
-//			}
-//
-//			synchronized(this) {
-//				currentReadAligned ++;
-//				sCount.count ++;
-//			}
-//		}//while
-//
-//		//final run
-//		//typer.simpleAnalysisCurrent();
-//
-//		typer.stopWaiting();//Tell typer to stop
-//		samIter.close();
-//		samReader.close();
-//	}	
-
 
 	public static class RealtimeSpeciesTyper extends RealtimeAnalysis {
 		MultinomialCI rengine;
@@ -418,7 +281,7 @@ public class RealtimeSpeciesTyping {
 			int sum = 0;
 			double [] count = new double[typing.speciesList.size()];
 			for (int i = 0; i < count.length;i++){			
-				count[i] = typing.species2Count.get(typing.speciesList.get(i)).count;			
+				count[i] = typing.species2ReadList.get(typing.speciesList.get(i)).size();			
 				sum += count[i];
 			}
 			DoubleArray countArray = new DoubleArray();
@@ -493,9 +356,11 @@ public class RealtimeSpeciesTyping {
 			//print out
 			if(OUTSEQ){
 				try (BufferedWriter bw = new BufferedWriter(new FileWriter("species2reads.map"))) {
-					for(String sp:typing.species2Seqs.keySet()){
+					for(String sp:typing.species2ReadList.keySet()){
+						ArrayList<String> readList = typing.species2ReadList.get(sp);
+						if(readList.size()==0)
+							continue;
 						bw.write(">"+sp+"\n");
-						ArrayList<String> readList = typing.species2Seqs.get(sp);
 						for(String read:readList)
 							bw.write(read+"\n");
 					}			
