@@ -59,10 +59,10 @@ import java.util.regex.Pattern;
 		scriptDesc = "Experimental Scaffold and finish assemblies using Oxford Nanopore sequencing reads",
 		seeAlso = "jsa.np.npreader, jsa.util.streamServer, jsa.util.streamClient"
 		)
-public class GapCloserCmd extends CommandLine{
-	private static final Logger LOG = LoggerFactory.getLogger(GapCloserCmd.class);
+public class NPScarfCmd extends CommandLine{
+	private static final Logger LOG = LoggerFactory.getLogger(NPScarfCmd.class);
 
-	public GapCloserCmd(){
+	public NPScarfCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -104,7 +104,7 @@ public class GapCloserCmd extends CommandLine{
 
 	public static void main(String[] args) throws 
 	IOException, InterruptedException {
-		CommandLine cmdLine = new GapCloserCmd();		
+		CommandLine cmdLine = new NPScarfCmd();		
 		args = cmdLine.stdParseLine(args);
 
 		/***********************************************************************/

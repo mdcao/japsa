@@ -52,12 +52,12 @@ public class SWGAlignment {
 	/**
 	 * Default name for sequence #1
 	 */
-	private static final String SEQUENCE1 = "jaligner_1";
+	private static final String SEQUENCE1 = "query_1";
 
 	/**
 	 * Default name for sequence #2
 	 */
-	private static final String SEQUENCE2 = "jaligner_2";
+	private static final String SEQUENCE2 = "query_2";
 
 	/**
 	 * Scoring matrix
