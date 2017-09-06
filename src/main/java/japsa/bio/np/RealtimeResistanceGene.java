@@ -70,9 +70,11 @@ import java.util.concurrent.TimeUnit;
 
 public class RealtimeResistanceGene {
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeResistanceGene.class);
-  public static boolean JSON = false;
-
-  private ResistanceGeneFinder resistFinder;
+	public static boolean JSON = false;
+	public static boolean OUTSEQ=false;
+	private static HashMap<String, ArrayList<String>> allAlignedReads;
+	
+	private ResistanceGeneFinder resistFinder;
 	private HashMap<String, ArrayList<Sequence>> alignmentMap;
 	private Integer currentReadCount = 0;
 	private Long currentBaseCount = 0L;
@@ -96,14 +98,14 @@ public class RealtimeResistanceGene {
 	}
 
 	public RealtimeResistanceGene(Integer read, Integer time, OutputStream outStream, InputStream resDBInputStream, InputStream fastaInputStream, String recordPrefix) throws IOException {
-    resistFinder = new ResistanceGeneFinder(this, outStream, resDBInputStream, fastaInputStream, recordPrefix);
-    resistFinder.setReadPeriod(read);
-    resistFinder.setTimePeriod(time * 1000);
-  }
+	    resistFinder = new ResistanceGeneFinder(this, outStream, resDBInputStream, fastaInputStream, recordPrefix);
+	    resistFinder.setReadPeriod(read);
+	    resistFinder.setTimePeriod(time * 1000);
+	}
 
-  public void setScoreThreshold(Double value) {
-	  this.scoreThreshold = value;
-  }
+	public void setScoreThreshold(Double value) {
+		this.scoreThreshold = value;
+	}
 
 	/**
    * Support legacy filename-based calls
@@ -126,6 +128,10 @@ public class RealtimeResistanceGene {
 		LOG.info("Resistance identification ready at " + new Date());
 
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
+		
+		if(OUTSEQ)
+			allAlignedReads = new HashMap<String, ArrayList<String>> ();
+		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
 		SAMRecordIterator samIter = samReader.iterator();
@@ -139,10 +145,6 @@ public class RealtimeResistanceGene {
 
 		while (samIter.hasNext()){
 			SAMRecord record = samIter.next();
-			String	geneID = record.getReferenceName();
-			int refLength =  resistFinder.geneMap.get(geneID).length();
-			int refStart = record.getAlignmentStart();
-			int refEnd   = record.getAlignmentEnd();
 
 			if (this.twoDOnly && !record.getReadName().contains("twodim"))
 				continue;
@@ -165,6 +167,12 @@ public class RealtimeResistanceGene {
 
 			if (record.getReadUnmappedFlag())
 				continue;
+			
+			String	geneID = record.getReferenceName();
+			int refLength =  resistFinder.geneMap.get(geneID).length();
+			int refStart = record.getAlignmentStart();
+			int refEnd   = record.getAlignmentEnd();
+			
 			if (!resistFinder.geneMap.containsKey(geneID))
 				continue;
 			if(refStart > 99 || refEnd < refLength - 99)
@@ -177,6 +185,12 @@ public class RealtimeResistanceGene {
 				//put the sequence into alignment list
 				Sequence readSeq = HTSUtilities.readSequence(record, readSequence, 99, refLength-99);
 				alignmentMap.get(geneID).add(readSeq);
+				
+				if(OUTSEQ){
+					if (allAlignedReads.get(geneID) == null)
+						allAlignedReads.put(geneID, new ArrayList<String>());
+					allAlignedReads.get(geneID).add(readSequence.getName());
+				}
 			}//synchronized(this)
 		}//while
 
@@ -203,108 +217,108 @@ public class RealtimeResistanceGene {
 		//Set of genes confirmed to have found
 		private final HashSet<String> predictedGenes = new HashSet<String>();
 
-    private final Gson gson = new GsonBuilder().serializeNulls().create();
+		private final Gson gson = new GsonBuilder().serializeNulls().create();
 
-    private String recordPrefix = "tmp";
-    private RealtimeResistanceGene resistGene;
+		private String recordPrefix = "tmp";
+		private RealtimeResistanceGene resistGene;
 		private SequenceOutputStream sequenceOutputStream;
 
-    public ResistanceGeneFinder(RealtimeResistanceGene resistGene, String outputFile, String resDB, String recordPrefix) throws IOException {
-      this(resistGene, new FileOutputStream(outputFile), resDB, recordPrefix);
-    }
-
-    public ResistanceGeneFinder(RealtimeResistanceGene resistGene, OutputStream outStream, String resDB, String recordPrefix) throws IOException {
-      this(resistGene, outStream, new FileInputStream(new File(resDB+"/geneList")), new FileInputStream(new File(resDB+"/DB.fasta")), recordPrefix);
-    }
-
-    public ResistanceGeneFinder(RealtimeResistanceGene resistGene, OutputStream outStream, InputStream resDBInputStream, InputStream fastaInputStream, String recordPrefix) throws IOException {
+	    public ResistanceGeneFinder(RealtimeResistanceGene resistGene, String outputFile, String resDB, String recordPrefix) throws IOException {
+	    	this(resistGene, new FileOutputStream(outputFile), resDB, recordPrefix);
+	    }
+	
+	    public ResistanceGeneFinder(RealtimeResistanceGene resistGene, OutputStream outStream, String resDB, String recordPrefix) throws IOException {
+	    	this(resistGene, outStream, new FileInputStream(new File(resDB+"/geneList")), new FileInputStream(new File(resDB+"/DB.fasta")), recordPrefix);
+	    }
+	
+	    public ResistanceGeneFinder(RealtimeResistanceGene resistGene, OutputStream outStream, InputStream resDBInputStream, InputStream fastaInputStream, String recordPrefix) throws IOException {
 			this.resistGene = resistGene;
-
-      readGeneClassInformation(fastaInputStream); // step 1
+	
+			readGeneClassInformation(fastaInputStream); // step 1
 			readGeneInformation(resDBInputStream);      // step 2
-
+	
 			LOG.info("geneList = " + geneList.size());
 			LOG.info("geneMap = " + geneMap.size());
 			LOG.info("gene2Group = " + gene2Group.size());
 			LOG.info("gene2GeneName = " + gene2GeneName.size());
-
+	
 			this.recordPrefix = recordPrefix;
-      this.sequenceOutputStream = new SequenceOutputStream(outStream);
+			this.sequenceOutputStream = new SequenceOutputStream(outStream);
 		}
 
-    private void readGeneClassInformation(InputStream fastaInputStream) throws IOException{
-      List<Sequence> drGeneList = new ArrayList<Sequence>();
+	    private void readGeneClassInformation(InputStream fastaInputStream) throws IOException{
+	    	List<Sequence> drGeneList = new ArrayList<Sequence>();
+	
+	    	SequenceReader sequenceReader = FastaReader.getReader(fastaInputStream);
+	
+	    	while (true) {
+	    		Sequence fastaSequence = sequenceReader.nextSequence(Alphabet.DNA());
+	    		if (fastaSequence == null)
+	    			break;
+	    		//LOG.info("fastaSequence = "+fastaSequence);
+	    		drGeneList.add(fastaSequence);
+	    	}
+	    	for (Sequence seq:drGeneList){
+		        geneMap.put(seq.getName(), seq);
+		        geneList.add(seq.getName());
+		
+		        String desc = seq.getDesc();
+		        String [] toks = desc.split(";");
+		        for (String tok:toks){
+		        	if (tok.startsWith("dg=")){
+		        		addGeneInfo(gene2Group, seq.getName(), tok.substring(3));
+		        	}
+		        	if (tok.startsWith("geneID=")){
+		        		String proteinID = tok.substring(7);
+		        		addGeneInfo(gene2GeneName, seq.getName(), proteinID);
+		        	}
+		        }
+	    	}
+	    }
+	    private void readGeneInformation(InputStream geneInfoInputStream) throws IOException {
+	    	BufferedReader bf = SequenceReader.openInputStream(geneInfoInputStream);
+	    	String line = "";
+	    	while((line = bf.readLine())!=null){
+	    		String [] toks = line.trim().split(" ");
+	    		if(toks.length <3)
+	    			continue;
+	
+	        addGeneInfo(gene2Group, toks[0], toks[2]);
+	        addGeneInfo(gene2GeneName, toks[0], toks[1]);
+	
+	    	}
+	    	bf.close();
+	    }
+	    private void addGeneInfo(Map<String, String> map, String key, String info){
+	    	String s = map.get(key);
+	    	if (s == null)
+	    		map.put(key, info);
+	    	else{
+	    		if (!s.contains(info)){
+	    			s = s + ", " + info;
+	    			map.put(key, s);
+	    		}
+	    	}
+	    }
 
-      SequenceReader sequenceReader = FastaReader.getReader(fastaInputStream);
-
-      while (true) {
-        Sequence fastaSequence = sequenceReader.nextSequence(Alphabet.DNA());
-        if (fastaSequence == null)
-          break;
-        //LOG.info("fastaSequence = "+fastaSequence);
-        drGeneList.add(fastaSequence);
-      }
-      for (Sequence seq:drGeneList){
-        geneMap.put(seq.getName(), seq);
-        geneList.add(seq.getName());
-
-        String desc = seq.getDesc();
-        String [] toks = desc.split(";");
-        for (String tok:toks){
-          if (tok.startsWith("dg=")){
-            addGeneInfo(gene2Group, seq.getName(), tok.substring(3));
-          }
-          if (tok.startsWith("geneID=")){
-            String proteinID = tok.substring(7);
-            addGeneInfo(gene2GeneName, seq.getName(), proteinID);
-          }
-        }
-      }
-    }
-    private void readGeneInformation(InputStream geneInfoInputStream) throws IOException {
-      BufferedReader bf = SequenceReader.openInputStream(geneInfoInputStream);
-      String line = "";
-      while((line = bf.readLine())!=null){
-        String [] toks = line.trim().split(" ");
-        if(toks.length <3)
-          continue;
-
-        addGeneInfo(gene2Group, toks[0], toks[2]);
-        addGeneInfo(gene2GeneName, toks[0], toks[1]);
-
-      }
-      bf.close();
-    }
-    private void addGeneInfo(Map<String, String> map, String key, String info){
-      String s = map.get(key);
-      if (s == null)
-        map.put(key, info);
-      else{
-        if (!s.contains(info)){
-          s = s + ", " + info;
-          map.put(key, s);
-        }
-      }
-    }
-
-    @SuppressWarnings("unchecked")
+	    @SuppressWarnings("unchecked")
 		private void antiBioticAnalysis(){
 
-			try {
-			  if (!JSON) {
-          sequenceOutputStream.print("##" + timeNow + "\t" + (this.lastTime - this.startTime) + "\t" + this.lastReadNumber + "\n");
-        }
-			  else {
-          JsonObject jo = new JsonObject();
-          jo.addProperty("timestamp", timeNow);
-          jo.addProperty("timeLast", this.lastTime);
-          jo.addProperty("timeStart", this.startTime);
-          jo.addProperty("timeWaited", (this.lastTime - this.startTime));
-          jo.addProperty("lastReadNumber", this.lastReadNumber);
-          sequenceOutputStream.print(gson.toJson(jo));
-          sequenceOutputStream.println();
-			  }
-        sequenceOutputStream.flush();
+	    	try {
+	    		if (!JSON) {
+	    			sequenceOutputStream.print("##" + timeNow + "\t" + (this.lastTime - this.startTime) + "\t" + this.lastReadNumber + "\n");
+	    		}
+    			else {
+		          JsonObject jo = new JsonObject();
+		          jo.addProperty("timestamp", timeNow);
+		          jo.addProperty("timeLast", this.lastTime);
+		          jo.addProperty("timeStart", this.startTime);
+		          jo.addProperty("timeWaited", (this.lastTime - this.startTime));
+		          jo.addProperty("lastReadNumber", this.lastReadNumber);
+		          sequenceOutputStream.print(gson.toJson(jo));
+		          sequenceOutputStream.println();
+    			}
+	    		sequenceOutputStream.flush();
 
 				//1. Make a snapshot of the current alignment
 				synchronized(resistGene){
@@ -352,6 +366,7 @@ public class RealtimeResistanceGene {
 
 				Sequence gene = geneMap.get(geneID);
 				gene = gene.subSequence(99, gene.length() - 100);
+				gene.setName(geneID);//for log only
 
 				FSMThread thread = new FSMThread();		
 				thread.resGeneFinder = this;
@@ -370,23 +385,23 @@ public class RealtimeResistanceGene {
 		private void addPreditedGene(String geneID) throws IOException {
 			predictedGenes.add(geneID);
 			if (!JSON) {
-        sequenceOutputStream.print(timeNow + "\t" + (this.lastTime - this.startTime) / 1000 + "\t" + lastReadNumber + "\t" + resistGene.currentBaseCount + "\t" + geneID + "\t" + gene2GeneName.get(geneID) + "\t" + gene2Group.get(geneID) + "\n");
-      }
-      else {
-        JsonObject jo = new JsonObject();
-        jo.addProperty("timeStamp", timeNow);
-        jo.addProperty("timeLast", this.lastTime);
-        jo.addProperty("timeStart", this.startTime);
-        jo.addProperty("timeWaited", (this.lastTime - this.startTime));
-        jo.addProperty("lastReadNumber", this.lastReadNumber);
-        jo.addProperty("currentBaseCount", resistGene.currentBaseCount);
-        jo.addProperty("currentReadCount", resistGene.currentReadCount);
-        jo.addProperty("geneID", geneID);
-        jo.addProperty("geneName", gene2GeneName.get(geneID));
-        jo.addProperty("geneGroup", gene2Group.get(geneID));
-        sequenceOutputStream.print(gson.toJson(jo));
-        sequenceOutputStream.println();
-      }
+				sequenceOutputStream.print(timeNow + "\t" + (this.lastTime - this.startTime) / 1000 + "\t" + lastReadNumber + "\t" + resistGene.currentBaseCount + "\t" + geneID + "\t" + gene2GeneName.get(geneID) + "\t" + gene2Group.get(geneID) + "\n");
+			}
+			else {
+		        JsonObject jo = new JsonObject();
+		        jo.addProperty("timeStamp", timeNow);
+		        jo.addProperty("timeLast", this.lastTime);
+		        jo.addProperty("timeStart", this.startTime);
+		        jo.addProperty("timeWaited", (this.lastTime - this.startTime));
+		        jo.addProperty("lastReadNumber", this.lastReadNumber);
+		        jo.addProperty("currentBaseCount", resistGene.currentBaseCount);
+		        jo.addProperty("currentReadCount", resistGene.currentReadCount);
+		        jo.addProperty("geneID", geneID);
+		        jo.addProperty("geneName", gene2GeneName.get(geneID));
+		        jo.addProperty("geneGroup", gene2Group.get(geneID));
+		        sequenceOutputStream.print(gson.toJson(jo));
+		        sequenceOutputStream.println();
+			}
 			sequenceOutputStream.flush();
 		}
 
@@ -419,6 +434,24 @@ public class RealtimeResistanceGene {
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			}
+			//print out
+			if(OUTSEQ){
+				try (BufferedWriter bw = new BufferedWriter(new FileWriter("genes2reads.map"))) {
+					for(String sp:predictedGenes){
+						ArrayList<String> readList = allAlignedReads.get(sp);
+						if(readList.size()==0)
+							continue;
+						bw.write(">"+sp+"\n");
+						for(String read:readList)
+							bw.write(read+"\n");
+					}			
+
+				} catch (IOException e) {
+
+					e.printStackTrace();
+
+				}
 			}
 		}
 

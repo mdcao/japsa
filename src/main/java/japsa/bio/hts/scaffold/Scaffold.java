@@ -101,7 +101,7 @@ public final class Scaffold extends LinkedList<Contig>{
 	 * @return ScaffoldVector of contig after moving
 	 */
 	public ScaffoldVector rotate(ScaffoldVector v, boolean direction){
-		return (direction && (v.getDirection()>0))?ScaffoldVector.composition(circle, v):ScaffoldVector.composition(ScaffoldVector.reverse(circle), v);
+		return (direction == (v.getDirection()>0))?ScaffoldVector.composition(circle, v):ScaffoldVector.composition(ScaffoldVector.reverse(circle), v);
 	}
 	
 	/**
@@ -132,7 +132,7 @@ public final class Scaffold extends LinkedList<Contig>{
 	 * @param contig
 	 * @param bridge
 	 */
-	public void addFront(Contig contig, ContigBridge bridge){
+	public void addBackward(Contig contig, ContigBridge bridge){
 		assert bridge.firstContig.getIndex() == contig.getIndex(): "Front prob: "+ bridge.hashKey + " not connect " + contig.getIndex() + " and " + this.getFirst().getIndex();
 		this.addFirst(contig);
 		bridges.addFirst(bridge);
@@ -146,7 +146,7 @@ public final class Scaffold extends LinkedList<Contig>{
 	 * @param contig
 	 * @param bridge
 	 */
-	public void addRear(Contig contig, ContigBridge bridge){
+	public void addForward(Contig contig, ContigBridge bridge){
 		assert bridge.secondContig.getIndex() == contig.getIndex():"Rear prob: "+ bridge.hashKey + " not connect " + this.getLast().getIndex() + " and " + contig.getIndex();
 		this.addLast(contig);
 		bridges.addLast(bridge);

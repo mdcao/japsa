@@ -330,16 +330,17 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			int ctgEnd = direction?ctg.rightMost():ctg.leftMost();
 			 
 			extended = false; //only continue the while loop if extension is on the move (line 122)
-			int maxLink = bridges.size(),
-				extendDir = 0, //direction to go on the second scaffold: ScaffoldT (realtime mode)
+			int extendDir = 0, //direction to go on the second scaffold: ScaffoldT (realtime mode)
 				curStep = Integer.MAX_VALUE; //distance between singleton1 -> singleton2
 			double	curScore = 0.0; //score between singleton1 -> singleton2
 			ContigBridge stepBridge = null;
 			
-			ArrayList<Contig> extendableContig = new ArrayList<Contig>(maxLink);
-			ArrayList<ContigBridge> extendableContigBridge = new ArrayList<ContigBridge>(maxLink);
-			ArrayList<ScaffoldVector> extendableVector = new ArrayList<ScaffoldVector>(maxLink);
-			ArrayList<Integer> distances = new ArrayList<Integer>(maxLink);
+//			ArrayList<Contig> extendableContig = new ArrayList<Contig>(maxLink);
+//			ArrayList<ContigBridge> extendableContigBridge = new ArrayList<ContigBridge>(maxLink);
+//			ArrayList<ScaffoldVector> extendableVector = new ArrayList<ScaffoldVector>(maxLink);
+//			ArrayList<Integer> distances = new ArrayList<Integer>(maxLink);
+			ArrayList<ExtendCandidate> candidates = new ArrayList<ExtendCandidate>();
+			
 			Collections.sort(bridges);
 			for (ContigBridge bridge:bridges){
 				if (bridge.firstContig == bridge.secondContig) //2 identical markers ??!
@@ -360,9 +361,10 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				//only take one next singleton (with highest score possible sorted) as the marker for the next extension
 				int distance = bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig);
 				if (direction?(newEnd > ctgEnd):(newEnd < ctgEnd)){	
+					int aDir = 0;
+
 					if(!isRepeat(nextContig) || (ctg.isCircular() && ctg.getIndex() == nextContig.getIndex())){
 						//check quality of the bridge connected 2 markers
-						int aDir = 0;
 						if(scaffolds[nextContig.head].size() > 1){
 							aDir = extendDirection(ctg, bridge);
 							if(aDir==0){
@@ -391,21 +393,23 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 										,i,ctg.index, ctgEnd, nextContig.index, newEnd, 
 										(bridge.getTransVector().getDirection() > 0?"same":"opposite"), bridge.getScore(), distance);
 					
-					int j = 0;
+//					int j = 0;
 					//looking for right position to have the list sorted
-					for(j=0; j<distances.size(); j++)
-						if(distances.get(j) > distance)
-							break;
-
-					distances.add(j,distance);
-					extendableContig.add(j, nextContig);
-					extendableContigBridge.add(j, bridge);
-					extendableVector.add(j, trialTrans);
+//					for(j=0; j<distances.size(); j++)
+//						if(distances.get(j) > distance)
+//							break;
+					candidates.add(new ExtendCandidate(distance, nextContig, bridge, trialTrans));
+//					distances.add(j,distance);
+//					extendableContig.add(j, nextContig);
+//					extendableContigBridge.add(j, bridge);
+//					extendableVector.add(j, trialTrans);
 				}
 				else if(verbose) 
 						System.out.printf(" No extend %d from %d(%d) to %d(%d) with score %f and distance %d\n",i,ctg.index, ctgEnd, nextContig.index, newEnd,bridge.getScore(), distance);
 				
 			}//for	
+			Collections.sort(candidates);
+			
 			int noOfUniqueContig = 0; //reset to count how many singleton will be added now
 			
 			if(stepBridge==null){
@@ -417,12 +421,13 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			Contig prevContig = ctg;
 			ContigBridge 	prevContigBridge = null;
 			ScaffoldVector prevVector = new ScaffoldVector();
-			for(int index = 0; index < extendableContig.size(); index++){
-				if(distances.get(index) > curStep)
-				continue;
-				Contig curContig = extendableContig.get(index);
-				ContigBridge curContigBridge = extendableContigBridge.get(index); //will be replaced by the bridge to prev contig later
-				ScaffoldVector curVector = extendableVector.get(index);
+			for(int index = 0; index < candidates.size(); index++){
+				ExtendCandidate cdd = candidates.get(index);
+				if(cdd.getDistance() > curStep)
+					continue;
+				Contig curContig = cdd.getContig();
+				ContigBridge curContigBridge = cdd.getBridge(); //will be replaced by the bridge to prev contig later
+				ScaffoldVector curVector = cdd.getVector();
 				if(verbose) 
 					System.out.println("Checking contig " + curContig.getName() + "...");
 				if(	isRepeat(curContig) && !curContig.isCircular())
@@ -501,9 +506,9 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 					//confirmedBridge=confirmedBridge.clone(prevContig,curContig);
 
 					if(direction)
-						scaffolds[i].addRear(curContig, confirmedBridge);
+						scaffolds[i].addForward(curContig, confirmedBridge);
 					else
-						scaffolds[i].addFront(curContig, getReversedBridge(confirmedBridge));
+						scaffolds[i].addBackward(curContig, getReversedBridge(confirmedBridge));
 					
 					
 					curEnd = direction?curContig.rightMost(curVector):curContig.leftMost(curVector);
@@ -516,7 +521,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 
 				}
 				
-				if(distances.get(index) == curStep)
+				if(cdd.getDistance() == curStep)
 					break;
 			}//for
 			if(noOfUniqueContig < 1){
@@ -530,7 +535,28 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 		return closed;
 	}
 	
-	
+	class ExtendCandidate implements Comparable<ExtendCandidate>{
+		int distance;
+		Contig cContig;
+		ContigBridge cBridge;
+		ScaffoldVector cVector;
+		ExtendCandidate(int dist, Contig ctg, ContigBridge brg, ScaffoldVector vect){
+			distance=dist;
+			cContig=ctg;
+			cBridge=brg;
+			cVector=vect;
+		}
+		int getDistance(){return distance;}
+		Contig getContig(){return cContig;}
+		ContigBridge getBridge(){return cBridge;}
+		ScaffoldVector getVector(){return cVector;}
+		@Override
+		public int compareTo(ExtendCandidate o) {
+			// TODO Auto-generated method stub
+			return distance-o.distance;
+		}
+		
+	}
 	class LengthIndex implements Comparable<LengthIndex>{
 		int length, index;
 		public LengthIndex(int len, int index){

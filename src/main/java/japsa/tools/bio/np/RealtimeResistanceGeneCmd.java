@@ -37,6 +37,7 @@ package japsa.tools.bio.np;
 import java.io.IOException;
 
 import japsa.bio.np.RealtimeResistanceGene;
+import japsa.bio.np.RealtimeSpeciesTyping;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
@@ -70,7 +71,8 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addBoolean("twodonly", false,  "Use only two dimentional reads");				
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 1800,   "Minimum number of seconds between analyses");
-		
+		addBoolean("log", false, "Whether to write mapping details to genes2reads.map.");
+
 		addInt("thread", 4,   "Number of threads to run");
 
 		addStdHelp();
@@ -85,6 +87,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		String msa = cmdLine.getStringVal("msa");
 		String resDB = cmdLine.getStringVal("resDB");
 
+		RealtimeResistanceGene.OUTSEQ = cmdLine.getBooleanVal("log");
 
 		String tmp = cmdLine.getStringVal("tmp");		
 		double scoreThreshold = cmdLine.getDoubleVal("score");		
