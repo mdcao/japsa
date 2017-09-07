@@ -415,43 +415,43 @@ public class Deploy {
 					jlp = jlp + File.pathSeparatorChar + libPath;			
 				break;
 			}
-			//Get path to HDFLib
-			System.out.println("Japsa requires JRI library installed in order to run np.speciesTyping");
-			while (true){
-				System.out.print("Path to JRI library: [none]?");
-				line = scanner.nextLine();
-				line = line.trim();
-				if (line.length() <= 0)
-					break;
-
-
-				String [] fNix = {"libjri.so"};
-				String [] fWindows = {"jri.dll","libjri.lib"};
-				String [] fMac = {};
-
-				String [] requires = isWindows?fWindows:fNix;
-				if (isMac)
-					requires = fMac;
-
-				boolean pass = true;
-				for (String rLib:requires){
-					File f = new File (line + File.separatorChar + rLib);
-					if (!f.exists()){
-						System.out.println("File " + f.getCanonicalPath() + " does not exist");
-						pass = false;
-						break;
-					}
-				}
-				if (!pass)
-					continue;
-
-				String libPath = (new File(line)).getCanonicalPath(); 
-				if (jlp.length() == 0)
-					jlp = libPath;
-				else
-					jlp = jlp + File.pathSeparatorChar + libPath;			
-				break;
-			}
+//			//Get path to JRI -- now replaced by Lachlan's embedded java code
+//			System.out.println("Japsa requires JRI library installed in order to run np.speciesTyping");
+//			while (true){
+//				System.out.print("Path to JRI library: [none]?");
+//				line = scanner.nextLine();
+//				line = line.trim();
+//				if (line.length() <= 0)
+//					break;
+//
+//
+//				String [] fNix = {"libjri.so"};
+//				String [] fWindows = {"jri.dll","libjri.lib"};
+//				String [] fMac = {};
+//
+//				String [] requires = isWindows?fWindows:fNix;
+//				if (isMac)
+//					requires = fMac;
+//
+//				boolean pass = true;
+//				for (String rLib:requires){
+//					File f = new File (line + File.separatorChar + rLib);
+//					if (!f.exists()){
+//						System.out.println("File " + f.getCanonicalPath() + " does not exist");
+//						pass = false;
+//						break;
+//					}
+//				}
+//				if (!pass)
+//					continue;
+//
+//				String libPath = (new File(line)).getCanonicalPath(); 
+//				if (jlp.length() == 0)
+//					jlp = libPath;
+//				else
+//					jlp = jlp + File.pathSeparatorChar + libPath;			
+//				break;
+//			}
 			//while
 		}
 		scanner.close();
@@ -671,7 +671,7 @@ public class Deploy {
 		cmdLine.addString("mode", "install", "install or uinstall");
 		cmdLine.addString("libs", "", "list of extenal libraries");
 		cmdLine.addString("installDir", null, "the directory to install");
-		cmdLine.addString("jlp", null, "Directories to libhdf5 and to jri");
+		cmdLine.addString("jlp", null, "Directories to libhdf5");
 		cmdLine.addString("xmx", null, "Set default maximum memory");
 		cmdLine.addString("compiler", null, "Compiler version");
 		cmdLine.addBoolean("version", false, "Get version and exit");
