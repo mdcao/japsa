@@ -73,7 +73,8 @@ public class NPScarfCmd extends CommandLine{
 		addString("input", "-", "Name of the input file, - for stdin", true);
 		addString("format", "sam", "Format of the input: fastq/fasta or sam/bam", true);
 		addBoolean("index", true, "Whether to index the contigs sequence by the aligner or not.");
-		
+		//TODO: adding minimap2 as default aligner
+		//options: -aligner <bwa|minimap2> ; -command "customized cmd for alignment"
 		addString("bwaExe", "bwa", "Path to bwa");
 		addInt("bwaThread", 4, "Theads used by bwa");
 		addBoolean("long", false, "Whether report all sequences, including short/repeat contigs (default) or only long/unique/completed sequences.");
@@ -129,7 +130,6 @@ public class NPScarfCmd extends CommandLine{
 				pathFile = new File(spadesFolder+"/contigs.paths");
 
 
-		//TODO: need to validate bwa if fastq is the input		
 		if (format.startsWith("fastq") ||
 				format.startsWith("fasta") ||
 				format.startsWith("fq") ||

@@ -135,8 +135,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
 			connections.add(newConnect);	
 			//the metric for bridge score is important!
-			score += sc;
-			//score = score>sc?score:sc;
+//			score += sc;
+			score = score>sc?score:sc;
 		}
 		return score;
 	}
@@ -1111,11 +1111,14 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		}
 
 		void display (){
-			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] (%s) score=%d Read %s ==> %d\n", 
+			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] /%6d (%s) score=%d qual=(%d,%d) Read %s ==> %d\n", 
 					firstAlignment.refStart, firstAlignment.refEnd, secondAlignment.refStart, secondAlignment.refEnd,
 					firstAlignment.readStart, firstAlignment.readEnd, secondAlignment.readStart, secondAlignment.readEnd,
+					read.readSequence.length(),
 					trans.toString(),					
-					score, read.readSequence.getName(),
+					score, 
+					firstAlignment.qual, secondAlignment.qual,
+					read.readSequence.getName(),
 					trans.distance(firstContig, secondContig));
 		}
 

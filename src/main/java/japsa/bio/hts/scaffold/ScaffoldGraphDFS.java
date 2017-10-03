@@ -374,8 +374,8 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 							}
 						}
 						if(distance > -maxRepeatLength && bridge.getConnections().size() >= minSupportReads && bridge.getScore() > curScore ){
-//							if(verbose)
-//								bridge.display();
+							if(verbose)
+								bridge.display();
 							curStep = distance;
 							curScore = bridge.getScore();
 							stepBridge = bridge;

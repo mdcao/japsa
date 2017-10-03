@@ -60,6 +60,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	public boolean strand = true;//positive
 	public boolean useful = false;
 	//SAMRecord mySam;
+	int qual=255; //alignment quality
 	
 	ArrayList<CigarElement> alignmentCigars = new ArrayList<CigarElement>();
 	
@@ -149,13 +150,16 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 			readStart = 1 + readLength - readStart;
 			readEnd = 1 + readLength - readEnd;
 		}
-
+		//THIS IS SUPER IMPORTANT!!!
+		//DETERMINE IF ALIGNMENT IS FIT FOR BRIDGING OR NOT
 		if (
 				(readLeft < ScaffoldGraph.marginThres || refLeft < ScaffoldGraph.marginThres) &&
 				(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) &&
 				score > ScaffoldGraph.minContigLength
 			)
 			useful = true;
+		
+		qual=sam.getMappingQuality();
 
 	}
 	
@@ -224,6 +228,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		alignmentCigars = rec.alignmentCigars;
 		contig = rec.contig;
 		score = rec.score;
+		qual = rec.qual;
 	}
 	/* (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
