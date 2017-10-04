@@ -785,7 +785,7 @@ public abstract class ScaffoldGraph{
 							if(scaffoldF.size()==index+1) break;
 							ctg= scaffoldF.remove(index+1);
 							brg = scaffoldF.bridges.remove(index);
-							newScf.addRear(ctg,brg);
+							newScf.addForward(ctg,brg);
 						}
 						newScf.trim();
 						changeHead(newScf, nextMarker);
@@ -806,9 +806,9 @@ public abstract class ScaffoldGraph{
 					ctg.head = headT;
 					//if (posT == 1){
 					if(!firstDir){
-						scaffoldT.addFront(ctg,brg);
+						scaffoldT.addBackward(ctg,brg);
 					}else{
-						scaffoldT.addRear(ctg,getReversedBridge(brg));
+						scaffoldT.addForward(ctg,getReversedBridge(brg));
 					}	
 					if(count<1) break;
 					ctg = scaffoldF.remove(--count);
@@ -830,9 +830,9 @@ public abstract class ScaffoldGraph{
 						ctg.head = headT;
 						//if (posT == 1){ 
 						if(!firstDir){
-							scaffoldT.addFront(ctg,brg);
+							scaffoldT.addBackward(ctg,brg);
 						}else{
-							scaffoldT.addRear(ctg,getReversedBridge(brg));
+							scaffoldT.addForward(ctg,getReversedBridge(brg));
 						}	
 						if(count<1) break;
 						brg = scaffoldF.bridges.remove(count--);
@@ -867,7 +867,7 @@ public abstract class ScaffoldGraph{
 							if(count<1) break;
 							ctg= scaffoldF.remove(--count);
 							brg = scaffoldF.bridges.remove(count);
-							newScf.addFront(ctg,brg);
+							newScf.addBackward(ctg,brg);
 						}
 						newScf.trim();
 						changeHead(newScf, prevMarker);
@@ -889,9 +889,9 @@ public abstract class ScaffoldGraph{
 					ctg.head = headT;
 					//if (posT == 1){ 
 					if(!firstDir){
-						scaffoldT.addFront(ctg,getReversedBridge(brg));
+						scaffoldT.addBackward(ctg,getReversedBridge(brg));
 					}else{
-						scaffoldT.addRear(ctg,brg);
+						scaffoldT.addForward(ctg,brg);
 					}				
 					if(scaffoldF.size()==index) break;
 					ctg = scaffoldF.remove(index);
@@ -910,9 +910,9 @@ public abstract class ScaffoldGraph{
 						ctg.head = headT;
 						//if (posT == 1){ 
 						if(!firstDir){
-							scaffoldT.addFront(ctg,getReversedBridge(brg));
+							scaffoldT.addBackward(ctg,getReversedBridge(brg));
 						}else{
-							scaffoldT.addRear(ctg,brg);
+							scaffoldT.addForward(ctg,brg);
 						}	
 						if(scaffoldF.size()<1) break;
 						brg = scaffoldF.bridges.removeFirst();

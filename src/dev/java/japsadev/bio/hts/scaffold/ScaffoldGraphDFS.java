@@ -479,9 +479,9 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 					//confirmedBridge=confirmedBridge.clone(prevContig,curContig);
 
 					if(direction)
-						scaffolds[i].addRear(curContig, confirmedBridge);
+						scaffolds[i].addForward(curContig, confirmedBridge);
 					else
-						scaffolds[i].addFront(curContig, getReversedBridge(confirmedBridge));
+						scaffolds[i].addBackward(curContig, getReversedBridge(confirmedBridge));
 					
 					
 					curEnd = direction?curContig.rightMost(curVector):curContig.leftMost(curVector);

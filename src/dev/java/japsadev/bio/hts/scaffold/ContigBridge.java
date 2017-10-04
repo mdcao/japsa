@@ -1119,10 +1119,10 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			this.firstAlignment = a;
 			this.secondAlignment = b;
 
-			int aAlign = Math.abs(a.refStart - a.refEnd);
-			int bAlign = Math.abs(b.refStart - b.refEnd);
+			int aAlign = a.score;
+			int bAlign = b.score;
 
-			score = aAlign * bAlign / (aAlign  +bAlign);
+			score = (aAlign+bAlign)==0?0:(aAlign * bAlign / (aAlign+bAlign));
 			this.trans = trans;			
 											
 		}

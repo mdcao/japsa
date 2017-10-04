@@ -35,7 +35,6 @@
 package japsadev.bio.hts.scaffold;
 
 import java.util.ArrayList;
-
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
@@ -60,6 +59,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	public boolean strand = true;//positive
 	public boolean useful = false;
 	//SAMRecord mySam;
+	int qual=0; //alignment quality
 	
 	ArrayList<CigarElement> alignmentCigars = new ArrayList<CigarElement>();
 	
@@ -83,13 +83,14 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		this.score = score;
 	}
 	public AlignmentRecord(SAMRecord sam, Contig ctg) {
-//		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
 		if(!sam.getReferenceName().equals(ctg.getName())){
 			System.err.println("Reference in SAM file doesn't agree with contigs name: "
 							+ sam.getReferenceName() + " != " + ctg.getName());
 			System.err.println("Hint: SAM file must resulted from alignment between long reads and contigs!");
 			System.exit(1);
 		}
+		
+//		readID = Integer.parseInt(sam.getReadName().split("_")[0]);
 		readID = sam.getReadName();
 
 		contig = ctg;
@@ -99,7 +100,9 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		refEnd = sam.getAlignmentEnd();
 		
 		Cigar cigar = sam.getCigar();			
-		boolean enterAlignment = false;						
+		boolean enterAlignment = false;			
+		qual=sam.getMappingQuality();
+
 		//////////////////////////////////////////////////////////////////////////////////
 
 		for (final CigarElement e : cigar.getCigarElements()) {
@@ -141,21 +144,22 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 
 		int refLeft = refStart - 1;
 		int refRight = contig.length() - refEnd;
-		score = refEnd + 1 - refStart;
+		score = (int)((refEnd + 1 - refStart)*(1-Math.pow(10, -qual/10))); //Length * Positive_probability
 		if (sam.getReadNegativeStrandFlag()){			
 			strand = false;
 			//need to convert the alignment position on read the correct direction 
 			readStart = 1 + readLength - readStart;
 			readEnd = 1 + readLength - readEnd;
 		}
-
+		//THIS IS SUPER IMPORTANT!!!
+		//DETERMINE IF ALIGNMENT IS FIT FOR BRIDGING OR NOT
 		if (
 				(readLeft < ScaffoldGraph.marginThres || refLeft < ScaffoldGraph.marginThres) &&
 				(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) &&
 				score > ScaffoldGraph.minContigLength
 			)
 			useful = true;
-
+		
 	}
 	
 	
@@ -223,6 +227,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		alignmentCigars = rec.alignmentCigars;
 		contig = rec.contig;
 		score = rec.score;
+		qual = rec.qual;
 	}
 	/* (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
