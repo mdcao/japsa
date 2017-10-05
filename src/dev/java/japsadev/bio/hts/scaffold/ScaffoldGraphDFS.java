@@ -350,8 +350,11 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 							}
 						}
 						if(distance > -maxRepeatLength && bridge.getNumOfConnections() >= minSupportReads && bridge.getScore() > curScore ){
-//							if(verbose)
-//								bridge.display();
+							if(verbose){
+								bridge.display();
+								System.out.println("Low ranges of " + bridge.firstContig.getName() + ": " + bridge.firstContig.displayLowConfidentRegions());
+								System.out.println("Low ranges of " + bridge.secondContig.getName() + ": " + bridge.secondContig.displayLowConfidentRegions());
+							}
 							curStep = distance;
 							curScore = bridge.getScore();
 							stepBridge = bridge;

@@ -48,9 +48,10 @@ public class Contig{
 	double coverage = 1.0;
 	int head = -1; //point to the index of its head contig in the scaffold 
 	double prevScore=0, nextScore=0;
+	ArrayList<Range> lowConfidentRegions;
 	int cirProb = -1; //measure how likely the contig itself is circular
 
-	int[] isMapped; //which bases is mapped by any long reads
+	//int[] isMapped; //which bases is mapped by any long reads
 	//for annotation
 	ArrayList<JapsaFeature> genes,				//genes list
 							oriRep,				//origin of replication: indicator of plasmid for bacteria
@@ -71,7 +72,7 @@ public class Contig{
 	public Contig(int index, Sequence seq){
 		this.index = index;
 		contigSequence = seq;
-		isMapped = new int[seq.length()];
+//		isMapped = new int[seq.length()];
 		
 		myVector = new ScaffoldVector(0,1);
 		
@@ -79,7 +80,7 @@ public class Contig{
 		oriRep = new ArrayList<JapsaFeature>();
 		insertSeq = new ArrayList<JapsaFeature>();
 		resistanceGenes = new ArrayList<JapsaFeature>();
-		
+		lowConfidentRegions = new ArrayList<Range>();
 		paths = new ArrayList<Path>();
 	}
 
@@ -90,13 +91,13 @@ public class Contig{
 
 		ctg.head = this.head; //update later
 		ctg.cirProb = this.cirProb;
-		ctg.isMapped = this.isMapped;
+//		ctg.isMapped = this.isMapped;
 		
 		ctg.genes = this.genes;
 		ctg.oriRep = this.oriRep;
 		ctg.insertSeq = this.insertSeq;
 		ctg.resistanceGenes = this.resistanceGenes;
-		
+		ctg.lowConfidentRegions = this.lowConfidentRegions;
 		ctg.paths = new ArrayList<Path>();
 		for(Path p:paths)
 			ctg.paths.add(p);
@@ -225,10 +226,10 @@ public class Contig{
 	}
 	
 
-	public boolean isMapped(){
-		int sum = IntStream.of(isMapped).sum();
-		return ((double)sum/length()) > .8;
-	}
+//	public boolean isMapped(){
+//		int sum = IntStream.of(isMapped).sum();
+//		return ((double)sum/length()) > .8;
+//	}
 	/*
 	 * Operators related to Path
 	 */
@@ -246,5 +247,72 @@ public class Contig{
 		return new String(" contig" + getIndex());
 	}
 	
+	public void addLowConfidentRegion(Range r){
+		if(lowConfidentRegions.size()==0){
+			lowConfidentRegions.add(r);
+			return;
+		}
+		//find the right position
+		int index=0;
+//		for(index=0;index<lowConfidentRegions.size()-1;index++){
+//			if(	lowConfidentRegions.get(index).compareTo(r) < 0 
+//				&& lowConfidentRegions.get(index+1).compareTo(r) > 0)
+//				break;			
+//		}
+//		Range 	cur = lowConfidentRegions.get(index);
+//		if(cur.merge(r)){
+//			if(index<lowConfidentRegions.size()-1)
+//				lowConfidentRegions.get(index+1).merge(cur);
+//		}else if(index<lowConfidentRegions.size()-1){
+//			if(!lowConfidentRegions.get(index+1).merge(r))
+//				lowConfidentRegions.add(r);
+//		}else{
+//			lowConfidentRegions.add(r);
+//		}
+		
+		while(lowConfidentRegions.size()>index){
+			if(lowConfidentRegions.get(index).getRight() >= r.getLeft())
+				break;
+			index++;
+		}
+		if(index==lowConfidentRegions.size())
+			lowConfidentRegions.add(r);
+		else {
+			Range cur = lowConfidentRegions.get(index++);
+			if(cur.merge(r))
+				while(lowConfidentRegions.size()>index){
+					if(cur.merge(lowConfidentRegions.get(index)))
+						lowConfidentRegions.remove(index);
+					else
+						break;
+					index++;
+				}
+			else
+				lowConfidentRegions.add(index, r);
+
+		}
+			
+		
+	}
+	//calculate the intersection between a range and the list of contig's low confident regions
+	public int countLowBases(Range r){
+		int retval=0;
+		for(Range range:lowConfidentRegions){
+			if(range.getRight()<r.getLeft())
+				continue;
+			if(range.getLeft()>r.getRight())
+				break;
+			retval+=Math.min(r.getRight(), range.getRight())-Math.max(r.getLeft(), range.getLeft());
+			
+		}
+		return retval;
+	}
+	public String displayLowConfidentRegions(){
+		String retval="";
+		for(Range r:lowConfidentRegions){
+			retval+=r.toString()+" ; ";
+		}
+		return retval;
+	}
 	
 }

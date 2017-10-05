@@ -248,7 +248,9 @@ public abstract class ScaffoldGraph{
 		for (int i = 0; i < scaffolds.length;i++){
 			if(scaffolds[i].isEmpty()) continue;
 			
-			if(select && !contigs.get(i).isMapped())
+			if(select 
+//					&& !contigs.get(i).isMapped()
+				)
 				continue;
 			
 			int len = scaffolds[i].length();
@@ -404,7 +406,8 @@ public abstract class ScaffoldGraph{
 			}
 				
 			AlignmentRecord myRec = new AlignmentRecord(rec, tmp);
-			Arrays.fill(tmp.isMapped, myRec.refStart, myRec.refEnd, 1);
+//			Arrays.fill(tmp.isMapped, myRec.refStart, myRec.refEnd, 1);
+			
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
 
@@ -1013,7 +1016,9 @@ public abstract class ScaffoldGraph{
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				
-				if(select && !contigs.get(i).isMapped())
+				if(select 
+//						&& !contigs.get(i).isMapped()
+					)
 					continue;
 				
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
@@ -1068,7 +1073,9 @@ public abstract class ScaffoldGraph{
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				
-				if(select && !contigs.get(i).isMapped())
+				if(select 
+//						&& !contigs.get(i).isMapped()
+					)
 					continue;
 				
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();

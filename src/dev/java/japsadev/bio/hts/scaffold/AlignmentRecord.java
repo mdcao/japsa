@@ -144,7 +144,6 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 
 		int refLeft = refStart - 1;
 		int refRight = contig.length() - refEnd;
-		score = (int)((refEnd + 1 - refStart)*(1-Math.pow(10, -qual/10))); //Length * Positive_probability
 		if (sam.getReadNegativeStrandFlag()){			
 			strand = false;
 			//need to convert the alignment position on read the correct direction 
@@ -153,13 +152,23 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		}
 		//THIS IS SUPER IMPORTANT!!!
 		//DETERMINE IF ALIGNMENT IS FIT FOR BRIDGING OR NOT
+		int mapLen=(refEnd + 1 - refStart);
 		if (
 				(readLeft < ScaffoldGraph.marginThres || refLeft < ScaffoldGraph.marginThres) &&
 				(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) &&
-				score > ScaffoldGraph.minContigLength
+				mapLen > ScaffoldGraph.minContigLength
 			)
 			useful = true;
+		else{
+			if(ScaffoldGraph.verbose)
+				System.out.println(this + " : adding ("+refStart+","+refEnd+") to low");
+			contig.addLowConfidentRegion(new Range(refStart,refEnd));
+		}
 		
+		int lowLen = contig.countLowBases(new Range(refStart,refEnd));
+		double recFactor=.5; //reduced factor (need to varied based on number of support reads)
+		score = (int)((mapLen-lowLen+lowLen*recFactor)*(1-Math.pow(10, -qual/10))); //Length * Positive_probability
+
 	}
 	
 	
