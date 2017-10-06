@@ -414,6 +414,7 @@ public abstract class ScaffoldGraph{
 			//////////////////////////////////////////////////////////////////
 			// make bridge of contigs that align to the same (Nanopore) read. 
 			// Note that SAM file MUST be sorted based on readID (samtools sort -n)
+			//	which is natural if it is the output from an aligner (bwa, minimap2)
 
 			//not the first occurrance				
 			if (readID.equals(myRec.readID)) {				

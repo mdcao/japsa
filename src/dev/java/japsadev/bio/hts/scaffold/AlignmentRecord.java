@@ -153,18 +153,22 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		//THIS IS SUPER IMPORTANT!!!
 		//DETERMINE IF ALIGNMENT IS FIT FOR BRIDGING OR NOT
 		int mapLen=(refEnd + 1 - refStart);
-		if (
-				(readLeft < ScaffoldGraph.marginThres || refLeft < ScaffoldGraph.marginThres) &&
-				(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) &&
-				mapLen > ScaffoldGraph.minContigLength
-			)
-			useful = true;
-		else{
-			if(ScaffoldGraph.verbose)
-				System.out.println(this + " : adding ("+refStart+","+refEnd+") to low");
-			contig.addLowConfidentRegion(new Range(refStart,refEnd));
+		if(mapLen > ScaffoldGraph.minContigLength){
+			if (
+					(readLeft < ScaffoldGraph.marginThres || refLeft < ScaffoldGraph.marginThres) &&
+					(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) 
+				)
+				useful = true;
+			else{
+				if(ScaffoldGraph.verbose){
+					System.out.println(this + " : adding ("+refStart+","+refEnd+") to low");
+					System.out.println("... old: " + contig.displayLowConfidentRegions());
+				}
+				contig.addLowConfidentRegion(new Range(refStart,refEnd));
+				if(ScaffoldGraph.verbose)
+					System.out.println("...new: " + contig.displayLowConfidentRegions());
+			}
 		}
-		
 		int lowLen = contig.countLowBases(new Range(refStart,refEnd));
 		double recFactor=.5; //reduced factor (need to varied based on number of support reads)
 		score = (int)((mapLen-lowLen+lowLen*recFactor)*(1-Math.pow(10, -qual/10))); //Length * Positive_probability

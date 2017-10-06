@@ -279,16 +279,18 @@ public class Contig{
 			lowConfidentRegions.add(r);
 		else {
 			Range cur = lowConfidentRegions.get(index++);
-			if(cur.merge(r))
+			int start=index;
+			if(cur.merge(r)){
 				while(lowConfidentRegions.size()>index){
-					if(cur.merge(lowConfidentRegions.get(index)))
-						lowConfidentRegions.remove(index);
-					else
+					if(!cur.merge(lowConfidentRegions.get(index)))
 						break;
 					index++;
 				}
+				for(int i=start;i<index;i++)
+					lowConfidentRegions.remove(start);
+			}
 			else
-				lowConfidentRegions.add(index, r);
+				lowConfidentRegions.add(index-1, r);
 
 		}
 			
