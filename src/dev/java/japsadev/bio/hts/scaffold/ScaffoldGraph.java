@@ -417,16 +417,21 @@ public abstract class ScaffoldGraph{
 			//	which is natural if it is the output from an aligner (bwa, minimap2)
 
 			//not the first occurrance				
-			if (readID.equals(myRec.readID)) {				
-				if (myRec.useful){				
-					for (AlignmentRecord s : samList) {
-						if (s.useful){
-							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
-						}
-					}
-				}
-			} else {
-
+//			if (readID.equals(myRec.readID)) {				
+//				if (myRec.useful){				
+//					for (AlignmentRecord s : samList) {
+//						if (s.useful){
+//							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
+//						}
+//					}
+//				}
+//			} else 
+			
+			if (!readID.equals(myRec.readID)){
+				//process samlist here
+				processAlignments(samList);
+					
+					
 				samList = new ArrayList<AlignmentRecord>();
 				readID = myRec.readID;	
 				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
@@ -443,8 +448,33 @@ public abstract class ScaffoldGraph{
 		}
 
 	}
-
-
+	//Take a list of alignments between contigs and a single nanopore read
+	// do some interesting things
+	private void processAlignments(ArrayList<AlignmentRecord> list){
+		if(list==null)
+			return;
+		
+		//grouping based on contigs ID
+		HashMap<String,ArrayList<AlignmentRecord>> groups = new HashMap<String,ArrayList<AlignmentRecord>>();
+		for(AlignmentRecord rec:list){
+			String ctgID=rec.contig.getName();
+			ArrayList<AlignmentRecord> tmpList=groups.get(ctgID);
+			if(tmpList==null)
+				tmpList=new ArrayList<AlignmentRecord>();
+			else
+				tmpList.add(rec);
+		}
+		
+		//process each group
+		for (String key:groups.keySet()){
+			ArrayList<AlignmentRecord> tmpList = groups.get(key);
+			
+			for(AlignmentRecord rec:tmpList){
+				//double intersect=()/(); // ref(x1,x2) <-> read(y1,y2): (x1y2-x2y1)/(y2-y1)
+				//double angle=(x2-x1)/(y2-y1)
+			}
+		}
+	}
 
 	/**
 	 * Forming bridges based on alignments. Used in batch mode only

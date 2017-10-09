@@ -136,7 +136,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
 		numOfConnections++;
 		//the metric for bridge score is important!
-		//score = score>sc?score:sc;
+//		score = score>sc?score:sc;
 		score += sc;
 		
 		if(connection == null || connection.gapsBetween() > newConnect.gapsBetween())	{

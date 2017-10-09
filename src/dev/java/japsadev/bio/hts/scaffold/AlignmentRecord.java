@@ -159,7 +159,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 					(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) 
 				)
 				useful = true;
-			else{
+			else if(qual==0){
 				if(ScaffoldGraph.verbose){
 					System.out.println(this + " : adding ("+refStart+","+refEnd+") to low");
 					System.out.println("... old: " + contig.displayLowConfidentRegions());
@@ -170,8 +170,9 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 			}
 		}
 		int lowLen = contig.countLowBases(new Range(refStart,refEnd));
-		double recFactor=.5; //reduced factor (need to varied based on number of support reads)
-		score = (int)((mapLen-lowLen+lowLen*recFactor)*(1-Math.pow(10, -qual/10))); //Length * Positive_probability
+		double recFactor=1; //reduced factor (need to varied based on number of support reads)
+//		score = (int)((mapLen-lowLen+lowLen*recFactor)*(1-Math.pow(10, -qual/10))); //Length * Positive_probability
+		score = (int)((mapLen-lowLen+lowLen*recFactor)*qual); //Length * Positive_probability
 
 	}
 	
