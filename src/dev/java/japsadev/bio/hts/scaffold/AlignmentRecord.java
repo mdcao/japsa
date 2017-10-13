@@ -159,21 +159,25 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 					(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) 
 				)
 				useful = true;
-			else if(qual==0){
-				if(ScaffoldGraph.verbose){
-					System.out.println(this + " : adding ("+refStart+","+refEnd+") to low");
-					System.out.println("... old: " + contig.displayLowConfidentRegions());
-				}
-				contig.addLowConfidentRegion(new Range(refStart,refEnd));
-				if(ScaffoldGraph.verbose)
-					System.out.println("...new: " + contig.displayLowConfidentRegions());
-			}
+//			else if(qual==0){
+//				if(ScaffoldGraph.verbose){
+//					System.out.println(this + " : adding ("+refStart+","+refEnd+") to low");
+//					System.out.println("... old: " + contig.displayLowConfidentRegions());
+//				}
+//				contig.addLowConfidentRegion(new Range(refStart,refEnd));
+//				if(ScaffoldGraph.verbose)
+//					System.out.println("...new: " + contig.displayLowConfidentRegions());
+//			}
 		}
-		int lowLen = contig.countLowBases(new Range(refStart,refEnd));
-		double recFactor=1; //reduced factor (need to varied based on number of support reads)
+//		int lowLen = contig.countLowBases(new Range(refStart,refEnd));
+//		double recFactor=1; //reduced factor (need to varied based on number of support reads)
 //		score = (int)((mapLen-lowLen+lowLen*recFactor)*(1-Math.pow(10, -qual/10))); //Length * Positive_probability
-		score = (int)((mapLen-lowLen+lowLen*recFactor)*qual); //Length * Positive_probability
-
+		
+		//TODO: scoring system here and in ContigBridge
+//		score = (int)((mapLen-Math.min(readLeft, refLeft)-Math.min(readRight, refRight))*qual); //Length * Positive_probability
+//		score=score>0?score:0;
+		
+		score=mapLen;
 	}
 	
 	

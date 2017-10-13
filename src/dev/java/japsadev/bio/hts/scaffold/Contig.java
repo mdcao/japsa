@@ -252,23 +252,7 @@ public class Contig{
 			lowConfidentRegions.add(r);
 			return;
 		}
-		//find the right position
 		int index=0;
-//		for(index=0;index<lowConfidentRegions.size()-1;index++){
-//			if(	lowConfidentRegions.get(index).compareTo(r) < 0 
-//				&& lowConfidentRegions.get(index+1).compareTo(r) > 0)
-//				break;			
-//		}
-//		Range 	cur = lowConfidentRegions.get(index);
-//		if(cur.merge(r)){
-//			if(index<lowConfidentRegions.size()-1)
-//				lowConfidentRegions.get(index+1).merge(cur);
-//		}else if(index<lowConfidentRegions.size()-1){
-//			if(!lowConfidentRegions.get(index+1).merge(r))
-//				lowConfidentRegions.add(r);
-//		}else{
-//			lowConfidentRegions.add(r);
-//		}
 		
 		while(lowConfidentRegions.size()>index){
 			if(lowConfidentRegions.get(index).getRight() >= r.getLeft())

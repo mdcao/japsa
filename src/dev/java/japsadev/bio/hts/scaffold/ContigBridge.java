@@ -136,8 +136,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
 		numOfConnections++;
 		//the metric for bridge score is important!
-//		score = score>sc?score:sc;
-		score += sc;
+		score = score>sc?score:sc;
+//		score += sc;
 		
 		if(connection == null || connection.gapsBetween() > newConnect.gapsBetween())	{
 			transVector = trans;
@@ -1123,6 +1123,15 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			int bAlign = b.score;
 
 			score = (aAlign+bAlign)==0?0:(aAlign * bAlign / (aAlign+bAlign));
+//			int theta = trans.distance(firstContig, secondContig) + Graph.getKmerSize(); //deviation
+//			if(theta < 0){
+//				score -= (int)(-theta*Math.log(-theta));
+//			}else{
+//				score -= (int)(theta);
+//				
+//			}
+//			score=score>0?score:0;
+			
 			this.trans = trans;			
 											
 		}
