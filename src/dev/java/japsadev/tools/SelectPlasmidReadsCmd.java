@@ -108,10 +108,6 @@ public class SelectPlasmidReadsCmd extends CommandLine{
 
 //			Arrays.fill(tmp.isMapped, myRec.refStart, myRec.refEnd, 1);
 			
-			//////////////////////////////////////////////////////////////////
-			// make bridge of contigs that align to the same (Nanopore) read. 
-			// Note that SAM file MUST be sorted based on readID (samtools sort -n)
-			//	which is natural if it is the output from an aligner (bwa, minimap2)
 
 			//not the first occurrance				
 			if (!readID.equals(rec.getReadName())){
@@ -133,7 +129,9 @@ public class SelectPlasmidReadsCmd extends CommandLine{
 			Arrays.fill(map, pos[0], pos[1], 1);		
 
 		}// while
-	
+		for(String read:readsList)
+			outFile.print(read);
+		
 		iter.close();			
 		outFile.close();
 
