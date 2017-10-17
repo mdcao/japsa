@@ -101,6 +101,8 @@ public class DevDeploy {
 		tools.add(new VNTRClusteringCmd());
 		tools.add(new VNTRClusteringHmmCmd());
         tools.add(new CheckInductionCmd());
+        
+        tools.add(new SelectPlasmidReadsCmd());
 		//new 
 		//tools.add(new CheckInductionCmd());
 		//
