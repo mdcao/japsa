@@ -39,16 +39,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import japsa.seq.Alphabet;
-import japsa.seq.Sequence;
+
 import japsa.seq.SequenceOutputStream;
 import japsa.util.CommandLine;
-import japsa.util.HTSUtilities;
 import japsa.util.deploy.Deployable;
 
 
@@ -106,31 +106,41 @@ public class SelectPlasmidReadsCmd extends CommandLine{
 			if (rec.getMappingQuality() < 10)
 				continue;
 
-//			Arrays.fill(tmp.isMapped, myRec.refStart, myRec.refEnd, 1);
-			
+			AlignmentRecord myRecord = new AlignmentRecord(rec);
 
 			//not the first occurrance				
 			if (!readID.equals(rec.getReadName())){
 				if(map!=null){
 					int sum = IntStream.of(map).sum();
-					if(((double)sum/map.length) > .9)
+//					System.out.println("Sum=" + sum + " Length="+map.length);
+					if(((double)sum/map.length) > .8)
 						readsList.add(readID);
 				}
 				
 				readID=rec.getReadName();
-				map = new int[rec.getReadLength()];
+				map = new int[myRecord.readLength];
 				Arrays.fill(map, 0);
 			}
+		
 			
-			int  [] refPositions = {rec.getStart(), rec.getEnd()}; 
-			int [] pos = HTSUtilities.positionsInRead(rec, refPositions);
-			if (pos[0] == 0 || pos[1] == 0)
-				continue;
-			Arrays.fill(map, pos[0], pos[1], 1);		
+//			System.out.println("Ref:" + myRecord.refStart + "->" + myRecord.refEnd 
+//								+"\tRead:" + myRecord.readStart + "->" + myRecord.readEnd);
+			int [] pos={Math.min(myRecord.readStart, myRecord.readEnd), Math.max(myRecord.readStart, myRecord.readEnd)};
+//			System.out.println("Filling " + readID + ": " + pos[0] + "->"+ pos[1] + "/"+myRecord.readLength);
+			Arrays.fill(map, pos[0], pos[1], 1);	
 
 		}// while
-		for(String read:readsList)
+		
+		//for the last record
+		int sum = IntStream.of(map).sum();
+//		System.out.println("Sum=" + sum + " Length="+map.length);
+		if(((double)sum/map.length) > .8)
+			readsList.add(readID);
+		
+		for(String read:readsList){
 			outFile.print(read);
+			outFile.println();
+		}
 		
 		iter.close();			
 		outFile.close();
@@ -139,9 +149,94 @@ public class SelectPlasmidReadsCmd extends CommandLine{
 		reader.close();		
 	
 	}
+
 	
 }
 
+class AlignmentRecord{
+	public int refStart, refEnd;  //1-based position on ref of the start and end of the alignment
+	public int readStart = 0, readEnd = 0;	
+	public String readID;
+	//read length
+	public int readLength = 0;		
+	public boolean strand = true;//positive
+
+	int qual=0; //alignment quality
+	
+	ArrayList<CigarElement> alignmentCigars = new ArrayList<CigarElement>();
+	
+
+	//public int readLeft, readRight, readAlign, refLeft, refRight, refAlign;
+	//left and right are in the direction of the reference sequence
+	
+	public AlignmentRecord(SAMRecord sam) {
+	
+		readID = sam.getReadName();
+
+		refStart = sam.getAlignmentStart();
+		refEnd = sam.getAlignmentEnd();
+		
+		Cigar cigar = sam.getCigar();			
+		boolean enterAlignment = false;			
+		qual=sam.getMappingQuality();
+
+		//////////////////////////////////////////////////////////////////////////////////
+
+		for (final CigarElement e : cigar.getCigarElements()) {
+			alignmentCigars.add(e);
+			final int  length = e.getLength();
+			switch (e.getOperator()) {
+			case H :
+			case S :					
+			case P : //pad is a kind of clipped
+				if (enterAlignment)
+					readEnd = readLength;
+				readLength += length;
+				break; // soft clip read bases
+			case I :	                	
+			case M :					
+			case EQ :
+			case X :
+				if (!enterAlignment){
+					readStart = readLength + 1;
+					enterAlignment = true;
+				}
+				readLength += length;
+				break;
+			case D :
+			case N :
+				if (!enterAlignment){
+					readStart = readLength + 1;
+					enterAlignment = true;
+				}
+				break;				
+			default : throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
+			}//case
+		}//for
+		if (readEnd == 0)
+			readEnd = readLength;
+	}
+	
+	
+	public int readAlignmentStart(){
+		return Math.min(readStart,readEnd);
+	
+	}
+	
+	public int readAlignmentEnd(){
+		return Math.max(readStart,readEnd);
+	}
+
+	public String toString() {
+		return readID    
+				+ " " + refStart 
+				+ " " + refEnd
+				+ " " + readStart 
+				+ " " + readEnd
+				+ " " + readLength				
+				+ " " + strand;
+	}
+}
 
 
 /*RST*

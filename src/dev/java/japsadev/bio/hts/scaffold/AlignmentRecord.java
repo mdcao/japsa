@@ -58,15 +58,11 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 
 	public boolean strand = true;//positive
 	public boolean useful = false;
-	//SAMRecord mySam;
 	int qual=0; //alignment quality
 	
 	ArrayList<CigarElement> alignmentCigars = new ArrayList<CigarElement>();
 	
 
-	//public int readLeft, readRight, readAlign, refLeft, refRight, refAlign;
-	//left and right are in the direction of the reference sequence
-	
 	public AlignmentRecord(String readID, int refStart, int refEnd, int readLength, 
 			int readStart, int readEnd, boolean strand, boolean useful, Contig contig, int score){
 		this.readID = readID;
