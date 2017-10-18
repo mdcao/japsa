@@ -59,6 +59,7 @@ algorithms, implementation, documentation and feedback:
 * [Lloyd Allison](http://www.allisons.org/ll/)
 * [Michael Hall](https://github.com/mbhall88)
 * Mikael Boden
+* Minh Duc Cao
 * [Son Hoang Nguyen](https://github.com/hsnguyen)
 * Trevor I Dix
 
