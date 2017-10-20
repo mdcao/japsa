@@ -381,10 +381,12 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 							stepBridge = bridge;
 							extendDir = aDir;
 						}else{
-							if(verbose)
+							if(verbose){
 								System.out.printf("Cannot form unique bridge from %d to %d with %d connections and score %.2f\n", 
 												ctg.getIndex(), nextContig.getIndex(), bridge.getConnections().size(), bridge.getScore());
-							continue;
+								bridge.display();
+							}
+								continue;
 						}
 					}
 					

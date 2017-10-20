@@ -126,18 +126,19 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			double sc){
 	
 		//NB: firstAlignment for firstContig, secondAlignment for secondContig
-
+		Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
 		if (transVector == null){
 			transVector = trans;
-			score = sc;			
-			connections.add(new Connection(readSequence, firstAlignment,secondAlignment,trans));			
+//			score = sc;			
+			score = newConnect.score;						
 		}else{		
-			Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
-			connections.add(newConnect);	
 			//the metric for bridge score is important!
-			score += sc;
+			score = newConnect.score>score?newConnect.score:score;
+//			score += sc;
 //			score = score>sc?score:sc;
 		}
+		
+		connections.add(newConnect);
 		return score;
 	}
 
@@ -1111,7 +1112,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		}
 
 		void display (){
-			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] /%6d (%s) score=%d qual=(%d,%d) Read %s ==> %d\n", 
+			System.out.printf("On contigs: [%6d %6d] -> [%6d %6d] On read: [%6d %6d] -> [%6d %6d] /%6d (%s) score=%d qual=(%d,%d) Read %s ==> %d\n", 
 					firstAlignment.refStart, firstAlignment.refEnd, secondAlignment.refStart, secondAlignment.refEnd,
 					firstAlignment.readStart, firstAlignment.readEnd, secondAlignment.readStart, secondAlignment.readEnd,
 					read.readSequence.length(),
