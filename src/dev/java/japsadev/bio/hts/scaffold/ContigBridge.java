@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
+import japsa.util.Range;
 
 import japsa.bio.np.ErrorCorrection;
 
@@ -61,10 +62,11 @@ import japsa.bio.np.ErrorCorrection;
 public class ContigBridge implements Comparable<ContigBridge>{
 
 	Contig firstContig, secondContig;
+	Range firstContigAlignedRange, secondContigAlignedRange;
 	final String hashKey;
 	final int orderIndex;
 	
-	private double score = 0;//more is better
+	private double score = 0, secondaryScore = 0;//secondaryScore is score of confident alignments
 	private ScaffoldVector transVector = null;
 	private Connection connection = null;// the representative connection of this bridge
 	private int numOfConnections = 0;
@@ -87,7 +89,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		secondContig = c2;
 		orderIndex = ind;		
 		hashKey = makeHash(c1.index,c2.index, orderIndex);
-		
+				
 	}
 	/**
 	 * Re-assign the two contigs
@@ -99,8 +101,12 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		dolly.bridgePath=bridgePath;
 		dolly.transVector=transVector;
 		dolly.score=score;
+		dolly.secondaryScore=secondaryScore;
+
 		dolly.connection=connection;
 		dolly.numOfConnections=numOfConnections;
+		
+		dolly.firstContigAlignedRange=dolly.secondContigAlignedRange=null;
 		return dolly;
 
 	}
@@ -135,10 +141,29 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	
 		Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
 		numOfConnections++;
+		
+		double tmpScore=0;
+		if(firstAlignment.confident && secondAlignment.confident)
+			tmpScore=firstAlignment.score*secondAlignment.score/(firstAlignment.score+secondAlignment.score);
+		secondaryScore=Math.max(secondaryScore, tmpScore);
+		
 		//the metric for bridge score is important!
-		score = newConnect.score>score?newConnect.score:score;
 //		score = score>sc?score:sc;
 //		score += sc;
+//		score = newConnect.score>score?newConnect.score:score;
+
+		Range 	r1 = new Range(firstAlignment.refStart,firstAlignment.refEnd),
+				r2 = new Range(secondAlignment.refStart,secondAlignment.refEnd);
+		if(firstContigAlignedRange == null || secondContigAlignedRange == null){
+			firstContigAlignedRange = r1;
+			secondContigAlignedRange = r2;
+		}else{
+			firstContigAlignedRange.merge(r1);
+			secondContigAlignedRange.merge(r2);
+		}
+		int a= firstContigAlignedRange.getDistance(),
+			b= secondContigAlignedRange.getDistance();	
+		score=a*b/(a+b);
 		
 		if(connection == null || connection.gapsBetween() > newConnect.gapsBetween())	{
 			transVector = trans;
@@ -315,7 +340,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			String readID=p.getID();
 			Sequence seq=p.spelling();
 			int refStart, refEnd, readLength=seq.length(), readStart, readEnd, score=Integer.MAX_VALUE;
-			boolean strand, useful=true;
+			boolean strand;
 			
 			refStart=firstContig.length()-tip1.getSeq().length()+1; refEnd=firstContig.length();
 			readStart=1; readEnd=tip1.getSeq().length();
@@ -327,7 +352,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				readEnd=tmp;
 				strand=false;
 			}
-			AlignmentRecord firstAlignment=new AlignmentRecord(readID, refStart, refEnd, readLength, readStart, readEnd, strand, useful, firstContig, score);
+			AlignmentRecord firstAlignment=new AlignmentRecord(readID, refStart, refEnd, readLength, readStart, readEnd, strand, true, true, firstContig, score);
 			
 			refStart=1;	refEnd=tip2.getSeq().length();
 			readStart=readLength-tip2.getSeq().length()+1; readEnd=readLength;
@@ -339,7 +364,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				readEnd=tmp;
 				strand=false;
 			}
-			AlignmentRecord secondAlignment=new AlignmentRecord(readID, refStart, refEnd, readLength, readStart, readEnd, strand, useful, secondContig, score);
+			AlignmentRecord secondAlignment=new AlignmentRecord(readID, refStart, refEnd, readLength, readStart, readEnd, strand, true, true, secondContig, score);
 			ArrayList<AlignmentRecord> list = new ArrayList<AlignmentRecord>();
 			list.add(firstAlignment);
 			list.add(secondAlignment);
@@ -467,6 +492,13 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	public int getNumOfConnections() {
 		return numOfConnections;
 	}	
+	/**
+	 * 
+	 * @return total number of confident alignments out of useful alignments
+	 */
+	public double getSecondaryScore(){
+		return secondaryScore;
+	}
 	/*
 	 * @return the equivalent path
 	 */
@@ -641,11 +673,15 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	}
 	public void display(){
 		System.out.printf("##################START########################\n"
-				+ "Contig %3d (%d) -> Contig %3d (%d) Vector (%s) score = %f distance = %d\n",
+				+ "Contig %3d (%d:%d-%d) -> Contig %3d (%d:%d-%d) Vector (%s) score = %f distance = %d\n",
 				this.firstContig.index,
 				this.firstContig.length(),
+				ScaffoldGraph.contigsRange.get(firstContig.getIndex()).getLeft(),
+				ScaffoldGraph.contigsRange.get(firstContig.getIndex()).getRight(),
 				this.secondContig.index,
 				this.secondContig.length(),
+				ScaffoldGraph.contigsRange.get(secondContig.getIndex()).getLeft(),
+				ScaffoldGraph.contigsRange.get(secondContig.getIndex()).getRight(),
 				transVector.toString(),
 				this.score,
 				transVector.distance(firstContig, secondContig)				
@@ -660,7 +696,16 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	 */
 	@Override
 	public int compareTo(ContigBridge o) {
-		return (int) (o.score - score);
+//		return (int) (o.score - score);
+		if(o==null)
+			return -1;
+		
+		int retval=0;
+		if(Math.min(o.score, score) < .66*Math.max(o.score, score))
+			retval=(int)(o.score-score);
+		else
+			retval=(int)(o.getSecondaryScore()-getSecondaryScore());
+		return retval;
 
 	}	
 	

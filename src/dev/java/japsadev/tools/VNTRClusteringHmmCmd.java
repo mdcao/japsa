@@ -244,14 +244,15 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 
 			SAMRecordIterator iter = reader.query(str.getParent(), start, end, false);
 
+	
 			String fileName = prefix + "_" + str.getID() + "_i.fasta";
 			String tempFile = str.getID();	
 			
 			SequenceOutputStream os = SequenceOutputStream.makeOutputStream(fileName);
 
 			//			double var = 0;
-			TandemRepeatVariant trVar = new TandemRepeatVariant();
-			trVar.setTandemRepeat(str);
+//			TandemRepeatVariant trVar = new TandemRepeatVariant();
+//			trVar.setTandemRepeat(str);
 
 			int readIndex = 0;
 
@@ -259,6 +260,8 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			readSequences.clear();
 			while (iter.hasNext()) {
 				SAMRecord rec = iter.next();
+				LOG.info("Iterating SAM record of read=" + rec.getReadName() + " qual="+rec.getMappingQuality()+
+						" region: " + rec.getAlignmentStart() + "(" + start +  ")" + "-" +rec.getAlignmentEnd() + "(" + end +  ")");
 				// Check qualilty
 				if (rec.getMappingQuality() < qual) {
 					continue;
@@ -311,10 +314,10 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 						
 			ArrayList<ArrayList<String>> clusterResult = new ArrayList<ArrayList<String>>();
 			
-			KmeanClusteringWithReads clusterObj1 = new KmeanClusteringWithReads();
+//			KmeanClusteringWithReads clusterObj1 = new KmeanClusteringWithReads();
 			
 
-			clusterResult = clusterObj1.Clustering(tempReads);
+			clusterResult = KmeanClusteringWithReads.Clustering(tempReads);
 			
 			ArrayList<String> cluster1String = clusterResult.get(1);
 			ArrayList<String> cluster2String = clusterResult.get(2);
@@ -323,6 +326,9 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			ArrayList<Sequence> cluster2Sequence = new ArrayList<Sequence>();
 			Sequence tempSeq1;Sequence tempSeq2;
 			
+			LOG.info("Number of spanning reads: "+readIndex);
+			LOG.info("Size of cluster 1: "+cluster1String.size());
+			LOG.info("Size of cluster 2: "+cluster2String.size());
 			//seq = new Sequence(Alphabet.DNA16(), sequenceString, sequenceName)
 			if(cluster1String.size()>0){
 				for(int x=0; x<cluster1String.size();x++){
@@ -330,6 +336,9 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 					tempSeq1 = new Sequence(dna, str1,  tempReadSequences.get(str1));
 					cluster1Sequence.add(tempSeq1);
 				}
+			}else{
+				outOS.print("XXXXX Cluster 1 is empty!");
+				return;
 			}
 			
 			
@@ -339,15 +348,17 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 					tempSeq2 = new Sequence(dna, str2,  tempReadSequences.get(str2));
 					cluster2Sequence.add(tempSeq2);
 				}
-			}			
+			}else{
+				outOS.print("XXXXX Cluster 2 is empty!");
+				return;
+			}
+			
 			
 			Sequence cluster1Consensus
 					= ErrorCorrection.consensusSequence(cluster1Sequence, prefix + "_cluster1_"+tempFile, "kalign");
-			cluster1Consensus.setName("consensus1");
 
 			Sequence cluster2Consensus
 					= ErrorCorrection.consensusSequence(cluster2Sequence, prefix + "_cluster2_"+tempFile, "kalign");
-			cluster2Consensus.setName("consensus2");
 			
 			//WriteClusterResultOnFile clusterObj2 = new WriteClusterResultOnFile();
 			//clusterObj2.writeOnFile(clusterResult, cluster1Consensus, cluster2Consensus, tempFile);
@@ -366,9 +377,11 @@ public class VNTRClusteringHmmCmd extends CommandLine {
 			ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);
 			//-1 for 0-index, inclusive
 			outOS.print("####Allele 1\n");
-			if (cluster1Consensus != null)
-				processRead(cluster1Consensus, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
-			else
+			if (cluster1Consensus != null){
+				cluster1Consensus.setName("consensus1");
+				processRead(cluster1Consensus, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );		
+				
+			}else
 				outOS.print("##No consensus found  for 1");
 
             //speed//MDC comment this out to improve speed now that we only use consensus
@@ -378,8 +391,10 @@ public class VNTRClusteringHmmCmd extends CommandLine {
             //speed//	outOS.print("##No cluster found for 1");
 
 			outOS.print("####Allele 2\n");
-			if (cluster2Consensus != null)
+			if (cluster2Consensus != null){
+				cluster2Consensus.setName("consensus2");
 				processRead(cluster2Consensus, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
+			}
 			else
 				outOS.print("##No consensus found  for 2");
             //speed//if (cluster2Sequence.size() >= 1) {

@@ -122,6 +122,7 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 
 		int numNotAligned = 0;
 
+		String log = "###Read_name\tRead_length\tReference_length\tInsertions\tDeletions\tMismatches\n";
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
 
@@ -166,6 +167,7 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 			japsa.util.HTSUtilities.IdentityProfile profile = 
 				HTSUtilities.identity(chr, readSeq, sam);			
 
+			log+=sam.getReadName() + "\t" + profile.readBase + "\t" + profile.refBase + "\t" + profile.baseIns + "\t" + profile.baseDel + "\t" + profile.mismatch+ "\n";
 
 			totBaseIns  += profile.baseIns;
 			totBaseDel  += profile.baseDel;
@@ -178,9 +180,11 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 			totRefBase  += profile.refBase;			
 			totClipped += profile.readClipped;
 			//numReadsConsidered ++;
+			
 		}		
 		samReader.close();
 
+		System.out.println("========================= TOTAL ============================");
 
 		//Done
 
@@ -224,7 +228,9 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 		System.out.printf("Mismatch rate    : %.4f\n",totMisMatch*1.0/totRefBase);
 		System.out.printf("Identity rate    : %.4f\n",totMatch*1.0/totRefBase);
 		System.out.println("=============================================================");
+		System.out.println("=============================================================");
 
+		System.out.println(log);
 	}
 
 }

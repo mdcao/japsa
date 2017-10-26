@@ -40,6 +40,7 @@ import java.util.stream.IntStream;
 import japsa.seq.Sequence;
 import japsa.util.Logging;
 import japsa.seq.JapsaFeature;
+import japsa.util.Range;
 
 public class Contig{
 	int index;

@@ -47,6 +47,8 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.Logging;
+import japsa.util.Range;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -76,6 +78,7 @@ public abstract class ScaffoldGraph{
 	public static volatile byte assembler =0b00; // 0 for SPAdes, 1 for ABySS
 	
 	public static HashMap<Integer,Integer> countOccurence=new HashMap<Integer,Integer>();
+	
 	public String prefix = "out";					
 	public static double estimatedCov = 0;
 	private static double estimatedLength = 0;
@@ -87,6 +90,10 @@ public abstract class ScaffoldGraph{
 	HashMap<String, ContigBridge> bridgeMap= new HashMap<String, ContigBridge>();
 	static HashMap<Integer, ArrayList<ContigBridge>> bridgesFromContig = new HashMap<Integer, ArrayList<ContigBridge>>();
 
+	static HashMap<Integer, Range> contigsRange = new HashMap<Integer, Range>(); // for each contigs, save a pair of cooridnates (i,j)
+	//for which, (0,i) and (j,contig.length()-1) are of low confident
+	// so that an useful alignment must spanning these regions
+	
 	Scaffold [] scaffolds; // DNA translator, previous image of sequence is stored for real-time processing
 	int scfNum, cirNum; // assembly statistics: number of contigs and circular ones.
 	
@@ -129,6 +136,9 @@ public abstract class ScaffoldGraph{
 
 			contigs.add(ctg);
 			bridgesFromContig.put(ctg.getIndex(), new ArrayList<ContigBridge>());
+			
+			contigsRange.put(ctg.getIndex(), new Range(0,ctg.length()-1));
+			
 			index ++;
 		}
 		reader.close();

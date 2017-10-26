@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
+import japsa.util.Range;
 
 public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	static final double matchCost = 0;
@@ -57,14 +58,14 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	public int readLength = 0;		
 
 	public boolean strand = true;//positive
-	public boolean useful = false;
+	public boolean useful = false, confident = false;
 	int qual=0; //alignment quality
 	
 	ArrayList<CigarElement> alignmentCigars = new ArrayList<CigarElement>();
 	
 
 	public AlignmentRecord(String readID, int refStart, int refEnd, int readLength, 
-			int readStart, int readEnd, boolean strand, boolean useful, Contig contig, int score){
+			int readStart, int readEnd, boolean strand, boolean useful, boolean confident, Contig contig, int score){
 		this.readID = readID;
 		this.contig = contig;
 		this.refStart = refStart;
@@ -74,7 +75,8 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		this.readStart = readStart;//1-index
 		this.readEnd = readEnd;//1-index
 		this.strand = strand;
-		this.useful = useful;			
+		this.useful = useful;	
+		this.confident = confident;
 		this.contig = contig;
 		this.score = score;
 	}
@@ -150,11 +152,33 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 		//DETERMINE IF ALIGNMENT IS FIT FOR BRIDGING OR NOT
 		int mapLen=(refEnd + 1 - refStart);
 		if(mapLen > ScaffoldGraph.minContigLength){
+			/* ORIGINAL */
 			if (
 					(readLeft < ScaffoldGraph.marginThres || refLeft < ScaffoldGraph.marginThres) &&
 					(readRight  < ScaffoldGraph.marginThres || refRight < ScaffoldGraph.marginThres) 
 				)
 				useful = true;
+//			
+			Range r = ScaffoldGraph.contigsRange.get(contig.getIndex());
+			/* contigsRange */
+			if(Math.min(refLeft,readLeft) > ScaffoldGraph.marginThres 
+//			if(Math.min(refLeft,readLeft) > (refEnd-refStart) 
+					&& refRight < 2*ScaffoldGraph.marginThres){
+				r.setRight(Math.min(r.getRight(), refStart));
+			}
+			else if(Math.min(refRight,readRight) > 2*ScaffoldGraph.marginThres 
+//			else if(Math.min(refRight,readRight) > (refEnd-refStart) 
+					&& refLeft < ScaffoldGraph.marginThres){
+				r.setLeft(Math.max(r.getLeft(), refEnd));
+			}
+			else if  (
+					(readLeft < ScaffoldGraph.marginThres || (refLeft < ScaffoldGraph.marginThres && refRight > ScaffoldGraph.contigsRange.get(contig.getIndex()).getLeft())) &&
+					(readRight  < ScaffoldGraph.marginThres || (refRight < ScaffoldGraph.marginThres && refRight > ScaffoldGraph.contigsRange.get(contig.getIndex()).getLeft())) 
+			){
+				confident = true;
+			}
+			
+			/* lowconfidentRegion */
 //			else if(qual==0){
 //				if(ScaffoldGraph.verbose){
 //					System.out.println(this + " : adding ("+refStart+","+refEnd+") to low");
@@ -213,7 +237,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	//TODO: change to object self-editing function?
 	public AlignmentRecord reverseRead(){
 		AlignmentRecord revAlign = new AlignmentRecord(readID, refStart, refEnd, readLength, 
-		readLength - readStart + 1, readLength - readEnd + 1, !strand, useful, contig, score);
+		readLength - readStart + 1, readLength - readEnd + 1, !strand, useful, confident, contig, score);
 		
 		revAlign.alignmentCigars = alignmentCigars;
 
@@ -221,7 +245,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	}
 	public AlignmentRecord clones(){
 		AlignmentRecord align = new AlignmentRecord(readID, refStart, refEnd, readLength,
-				readStart, readEnd, strand, useful, contig, score);
+				readStart, readEnd, strand, useful, confident, contig, score);
 		
 		align.alignmentCigars = alignmentCigars;
 

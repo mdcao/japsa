@@ -311,7 +311,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			int maxLink = bridges.size(),
 				extendDir = 0, //direction to go on the second scaffold: ScaffoldT (realtime mode)
 				curStep = Integer.MAX_VALUE; //distance between singleton1 -> singleton2
-			double	curScore = 0.0; //score between singleton1 -> singleton2
+			//double	curScore = 0.0; //score between singleton1 -> singleton2
 			ContigBridge stepBridge = null;
 			
 			ArrayList<Contig> extendableContig = new ArrayList<Contig>(maxLink);
@@ -349,21 +349,32 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 								continue;
 							}
 						}
-						if(distance > -maxRepeatLength && bridge.getNumOfConnections() >= minSupportReads && bridge.getScore() > curScore ){
+						if(distance > -maxRepeatLength && bridge.getNumOfConnections() >= minSupportReads && bridge.compareTo(stepBridge) <0){
 							if(verbose){
 								bridge.display();
-								System.out.println("Low ranges of " + bridge.firstContig.getName() + ": " + bridge.firstContig.displayLowConfidentRegions());
-								System.out.println("Low ranges of " + bridge.secondContig.getName() + ": " + bridge.secondContig.displayLowConfidentRegions());
+//								System.out.println("Low ranges of " + bridge.firstContig.getName() + ": " + bridge.firstContig.displayLowConfidentRegions());
+//								System.out.println("Low ranges of " + bridge.secondContig.getName() + ": " + bridge.secondContig.displayLowConfidentRegions());
 							}
 							curStep = distance;
-							curScore = bridge.getScore();
+							//curScore = bridge.getScore();
 							stepBridge = bridge;
 							extendDir = aDir;
-						}else{
-							if(verbose)
+						}else if(bridge.compareTo(stepBridge) > 0){
+							if(verbose){
 								System.out.printf("Cannot form unique bridge from %d to %d with %d connections and score %.2f\n", 
 												ctg.getIndex(), nextContig.getIndex(), bridge.getNumOfConnections(), bridge.getScore());
+								bridge.display();
+							}
 							continue;
+						}else{ //bridges have similar score!
+							if(verbose){
+								System.out.println("Conflict bridges of unique contigs: " + bridge.hashKey + " score=" + bridge.getScore() + " and " + stepBridge.hashKey + " score=" + stepBridge.getScore());
+								bridge.display();
+								stepBridge.display();
+							}
+							stepBridge=null;
+							break;
+								
 						}
 					}
 					
