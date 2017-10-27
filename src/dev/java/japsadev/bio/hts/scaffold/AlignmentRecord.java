@@ -163,10 +163,10 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 			/* contigsRange */
 			if(Math.min(refLeft,readLeft) > ScaffoldGraph.marginThres 
 //			if(Math.min(refLeft,readLeft) > (refEnd-refStart) 
-					&& refRight < 2*ScaffoldGraph.marginThres){
+					&& refRight < ScaffoldGraph.marginThres){
 				r.setRight(Math.min(r.getRight(), refStart));
 			}
-			else if(Math.min(refRight,readRight) > 2*ScaffoldGraph.marginThres 
+			else if(Math.min(refRight,readRight) > ScaffoldGraph.marginThres 
 //			else if(Math.min(refRight,readRight) > (refEnd-refStart) 
 					&& refLeft < ScaffoldGraph.marginThres){
 				r.setLeft(Math.max(r.getLeft(), refEnd));

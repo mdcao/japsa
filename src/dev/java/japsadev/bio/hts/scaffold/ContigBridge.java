@@ -47,7 +47,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import japsa.util.Range;
-
+import japsa.bio.hts.scaffold.ContigBridge.Connection;
 import japsa.bio.np.ErrorCorrection;
 
 /**
@@ -70,6 +70,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	private ScaffoldVector transVector = null;
 	private Connection connection = null;// the representative connection of this bridge
 	private int numOfConnections = 0;
+	private ArrayList<Connection> connections;//a list of connections that make up this
+
 	private Path bridgePath=null;
 	
 
@@ -88,8 +90,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		firstContig = c1;
 		secondContig = c2;
 		orderIndex = ind;		
-		hashKey = makeHash(c1.index,c2.index, orderIndex);
-				
+		hashKey = makeHash(c1.index,c2.index, orderIndex);				
+		connections = new  ArrayList<Connection>();
+
 	}
 	/**
 	 * Re-assign the two contigs
@@ -105,6 +108,8 @@ public class ContigBridge implements Comparable<ContigBridge>{
 
 		dolly.connection=connection;
 		dolly.numOfConnections=numOfConnections;
+		
+		dolly.connections=connections;
 		
 		dolly.firstContigAlignedRange=dolly.secondContigAlignedRange=null;
 		return dolly;
@@ -169,7 +174,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			transVector = trans;
 			connection=newConnect;			
 		}	
-
+		
+		if(!ScaffoldGraph.eukaryotic)
+			connections.add(newConnect);
 		
 		return score;
 	}
@@ -687,7 +694,13 @@ public class ContigBridge implements Comparable<ContigBridge>{
 				transVector.distance(firstContig, secondContig)				
 				);
 
-		connection.display();
+		if(ScaffoldGraph.eukaryotic)
+			connection.display();
+		else{
+			Collections.sort(connections);
+			for (Connection connect:connections)
+				connect.display();
+		}
 		System.out.println("##################END########################");
 	}
 
@@ -701,10 +714,12 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			return -1;
 		
 		int retval=0;
-		if(Math.min(o.score, score) < .66*Math.max(o.score, score))
+		if(Math.min(o.score, score) > .66*Math.max(o.score, score))
+			retval=(int)(o.getSecondaryScore()-getSecondaryScore());	
+		
+		if(retval==0)
 			retval=(int)(o.score-score);
-		else
-			retval=(int)(o.getSecondaryScore()-getSecondaryScore());
+
 		return retval;
 
 	}	

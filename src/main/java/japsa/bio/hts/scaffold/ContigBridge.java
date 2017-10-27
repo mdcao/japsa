@@ -133,28 +133,28 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	
 		//NB: firstAlignment for firstContig, secondAlignment for secondContig
 		Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
-		Range 	r1 = new Range(firstAlignment.refStart,firstAlignment.refEnd),
-				r2 = new Range(secondAlignment.refStart,secondAlignment.refEnd);
-		
-		if(firstContigAlignedRange == null || secondContigAlignedRange == null){
-			firstContigAlignedRange = r1;
-			secondContigAlignedRange = r2;
-		}else{
-			firstContigAlignedRange.merge(r1);
-			secondContigAlignedRange.merge(r2);
-		}
-		int a= firstContigAlignedRange.getDistance(),
-			b= secondContigAlignedRange.getDistance();	
-		score=a*b/(a+b);
+//		Range 	r1 = new Range(firstAlignment.refStart,firstAlignment.refEnd),
+//				r2 = new Range(secondAlignment.refStart,secondAlignment.refEnd);
+//		
+//		if(firstContigAlignedRange == null || secondContigAlignedRange == null){
+//			firstContigAlignedRange = r1;
+//			secondContigAlignedRange = r2;
+//		}else{
+//			firstContigAlignedRange.merge(r1);
+//			secondContigAlignedRange.merge(r2);
+//		}
+//		int a= firstContigAlignedRange.getDistance(),
+//			b= secondContigAlignedRange.getDistance();	
+//		score=a*b/(a+b);
 		
 		if (transVector == null){
 			transVector = trans;
-//			score = sc;			
+			score = sc;			
 //			score = newConnect.score;						
 		}else{		
 			//the metric for bridge score is important!
 //			score = newConnect.score>score?newConnect.score:score;
-//			score += sc;
+			score += sc;
 //			score = score>sc?score:sc;
 		}
 		
