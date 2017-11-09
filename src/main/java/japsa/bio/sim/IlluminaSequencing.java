@@ -57,6 +57,24 @@ public class IlluminaSequencing{
 	 * @throws IOException
 	 */
 	public static void simulatePaired(Sequence fragment, SequenceOutputStream o1 , SequenceOutputStream o2, Random rnd) throws IOException{		
+		//double r = 
+		int len = Math.min(default_illen, fragment.length());
+		simulatePaired(fragment, len, o1 , o2, rnd);
+	}
+	
+	private final static int default_illen = 250;
+	private final static int maximum_illen = 300;
+	
+	public static int IlluminaReadDefaultLength() {
+		return default_illen;
+	}
+	
+	public static int IlluminaReadMaximumLength() {
+		return maximum_illen;
+	}
+	
+	// can specify read length
+	public static void simulatePaired(Sequence fragment, int illen, SequenceOutputStream o1 , SequenceOutputStream o2, Random rnd) throws IOException{		
 
 		double snp = 0.01;
 		double del = 0.0001;				
@@ -64,7 +82,8 @@ public class IlluminaSequencing{
 		double ext = 0.2;
 
 		//double r = 
-		int len = Math.min(250, fragment.length());
+		int len = Math.min(illen, fragment.length());
+		
 		String name = fragment.getName();				
 
 		SequenceBuilder read1 = SequencingSimulation.simulateRead(fragment, len, snp, del, ins, ext, rnd);
@@ -116,6 +135,5 @@ public class IlluminaSequencing{
 			o1.print("\n");
 		}
 	}
-
 	
 }

@@ -104,7 +104,7 @@ public class SimulateCaptureCmd extends CommandLine{
 
 		addInt("pblen", 30000, "PacBio: Average (polymerase) read length");
 
-		addInt("illen", 300, "Illumina: read length");
+		addInt("illen", 250, "Illumina: read length");
 		addString("ilmode", "pe", "Illumina: Sequencing mode: pe = paired-end, mp=mate-paired and se=singled-end");
 
 		addInt("seed", 0, "Random seed, 0 for a random seed");
@@ -135,6 +135,14 @@ public class SimulateCaptureCmd extends CommandLine{
 		int pblen = cmdLine.getIntVal("pblen");
 		int pbshape = 6;
 
+		int illen = cmdLine.getIntVal("illen");
+		if(illen>IlluminaSequencing.IlluminaReadMaximumLength()) {
+			int mllen = IlluminaSequencing.IlluminaReadMaximumLength();
+			Logging.warn("Illumina read length specified is greater than "+mllen+". "
+					+ "Use "+mllen+" instead.");
+			illen = mllen;
+		}
+		
 		String miseq       =  cmdLine.getStringVal("miseq");
 		String pacbio       =  cmdLine.getStringVal("pacbio");
 
@@ -458,7 +466,7 @@ public class SimulateCaptureCmd extends CommandLine{
 			//	seq.writeFasta(sos);
 
 			if (miSeq1Fq != null){
-				IlluminaSequencing.simulatePaired(seq, miSeq1Fq, miSeq2Fq, rnd);
+				IlluminaSequencing.simulatePaired(seq, illen, miSeq1Fq, miSeq2Fq, rnd);
 			}
 
 			if (pacbioFq != null){
