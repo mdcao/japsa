@@ -82,7 +82,7 @@ public class IlluminaSequencing{
 		double ext = 0.2;
 
 		//double r = 
-		int len = Math.min(illen, fragment.length());
+		int len = Math.min(maximum_illen, Math.min(illen, fragment.length()));
 		
 		String name = fragment.getName();				
 
