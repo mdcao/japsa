@@ -1,4 +1,4 @@
-package japsa.tools;
+package japsadev.tools;
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
 

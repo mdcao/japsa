@@ -220,7 +220,7 @@ public class VNTRDepthAnalyserCmd extends CommandLine{
 					double lengthSlow  = 1;//(flankings + lengthR) / (dist.getMean() + 2 * dist.getStandardDeviation()) - flankings;
 				}else{
 					double conf = 0.95;
-					VNTRGenotyper vg = new VNTRGenotyper();
+					VNTRGenotyper vg = new VNTRGenotyper(1); //change as Lachlan's
 
 					vg.setRef(refAllele, countR, totR - countR) ;
 					vg.setSample(countS, totS - countS);

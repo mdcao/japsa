@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsa.tools;
+package japsadev.tools;
 
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.Alphabet;
@@ -50,12 +50,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import net.sf.samtools.Cigar;
-import net.sf.samtools.CigarElement;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileReader.ValidationStringency;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 
@@ -692,10 +693,11 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 	 */
 
 	static void stage2_spanRead(String bamFile, String xafFile) throws IOException{		
-		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SAMFileReader samReader = new  SAMFileReader(new File(bamFile));
+//		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
+//		SAMFileReader samReader = new  SAMFileReader(new File(bamFile));
 		//SAMFileHeader samHeader = samReader.getFileHeader();
-
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
 
 		//String xafFile = "";
 		XAFReader xafReader = new XAFReader(xafFile);
