@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsadev.tools;
+package japsa.tools;
 
 import japsa.bio.tr.TandemRepeat;
 import japsa.seq.Alphabet;
@@ -41,25 +41,23 @@ import japsa.seq.SequenceReader;
 import japsa.seq.XAFReader;
 import japsa.util.BetaBinomialModel;
 import japsa.util.CommandLine;
+import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
+import net.sf.samtools.Cigar;
+import net.sf.samtools.CigarElement;
+import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMFileReader.ValidationStringency;
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecordIterator;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
-
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -68,10 +66,24 @@ import org.slf4j.LoggerFactory;
  */
 @Deployable(scriptName = "jsa.dev.captureVNTR", 
 scriptDesc = "VNTR typing using capture sequencing")
-public class CaptureVNTR extends CommandLine{
-	private static final Logger LOG = LoggerFactory.getLogger(CaptureVNTR.class);
+public class CaptureVNTR extends CommandLine{	
+	
+static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg19_SMGcore.LCDG.20140908.006_S6_bmem.rdepth"}, 
+			 new String[] {"Illumina_NA12878_1", "hg19_NA12878_800bp_Post_Capture_S2_bmem.rdepth2"},
+		 new String[] {"Illumina_NA12891" ,  "hg19_NA12891_800bp_Post_Capture_S4_bmem.rdepth2"},
+			 new String[] {"Illumina_NA12877" ,  "hg19_SMGcore.LCDG.20140908.001_S1_bmem.rdepth"  },
+				 new String[] {"Illumina_NA12879" ,  "hg19_SMGcore.LCDG.20140908.002_S2_bmem.rdepth"  },
+					 new String[] {"Illumina_NA12889" ,  "hg19_SMGcore.LCDG.20140908.003_S3_bmem.rdepth"  },
+						 new String[] {"Illumina_NA12890" ,  "hg19_SMGcore.LCDG.20140908.004_S4_bmem.rdepth"  },
+							 new String[] {"Illumina_NA12892"  , "hg19_SMGcore.LCDG.20140908.005_S5_bmem.rdepth"} } ;
 
-
+	static Map<String, String>hm =  new HashMap();
+	static{
+		for(int i=0; i<map.length; i++){
+			hm.put(map[i][1], map[i][0]);
+		}
+	}
+	
 	public CaptureVNTR(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -106,7 +118,7 @@ public class CaptureVNTR extends CommandLine{
 	}  
 
 
-
+   /*note the output file also includes information on downsampling */
 	public static void main(String [] args) throws IOException, InterruptedException{
 		CommandLine cmdLine = new CaptureVNTR();		
 		args = cmdLine.stdParseLine(args);			
@@ -155,20 +167,25 @@ public class CaptureVNTR extends CommandLine{
 
 		if (stage == 6){
 			String dir = cmdLine.getStringVal("directory");
-			for(int i=0; i<args.length; i++){
+			/*for(int i=0; i<args.length; i++){
 				args[i] = dir+"/"+args[i];
-			}
+			}*/
 			String[] resamples = resample.split(":");
-			for(int i=0; i<resamples.length; i++){
+			/*for(int i=0; i<resamples.length; i++){
 				resamples[i] = dir+"/"+resamples[i];
-			}
-			stage6_readDepthAnalysis(xafFile,resamples, resAllele, args, output,stat, readLength);
+			}*/
+			stage6_readDepthAnalysis(xafFile,resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength);
 		}
 
 	}
 	/**
 	 * Analyse data resulted from stage 3
-
+	 * @param xafFile: information of repeats
+	 * @param resample: reference sample
+	 * @param sFiles : analysied samples
+	 * @param outputFile
+	 * @throws IOException
+	 * @throws InterruptedException
 	 */
 	static void stage5_readDepthAnalysis(String xafFile, String rData, String[] sFiles, String outputFile, int stat, int readLength) throws IOException, InterruptedException{
 		if (sFiles.length ==0)
@@ -228,8 +245,7 @@ public class CaptureVNTR extends CommandLine{
 
 			rReader.next();
 			if( !ID.equals(rReader.getField("ID"))){
-				LOG.error("Wrong ID at line " + rReader.lineNo());
-				System.exit(1);
+				Logging.exit("Wrong ID at line " + rReader.lineNo(),1);
 			}
 
 			for (int i = 0; i < sFiles.length;i++){
@@ -259,8 +275,7 @@ public class CaptureVNTR extends CommandLine{
 
 			for (int i = 0; i < sFiles.length;i++){
 				if( !ID.equals(sReaders[i].getField("ID"))){
-					LOG.error("Wrong ID at line " + rReader.lineNo());
-					System.exit(1);
+					Logging.exit("Wrong ID at line " + rReader.lineNo(),1);
 				}
 
 				double countS = Double.parseDouble(sReaders[i].getField(repCol));
@@ -312,29 +327,53 @@ public class CaptureVNTR extends CommandLine{
 		}
 	}
 
+	 static double downsample = 1; // this will need to be modified mannually
 
 	/**
 	 * Analyse data resulted from stage 3
-
+	 * @param xafFile: information of repeats
+	 * @param resample: reference sample
+	 * @param sDir:  file with samples to analyse
+	 * @param outputFile
+	 * @throws IOException
+	 * @throws InterruptedException
 	 */
-	static void stage6_readDepthAnalysis(String xafFile, String[] rData, String resAllele, String[] sFiles, String outputFile, int stat, int readLength) throws IOException, InterruptedException{
+	static void stage6_readDepthAnalysis(String xafFile, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1) throws IOException, InterruptedException{
+		File[] sFiles = sDir.listFiles();
 		if (sFiles.length ==0)
 			return;	
-
+		double[] CI = null;
+		try{
+		 String[] str_=  outputFile.split("\\.");//SimulatedCapture.10;20;30;40;50;60;70;80;90;95.2,25dat
+		 String[] str = str_[1].split(";");
+		 String str2 = str_[str_.length-1];
+		 if(str2.indexOf("dat")>0){
+			 downsample = Double.parseDouble(str2.substring(0, str2.indexOf("dat")).replace(',', '.'));
+		 }
+		 CI = new double[str.length];
+		 for(int i=0; i<str.length; i++){
+			 CI[i] = Double.parseDouble(str[i])/100.0;
+		 }
+		}catch(Exception exc ){
+			
+			Logging.exit("outputfile should be in form name.CI1;CI2.dat", 9);
+			
+		}
+		double readLength = (double) readLength1;
 		String [] sampleID = new String[sFiles.length];
 
 		XAFReader [] sReaders = new XAFReader[sFiles.length];
 		for (int i = 0; i < sFiles.length;i++){
-			File file = new File(sFiles[i]);
+			File file = sFiles[i];
 			sampleID[i] = file.getName();
 			sampleID[i] = sampleID[i].replaceAll(".xaf", "");
-			sReaders[i] = new XAFReader(sFiles[i]);
+			sReaders[i] = new XAFReader(file.getAbsolutePath());
 		}
 
 		XAFReader xafReader = new XAFReader(xafFile);
 		XAFReader[] rReader = new XAFReader[rData.length];
 		for(int i=0; i<rData.length; i++){
-			rReader[i] = new XAFReader(rData[i]);	
+			rReader[i] = new XAFReader(sDir.getAbsolutePath()+"/"+rData[i]);	
 		}	
 		XAFReader rAlleleReader = new XAFReader(resAllele);
 
@@ -344,6 +383,7 @@ public class CaptureVNTR extends CommandLine{
 		for (int i = 0; i < sFiles.length;i++){
 			sos.print("\t" + sampleID[i]);
 		}
+		sos.print("\tsumCountS;sumTotS;countR;totR");
 		sos.print('\n');
 
 		int repCol = stat * 2 + 6;
@@ -364,6 +404,7 @@ public class CaptureVNTR extends CommandLine{
 			repCol = 14;
 			seqCol = 16;			
 		}		
+		double sumCountS, sumTotS;
 		
 		for (; xafReader.next() != null;){
 			
@@ -382,15 +423,12 @@ public class CaptureVNTR extends CommandLine{
 				rReader[i].next();
 			}
 			if( !ID.equals(rReader[0].getField("ID"))){
-				LOG.error("Wrong ID at line a " + rReader[0].lineNo());
-				System.exit(1);
-
+				Logging.exit("Wrong ID at line a " + rReader[0].lineNo(),1);
 			}
 			
 			rAlleleReader.next();
 			if( !ID.equals(rAlleleReader.getField("ID"))){
-				LOG.error("Wrong ID at line b " + rAlleleReader.lineNo());
-				System.exit(1);
+				Logging.exit("Wrong ID at line b " + rAlleleReader.lineNo(),1);
 			}
 			
 			for (int i = 0; i < sFiles.length;i++){
@@ -399,18 +437,21 @@ public class CaptureVNTR extends CommandLine{
 			
 			String refAlleleStr =  rAlleleReader.getField("refAllele");
 			if (refAlleleStr == null){
-				continue;//while
+				throw new RuntimeException("is null");
+//				continue;//while
 			}
 			
 			double refAllele = 0;
 			try{
 				refAllele = Double.parseDouble(refAlleleStr);
 			}catch(Exception e){
-				continue;//while
+//				continue;//while
+				refAllele = Double.NaN;
 			}			
-			if (refAllele == 0)
-				continue;//while
-			
+//			if (refAllele == 0)
+	//			
+	//			continue;//while
+				
 
 			sos.print(ID);
 			sos.print('\t');
@@ -434,61 +475,52 @@ public class CaptureVNTR extends CommandLine{
 			countR  = countR / readLength;
 			totR = totR / readLength;
 			
+			
+			
+			sumCountS =0;
+			sumTotS =0;
+			
 			for (int i = 0; i < sFiles.length;i++){
 				
-						String[] name = sFiles[i].split("/");
-						String nme = name[name.length-1];
+					//	String[] name = sFiles[i].split("/");
+						String nme = sFiles[i].getName();
 						System.err.println(nme);
 				if( !ID.equals(sReaders[i].getField("ID"))){
-					LOG.error("Wrong ID at line " + rReader[0].lineNo());
-					System.exit(1);
+					Logging.exit("Wrong ID at line " + rReader[0].lineNo(),1);
 				}
 
 				double countS = Double.parseDouble(sReaders[i].getField(repCol));
 				double totS   = Double.parseDouble(sReaders[i].getField(seqCol));
-
+				sumCountS+=countS;
+				sumTotS+=totS;
 				countS  = countS / readLength;
 				totS = totS / readLength;
-
+				
 //				sos.print('\t');
 				
-				VNTRGenotyper vg = new VNTRGenotyper();
+				VNTRGenotyper vg = new VNTRGenotyper(downsample);
+			
 
 				//double ref = 10;
 				//double sample = refAllele;//unknown
 				//
 				vg.setRef(refAllele, countR, totR - countR) ;
 				vg.setSample(countS, totS - countS);
-				vg.bdw = 1;
-//				String result =  vg.getConf1(0.2);
-			
-				String result = vg.getConf(0.95);
-				//result = countS+","+totS;
 				
-				//System.err.println(genos[range[0]] +" to "+genos[range[1]] +" "+mass[2]+"\n max:"+mass[0]+ " maxp:"+mass[1]);
-				//for(int x=range[0]; x<=range[1]; x++){
-				//	System.err.println(genos[i]+" => "+prob[x]);
-				//}
+				vg.bdw = 1;
+			
+				String result = vg.getConfs(CI);
 
 								sos.print('\t');
 								sos.print(result);//+"("+String.format("%5.2g", mass[2]).trim()+")");
-								//				
-//								sos.print(String.format("%5.3g", genos[range[0]]).trim()+"-"+String.format("%5.3g", genos[range[1]]).trim()+"("+String.format("%5.2g", mass[2]).trim()+")");
-				//				sos.print((lengthR)/period);
-
-				//				sos.print('\t');
-				//				sos.print((lengthS + readLength)/period);
-
-				//				sos.print('\t');				
-				//				sos.print((lengthSlow + readLength)/period);
-				//				sos.print('\t');
-				//				sos.print((lengthShigh + readLength)/period);
-
-
-				//sos.print('\t');
-				//sos.print(dist.getMean() + "\t" + dist.getStandardDeviation());				
+									
 			}//for i
-			sos.println();			
+			double doc = countR*readLength/(endRep-startRep);
+			Double[] top = new Double[] {sumCountS, sumTotS,countR*readLength, totR*readLength};
+			for(int i=0; i<top.length; i++) top[i] = top[i]/downsample;
+			sos.print("\t");
+			sos.print(String.format("%6.3e;%6.3e;%6.3e;%6.3e", top).replaceAll("\\s+", ""));
+			sos.println();
 		}//while iter
 		sos.close();
 		xafReader.close();
@@ -520,8 +552,10 @@ public class CaptureVNTR extends CommandLine{
 		while (xafReader.next() != null){				
 			TandemRepeat str = TandemRepeat.read(xafReader);
 			//TODO:
-			if (str.getPeriod() <= 8)
-				continue;
+			if (str.getPeriod() <= 8){
+				throw new RuntimeException("period too small");
+				//continue;
+			}
 
 			String repUnit = xafReader.getField("repUnit");//chromosome
 			String target = technology + "_" + str.getID();
@@ -573,12 +607,12 @@ public class CaptureVNTR extends CommandLine{
 			process.waitFor();			
 
 			String cmd = "kalign -q -i f.fasta -o " + target + "o.fasta";
-			LOG.info("Running " + cmd);
+			Logging.info("Running " + cmd);
 
 
 			process = Runtime.getRuntime().exec(cmd);
 			process.waitFor();
-			LOG.info("Done " + cmd);
+			Logging.info("Done " + cmd);
 
 			process = Runtime.getRuntime().exec("hmmbuild --dna " + target +".hmm " + target + "o.fasta");
 			process.waitFor();			
@@ -600,7 +634,7 @@ public class CaptureVNTR extends CommandLine{
 	 */
 	static void stage1_extractTargetSequence(String referenceFile, String xafFile, String targetFile) throws IOException{
 		//Read in the genome
-		LOG.info("Read genome begins");
+		Logging.info("Read genome begins");
 		HashMap <String, Sequence> genome = new HashMap <String, Sequence>();
 		SequenceReader reader = SequenceReader.getReader(referenceFile);
 		Sequence seq;
@@ -608,7 +642,7 @@ public class CaptureVNTR extends CommandLine{
 			genome.put(seq.getName(), seq);
 		}
 		reader.close();
-		LOG.info("Read genome done");
+		Logging.info("Read genome done");
 
 		XAFReader xafReader = new XAFReader(xafFile);
 		SequenceOutputStream sos =  SequenceOutputStream.makeOutputStream(targetFile);
@@ -631,8 +665,7 @@ public class CaptureVNTR extends CommandLine{
 			if (seq == null){
 				xafReader.close();
 				sos.close();
-				LOG.error("Chrom in line " + xafReader.lineNo() + " not found!!!");
-				System.exit(1);
+				Logging.exit("Chrom in line " + xafReader.lineNo() + " not found!!!", 1);
 			}
 			Sequence s = seq.subSequence(start - mlflank - 1, end + mrflank);
 			s.setName(chrom+"_"+start+"_"+end+"_"+mlflank);
@@ -653,14 +686,17 @@ public class CaptureVNTR extends CommandLine{
 	}
 	/**
 	 * Stage 2
-
+	 * @param bamFile
+	 * @param pad
+	 * @throws IOException 
 	 */
 
 	static void stage2_spanRead(String bamFile, String xafFile) throws IOException{		
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile));	
-	
-		
+		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SAMFileReader samReader = new  SAMFileReader(new File(bamFile));
+		//SAMFileHeader samHeader = samReader.getFileHeader();
+
+
 		//String xafFile = "";
 		XAFReader xafReader = new XAFReader(xafFile);
 

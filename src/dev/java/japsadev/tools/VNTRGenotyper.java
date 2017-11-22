@@ -1,9 +1,15 @@
-package japsadev.tools;
+package japsa.tools;
+
+import org.apache.commons.math3.distribution.BinomialDistribution;
 
 public class VNTRGenotyper {
+	public VNTRGenotyper(double downsample2) {
+		this.downsample = downsample2;
+	}
+
 	/* test */
 	public static void main(String[] args){
-		VNTRGenotyper vg = new VNTRGenotyper();
+		VNTRGenotyper vg = new VNTRGenotyper(1);
 		double certainty = 0.5;
 		double[] ref = new double[] {5,10,15};
 		double[] sample = new double[] {5,10,15} ;
@@ -58,25 +64,35 @@ public class VNTRGenotyper {
 	 private double[] genos, prob;
 	 
 	 /** just gets the array of genos and probs ready */
-	 private void setGenos(){
+	 private boolean setGenos(){
 		 double refAllele = this.genotype_reference;
 		 double ratio = ( this.count_repeat_sample/ this.count_flanking_sample)/(this.count_repeat_ref/ this.count_flanking_ref);
-		 ratio = Math.max(2*ratio, 4);
-		 genos = new double[(int) Math.max(40, Math.ceil(ratio*refAllele))];
+		 ratio = Math.max(2*ratio, 4);  // make genos at least twice the expected
+		 if(Double.isNaN(ratio) || Double.isInfinite(ratio)) return true;
+		 genos = new double[(int) Math.max(40, Math.ceil(ratio*refAllele))];  // list of possible genotypes
+		/* if(genos.length==0){
+			 System.err.println(ratio);
+			 System.err.println(refAllele);
+			 throw new RuntimeException("this should not happen");
+		 }*/
 			double rem = refAllele - Math.floor(refAllele);
 		//	int half = genos.length/2;
 			for(int x=0; x<genos.length; x++){
 				genos[x] = x+rem;
 			}
 			prob = new double[genos.length];
+			return false;
 	 }
 	 
 	public String getConf(double conf){
-			this.setGenos();
-			probability(prob, genos);
+			boolean NA = this.setGenos();
+			if(NA){
+				return "NA,NA,NA";
+			}
+			double rsd = probability(prob, genos);
 			int[] range = new int[2];
 			Double[] mass = getconf(conf, range);
-			return String.format("%5.3g,%5.3g,%5.3g",mass).replaceAll("\\s+", ""); 
+			return String.format("%5.3g,%5.3g,%5.3g",mass).replaceAll("\\s+", "")+String.format(",%5.3g",  rsd).trim(); 
 		//	return String.format("%5.3g", mass[0]).trim()+"-"+String.format("%5.3g",  mass[1]).trim();
 	 }
 	
@@ -105,7 +121,7 @@ public class VNTRGenotyper {
 	}
 	
 	
-	Double[] getconf( double mass, int[] range){
+	private Double[] getconf( double mass, int[] range){
 		int maxi=0;
 		for(int i=1; i<prob.length; i++){
 			if(prob[i] >prob[maxi]) maxi =i;
@@ -142,22 +158,46 @@ public class VNTRGenotyper {
 	double count_repeat_sample;
 	double count_flanking_sample;
 	double mult = 1;
+
+ private final double downsample; // this is just to see the effect of randomly downsampling
+ 
+ static double referencelevel =  1000.0; // this is an arbitrary constant to set the reference allele count to.  It controls the level of resolution in the VNTR length calls.
 	void setRef(double genotype_reference, double  count_repeat_ref, double  count_flanking_ref){
-		 mult = 100.0/genotype_reference;
-		this.genotype_reference = 100;
-		this.count_repeat_ref = count_repeat_ref;
-		this.count_flanking_ref = count_flanking_ref;
-		
+		 mult =referencelevel/genotype_reference;
+		this.genotype_reference = referencelevel;
+		if(Math.abs(downsample-1)>1e-5){
+			double n = count_repeat_ref + count_flanking_ref;
+			double p= count_repeat_ref/n;
+			double n_new =  Math.round(n/downsample);
+			BinomialDistribution bin = new BinomialDistribution((int) n_new,p);
+			double n1 = bin.sample();
+			this.count_repeat_ref = n1;
+			this.count_flanking_ref = n_new-n1;
+		}else{
+			this.count_repeat_ref = count_repeat_ref;
+			this.count_flanking_ref = count_flanking_ref;
+		}
 	}
 	
 	void setSample(double  count_repeat_sample, double  count_flanking_sample){
-		this.count_flanking_sample = count_flanking_sample;
-		this.count_repeat_sample = count_repeat_sample;
+		if(Math.abs(downsample-1)>1e-5){
+			double n = count_repeat_sample + count_flanking_sample;
+			double p= count_repeat_sample/n;
+			double n_new =  Math.round(n/downsample);
+			BinomialDistribution bin = new BinomialDistribution((int) n_new,p);
+			double n1 = bin.sample();
+			this.count_repeat_sample = n1;
+			this.count_flanking_sample= n_new-n1;
+		}else{
+			this.count_flanking_sample = count_flanking_sample;
+			this.count_repeat_sample = count_repeat_sample;
+		}
+		
 	}
 	
 	
 	/** This calculates the log likelihood */
-	double likelihood(double genotype){
+	double loglikelihood(double genotype){
 		double relative_cn = genotype/genotype_reference;
 		double n = count_repeat_sample + count_flanking_sample;
 		bb.set((relative_cn*count_repeat_ref)/bdw, count_flanking_ref/bdw,n);
@@ -174,23 +214,40 @@ public class VNTRGenotyper {
 	}
 	
 	
-	void probability(double[] logprobs, double[] genos){
+	double probability(double[] probs, double[] genos){
 		double sum=0;
 		//double maxv =0;
-		for(int i=0; i<logprobs.length; i++){
-			double v = likelihood(genos[i]);
+		double mean =0;
+		for(int i=0; i<probs.length; i++){
+			double v = Math.exp(loglikelihood(genos[i]));
 		//	if(v>maxv) maxv = v;
-			logprobs[i] = v;
-			sum+=Math.exp(v);
+			probs[i] = v;
+			mean = mean + genos[i] * probs[i];
+			sum+=v;
 		}
+		mean = mean/sum;
 		//NEED TO CHECK THIS IS RIGHT - IDEA IS TO TRANSFORM LOG PROBS TO PROBS
-		for(int i=0; i<logprobs.length; i++){
-			logprobs[i] = Math.exp(logprobs[i])/sum;
+		double var =0;
+		for(int i=0; i<probs.length; i++){
+			//probs[i] = Math.exp(probs[i])/sum;
+			probs[i] =probs[i]/sum;
+			var = var + Math.pow(genos[i] - mean,2)*probs[i];
 		}
+		double rsd = Math.sqrt(var)/mean;
+		return rsd;
 		//for(int j =0; j<logprobs.length; j++){
 		//	sum+=Math.exp(logprobs[j]-maxv);
 		//}
 		
+	}
+
+	public String getConfs(double[] cI) {
+		StringBuffer sb = new StringBuffer();
+		for(int i=0; i<cI.length; i++){
+			sb.append(getConf(cI[i]));
+			if(i<cI.length-1)sb.append(";");
+		}
+		return sb.toString();
 	}
 	
 
