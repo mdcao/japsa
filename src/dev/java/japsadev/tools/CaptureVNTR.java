@@ -343,7 +343,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 		File[] sFiles = sDir.listFiles();
 		if (sFiles.length ==0)
 			return;	
-		double[] CI = null;
+		double[] CI = null; //NOTE :  THIS IS A TERRIBLE WAY TO SET CI, SHOULD ADD AS COMMAND LINE PARAMETER
 		try{
 		 String[] str_=  outputFile.split("\\.");//SimulatedCapture.10;20;30;40;50;60;70;80;90;95.2,25dat
 		 String[] str = str_[1].split(";");
@@ -356,8 +356,9 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 			 CI[i] = Double.parseDouble(str[i])/100.0;
 		 }
 		}catch(Exception exc ){
-			
-			Logging.exit("outputfile should be in form name.CI1;CI2.dat", 9);
+			CI = new double[] {0.95};
+			Logging.error("Setting CI to be 0.95");
+			//Logging.exit("outputfile should be in form name.CI1;CI2.dat", 9);
 			
 		}
 		double readLength = (double) readLength1;
@@ -485,7 +486,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 				
 					//	String[] name = sFiles[i].split("/");
 						String nme = sFiles[i].getName();
-						System.err.println(nme);
+					//	System.err.println(nme);
 				if( !ID.equals(sReaders[i].getField("ID"))){
 					Logging.exit("Wrong ID at line " + rReader[0].lineNo(),1);
 				}
