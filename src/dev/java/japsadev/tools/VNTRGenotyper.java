@@ -40,7 +40,8 @@ public class VNTRGenotyper {
 			genos[i] = sample - half +i;
 		}
 		double[] prob = new double[genos.length];
-		probability(prob, genos);
+		double[] meanvar = new double[2];
+		probability(prob, genos, meanvar);
 		System.err.println("Simulated  ref:"+ref+" sample:"+sample+" depth:"+depth);
 		int[] range = new int[2];
 		
@@ -88,17 +89,21 @@ public class VNTRGenotyper {
 			boolean NA = this.setGenos();
 			if(NA){
 				return "NA,NA,NA";
-			}
-			double rsd = probability(prob, genos);
+			}		
+			double[] meanvar = new double[2];
+
+			double rsd = probability(prob, genos, meanvar);
 			int[] range = new int[2];
 			Double[] mass = getconf(conf, range);
-			return String.format("%5.3g,%5.3g,%5.3g",mass).replaceAll("\\s+", "")+String.format(",%5.3g",  rsd).trim(); 
+			return String.format("%5.3g,%5.3g,%5.3g,%5.3g",mass).replaceAll("\\s+", "")+String.format(",%5.3g",  rsd).trim(); 
 		//	return String.format("%5.3g", mass[0]).trim()+"-"+String.format("%5.3g",  mass[1]).trim();
 	 }
 	
 	public String getConf1(double perc){
 		this.setGenos();
-		probability(prob, genos);
+		double[] meanvar = new double[2];
+
+		probability(prob, genos, meanvar);
 		Double[] mass = getconf(perc);
 		return String.format("%5.3g,%5.3g,%5.3g",mass).replaceAll("\\s+", ""); 
 	}
@@ -178,7 +183,7 @@ public class VNTRGenotyper {
 			this.count_flanking_ref = count_flanking_ref;
 		}
 	}
-	
+	double initial_estimate;
 	void setSample(double  count_repeat_sample, double  count_flanking_sample){
 		if(Math.abs(downsample-1)>1e-5){
 			double n = count_repeat_sample + count_flanking_sample;
@@ -192,6 +197,8 @@ public class VNTRGenotyper {
 			this.count_flanking_sample = count_flanking_sample;
 			this.count_repeat_sample = count_repeat_sample;
 		}
+		this.initial_estimate = (this.genotype_reference/this.mult)*((this.count_repeat_sample/this.count_flanking_sample))/ ((this.count_repeat_ref/this.count_flanking_ref));
+		//System.err.println(initial_estimate);
 		
 	}
 	
@@ -209,12 +216,14 @@ public class VNTRGenotyper {
 		double[] res = new double[max_cn+1];
 		double[] genos = new double[max_cn+1];
 		for(int i=0; i<genos.length; i++) genos[i] = i;
-		probability(res, genos);
+		double[] meanvar = new double[2];
+
+		probability(res, genos, meanvar);
 		return res;
 	}
 	
 	
-	double probability(double[] probs, double[] genos){
+	double probability(double[] probs, double[] genos, double[] meanvar){
 		double sum=0;
 		//double maxv =0;
 		double mean =0;
@@ -222,7 +231,7 @@ public class VNTRGenotyper {
 			double v = Math.exp(loglikelihood(genos[i]));
 		//	if(v>maxv) maxv = v;
 			probs[i] = v;
-			mean = mean + genos[i] * probs[i];
+			mean = mean + (genos[i] * probs[i]);
 			sum+=v;
 		}
 		mean = mean/sum;
@@ -231,9 +240,12 @@ public class VNTRGenotyper {
 		for(int i=0; i<probs.length; i++){
 			//probs[i] = Math.exp(probs[i])/sum;
 			probs[i] =probs[i]/sum;
-			var = var + Math.pow(genos[i] - mean,2)*probs[i];
+			var = var + Math.pow((genos[i] - mean),2)*probs[i];
 		}
 		double rsd = Math.sqrt(var)/mean;
+		double init = this.initial_estimate;
+		meanvar[0] = mean/mult;
+		meanvar[1] = rsd;
 		return rsd;
 		//for(int j =0; j<logprobs.length; j++){
 		//	sum+=Math.exp(logprobs[j]-maxv);

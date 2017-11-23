@@ -112,6 +112,10 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 		addInt("pad", 10, "Gaps");
 		addString("resample", null, "reference sample");
 		addString("resAllele", null, "reference alleles");
+		addString("CI", "95", "Confidence interval between 0 and 100");
+
+		//addInt("CI", 95, "Confidence Interval");
+
 		
 		//addBoolean("reverse",false,"Reverse sort order");
 
@@ -137,6 +141,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 		int    readLength   =  cmdLine.getIntVal("readLength");
 
 		int stage = cmdLine.getIntVal("stage");	
+		String CI = cmdLine.getStringVal("CI");	
 		//stage = 6;
 		
 		//int pad = cmdLine.getIntVal("pad");		
@@ -175,7 +180,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 			/*for(int i=0; i<resamples.length; i++){
 				resamples[i] = dir+"/"+resamples[i];
 			}*/
-			stage6_readDepthAnalysis(xafFile,resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength);
+			stage6_readDepthAnalysis(xafFile,resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength, CI.split(":"));
 		}
 
 	}
@@ -339,27 +344,14 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	static void stage6_readDepthAnalysis(String xafFile, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1) throws IOException, InterruptedException{
+	static void stage6_readDepthAnalysis(String xafFile, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1, String[] cistring) throws IOException, InterruptedException{
 		File[] sFiles = sDir.listFiles();
 		if (sFiles.length ==0)
 			return;	
-		double[] CI = null; //NOTE :  THIS IS A TERRIBLE WAY TO SET CI, SHOULD ADD AS COMMAND LINE PARAMETER
-		try{
-		 String[] str_=  outputFile.split("\\.");//SimulatedCapture.10;20;30;40;50;60;70;80;90;95.2,25dat
-		 String[] str = str_[1].split(";");
-		 String str2 = str_[str_.length-1];
-		 if(str2.indexOf("dat")>0){
-			 downsample = Double.parseDouble(str2.substring(0, str2.indexOf("dat")).replace(',', '.'));
-		 }
-		 CI = new double[str.length];
-		 for(int i=0; i<str.length; i++){
-			 CI[i] = Double.parseDouble(str[i])/100.0;
-		 }
-		}catch(Exception exc ){
-			CI = new double[] {0.95};
-			Logging.error("Setting CI to be 0.95");
-			//Logging.exit("outputfile should be in form name.CI1;CI2.dat", 9);
-			
+		double[] CI = new double[cistring.length]; //NOTE :  THIS IS A TERRIBLE WAY TO SET CI, SHOULD ADD AS COMMAND LINE PARAMETER
+		for(int i=0; i<CI.length; i++){
+			CI[i] = Double.parseDouble(cistring[i])/100.0;
+			if(CI[i]<0 || CI[i]>1) throw new RuntimeException("CI needs to be between 0 and 100");
 		}
 		double readLength = (double) readLength1;
 		String [] sampleID = new String[sFiles.length];
@@ -380,6 +372,8 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 		XAFReader rAlleleReader = new XAFReader(resAllele);
 
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(outputFile);	
+		VNTRGenotyper vg = new VNTRGenotyper(downsample);
+
 		//sos.print("#H:ID\tchrom\tstart\tend\trepLen\tseqLen");
 		sos.print("#H:ID\tchrom\tstart\tend");
 		for (int i = 0; i < sFiles.length;i++){
@@ -500,12 +494,12 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 				
 //				sos.print('\t');
 				
-				VNTRGenotyper vg = new VNTRGenotyper(downsample);
 			
 
 				//double ref = 10;
 				//double sample = refAllele;//unknown
 				//
+				//double est = (countS/(totS - countS))/(countR)
 				vg.setRef(refAllele, countR, totR - countR) ;
 				vg.setSample(countS, totS - countS);
 				
