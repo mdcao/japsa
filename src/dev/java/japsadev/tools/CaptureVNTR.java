@@ -99,7 +99,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 		addInt("stat", 2, "0,1,2");
 		addInt("readLength", 250, "Read length");
 
-		addInt("stage", 2, "Stage of processing:\n"
+		addInt("stage", 6, "Stage of processing:\n"
 			+ "0: Generate hmm profile, technology parameter is required\n"
 			+ "1: Extract target sequences, prepare for alignment\n"
 			+ "2: Look for reads spanning any of the repeats\n"
