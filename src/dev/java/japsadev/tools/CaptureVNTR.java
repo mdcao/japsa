@@ -180,7 +180,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 			/*for(int i=0; i<resamples.length; i++){
 				resamples[i] = dir+"/"+resamples[i];
 			}*/
-			stage6_readDepthAnalysis(xafFile,resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength, CI.split(":"));
+			stage6_readDepthAnalysis(xafFile,new File(dir), resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength, CI.split(":"));
 		}
 
 	}
@@ -344,7 +344,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	static void stage6_readDepthAnalysis(String xafFile, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1, String[] cistring) throws IOException, InterruptedException{
+	static void stage6_readDepthAnalysis(String xafFile, File dir, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1, String[] cistring) throws IOException, InterruptedException{
 		File[] sFiles = sDir.listFiles();
 		if (sFiles.length ==0)
 			return;	
@@ -367,7 +367,7 @@ static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg
 		XAFReader xafReader = new XAFReader(xafFile);
 		XAFReader[] rReader = new XAFReader[rData.length];
 		for(int i=0; i<rData.length; i++){
-			rReader[i] = new XAFReader(sDir.getAbsolutePath()+"/"+rData[i]);	
+			rReader[i] = new XAFReader(dir.getAbsolutePath()+"/"+rData[i]);	
 		}	
 		XAFReader rAlleleReader = new XAFReader(resAllele);
 
