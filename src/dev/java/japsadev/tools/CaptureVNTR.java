@@ -101,7 +101,7 @@ public class CaptureVNTR extends CommandLine{
 		addInt("stat", 2, "0,1,2");
 		addInt("readLength", 250, "Read length");
 
-		addInt("stage", 2, "Stage of processing:\n"
+		addInt("stage", 6, "Stage of processing:\n"
 			+ "0: Generate hmm profile, technology parameter is required\n"
 			+ "1: Extract target sequences, prepare for alignment\n"
 			+ "2: Look for reads spanning any of the repeats\n"
@@ -114,6 +114,10 @@ public class CaptureVNTR extends CommandLine{
 		addInt("pad", 10, "Gaps");
 		addString("resample", null, "reference sample");
 		addString("resAllele", null, "reference alleles");
+		addString("CI", "95", "Confidence interval between 0 and 100");
+
+		//addInt("CI", 95, "Confidence Interval");
+
 		
 		//addBoolean("reverse",false,"Reverse sort order");
 
@@ -139,6 +143,7 @@ public class CaptureVNTR extends CommandLine{
 		int    readLength   =  cmdLine.getIntVal("readLength");
 
 		int stage = cmdLine.getIntVal("stage");	
+		String CI = cmdLine.getStringVal("CI");	
 		//stage = 6;
 		
 		//int pad = cmdLine.getIntVal("pad");		
@@ -177,7 +182,7 @@ public class CaptureVNTR extends CommandLine{
 			/*for(int i=0; i<resamples.length; i++){
 				resamples[i] = dir+"/"+resamples[i];
 			}*/
-			stage6_readDepthAnalysis(xafFile,resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength);
+			stage6_readDepthAnalysis(xafFile,new File(dir), resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength, CI.split(":"));
 		}
 
 	}
@@ -341,26 +346,14 @@ public class CaptureVNTR extends CommandLine{
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	static void stage6_readDepthAnalysis(String xafFile, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1) throws IOException, InterruptedException{
+	static void stage6_readDepthAnalysis(String xafFile, File dir, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1, String[] cistring) throws IOException, InterruptedException{
 		File[] sFiles = sDir.listFiles();
 		if (sFiles.length ==0)
 			return;	
-		double[] CI = null;
-		try{
-		 String[] str_=  outputFile.split("\\.");//SimulatedCapture.10;20;30;40;50;60;70;80;90;95.2,25dat
-		 String[] str = str_[1].split(";");
-		 String str2 = str_[str_.length-1];
-		 if(str2.indexOf("dat")>0){
-			 downsample = Double.parseDouble(str2.substring(0, str2.indexOf("dat")).replace(',', '.'));
-		 }
-		 CI = new double[str.length];
-		 for(int i=0; i<str.length; i++){
-			 CI[i] = Double.parseDouble(str[i])/100.0;
-		 }
-		}catch(Exception exc ){
-			
-			Logging.exit("outputfile should be in form name.CI1;CI2.dat", 9);
-			
+		double[] CI = new double[cistring.length]; //NOTE :  THIS IS A TERRIBLE WAY TO SET CI, SHOULD ADD AS COMMAND LINE PARAMETER
+		for(int i=0; i<CI.length; i++){
+			CI[i] = Double.parseDouble(cistring[i])/100.0;
+			if(CI[i]<0 || CI[i]>1) throw new RuntimeException("CI needs to be between 0 and 100");
 		}
 		double readLength = (double) readLength1;
 		String [] sampleID = new String[sFiles.length];
@@ -376,11 +369,13 @@ public class CaptureVNTR extends CommandLine{
 		XAFReader xafReader = new XAFReader(xafFile);
 		XAFReader[] rReader = new XAFReader[rData.length];
 		for(int i=0; i<rData.length; i++){
-			rReader[i] = new XAFReader(sDir.getAbsolutePath()+"/"+rData[i]);	
+			rReader[i] = new XAFReader(dir.getAbsolutePath()+"/"+rData[i]);	
 		}	
 		XAFReader rAlleleReader = new XAFReader(resAllele);
 
 		SequenceOutputStream sos = SequenceOutputStream.makeOutputStream(outputFile);	
+		VNTRGenotyper vg = new VNTRGenotyper(downsample);
+
 		//sos.print("#H:ID\tchrom\tstart\tend\trepLen\tseqLen");
 		sos.print("#H:ID\tchrom\tstart\tend");
 		for (int i = 0; i < sFiles.length;i++){
@@ -487,7 +482,7 @@ public class CaptureVNTR extends CommandLine{
 				
 					//	String[] name = sFiles[i].split("/");
 						String nme = sFiles[i].getName();
-						System.err.println(nme);
+					//	System.err.println(nme);
 				if( !ID.equals(sReaders[i].getField("ID"))){
 					Logging.exit("Wrong ID at line " + rReader[0].lineNo(),1);
 				}
@@ -501,12 +496,12 @@ public class CaptureVNTR extends CommandLine{
 				
 //				sos.print('\t');
 				
-				VNTRGenotyper vg = new VNTRGenotyper(downsample);
 			
 
 				//double ref = 10;
 				//double sample = refAllele;//unknown
 				//
+				//double est = (countS/(totS - countS))/(countR)
 				vg.setRef(refAllele, countR, totR - countR) ;
 				vg.setSample(countS, totS - countS);
 				
