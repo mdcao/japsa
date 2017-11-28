@@ -729,7 +729,7 @@ public abstract class ScaffoldGraph{
 				//check if the candidate ContigBridge is more confident than the current or not 
 				if((pointer<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
 					if(verbose)
-						System.out.printf("=> go from %d to %d to %d \n", contig.getIndex(), contigF.getIndex(), prevMarker.getIndex());
+						System.out.printf("=> go from %d to %d to %d backward\n", contig.getIndex(), contigF.getIndex(), prevMarker.getIndex());
 					return -1;
 				}
 				else{
@@ -762,7 +762,7 @@ public abstract class ScaffoldGraph{
 				//if((rev.direction<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){
 				if((pointer<0?contigF.nextScore:contigF.prevScore) < bridge.getScore()){	
 					if(verbose)
-						System.out.printf("=> go from %d to %d to %d \n", contig.getIndex(), contigF.getIndex(), nextMarker.getIndex());
+						System.out.printf("=> go from %d to %d to %d forward\n", contig.getIndex(), contigF.getIndex(), nextMarker.getIndex());
 					return 1;
 				}
 				else{
@@ -783,7 +783,7 @@ public abstract class ScaffoldGraph{
 	/*********************************************************************************/
 	public synchronized boolean joinScaffold(Contig contig, ContigBridge bridge, boolean firstDir, int secondDir){		
 		if(verbose) {
-			System.out.println("PROCEED TO CONNECT " + bridge.hashKey + " with score " + bridge.getScore() + 
+			System.out.println("PREPARE TO CONNECT " + bridge.hashKey + " with score " + bridge.getScore() + 
 					", size " + bridge.getNumOfConnections() + 
 					", vector (" + bridge.getTransVector().toString() + 
 					"), distance " + bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig));
@@ -809,8 +809,8 @@ public abstract class ScaffoldGraph{
 			System.out.println("Before joining " + contigF.index + " (" + headF +") to " + contigT.index 
 					+ " (" + headT +") " 
 					+ (scaffoldT.getLast().rightMost() - scaffoldT.getFirst().leftMost()) 
-					+ " " + (scaffoldF.getLast().rightMost() - scaffoldF.getFirst().leftMost()) 
-					+ " " + (scaffoldT.getLast().rightMost() - scaffoldT.getFirst().leftMost() + scaffoldF.getLast().rightMost() - scaffoldF.getFirst().leftMost()));
+					+ "+" + (scaffoldF.getLast().rightMost() - scaffoldF.getFirst().leftMost()) 
+					+ "=" + (scaffoldT.getLast().rightMost() - scaffoldT.getFirst().leftMost() + scaffoldF.getLast().rightMost() - scaffoldF.getFirst().leftMost()));
 		//===================================================================================================
 		int index = scaffoldF.indexOf(contigF),
 				count = index;
@@ -822,7 +822,7 @@ public abstract class ScaffoldGraph{
 		if(secondDir == -1){
 			if(headF==headT){
 				//if(posT!=1)
-				if(firstDir)	
+				if(firstDir)	//TODO: this is stupid! can extend to both directions lah!
 					return false;
 				else{
 					Contig nextMarker = scaffoldF.nearestMarker(contigF, true);
@@ -993,7 +993,6 @@ public abstract class ScaffoldGraph{
 	}
 	//change head of scaffold scf to newHead. 
 	//This should move the content of scf to scaffolds[newHead.idx], leaving scf=null afterward
-	//TODO: tidy this!!!
 	public void changeHead(Scaffold scf, Contig newHead){	
 		if(isRepeat(newHead)){
 			if(verbose)

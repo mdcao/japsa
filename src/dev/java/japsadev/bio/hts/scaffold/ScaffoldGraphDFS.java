@@ -235,14 +235,14 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			/*****************************************************************/
 			////////////////////////////First try to extend to the end/////////////////////////////
 			if(verbose) 
-				System.out.printf("Extending %d to the rear\n",i);
+				System.out.printf("Extending %d forward...\n",i);
 			closed = walk2(i,true);
 
 			////////////////////////////Then extend to the front///////////////////////////////////
 
 			if (!closed){
 				if(verbose) 
-					System.out.printf("Extending %d to the front\n",i);
+					System.out.printf("Extending %d backward...\n",i);
 				closed = walk2(i,false);
 			}
 			//scaffolds[i].trim();
