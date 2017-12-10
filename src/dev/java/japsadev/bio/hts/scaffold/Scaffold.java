@@ -381,9 +381,13 @@ public final class Scaffold extends LinkedList<Contig>{
 //				startLeft = bestCloseConnection.filling(null, null); //adjust the starting point
 
 			anno.addDescription("Circular");
+			seq.setDesc("Circular");
 
-		}else
+		}else{
 			anno.addDescription("Linear");
+			seq.setDesc("Linear");
+		}
+		
 
 
 		Iterator<Contig> ctgIter = this.iterator();
@@ -502,6 +506,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		}
 
 		len = seq.length();
+		seq.setDesc("Est.Length="+len);
 		JapsaAnnotation.write(seq.toSequence(), anno, jout); 
 		seq.writeFasta(fout);
 	}

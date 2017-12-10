@@ -302,7 +302,7 @@ public class GapCloserCmd extends CommandLine{
 			if (cov <=0)
 				cov = ScaffoldGraph.estimatedCov;
 
-			graph.makeConnections(input, cov / 1.6, qual, format, bwaExe, bwaThread, sequenceFile);
+			graph.makeConnections(input, cov / 10, qual, format, bwaExe, bwaThread, sequenceFile);
 
 			graph.connectBridges();
 			if(prefix != null)

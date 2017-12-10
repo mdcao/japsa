@@ -608,7 +608,8 @@ public abstract class ScaffoldGraph{
 				|| b.contig.getCoverage() < minCov
 				)
 		{		
-//			System.out.println("...ignoring " + a.contig.getIndex() + "#" + b.contig.getIndex());
+			if(verbose)
+				System.out.println("...ignoring " + a.contig.getName() + "#" + b.contig.getName() + " (overlap=" + overlap + ")");
 			return;
 		}
 
@@ -637,7 +638,8 @@ public abstract class ScaffoldGraph{
 
 				//				a.contig.bridges.add(bridge);
 				//				b.contig.bridges.add(bridge_rev);
-//				System.out.println("...addding " + bridge.hashKey + " and " + bridge_rev.hashKey);
+				if(verbose)
+					System.out.println("...addding " + bridge.hashKey + " and " + bridge_rev.hashKey);
 				bridgesFromContig.get(a.contig.getIndex()).add(bridge);
 				bridgesFromContig.get(b.contig.getIndex()).add(bridge_rev);
 
@@ -835,9 +837,10 @@ public abstract class ScaffoldGraph{
 						
 						while(true){
 							if(count<0) break;
-							newScf.addBackward(ctg,brg);
 							ctg= scaffoldF.remove(count--);
 							brg = scaffoldF.bridges.remove(count+1);
+							newScf.addBackward(ctg,brg); //must be here, after the assignments of ctg, brg???
+
 							
 						}
 						changeHead(newScf, prevMarker);
@@ -858,7 +861,7 @@ public abstract class ScaffoldGraph{
 							if(scaffoldF.size()==index+1) break;
 							ctg= scaffoldF.remove(index+1);
 							brg = scaffoldF.bridges.remove(index);
-							newScf.addForward(ctg,brg);
+							newScf.addForward(ctg,brg); //must be here, after the assignments of ctg, brg???
 						}
 						newScf.trim();
 						changeHead(newScf, nextMarker);
@@ -942,9 +945,9 @@ public abstract class ScaffoldGraph{
 						
 						while(true){
 							if(scaffoldF.size()==index) break;
-							newScf.addForward(ctg,brg);
 							ctg= scaffoldF.remove(index);
 							brg = scaffoldF.bridges.remove(index-1);
+							newScf.addForward(ctg,brg); //must be here, after the assignments of ctg, brg???
 							
 						}
 						changeHead(newScf, nextMarker);
@@ -965,7 +968,7 @@ public abstract class ScaffoldGraph{
 							if(count<1) break;
 							ctg= scaffoldF.remove(--count);
 							brg = scaffoldF.bridges.remove(count);
-							newScf.addBackward(ctg,brg);
+							newScf.addBackward(ctg,brg); //must be here, after the assignments of ctg, brg???
 						}
 						newScf.trim();
 						changeHead(newScf, prevMarker);
