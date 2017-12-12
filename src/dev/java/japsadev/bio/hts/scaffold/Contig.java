@@ -50,8 +50,7 @@ public class Contig{
 	int head = -1; //point to the index of its head contig in the scaffold 
 	double prevScore=0, nextScore=0;
 	ArrayList<Range> lowConfidentRegions;
-	int cirProb = -1; //measure how likely the contig itself is circular
-
+	double cirProb = -1.0; //measure how likely the contig itself is circular
 	//int[] isMapped; //which bases is mapped by any long reads
 	//for annotation
 	ArrayList<JapsaFeature> genes,				//genes list

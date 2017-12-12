@@ -223,6 +223,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 		for(LengthIndex idx:list){
 			int i = idx.index;
 			//TODO: include also the case of circularized scaffold (for realtime self-correction)
+			
 			if (contigs.get(i).head !=i || scaffolds[i].size() < 1 || scaffolds[i].closeBridge != null)
 				continue;
 			//Now extend scaffold i				

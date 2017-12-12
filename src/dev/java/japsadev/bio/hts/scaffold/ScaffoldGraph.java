@@ -580,23 +580,32 @@ public abstract class ScaffoldGraph{
 		int gP = (alignP + (a.strand ? a.refStart:-a.refStart) - (b.strand?b.refStart:-b.refStart));
 		if (!a.strand)
 			gP = -gP;	
-		if (	a.contig.getIndex() == b.contig.getIndex() 
-				&& alignD > 0
+		
+		if (	a.contig.getIndex() == b.contig.getIndex() ){
+			if(
+				alignD > 0
 				&& (Math.abs(gP)*1.0 / a.contig.length()) < 1.1 
 				&& (Math.abs(gP)*1.0 / a.contig.length()) > 0.9 
-				&& a.readLength < 1.1* a.contig.length()
-				)
-		{
-			if(	alignedReadLen*1.0/a.readLength > 0.8 ){ //need more than 80% alignment (error rate of nanopore read)
-				a.contig.cirProb ++;			
-			}
-			if(verbose) 
-				System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d) => circular score: %d\n"
-						, a.contig.getName(), a.readID, a.readLength, gP, alignD, a.contig.cirProb);
-		}		
-		else{
-			a.contig.cirProb--;
-			b.contig.cirProb--;
+//				&& a.readLength < 1.1* a.contig.length()
+			)
+			{
+				if(a.readLength > 1.1* a.contig.length())
+					a.contig.cirProb = Double.MIN_VALUE; //tandem not circular
+				else if(alignedReadLen*1.0/a.readLength > 0.8 ){ //need more than 80% alignment (error rate of nanopore read)
+					a.contig.cirProb += score;	//more likely to be circular
+
+				}
+				
+				
+				if(verbose) 
+					System.out.printf("Potential CIRCULAR or TANDEM contig %s map to read %s(length=%d): (%d,%d) => circular score: %.2f\n"
+							, a.contig.getName(), a.readID, a.readLength, gP, alignD, a.contig.cirProb);
+			}	
+		}else{
+			if(verbose)
+				System.out.println("==> substract cirProb -" + score + " from " + a.contig.getIndex() + " and " + b.contig.getIndex());
+			a.contig.cirProb-=score;
+			b.contig.cirProb-=score;
 		}
 		
 		// overlap length on aligned read (<0 if not overlap)
@@ -639,11 +648,15 @@ public abstract class ScaffoldGraph{
 				//				a.contig.bridges.add(bridge);
 				//				b.contig.bridges.add(bridge_rev);
 				if(verbose)
-					System.out.println("...addding " + bridge.hashKey + " and " + bridge_rev.hashKey);
+					System.out.println("...creating " + bridge.hashKey + " and " + bridge_rev.hashKey);
 				bridgesFromContig.get(a.contig.getIndex()).add(bridge);
 				bridgesFromContig.get(b.contig.getIndex()).add(bridge_rev);
 
 				bridgeMap.put(hash, bridge);
+				
+				if(trans.equalsTo(ScaffoldVector.reverse(trans)) && hash.equals(hash_rev))
+					break;
+				
 				bridgeMap.put(hash_rev, bridge_rev);
 
 				break;
@@ -652,20 +665,29 @@ public abstract class ScaffoldGraph{
 				assert bridge_rev!=null:hash_rev + "is null!";
 				bridge.addConnection(readSequence, a, b, trans, score);
 				bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
+				if(verbose)
+					System.out.println("...adding connections to " + bridge.hashKey + " and " + bridge_rev.hashKey);
+				
 				break;
 			}
 			if(a.contig.getIndex() == b.contig.getIndex()){
 				assert bridge_rev!=null:hash_rev + "is null";
+				
 				if(bridge.consistentWith(trans)){
 					bridge.addConnection(readSequence, a, b, trans, score);
-					bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
+					if(!trans.equalsTo(ScaffoldVector.reverse(trans)))
+						bridge_rev.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
 					break;
 				}
 				if(bridge.consistentWith(ScaffoldVector.reverse(trans))){
-					bridge_rev.addConnection(readSequence, b, a, trans, score);
 					bridge.addConnection(readSequence, b, a, ScaffoldVector.reverse(trans), score);
+					if(!trans.equalsTo(ScaffoldVector.reverse(trans)))
+						bridge_rev.addConnection(readSequence, a, b, trans, score);		
 					break;
 				}		
+
+				if(verbose)
+					System.out.println("...adding connections to " + bridge.hashKey + " and " + bridge_rev.hashKey);
 			}
 			count ++;
 		}//while

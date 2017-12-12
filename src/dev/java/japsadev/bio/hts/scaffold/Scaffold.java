@@ -506,7 +506,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		}
 
 		len = seq.length();
-		seq.setDesc("Est.Length="+len);
+		seq.setDesc(seq.getDesc() + " Length="+len);
 		JapsaAnnotation.write(seq.toSequence(), anno, jout); 
 		seq.writeFasta(fout);
 	}
