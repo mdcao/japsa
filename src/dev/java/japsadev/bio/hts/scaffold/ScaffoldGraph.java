@@ -68,7 +68,7 @@ public abstract class ScaffoldGraph{
 	public static volatile int minContigLength = 200;
 	public static volatile int minSupportReads = 1;
 	public static volatile boolean verbose = false;
-	public static volatile boolean reportAll = false;
+	public static volatile boolean reportAll = true;
 	public static volatile boolean updateGenome = true;
 	public static volatile boolean eukaryotic = false;
 	public static volatile boolean select = false;
@@ -258,10 +258,10 @@ public abstract class ScaffoldGraph{
 		for (int i = 0; i < scaffolds.length;i++){
 			if(scaffolds[i].isEmpty()) continue;
 			
-			if(select 
+//			if(select 
 //					&& !contigs.get(i).isMapped()
-				)
-				continue;
+//				)
+//				continue;
 			
 			int len = scaffolds[i].length();
 			
@@ -331,7 +331,7 @@ public abstract class ScaffoldGraph{
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
-	public void makeConnections(String inFile, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) throws IOException, InterruptedException{
+	public void makeConnectionsWithBWA(String inFile, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) throws IOException, InterruptedException{
 
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 
@@ -458,6 +458,124 @@ public abstract class ScaffoldGraph{
 		}
 
 	}
+	/**
+	 * SHN added minimap2 as the default aligner
+	 * @param bamFile
+	 * @param minCov
+	 * @param qual
+	 * @throws IOException
+	 * @throws InterruptedException 
+	 */
+	public void makeConnectionsWithMinimap2(String inFile, double minCov, int qual, String format, String mm2Preset, int mm2Threads, String mm2Index) throws IOException, InterruptedException{
+
+		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+
+		SamReader reader = null;
+		Process mm2Process = null;
+
+		if (format.endsWith("am")){//bam or sam
+			if ("-".equals(inFile))
+				reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+			else
+				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
+		}else{
+			Logging.info("Starting minimap2 at " + new Date());
+
+			ProcessBuilder pb = null;
+			if ("-".equals(inFile)){
+				pb = new ProcessBuilder("minimap2", 
+						"-t",
+						"" + mm2Threads,
+						"-ax",
+						mm2Preset,
+//						"-K",
+//						"20000",
+						mm2Index,
+						"-"
+						).
+						redirectInput(Redirect.INHERIT);
+			}else{
+				pb = new ProcessBuilder("minimap2", 
+						"-t",
+						"" + mm2Threads,
+						"-ax",
+						mm2Preset,
+//						"-K",
+//						"20000",
+						mm2Index,
+						inFile
+						);
+			}
+			mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+
+			//Logging.info("bwa started x");	
+			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
+		}
+
+
+		SAMRecordIterator iter = reader.iterator();
+
+		String readID = "";
+		ReadFilling readFilling = null;
+		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
+		while (iter.hasNext()) {
+			SAMRecord rec = iter.next();			
+			
+			if (rec.getReadUnmappedFlag())
+				continue;
+			if (rec.getMappingQuality() < qual)
+				continue;
+			
+			Contig tmp = contigs.get(rec.getReferenceIndex());
+			if(tmp==null){
+				Logging.error("Contig " + rec.getReferenceIndex() + " doesn't exist!");
+				System.exit(1);
+			}
+				
+			AlignmentRecord myRec = new AlignmentRecord(rec, tmp);
+//			Arrays.fill(tmp.isMapped, myRec.refStart, myRec.refEnd, 1);
+			
+//			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
+
+
+			//////////////////////////////////////////////////////////////////
+			// make bridge of contigs that align to the same (Nanopore) read. 
+			// Note that SAM file MUST be sorted based on readID (samtools sort -n)
+			//	which is natural if it is the output from an aligner (bwa, minimap2)
+
+			//not the first occurrance				
+			if (readID.equals(myRec.readID)) {				
+				if (myRec.useful){				
+					for (AlignmentRecord s : samList) {
+						if (s.useful){
+							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
+						}
+					}
+				}
+			} else{
+			
+//			if (!readID.equals(myRec.readID)){
+//				//process samlist here
+//				processAlignments(samList);
+					
+					
+				samList = new ArrayList<AlignmentRecord>();
+				readID = myRec.readID;	
+				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
+			}			
+			samList.add(myRec);
+
+		}// while
+		iter.close();
+
+		//outOS.close();
+		reader.close();		
+		if (mm2Process != null){
+			mm2Process.waitFor();
+		}
+
+	}
+	
 	//Take a list of alignments between contigs and a single nanopore read
 	// do some interesting things
 //	private void processAlignments(ArrayList<AlignmentRecord> list){
@@ -491,73 +609,6 @@ public abstract class ScaffoldGraph{
 //		}
 //	}
 
-	/**
-	 * Forming bridges based on alignments. Used in batch mode only
-	 * 
-	 * @param bamFile
-	 * @param minCov
-	 * @param maxCov
-	 * @param threshold
-	 * @param qual
-	 * @throws IOException
-	 */
-	@Deprecated
-	public void makeConnections(String bamFile, double minCov, int qual) throws IOException{
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-
-		SamReader reader;
-		if ("-".equals(bamFile))
-			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
-		else
-			reader = SamReaderFactory.makeDefault().open(new File(bamFile));	
-
-		SAMRecordIterator iter = reader.iterator();
-
-		String readID = "";
-		ReadFilling readFilling = null;
-		AlignmentRecord myRec = null;
-		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
-
-		while (iter.hasNext()) {
-			SAMRecord rec = iter.next();
-			if (rec.getReadUnmappedFlag())
-				continue;
-			if (rec.getMappingQuality() < qual)
-				continue;
-
-			myRec = new AlignmentRecord(rec, contigs.get(rec.getReferenceIndex()));
-
-
-			//////////////////////////////////////////////////////////////////
-			// make bridge of contigs that align to the same (Nanopore) read. 
-			// Note that SAM file MUST be sorted based on readID (samtools sort -n)
-
-			//not the first occurrance				
-			if (readID.equals(myRec.readID)) {				
-				if (myRec.useful){				
-					for (AlignmentRecord s : samList) {
-						if (s.useful){
-							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
-						}
-					}
-				}
-			} else {
-
-				samList = new ArrayList<AlignmentRecord>();
-				readID = myRec.readID;	
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
-			}			
-			samList.add(myRec);
-
-		}// while
-		iter.close();
-
-		//outOS.close();
-		reader.close();		
-
-		//Logging.info("Sort list of bridges");		
-		//Collections.sort(bridgeList);		
-	}
 
 
 
@@ -1135,23 +1186,24 @@ public abstract class ScaffoldGraph{
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				
-				if(select 
+//				if(select 
 //						&& !contigs.get(i).isMapped()
-					)
-					continue;
+//					)
+//					continue;
 				
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
 				
 				if(contigs.get(i).head == i ){
-					if(!reportAll && isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null)
-						continue;			
+					if(	!reportAll && 
+							((isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null) || len < maxRepeatLength)) //repetitive linear or short sequences
+							continue;			
 					
 					if(scaffolds[i].closeBridge != null ){
 						currentNumberOfCirculars++;					
 					}
 					currentNumberOfContigs++;
 					
-				}else if(reportAll && isRepeat(contigs.get(i)) && needMore(contigs.get(i))){
+				}else if(reportAll && isRepeat(contigs.get(i)) && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov){
 					currentNumberOfContigs++;
 				}else{
 					continue;
@@ -1192,15 +1244,16 @@ public abstract class ScaffoldGraph{
 			for (int i = 0; i < scaffolds.length;i++){
 				if(scaffolds[i].isEmpty()) continue;
 				
-				if(select 
+//				if(select 
 //						&& !contigs.get(i).isMapped()
-					)
-					continue;
+//					)
+//					continue;
 				
 				int len = scaffolds[i].getLast().rightMost() - scaffolds[i].getFirst().leftMost();
 
 				if(contigs.get(i).head == i ){
-					if(!reportAll && isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null)
+					if(	!reportAll && 
+						((isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null) || len < maxRepeatLength)) //repetitive linear or short sequences
 						continue;			
 					
 					if(scaffolds[i].closeBridge != null ){
@@ -1208,7 +1261,7 @@ public abstract class ScaffoldGraph{
 					}
 					currentNumberOfContigs++;
 					
-				}else if(reportAll && isRepeat(contigs.get(i)) && needMore(contigs.get(i))){
+				}else if(reportAll && isRepeat(contigs.get(i)) && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov){
 					currentNumberOfContigs++;
 				}else{
 					continue;

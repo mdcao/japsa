@@ -42,7 +42,7 @@ public class RealtimeScaffolding {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public void scaffolding(String inFile, int readNumber, int timeNumber, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) 
+	public void scaffoldingWithBWA(String inFile, int readNumber, int timeNumber, double minCov, int qual, String format, String bwaExe, int bwaThread, String bwaIndex) 
 			throws IOException, InterruptedException{
 		scaffolder.setReadPeriod(readNumber);
 		scaffolder.setTimePeriod(timeNumber * 1000);
@@ -202,8 +202,17 @@ public class RealtimeScaffolding {
 
 	}
 
-	@Deprecated
-	public void scaffolding(String bamFile, int readNumber, int timeNumber, double minCov, int qual) 
+	/**
+	 * SHN modified the default aligner to minimap2
+	 * @param bamFile
+	 * @param readNumber
+	 * @param timeNumber
+	 * @param minCov
+	 * @param qual
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public void scaffoldingWithMinimap2(String inFile, int readNumber, int timeNumber, double minCov, int qual, String format, String mm2Preset, int mm2Threads, String mm2Index) 
 			throws IOException, InterruptedException{
 		scaffolder.setReadPeriod(readNumber);
 		scaffolder.setTimePeriod(timeNumber * 1000);
@@ -212,13 +221,50 @@ public class RealtimeScaffolding {
 
 		//...
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SamReader reader = null;
 
-		SamReader reader;
-		if ("-".equals(bamFile))
-			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
-		else
-			reader = SamReaderFactory.makeDefault().open(new File(bamFile));	
+		Process mm2Process = null;
 
+		if (format.endsWith("am")){//bam or sam
+			if ("-".equals(inFile))
+				reader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+			else
+				reader = SamReaderFactory.makeDefault().open(new File(inFile));	
+		}else{
+			Logging.info("Starting alignment by minimap2 at " + new Date());
+			ProcessBuilder pb = null;
+			if ("-".equals(inFile)){
+				pb = new ProcessBuilder("minimap2", 
+						"-t",
+						"" + mm2Threads,
+						"-ax",
+						mm2Preset,
+						"-K",
+						"20000",
+						mm2Index,
+						"-"
+						).
+						redirectInput(Redirect.INHERIT);
+			}else{
+				pb = new ProcessBuilder("minimap2", 
+						"-t",
+						"" + mm2Threads,
+						"-ax",
+						mm2Preset,
+						"-K",
+						"20000",
+						mm2Index,
+						inFile
+						);
+			}
+
+			mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+
+			Logging.info("minimap2 started!");			
+
+			reader = SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
+
+		}
 		SAMRecordIterator iter = reader.iterator();
 
 		String readID = "";
@@ -242,6 +288,7 @@ public class RealtimeScaffolding {
 				continue;		
 			}
 			myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
+//			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
 			if (readID.equals(myRec.readID)) {				
 
@@ -272,7 +319,11 @@ public class RealtimeScaffolding {
 		scaffolder.stopWaiting();
 		thread.join();
 		iter.close();
-		reader.close();		
+		reader.close();
+
+		if (mm2Process != null){
+			mm2Process.waitFor();
+		}
 
 	}
 	public static class RealtimeScaffolder extends RealtimeAnalysis{
