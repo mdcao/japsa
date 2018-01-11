@@ -70,7 +70,8 @@ public class SelectPlasmidReadsCmd extends CommandLine{
 		
 		addString("input", null, "Name of the input SAM/BAM file, - for standard input", true);
 		addString("output", "-", "Name of the output file, - for standard output");
-		
+		addDouble("cover", 0.8, "The minimum covered length of the mapped read ");
+		addBoolean("primary", false, "Take only primary alignment or not");
 		addStdHelp();		
 	} 
 
@@ -84,7 +85,7 @@ public class SelectPlasmidReadsCmd extends CommandLine{
 		String input = cmdLine.getStringVal("input");
 		String output = cmdLine.getStringVal("output");
 		
-		
+		double coverRate=cmdLine.getDoubleVal("cover");
 		
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader reader = SamReaderFactory.makeDefault().open(new File(input));
@@ -105,7 +106,8 @@ public class SelectPlasmidReadsCmd extends CommandLine{
 				continue;
 			if (rec.getMappingQuality() < 10)
 				continue;
-
+			if(cmdLine.getBooleanVal("primary") && rec.isSecondaryOrSupplementary())
+				continue;
 			AlignmentRecord myRecord = new AlignmentRecord(rec);
 
 			//not the first occurrance				
@@ -113,7 +115,7 @@ public class SelectPlasmidReadsCmd extends CommandLine{
 				if(map!=null){
 					int sum = IntStream.of(map).sum();
 //					System.out.println("Sum=" + sum + " Length="+map.length);
-					if(((double)sum/map.length) > .8)
+					if(((double)sum/map.length) > coverRate)
 						readsList.add(readID);
 				}
 				

@@ -70,14 +70,16 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 scriptDesc = "VNTR typing using capture sequencing")
 public class CaptureVNTR extends CommandLine{	
 	
-static	 String[][] map = new String[][] {new String[] {"Illumina_NA12878" ,  "hg19_SMGcore.LCDG.20140908.006_S6_bmem.rdepth"}, 
-			 new String[] {"Illumina_NA12878_1", "hg19_NA12878_800bp_Post_Capture_S2_bmem.rdepth2"},
-		 new String[] {"Illumina_NA12891" ,  "hg19_NA12891_800bp_Post_Capture_S4_bmem.rdepth2"},
-			 new String[] {"Illumina_NA12877" ,  "hg19_SMGcore.LCDG.20140908.001_S1_bmem.rdepth"  },
-				 new String[] {"Illumina_NA12879" ,  "hg19_SMGcore.LCDG.20140908.002_S2_bmem.rdepth"  },
-					 new String[] {"Illumina_NA12889" ,  "hg19_SMGcore.LCDG.20140908.003_S3_bmem.rdepth"  },
-						 new String[] {"Illumina_NA12890" ,  "hg19_SMGcore.LCDG.20140908.004_S4_bmem.rdepth"  },
-							 new String[] {"Illumina_NA12892"  , "hg19_SMGcore.LCDG.20140908.005_S5_bmem.rdepth"} } ;
+	static	 String[][] map = 	new String[][] {
+									new String[] {"Illumina_NA12878" ,  "hg19_SMGcore.LCDG.20140908.006_S6_bmem.rdepth"}, 
+				 					new String[] {"Illumina_NA12878_1", "hg19_NA12878_800bp_Post_Capture_S2_bmem.rdepth2"},
+				 					new String[] {"Illumina_NA12891" ,  "hg19_NA12891_800bp_Post_Capture_S4_bmem.rdepth2"},
+				 					new String[] {"Illumina_NA12877" ,  "hg19_SMGcore.LCDG.20140908.001_S1_bmem.rdepth"  },
+				 					new String[] {"Illumina_NA12879" ,  "hg19_SMGcore.LCDG.20140908.002_S2_bmem.rdepth"  },
+				 					new String[] {"Illumina_NA12889" ,  "hg19_SMGcore.LCDG.20140908.003_S3_bmem.rdepth"  },
+				 					new String[] {"Illumina_NA12890" ,  "hg19_SMGcore.LCDG.20140908.004_S4_bmem.rdepth"  },
+				 					new String[] {"Illumina_NA12892"  , "hg19_SMGcore.LCDG.20140908.005_S5_bmem.rdepth"} 
+								} ;
 
 	static Map<String, String>hm =  new HashMap();
 	static{

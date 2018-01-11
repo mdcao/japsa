@@ -223,6 +223,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 		for(LengthIndex idx:list){
 			int i = idx.index;
 			//TODO: include also the case of circularized scaffold (for realtime self-correction)
+			
 			if (contigs.get(i).head !=i || scaffolds[i].size() < 1 || scaffolds[i].closeBridge != null)
 				continue;
 			//Now extend scaffold i				
@@ -235,14 +236,14 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			/*****************************************************************/
 			////////////////////////////First try to extend to the end/////////////////////////////
 			if(verbose) 
-				System.out.printf("Extending %d to the rear\n",i);
+				System.out.printf("Extending %d forward...\n",i);
 			closed = walk2(i,true);
 
 			////////////////////////////Then extend to the front///////////////////////////////////
 
 			if (!closed){
 				if(verbose) 
-					System.out.printf("Extending %d to the front\n",i);
+					System.out.printf("Extending %d backward...\n",i);
 				closed = walk2(i,false);
 			}
 			//scaffolds[i].trim();
@@ -349,7 +350,8 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 								continue;
 							}
 						}
-						if(distance > -maxRepeatLength && bridge.getNumOfConnections() >= minSupportReads && bridge.compareTo(stepBridge) <0){
+						if(distance > -maxRepeatLength && bridge.getNumOfConnections() >= minSupportReads 
+								&& bridge.compareTo(stepBridge) <0){
 							if(verbose){
 								bridge.display();
 //								System.out.println("Low ranges of " + bridge.firstContig.getName() + ": " + bridge.firstContig.displayLowConfidentRegions());
@@ -359,14 +361,14 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 							//curScore = bridge.getScore();
 							stepBridge = bridge;
 							extendDir = aDir;
-						}else if(bridge.compareTo(stepBridge) > 0){
+						}else if(bridge.compareTo(stepBridge) > 0 || stepBridge==null){ //less significant or illegal bridge
 							if(verbose){
 								System.out.printf("Cannot form unique bridge from %d to %d with %d connections and score %.2f\n", 
 												ctg.getIndex(), nextContig.getIndex(), bridge.getNumOfConnections(), bridge.getScore());
 								bridge.display();
 							}
 							continue;
-						}else{ //bridges have similar score!
+						}else{ //conflict bridges have similar score!
 							if(verbose){
 								System.out.println("Conflict bridges of unique contigs: " + bridge.hashKey + " score=" + bridge.getScore() + " and " + stepBridge.hashKey + " score=" + stepBridge.getScore());
 								bridge.display();

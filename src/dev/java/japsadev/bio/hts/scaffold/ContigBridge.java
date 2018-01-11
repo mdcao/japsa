@@ -1198,7 +1198,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		}
 
 		void display (){
-			System.out.printf("[%6d %6d] -> [%6d %6d] : [%6d %6d] -> [%6d %6d] (%s) score=%d Read %s ==> %d\n", 
+			System.out.printf("Ref1 [%6d %6d] -> Ref2 [%6d %6d] : Read1 [%6d %6d] -> Read2 [%6d %6d] (%s) score=%d Read %s ==> %d\n", 
 					firstAlignment.refStart, firstAlignment.refEnd, secondAlignment.refStart, secondAlignment.refEnd,
 					firstAlignment.readStart, firstAlignment.readEnd, secondAlignment.readStart, secondAlignment.readEnd,
 					trans.toString(),					

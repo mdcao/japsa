@@ -132,4 +132,8 @@ public class ScaffoldVector{
 		this.magnitude=magnitude;
 		
 	}
+	
+	public boolean equalsTo(ScaffoldVector v){
+		return (magnitude==v.magnitude && direction==v.direction);
+	}
 }

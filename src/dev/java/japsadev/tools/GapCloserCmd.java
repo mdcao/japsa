@@ -71,10 +71,10 @@ public class GapCloserCmd extends CommandLine{
 
 		addString("input", "-", "Name of the input file, - for stdin", true);
 		addString("format", "sam", "Format of the input: fastq/fasta or sam/bam", true);
-		addBoolean("index", true, "Whether to index the contigs sequence by the aligner or not.");
+		addBoolean("index", false, "Whether to index the contigs sequence by the aligner or not.");
 		
-		addString("bwaExe", "bwa", "Path to bwa");
-		addInt("bwaThread", 4, "Theads used by bwa");
+		addString("mm2Preset", "map-ont", "Preset used by minimap2 to align long reads to the contigs");
+		addInt("mm2Threads", 4, "Theads used by minimap2");
 		
 		addBoolean("long", false, "Whether report all sequences, including short/repeat contigs (default) or only long/unique/completed sequences.");
 		addBoolean("selective", false, "If set to true, only output contigs that mapped to the long read data. Useful for metagenomic reference.");
@@ -119,11 +119,10 @@ public class GapCloserCmd extends CommandLine{
 		
 		
 		String prefix = cmdLine.getStringVal("prefix");
-		//String bamFile = cmdLine.getStringVal("bamFile");
 
 		String input = cmdLine.getStringVal("input");
-		String bwaExe = cmdLine.getStringVal("bwaExe");
-		int bwaThread = cmdLine.getIntVal("bwaThread");
+		String mm2Preset = cmdLine.getStringVal("mm2Preset");
+		int mm2Threads = cmdLine.getIntVal("mm2Threads");
 		String format = cmdLine.getStringVal("format").toLowerCase().trim();
 		
 
@@ -138,6 +137,10 @@ public class GapCloserCmd extends CommandLine{
 
 
 		String assembler = cmdLine.getStringVal("assembler").toLowerCase();
+		
+		//run indexing or not: for eukaryotic assembly this is mandatory
+		boolean mm2Indexing = cmdLine.getBooleanVal("index")||ScaffoldGraph.eukaryotic;
+		
 		//TODO: driver for ABySS
 		if(assembler.equals("abyss")){
 			ScaffoldGraph.assembler=0b01;
@@ -150,7 +153,7 @@ public class GapCloserCmd extends CommandLine{
 				format.startsWith("fq") ||
 				format.startsWith("fa")){
 			try{
-				ProcessBuilder pb = new ProcessBuilder(bwaExe).redirectErrorStream(true);
+				ProcessBuilder pb = new ProcessBuilder("minimap2","-V").redirectErrorStream(true);
 				Process process =  pb.start();
 				//Allen changes: BWA process doesn't produce gzip-compressed output
 				BufferedReader bf = SequenceReader.openInputStream(process.getInputStream());
@@ -158,7 +161,7 @@ public class GapCloserCmd extends CommandLine{
 
 				String line;
 				String version = "";
-				Pattern versionPattern = Pattern.compile("^Version:\\s(\\d+\\.\\d+\\.\\d+).*");
+				Pattern versionPattern = Pattern.compile("^(\\d+\\.\\d+).*");
 				Matcher matcher=versionPattern.matcher("");
 				
 				while ((line = bf.readLine())!=null){				
@@ -173,19 +176,19 @@ public class GapCloserCmd extends CommandLine{
 				bf.close();
 				
 				if (version.length() == 0){
-					System.err.println(bwaExe + " is not the right path to bwa. bwa is required");
+					System.err.println("ERROR: minimap2 command not found. Please install minimap2 and set the appropriate PATH variable;\n"
+										+ "	or run the alignment yourself and provide the SAM file instead of FASTA/Q file.");
 					System.exit(1);
 				}else{
-					System.out.println("bwa version: " + version);
-					if (version.compareTo("0.7.11") < 0){
-						System.err.println(" Require bwa of 0.7.11 or above");
+					System.out.println("minimap version: " + version);
+					if (version.compareTo("2.0") < 0){
+						System.err.println(" ERROR: require minimap version 2 or above!");
 						System.exit(1);
 					}
 				}
 				
-				//run indexing 
-				if(cmdLine.getBooleanVal("index")){
-					ProcessBuilder pb2 = new ProcessBuilder(bwaExe,"index",sequenceFile);
+				if(mm2Indexing){
+					ProcessBuilder pb2 = new ProcessBuilder("minimap2", "-x",mm2Preset,"-d",sequenceFile+".mmi",sequenceFile);
 					Process indexProcess =  pb2.start();
 					indexProcess.waitFor();
 				}
@@ -197,7 +200,7 @@ public class GapCloserCmd extends CommandLine{
 		}else if (format.startsWith("sam") || format.startsWith("bam")){
 			// no problem
 		}else{
-			System.err.println("I dont understand format " + format);
+			System.err.println("ERROR: Illegal format: " + format);
 			System.exit(1);
 		}
 
@@ -248,7 +251,7 @@ public class GapCloserCmd extends CommandLine{
 		
 		ScaffoldGraph.minContigLength = minContig;
 		ScaffoldGraph.minSupportReads = minSupport;	
-		ScaffoldGraph.maxRepeatLength = ScaffoldGraph.eukaryotic?Math.max(maxRepeat,10000):Math.max(maxRepeat, 7500);		
+		ScaffoldGraph.maxRepeatLength = ScaffoldGraph.eukaryotic?Math.max(maxRepeat,20000):Math.max(maxRepeat, 7500);		
 		//ScaffoldGraph.marginThres = marginThres;
 
 
@@ -287,7 +290,7 @@ public class GapCloserCmd extends CommandLine{
 			if (cov <=0)
 				cov = ScaffoldGraph.estimatedCov;
 
-			rtScaffolding.scaffolding(input, number, time, cov/1.6, qual, format, bwaExe, bwaThread, sequenceFile);
+			rtScaffolding.scaffoldingWithMinimap2(input, number, time, cov/1.6, qual, format, mm2Preset, mm2Threads, mm2Indexing?sequenceFile+".mmi":sequenceFile);
 
 		}
 		else{
@@ -302,7 +305,7 @@ public class GapCloserCmd extends CommandLine{
 			if (cov <=0)
 				cov = ScaffoldGraph.estimatedCov;
 
-			graph.makeConnections(input, cov / 1.6, qual, format, bwaExe, bwaThread, sequenceFile);
+			graph.makeConnectionsWithMinimap2(input, cov / 10, qual, format, mm2Preset, mm2Threads, mm2Indexing?sequenceFile+".mmi":sequenceFile);
 
 			graph.connectBridges();
 			if(prefix != null)
