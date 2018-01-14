@@ -66,6 +66,7 @@ public abstract class ScaffoldGraph{
 	public static volatile int maxRepeatLength=7500; //for ribosomal repeat cluster in bacteria (Koren S et al 2013), it's 9.1kb for yeast.
 	public static volatile int marginThres = 1000;
 	public static volatile int minContigLength = 200;
+	public static volatile int illuminaReadLength = 300; //Illumina MiSeq 2x300bp
 	public static volatile int minSupportReads = 1;
 	public static volatile boolean verbose = false;
 	public static volatile boolean reportAll = true;
@@ -129,6 +130,14 @@ public abstract class ScaffoldGraph{
 				mycov = Double.parseDouble(toks[1])/Double.parseDouble(toks[0]);
 			}
 			
+			/////////////////////////////////////////////////////////////////////
+			/**
+			*convert from k-mer coverage (read kmers per contig kmers) 
+			*to read coverage (read bp per contig bp):
+			*Cx=Ck*L/(L-k+1)
+			*/
+			mycov=mycov*seq.length()/(seq.length()-Graph.getKmerSize()+1);
+			
 			estimatedCov += mycov * seq.length();
 			estimatedLength += seq.length();
 			
@@ -144,6 +153,7 @@ public abstract class ScaffoldGraph{
 		reader.close();
 
 		estimatedCov /= estimatedLength;
+		
 
 		Logging.info("Average coverage:" + estimatedCov + " Length: " + estimatedLength);
 		//turn off verbose mode if the genome is bigger than 100Mb. 
@@ -164,6 +174,20 @@ public abstract class ScaffoldGraph{
 
 		scfNum=contigs.size();
 		cirNum=0;
+		
+		
+		////////////////////////////////////////////////////////////////////////
+		/**
+		 * A-statistics: A(delta,r)=log(e)*delta*n/G -r*log(2)
+		 * delta: contig length, r: number of reads comprise this contig, 
+		 * n: total number of reads, G: genome size
+		 * Recalculated by Cx, contig_len, read_len, estimatedCov
+		 */
+		for(Contig ctg:contigs){
+			double astats = ctg.length()*estimatedCov/illuminaReadLength - Math.log(2)*ctg.getCoverage()*ctg.length()/illuminaReadLength;
+			astats*=Math.log10(Math.E);
+			Logging.info(ctg.getName() + " A_stat=" + astats + " isRepeat=" + isRepeat(ctg));
+		}
 
 	}//constructor
 
