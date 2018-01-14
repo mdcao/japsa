@@ -45,6 +45,7 @@ import japsa.util.Logging;
 import japsa.util.deploy.Deployable;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -114,7 +115,7 @@ public class CaptureVNTR extends CommandLine{
 		addInt("pad", 10, "Gaps");
 		addString("resample", null, "reference sample");
 		addString("resAllele", null, "reference alleles");
-		addString("CI", "95", "Confidence interval between 0 and 100");
+		addString("HPD", "95", "HPD interval between 0 and 100");
 
 		//addInt("CI", 95, "Confidence Interval");
 
@@ -143,7 +144,7 @@ public class CaptureVNTR extends CommandLine{
 		int    readLength   =  cmdLine.getIntVal("readLength");
 
 		int stage = cmdLine.getIntVal("stage");	
-		String CI = cmdLine.getStringVal("CI");	
+		String CI = cmdLine.getStringVal("HPD");	
 		//stage = 6;
 		
 		//int pad = cmdLine.getIntVal("pad");		
@@ -335,7 +336,7 @@ public class CaptureVNTR extends CommandLine{
 		}
 	}
 
-	 static double downsample = 1; // this will need to be modified mannually
+	 static double downsample = 1.0; //7.2; // this will need to be modified mannually
 
 	/**
 	 * Analyse data resulted from stage 3
@@ -347,7 +348,14 @@ public class CaptureVNTR extends CommandLine{
 	 * @throws InterruptedException
 	 */
 	static void stage6_readDepthAnalysis(String xafFile, File dir, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1, String[] cistring) throws IOException, InterruptedException{
-		File[] sFiles = sDir.listFiles();
+		File[] sFiles = sDir.listFiles(new FileFilter(){
+
+			@Override
+			public boolean accept(File pathname) {
+				return !pathname.isDirectory();
+			}
+			
+		});
 		if (sFiles.length ==0)
 			return;	
 		double[] CI = new double[cistring.length]; //NOTE :  THIS IS A TERRIBLE WAY TO SET CI, SHOULD ADD AS COMMAND LINE PARAMETER
