@@ -47,6 +47,8 @@ public class Contig{
 	ScaffoldVector myVector;//relative position to the head contig of my scaffold	
 	Sequence contigSequence;//the sequence of the contig	
 	double coverage = 1.0;
+	private double aStats=0;
+	private boolean estRepeatFlag;
 	int head = -1; //point to the index of its head contig in the scaffold 
 	double prevScore=0, nextScore=0;
 	ArrayList<Range> lowConfidentRegions;
@@ -224,8 +226,23 @@ public class Contig{
 	public double getCoverage(){
 		return coverage;
 	}
-	
+	public void setCoverage(double cov){
+		coverage =  cov;
+	}
 
+	public double getAstatistics(){
+		return aStats;
+	}
+	public void setAstatistics(double stats){
+		aStats =  stats;
+	}
+	
+	public boolean getRepeatFlag(){
+		return estRepeatFlag;
+	}
+	public void setRepeatFlag(boolean flag){
+		estRepeatFlag = flag;
+	}
 //	public boolean isMapped(){
 //		int sum = IntStream.of(isMapped).sum();
 //		return ((double)sum/length()) > .8;
@@ -240,9 +257,7 @@ public class Contig{
 		this.paths.add(path);
 	}
 	
-	public void setCoverage(double cov){
-		coverage =  cov;
-	}
+
 	public String toString(){
 		return new String(" contig" + getIndex());
 	}

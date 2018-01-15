@@ -124,10 +124,10 @@ public abstract class ScaffoldGraph{
 					}
 				}
 			} 
-			//ABySS header: >%d %d %d, ID, length, kmer_sum
+			//ABySS header: >%d %d %d, ID, length, kmer_sum (number of total mapped kmers)
 			else if(assembler==0b01){
 				String [] toks = desc.split("\\s");
-				mycov = Double.parseDouble(toks[1])/Double.parseDouble(toks[0]);
+				mycov = Double.parseDouble(toks[1])/(Double.parseDouble(toks[0])-Graph.getKmerSize());
 			}
 			
 			/////////////////////////////////////////////////////////////////////
@@ -162,8 +162,12 @@ public abstract class ScaffoldGraph{
 			verbose=false;
 			updateGenome=false;
 		}
-
-		//2. Initialise scaffold graph
+		
+		//2. Remove contigs that have too low coverage (<.3*estimatedCov)
+		//TODO: Change this if doing metagenomics
+		contigs.removeIf(ctg -> ctg.getCoverage() < 0.3*estimatedCov);
+		
+		//3. Initialise scaffold graph
 		scaffolds = new Scaffold[contigs.size()];		
 		
 		for (int i = 0; i < contigs.size();i++){				
@@ -181,12 +185,15 @@ public abstract class ScaffoldGraph{
 		 * A-statistics: A(delta,r)=log(e)*delta*n/G -r*log(2)
 		 * delta: contig length, r: number of reads comprise this contig, 
 		 * n: total number of reads, G: genome size
-		 * Recalculated by Cx, contig_len, read_len, estimatedCov
+		 * Recalculated by Cx, contig_len, read_len, estimatedCov (average read coverage over the genome)
 		 */
 		for(Contig ctg:contigs){
 			double astats = ctg.length()*estimatedCov/illuminaReadLength - Math.log(2)*ctg.getCoverage()*ctg.length()/illuminaReadLength;
 			astats*=Math.log10(Math.E);
-			Logging.info(ctg.getName() + " A_stat=" + astats + " isRepeat=" + isRepeat(ctg));
+			ctg.setAstatistics(astats);
+			//Logging.info(ctg.getName() + " A_stat=" + astats + " isRepeat=" + isRepeat(ctg));
+			
+			ctg.setRepeatFlag(astats>5?false:true);
 		}
 
 	}//constructor
@@ -1377,7 +1384,41 @@ public abstract class ScaffoldGraph{
 	}	
 	
 	
+//	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a marker.
+//	public static boolean isRepeat(Contig ctg){
+//		//for the case when no coverage information of contigs is found
+//		if(estimatedCov == 1.0 && ctg.getCoverage() == 1.0){
+//			if(ctg.length() > maxRepeatLength)
+//				return false;
+//			else
+//				return true;
+//		}
+//
+//		if (ctg.length() < minContigLength || ctg.getCoverage() < .3 * estimatedCov) return true;
+//		else if (ctg.length() > maxRepeatLength || ctg.getCoverage() < 1.3 * estimatedCov) 
+//			return false; 
+//		else if (ctg.getCoverage() > 1.5 * estimatedCov)
+//			return true;
+//		else{
+//			for(ContigBridge bridge:getListOfBridgesFromContig(ctg)){
+//				Contig other = bridge.firstContig.getIndex()==ctg.getIndex()?bridge.secondContig:bridge.firstContig;
+//				if(other.getIndex()==ctg.getIndex()) continue;
+//				int dist=bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig);
+//				if( dist<0 && dist>-ctg.length()*.25){
+//					if(other.length() > maxRepeatLength || other.getCoverage() < 1.3*estimatedCov)
+//						return true;
+//				}
+//			}
+//
+//		}
+//		if(ctg.length() < 2*minContigLength) // further filter: maybe not repeat but insignificant contig 
+//			return true;
+//		else 
+//			return false;
+//	}
+	
 	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a marker.
+	
 	public static boolean isRepeat(Contig ctg){
 		//for the case when no coverage information of contigs is found
 		if(estimatedCov == 1.0 && ctg.getCoverage() == 1.0){
