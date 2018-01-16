@@ -227,7 +227,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 			if (contigs.get(i).head !=i || scaffolds[i].size() < 1 || scaffolds[i].closeBridge != null)
 				continue;
 			//Now extend scaffold i				
-			if(	isRepeat(scaffolds[i].element()) 
+			if(	!isMarker(scaffolds[i].element()) 
 				|| scaffolds[i].element().length() < minContigLength){
 				if(!scaffolds[i].element().isCircular())
 					continue;
@@ -339,7 +339,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				//only take one next singleton (with highest score possible sorted) as the marker for the next extension
 				int distance = bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig);
 				if (direction?(newEnd > ctgEnd):(newEnd < ctgEnd)){	
-					if(!isRepeat(nextContig) || (ctg.isCircular() && ctg.getIndex() == nextContig.getIndex())){
+					if(isMarker(nextContig) || (ctg.isCircular() && ctg.getIndex() == nextContig.getIndex())){
 						//check quality of the bridge connected 2 markers
 						int aDir = 0;
 						if(scaffolds[nextContig.head].size() > 1){
@@ -419,7 +419,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				ScaffoldVector curVector = extendableVector.get(index);
 				if(verbose) 
 					System.out.println("Checking contig " + curContig.getName() + "...");
-				if(	isRepeat(curContig) && !curContig.isCircular())
+				if(	!isMarker(curContig) && !curContig.isCircular())
 					if(checkHang(ctg, curContigBridge, stepBridge)==null)
 						continue;
 				prevVector = prevContig.getVector();
@@ -427,7 +427,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				ScaffoldVector prevToCur = ScaffoldVector.composition(curVector,ScaffoldVector.reverse(prevVector));
 				ContigBridge confirmedBridge;
 				//TODO: if this happen with singleton -> chimeric happen (unique+repeat=contig) need to do smt...
-				if(	isRepeat(curContig) &&
+				if(	!isMarker(curContig) &&
 					(direction?(curContig.rightMost(curVector) < curEnd):(curContig.leftMost(curVector)) > curEnd)){
 					if(verbose) 
 						System.out.println(curContig.getName() + " is ignored because current end " + curEnd + 
@@ -454,7 +454,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 				if(extendable){
 					// if extension is circularized
 					if(curContig.getIndex() == (direction?scaffold.getFirst().getIndex():scaffold.getLast().getIndex())
-						&& (!isRepeat(curContig) || curContig.isCircular())
+						&& (isMarker(curContig) || curContig.isCircular())
 						){
 						if(verbose) 
 							System.out.printf(" *****************SCAFFOLD %d CLOSED AFTER CONNECT %d ***********************\n", i,curContig.index);
@@ -463,7 +463,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 						return true;
 					}
 					
-					if(isRepeat(curContig)){
+					if(!isMarker(curContig)){
 						curContig.head = i; //must be here!
 						curContig = curContig.clone();
 					}else{

@@ -164,7 +164,7 @@ public final class Scaffold extends LinkedList<Contig>{
 	
 	public Contig nearestMarker(Contig ctg, boolean forward){
 
-		if(ScaffoldGraph.isRepeat(ctg)){
+		if(!ScaffoldGraph.isMarker(ctg)){
 			if(ScaffoldGraph.verbose)
 				System.out.println("Cannot determine nearest marker of a repeat!");
 			return null;
@@ -183,15 +183,15 @@ public final class Scaffold extends LinkedList<Contig>{
 			marker = (forward?iterator.next():iterator.previous());
 			if(ScaffoldGraph.verbose)
 				System.out.print("..."+marker.getIndex());
-			if(marker != null && !ScaffoldGraph.isRepeat(marker) && marker.getIndex() != ctg.getIndex())
+			if(marker != null && ScaffoldGraph.isMarker(marker) && marker.getIndex() != ctg.getIndex())
 				break;
 		}
-		if(closeBridge!=null && (marker == null || ScaffoldGraph.isRepeat(marker))){
+		if(closeBridge!=null && (marker == null || !ScaffoldGraph.isMarker(marker))){
 			marker = forward?this.getFirst():this.getLast();
 			while((forward?iterator.hasNext():iterator.hasPrevious())){
 				if(ScaffoldGraph.verbose)
 					System.out.print("......"+marker.getIndex());
-				if(marker != null && !ScaffoldGraph.isRepeat(marker) && marker.getIndex() != ctg.getIndex())
+				if(marker != null && ScaffoldGraph.isMarker(marker) && marker.getIndex() != ctg.getIndex())
 					break;
 				else
 					marker = (forward?iterator.next():iterator.previous());
@@ -215,7 +215,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			return;
 		//from right
 		Contig rightmost = this.peekLast();
-		while(rightmost!=null && ScaffoldGraph.isRepeat(rightmost)){
+		while(rightmost!=null && !ScaffoldGraph.isMarker(rightmost)){
 			if(ScaffoldGraph.verbose)
 				System.out.println("...removing contig " + rightmost.getIndex());	
 			this.removeLast();
@@ -247,7 +247,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		
 		//from left
 		Contig leftmost = this.peekFirst();
-		while(leftmost!=null && ScaffoldGraph.isRepeat(leftmost)){
+		while(leftmost!=null && !ScaffoldGraph.isMarker(leftmost)){
 			if(ScaffoldGraph.verbose)
 				System.out.println("...removing contig " + leftmost.getIndex());			
 			this.removeFirst();

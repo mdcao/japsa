@@ -112,7 +112,7 @@ public abstract class ScaffoldGraph{
 			String 	name = seq.getName(),
 					desc = seq.getDesc();
 			
-			double mycov = 1.0;
+			double mycov = 0;
 			//SPAdes header: >%d_length_%d_cov_%f
 			//SPAdes header: >MicroManage_ID %d_length_%d_cov_%f
 			if(assembler==0b00){
@@ -297,10 +297,10 @@ public abstract class ScaffoldGraph{
 			int len = scaffolds[i].length();
 			
 			if(contigs.get(i).head == i){
-				if (isRepeat(contigs.get(i)) && !reportAll ) 
+				if (!isMarker(contigs.get(i)) && !reportAll ) 
 					continue;
 			}
-			else if(!isRepeat(contigs.get(i)) || !needMore(contigs.get(i)) )
+			else if(isMarker(contigs.get(i)) || !needMore(contigs.get(i)) )
 				continue;
 			
 			lengths[count] = len;
@@ -327,7 +327,7 @@ public abstract class ScaffoldGraph{
 			if(scaffolds[i].isEmpty()) continue;
 			int len = scaffolds[i].length();
 			if ((contigs.get(i).head == i 
-					&& !isRepeat(contigs.get(i))
+					&& isMarker(contigs.get(i))
 					&& len > maxRepeatLength
 					)
 					|| scaffolds[i].closeBridge != null)
@@ -519,8 +519,8 @@ public abstract class ScaffoldGraph{
 						"" + mm2Threads,
 						"-ax",
 						mm2Preset,
-//						"-K",
-//						"20000",
+						"-I",
+						"40g",
 						mm2Index,
 						"-"
 						).
@@ -531,8 +531,8 @@ public abstract class ScaffoldGraph{
 						"" + mm2Threads,
 						"-ax",
 						mm2Preset,
-//						"-K",
-//						"20000",
+						"-I",
+						"40g",
 						mm2Index,
 						inFile
 						);
@@ -1150,7 +1150,7 @@ public abstract class ScaffoldGraph{
 	//change head of scaffold scf to newHead. 
 	//This should move the content of scf to scaffolds[newHead.idx], leaving scf=null afterward
 	public void changeHead(Scaffold scf, Contig newHead){	
-		if(isRepeat(newHead)){
+		if(!isMarker(newHead)){
 			if(verbose)
 				System.out.println("Cannot use repeat as a head! " + newHead.getName());
 			return;
@@ -1226,7 +1226,7 @@ public abstract class ScaffoldGraph{
 				
 				if(contigs.get(i).head == i ){
 					if(	!reportAll && 
-							((isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null) || len < maxRepeatLength)) //repetitive linear or short sequences
+							((!isMarker(contigs.get(i)) && scaffolds[i].closeBridge == null) || len < maxRepeatLength)) //repetitive linear or short sequences
 							continue;			
 					
 					if(scaffolds[i].closeBridge != null ){
@@ -1234,7 +1234,7 @@ public abstract class ScaffoldGraph{
 					}
 					currentNumberOfContigs++;
 					
-				}else if(reportAll && isRepeat(contigs.get(i)) && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov){
+				}else if(reportAll && !isMarker(contigs.get(i)) && needMore(contigs.get(i)) && contigs.get(i).coverage >= .5*estimatedCov){
 					currentNumberOfContigs++;
 				}else{
 					continue;
@@ -1284,7 +1284,7 @@ public abstract class ScaffoldGraph{
 
 				if(contigs.get(i).head == i ){
 					if(	!reportAll && 
-						((isRepeat(contigs.get(i)) && scaffolds[i].closeBridge == null) || len < maxRepeatLength)) //repetitive linear or short sequences
+						((!isMarker(contigs.get(i)) && scaffolds[i].closeBridge == null) || len < maxRepeatLength)) //repetitive linear or short sequences
 						continue;			
 					
 					if(scaffolds[i].closeBridge != null ){
@@ -1292,7 +1292,7 @@ public abstract class ScaffoldGraph{
 					}
 					currentNumberOfContigs++;
 					
-				}else if(reportAll && isRepeat(contigs.get(i)) && needMore(contigs.get(i)) && contigs.get(i).coverage > .5*estimatedCov){
+				}else if(reportAll && !isMarker(contigs.get(i)) && needMore(contigs.get(i)) && contigs.get(i).coverage >= .5*estimatedCov){
 					currentNumberOfContigs++;
 				}else{
 					continue;
@@ -1418,37 +1418,17 @@ public abstract class ScaffoldGraph{
 //	}
 	
 	// To check if this contig is likely a repeat or a singleton. If FALSE: able to be used as a marker.
-	
-	public static boolean isRepeat(Contig ctg){
+	// note: isMarker() = !isRepeat() in old version
+	public static boolean isMarker(Contig ctg){
 		//for the case when no coverage information of contigs is found
-		if(estimatedCov == 1.0 && ctg.getCoverage() == 1.0){
+		if(estimatedCov == 0){
 			if(ctg.length() > maxRepeatLength)
-				return false;
-			else
 				return true;
+			else
+				return false;
 		}
 
-		if (ctg.length() < minContigLength || ctg.getCoverage() < .3 * estimatedCov) return true;
-		else if (ctg.length() > maxRepeatLength || ctg.getCoverage() < 1.3 * estimatedCov) 
-			return false; 
-		else if (ctg.getCoverage() > 1.5 * estimatedCov)
-			return true;
-		else{
-			for(ContigBridge bridge:getListOfBridgesFromContig(ctg)){
-				Contig other = bridge.firstContig.getIndex()==ctg.getIndex()?bridge.secondContig:bridge.firstContig;
-				if(other.getIndex()==ctg.getIndex()) continue;
-				int dist=bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig);
-				if( dist<0 && dist>-ctg.length()*.25){
-					if(other.length() > maxRepeatLength || other.getCoverage() < 1.3*estimatedCov)
-						return true;
-				}
-			}
-
-		}
-		if(ctg.length() < 2*minContigLength) // further filter: maybe not repeat but insignificant contig 
-			return true;
-		else 
-			return false;
+		return !ctg.getRepeatFlag();
 	}
 
 	abstract public void connectBridges();

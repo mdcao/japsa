@@ -239,8 +239,10 @@ public class RealtimeScaffolding {
 						"" + mm2Threads,
 						"-ax",
 						mm2Preset,
-						"-K",
-						"20000",
+						"-I",
+						"40g",
+//						"-K",
+//						"20000",
 						mm2Index,
 						"-"
 						).
@@ -251,8 +253,10 @@ public class RealtimeScaffolding {
 						"" + mm2Threads,
 						"-ax",
 						mm2Preset,
-						"-K",
-						"20000",
+						"-I",
+						"40g",
+//						"-K",
+//						"20000",
 						mm2Index,
 						inFile
 						);
