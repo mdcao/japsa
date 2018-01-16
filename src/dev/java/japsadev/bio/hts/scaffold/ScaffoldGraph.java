@@ -162,12 +162,8 @@ public abstract class ScaffoldGraph{
 			verbose=false;
 			updateGenome=false;
 		}
-		
-		//2. Remove contigs that have too low coverage (<.3*estimatedCov)
-		//TODO: Change this if doing metagenomics
-		contigs.removeIf(ctg -> ctg.getCoverage() < 0.3*estimatedCov);
-		
-		//3. Initialise scaffold graph
+				
+		//2. Initialise scaffold graph
 		scaffolds = new Scaffold[contigs.size()];		
 		
 		for (int i = 0; i < contigs.size();i++){				
@@ -1426,9 +1422,10 @@ public abstract class ScaffoldGraph{
 				return true;
 			else
 				return false;
-		}
-
-		return !ctg.getRepeatFlag();
+		}else if(ctg.getCoverage() < .3*estimatedCov) {
+			return false;
+		}else
+			return !ctg.getRepeatFlag();
 	}
 
 	abstract public void connectBridges();
