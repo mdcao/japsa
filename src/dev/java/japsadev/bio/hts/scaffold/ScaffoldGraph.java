@@ -105,11 +105,10 @@ public abstract class ScaffoldGraph{
 		Sequence seq;
 		contigs = new ArrayList<Contig>(); 
 
-		int index = 0, shortestCtgLength=Integer.MAX_VALUE;
+		int index = 0;
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
 			Contig ctg = new Contig(index, seq);		
-			if(seq.length() < shortestCtgLength)
-				shortestCtgLength=seq.length();
+
 			String 	name = seq.getName(),
 					desc = seq.getDesc();
 			
@@ -137,11 +136,14 @@ public abstract class ScaffoldGraph{
 			*to read coverage (read bp per contig bp):
 			*Cx=Ck*L/(L-k+1)
 			*/
-			mycov=mycov*seq.length()/(seq.length()-Graph.getKmerSize()+1);
-			
+			System.out.printf("%s before=%.2f",ctg.getName(), mycov);
+			mycov=mycov*illuminaReadLength/(illuminaReadLength-Graph.getKmerSize()+1);
+
 			estimatedCov += mycov * seq.length();
 			estimatedLength += seq.length();
 			
+			System.out.printf(" after=%.2f length=%d ave=%.2f\n", mycov, seq.length(), estimatedCov/estimatedLength);
+
 			ctg.setCoverage(mycov);
 
 			contigs.add(ctg);
@@ -152,9 +154,6 @@ public abstract class ScaffoldGraph{
 			index ++;
 		}
 		reader.close();
-
-		if(Graph.getKmerSize()==0 || Graph.getKmerSize()>shortestCtgLength)
-			Graph.setKmerSize(shortestCtgLength-1);
 		
 		estimatedCov /= estimatedLength;
 		

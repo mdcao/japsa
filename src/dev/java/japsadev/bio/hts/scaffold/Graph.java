@@ -30,7 +30,7 @@ public class Graph {
     
     private HashMap<String, Vertex> vertices;
     private HashMap<Integer, Edge> edges;
-    private static int kmer;
+    private static int KMER=127; //default kmer size used by SPAdes to assembly MiSeq data
 
     static final int TOLERATE=500;
     static final int MAX_DEPTH=50; //limit depth to search for DFS
@@ -39,7 +39,6 @@ public class Graph {
     public Graph(){
         this.vertices = new HashMap<String, Vertex>();
         this.edges = new HashMap<Integer, Edge>();
-        setKmerSize(127);//default kmer size used by SPAdes to assembly MiSeq data
     }
     
     
@@ -124,10 +123,10 @@ public class Graph {
     }
     
     public static int getKmerSize(){
-    	return kmer;
+    	return KMER;
     }
     static void setKmerSize(int k){
-    	kmer=k;
+    	KMER=k;
     }
     /**
      * This method adds an edge between Vertices one and two
@@ -141,7 +140,7 @@ public class Graph {
      * @return true iff no Edge relating one and two exists in the Graph
      */
     public boolean addEdge(Vertex one, Vertex two, boolean d1, boolean d2){
-        return addEdge(one, two, d1, d2, -kmer);
+        return addEdge(one, two, d1, d2, -KMER);
     }
     
     
