@@ -139,8 +139,8 @@ public abstract class ScaffoldGraph{
 			System.out.printf("%s before=%.2f",ctg.getName(), mycov);
 			mycov=mycov*illuminaReadLength/(illuminaReadLength-Graph.getKmerSize()+1);
 
-			estimatedCov += mycov * seq.length();
-			estimatedLength += seq.length();
+			estimatedCov += mycov * (seq.length()-Graph.getKmerSize());//check this????
+			estimatedLength += seq.length()-Graph.getKmerSize();
 			
 			System.out.printf(" after=%.2f length=%d ave=%.2f\n", mycov, seq.length(), estimatedCov/estimatedLength);
 
