@@ -926,13 +926,13 @@ public abstract class ScaffoldGraph{
 
 		if(secondDir == -1){
 			if(headF==headT){
-
+				Contig 	prevMarker = scaffoldF.nearestMarker(contigF, false),
+						nextMarker = scaffoldF.nearestMarker(contigF, true);
 				if(firstDir){
 					//            .........
 					//       <----v       :
 					// ===========*=======>
-					Contig prevMarker = scaffoldF.nearestMarker(contigF, false);
-					
+					// separate the original scaffold
 					if(prevMarker!=null){
 						Contig ctg = scaffoldF.remove(count--);
 						ContigBridge brg = scaffoldF.bridges.remove(count+1);
@@ -942,20 +942,25 @@ public abstract class ScaffoldGraph{
 							if(count<0) break;
 							ctg= scaffoldF.remove(count--);
 							brg = scaffoldF.bridges.remove(count+1);
-							newScf.addBackward(ctg,brg); //must be here, after the assignments of ctg, brg???
-
-							
+							newScf.addBackward(ctg,brg); //must be here, after the assignments of ctg, brg???					
 						}
 						changeHead(newScf, prevMarker);
 					}
-					joinScaffold(contig, bridge, true, -1);					
+					//and join again!
+					if(nextMarker!=null){
+						changeHead(scaffoldF, nextMarker);
+						addScf=nextMarker.getIndex();
+						joinScaffold(contig, bridge, true, -1);					
+
+					}else{
+						scaffoldF.trim();//remove all elements in this scaffold!
+					}
 
 				}
 				else{
 					// ..............
 					// :       <----v
 					// <============*=======
-					Contig nextMarker = scaffoldF.nearestMarker(contigF, true);
 					if(nextMarker!=null){
 						Contig ctg = scaffoldF.remove(index+1);
 						Scaffold newScf = new Scaffold(ctg);
@@ -1035,12 +1040,12 @@ public abstract class ScaffoldGraph{
 		}
 		else if(secondDir == 1){
 			if(headF==headT){
+				Contig 	prevMarker = scaffoldF.nearestMarker(contigF, false),
+						nextMarker = scaffoldF.nearestMarker(contigF, true);
 				if(!firstDir){
 					// ...........
 					// :         v--->
-					// <=========*=========			
-					Contig nextMarker = scaffoldF.nearestMarker(contigF, true);
-					
+					// <=========*=========								
 					if(nextMarker!=null){
 						Contig ctg = scaffoldF.remove(index);
 						ContigBridge brg = scaffoldF.bridges.remove(index-1);
@@ -1055,14 +1060,20 @@ public abstract class ScaffoldGraph{
 						}
 						changeHead(newScf, nextMarker);
 					}
-					joinScaffold(contig, bridge, false, 1);	
+					if(prevMarker!=null){
+						changeHead(scaffoldF, prevMarker);
+						addScf=prevMarker.getIndex();
+						joinScaffold(contig, bridge, false, 1);	
+					
+					}else{
+						scaffoldF.trim();
+					}
 					
 				}
 				else{
 					//       .............
 					//       v--->       :
 					// ======*===========>
-					Contig prevMarker = scaffoldF.nearestMarker(contigF, false);
 					if(prevMarker!=null){
 						Contig ctg = scaffoldF.remove(--count);
 						Scaffold newScf = new Scaffold(ctg);
