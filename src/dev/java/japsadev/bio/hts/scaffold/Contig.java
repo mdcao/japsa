@@ -48,7 +48,7 @@ public class Contig{
 	Sequence contigSequence;//the sequence of the contig	
 	double coverage = 1.0;
 	private double aStats=0;
-	private boolean estRepeatFlag;
+	private boolean estRepeatFlag=true; //initiated as not marker!
 	int head = -1; //point to the index of its head contig in the scaffold 
 	double prevScore=0, nextScore=0;
 	ArrayList<Range> lowConfidentRegions;

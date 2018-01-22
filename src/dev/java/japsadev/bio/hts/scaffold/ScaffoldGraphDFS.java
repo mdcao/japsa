@@ -469,7 +469,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 					}else{
 						//check to join 2 scaffolds and stop this round
 						if (scaffolds[curContig.head].size() > 1){
-							if(!joinScaffold(prevContig,confirmedBridge,direction,extendDir)){
+							if(!joinScaffold(prevContig,confirmedBridge,direction?1:-1,extendDir)){
 								if(verbose)
 									System.out.printf(" Skip to connect contig %d of %d to contig %d of %d\n", ctg.index,i,curContig.index, curContig.head);
 								continue;

@@ -186,14 +186,17 @@ public abstract class ScaffoldGraph{
 		 * n: total number of reads, G: genome size
 		 * Recalculated by Cx, contig_len, read_len, estimatedCov (average read coverage over the genome)
 		 */
-		for(Contig ctg:contigs){
-			double astats = ctg.length()*estimatedCov/illuminaReadLength - Math.log(2)*ctg.getCoverage()*ctg.length()/illuminaReadLength;
-			astats*=Math.log10(Math.E);
-			ctg.setAstatistics(astats);
-			//Logging.info(ctg.getName() + " A_stat=" + astats + " isRepeat=" + isRepeat(ctg));
-			
-			ctg.setRepeatFlag(astats>5?false:true);
+		synchronized (contigs) {
+			for(Contig ctg:contigs){
+				double astats = ctg.length()*estimatedCov/illuminaReadLength - Math.log(2)*ctg.getCoverage()*ctg.length()/illuminaReadLength;
+				astats*=Math.log10(Math.E);
+				ctg.setAstatistics(astats);			
+				ctg.setRepeatFlag(astats>5?false:true);
+//				Logging.info(ctg.getName() + " A_stat=" + astats + " isRepeat=" + ctg.getRepeatFlag());
+
+			}
 		}
+
 
 	}//constructor
 
@@ -886,7 +889,17 @@ public abstract class ScaffoldGraph{
 		return 0;
 	}
 	/*********************************************************************************/
-	public synchronized boolean joinScaffold(Contig contig, ContigBridge bridge, boolean firstDir, int secondDir){		
+	/**
+	 * 
+	 * @param contig: source contig (contigS)
+	 * @param bridge: bridge connects source->dest (contigS->contigD)
+	 * @param firstDir: extending direction on source scaffold (scaffoldS) 
+	 * @param secondDir: direction on destination scaffold (scaffoldD) that will be extended
+	 * @return succeed/failure of joining process
+	 * 
+	 * NOTE: in older version, contigT=contigS, contigF=contigD
+	 */
+	public synchronized boolean joinScaffold(Contig contig, ContigBridge bridge, int firstDir, int secondDir){		
 		if(verbose) {
 			System.out.println("PREPARE TO CONNECT " + bridge.hashKey + " with score " + bridge.getScore() + 
 					", size " + bridge.getNumOfConnections() + 
@@ -896,64 +909,66 @@ public abstract class ScaffoldGraph{
 		}
 
 
-		Contig contigF = bridge.secondContig, contigT = contig;
+		Contig contigD = bridge.secondContig, contigS = contig;
 		ScaffoldVector trans = bridge.getTransVector();
 
-		int headF = contigF.head,
-			headT = contigT.head;
-		Scaffold 	scaffoldF = scaffolds[headF],
-					scaffoldT = scaffolds[headT];
-		int	posT = scaffoldT.isEnd(contigT);
+		int headD = contigD.head,
+			headS = contigS.head;
+		Scaffold 	scaffoldD = scaffolds[headD],
+					scaffoldS = scaffolds[headS];
+		int	posT = scaffoldS.isEnd(contigS);
 		if (posT == 0){
 			if(verbose) 
-				System.out.println("Impossible to jump from the middle of a scaffold " + headT + ": contig " + contigT.index);
+				System.out.println("Impossible to jump from the middle of a scaffold " + headS + ": contig " + contigS.index);
 			return false;
 		}
 
 		if(verbose) 
-			System.out.println("Before joining " + contigF.index + " (" + headF +") to " + contigT.index 
-					+ " (" + headT +") " 
-					+ (scaffoldT.getLast().rightMost() - scaffoldT.getFirst().leftMost()) 
-					+ "+" + (scaffoldF.getLast().rightMost() - scaffoldF.getFirst().leftMost()) 
-					+ "=" + (scaffoldT.getLast().rightMost() - scaffoldT.getFirst().leftMost() + scaffoldF.getLast().rightMost() - scaffoldF.getFirst().leftMost()));
+			System.out.println("Before joining " + contigD.index + " (" + headD +") to " + contigS.index 
+					+ " (" + headS +") " 
+					+ (scaffoldS.getLast().rightMost() - scaffoldS.getFirst().leftMost()) 
+					+ "+" + (scaffoldD.getLast().rightMost() - scaffoldD.getFirst().leftMost()) 
+					+ "=" + (scaffoldS.getLast().rightMost() - scaffoldS.getFirst().leftMost() + scaffoldD.getLast().rightMost() - scaffoldD.getFirst().leftMost()));
 		//===================================================================================================
-		int index = scaffoldF.indexOf(contigF),
+		int index = scaffoldD.indexOf(contigD),
 				count = index;
 
-		ScaffoldVector rev = ScaffoldVector.reverse(contigF.getVector()); //rev = contigF->headF	
+		ScaffoldVector rev = ScaffoldVector.reverse(contigD.getVector()); //rev = contigF->headF	
 
 		int addScf=-1; 
+		int orderS=0, orderD=0; //order of new source and destination scaffold after break
 
 		if(secondDir == -1){
-			if(headF==headT){
-				Contig 	prevMarker = scaffoldF.nearestMarker(contigF, false),
-						nextMarker = scaffoldF.nearestMarker(contigF, true);
-				if(firstDir){
+			if(headD==headS){
+				Contig 	prevMarker = scaffoldD.nearestMarker(contigD, false),
+						nextMarker = scaffoldD.nearestMarker(contigD, true);
+				if(firstDir>0){
 					//            .........
 					//       <----v       :
 					// ===========*=======>
 					// separate the original scaffold
 					if(prevMarker!=null){
-						Contig ctg = scaffoldF.remove(count--);
-						ContigBridge brg = scaffoldF.bridges.remove(count+1);
+						Contig ctg = scaffoldD.remove(count--);
+						ContigBridge brg = scaffoldD.bridges.remove(count+1);
 						Scaffold newScf = new Scaffold(ctg);
 						
 						while(true){
 							if(count<0) break;
-							ctg= scaffoldF.remove(count--);
-							brg = scaffoldF.bridges.remove(count+1);
+							ctg= scaffoldD.remove(count--);
+							brg = scaffoldD.bridges.remove(count+1);
 							newScf.addBackward(ctg,brg); //must be here, after the assignments of ctg, brg???					
 						}
-						changeHead(newScf, prevMarker);
+						orderD=changeHead(newScf, prevMarker);
 					}
 					//and join again!
 					if(nextMarker!=null){
-						changeHead(scaffoldF, nextMarker);
+						orderS=changeHead(scaffoldD, nextMarker);
 						addScf=nextMarker.getIndex();
-						joinScaffold(contig, bridge, true, -1);					
+						assert orderS*orderD!=0:"Change head failed!";
+						joinScaffold(contig, bridge, orderS, -orderD);					
 
 					}else{
-						scaffoldF.trim();//remove all elements in this scaffold!
+						scaffoldD.trim();//remove all elements in this scaffold!
 					}
 
 				}
@@ -962,111 +977,112 @@ public abstract class ScaffoldGraph{
 					// :       <----v
 					// <============*=======
 					if(nextMarker!=null){
-						Contig ctg = scaffoldF.remove(index+1);
+						Contig ctg = scaffoldD.remove(index+1);
 						Scaffold newScf = new Scaffold(ctg);
-						ContigBridge brg = scaffoldF.bridges.remove(index);
+						ContigBridge brg = scaffoldD.bridges.remove(index);
 						while(true){
-							if(scaffoldF.size()==index+1) break;
-							ctg= scaffoldF.remove(index+1);
-							brg = scaffoldF.bridges.remove(index);
+							if(scaffoldD.size()==index+1) break;
+							ctg= scaffoldD.remove(index+1);
+							brg = scaffoldD.bridges.remove(index);
 							newScf.addForward(ctg,brg); //must be here, after the assignments of ctg, brg???
 						}
 						newScf.trim();
 						changeHead(newScf, nextMarker);
 						addScf=nextMarker.getIndex();
 					}
-					scaffoldF.setCloseBridge(getReversedBridge(bridge));
-					changeHead(scaffoldF, contigF);
+					scaffoldD.setCloseBridge(getReversedBridge(bridge));
+					changeHead(scaffoldD, contigD);
 				}
 				
 				
 			}else{
-				Contig 	ctg = scaffoldF.remove(index);
+				Contig 	ctg = scaffoldD.remove(index);
 				ContigBridge brg = getReversedBridge(bridge);
 				//extend and connect
 				while(true){
 					ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 					ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
-					ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
+					ctg.composite(contigS.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
 
-					ctg.head = headT;
+					ctg.head = headS;
 					//if (posT == 1){
-					if(!firstDir){
-						scaffoldT.addBackward(ctg,brg);
+					if(firstDir<0){
+						scaffoldS.addBackward(ctg,brg);
 					}else{
-						scaffoldT.addForward(ctg,getReversedBridge(brg));
+						scaffoldS.addForward(ctg,getReversedBridge(brg));
 					}	
 					if(count<1) break;
-					ctg = scaffoldF.remove(--count);
-					brg = scaffoldF.bridges.remove(count);
+					ctg = scaffoldD.remove(--count);
+					brg = scaffoldD.bridges.remove(count);
 
 				}
-				if(scaffoldF.closeBridge!=null && !scaffoldF.isEmpty()){
-					count = scaffoldF.size()-1;
-					ctg = scaffoldF.removeLast();
-					brg = scaffoldF.closeBridge;
+				if(scaffoldD.closeBridge!=null && !scaffoldD.isEmpty()){
+					count = scaffoldD.size()-1;
+					ctg = scaffoldD.removeLast();
+					brg = scaffoldD.closeBridge;
 
 					while(true){
 						//ctg.myVector = ScaffoldVector.composition(ScaffoldVector.reverse(scaffoldF.circle),ctg.myVector);
-						ctg.myVector = scaffoldF.rotate(ctg.myVector, false);
+						ctg.myVector = scaffoldD.rotate(ctg.myVector, false);
 						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
-						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
+						ctg.composite(contigS.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
 						//ctg.composite(ScaffoldVector.reverse(scaffoldF.circle)); //composite co tinh giao hoan k ma de day???
-						ctg.head = headT;
+						ctg.head = headS;
 						//if (posT == 1){ 
-						if(!firstDir){
-							scaffoldT.addBackward(ctg,brg);
+						if(firstDir<0){
+							scaffoldS.addBackward(ctg,brg);
 						}else{
-							scaffoldT.addForward(ctg,getReversedBridge(brg));
+							scaffoldS.addForward(ctg,getReversedBridge(brg));
 						}	
 						if(count<1) break;
-						brg = scaffoldF.bridges.remove(count--);
-						ctg = scaffoldF.remove(count);		
+						brg = scaffoldD.bridges.remove(count--);
+						ctg = scaffoldD.remove(count);		
 
 					}
 				}
 
 				//set the remaining.
-				scaffoldT.trim();
-				scaffoldF.trim();
-				if(!scaffoldF.isEmpty()){
-					addScf=scaffoldF.getFirst().getIndex();//getFirst: NoSuchElementException
-					changeHead(scaffoldF, scaffoldF.getFirst());
+				scaffoldS.trim();
+				scaffoldD.trim();
+				if(!scaffoldD.isEmpty()){
+					addScf=scaffoldD.getFirst().getIndex();//getFirst: NoSuchElementException
+					changeHead(scaffoldD, scaffoldD.getFirst());
 				}
 			}
 			//now since scaffoldF is empty due to changeHead(), re-initialize it!(do we need this??)
-			scaffoldF = new Scaffold(contigs.get(headF));
+			scaffoldD = new Scaffold(contigs.get(headD));
 		}
 		else if(secondDir == 1){
-			if(headF==headT){
-				Contig 	prevMarker = scaffoldF.nearestMarker(contigF, false),
-						nextMarker = scaffoldF.nearestMarker(contigF, true);
-				if(!firstDir){
+			if(headD==headS){
+				Contig 	prevMarker = scaffoldD.nearestMarker(contigD, false),
+						nextMarker = scaffoldD.nearestMarker(contigD, true);
+				if(firstDir<0){
 					// ...........
 					// :         v--->
 					// <=========*=========								
 					if(nextMarker!=null){
-						Contig ctg = scaffoldF.remove(index);
-						ContigBridge brg = scaffoldF.bridges.remove(index-1);
+						Contig ctg = scaffoldD.remove(index);
+						ContigBridge brg = scaffoldD.bridges.remove(index-1);
 						Scaffold newScf = new Scaffold(ctg);
 						
 						while(true){
-							if(scaffoldF.size()==index) break;
-							ctg= scaffoldF.remove(index);
-							brg = scaffoldF.bridges.remove(index-1);
+							if(scaffoldD.size()==index) break;
+							ctg= scaffoldD.remove(index);
+							brg = scaffoldD.bridges.remove(index-1);
 							newScf.addForward(ctg,brg); //must be here, after the assignments of ctg, brg???
 							
 						}
-						changeHead(newScf, nextMarker);
+						orderD=changeHead(newScf, nextMarker);
 					}
 					if(prevMarker!=null){
-						changeHead(scaffoldF, prevMarker);
+						orderS=changeHead(scaffoldD, prevMarker);
 						addScf=prevMarker.getIndex();
-						joinScaffold(contig, bridge, false, 1);	
+						assert orderS*orderD!=0:"Change head failed!";
+						joinScaffold(contig, bridge, -orderS, orderD);	
 					
 					}else{
-						scaffoldF.trim();
+						scaffoldD.trim();
 					}
 					
 				}
@@ -1075,79 +1091,79 @@ public abstract class ScaffoldGraph{
 					//       v--->       :
 					// ======*===========>
 					if(prevMarker!=null){
-						Contig ctg = scaffoldF.remove(--count);
+						Contig ctg = scaffoldD.remove(--count);
 						Scaffold newScf = new Scaffold(ctg);
-						ContigBridge brg = scaffoldF.bridges.remove(count);
+						ContigBridge brg = scaffoldD.bridges.remove(count);
 						while(true){
 							if(count<1) break;
-							ctg= scaffoldF.remove(--count);
-							brg = scaffoldF.bridges.remove(count);
+							ctg= scaffoldD.remove(--count);
+							brg = scaffoldD.bridges.remove(count);
 							newScf.addBackward(ctg,brg); //must be here, after the assignments of ctg, brg???
 						}
 						newScf.trim();
 						changeHead(newScf, prevMarker);
 						addScf=prevMarker.getIndex();
 					}
-					scaffoldF.setCloseBridge(bridge);
-					changeHead(scaffoldF, contigF);
+					scaffoldD.setCloseBridge(bridge);
+					changeHead(scaffoldD, contigD);
 
 				}
 			}else{
 				System.out.println("Before removing index=" + index);
-				scaffoldF.view();
-				Contig 	ctg = scaffoldF.remove(index);
+				scaffoldD.view();
+				Contig 	ctg = scaffoldD.remove(index);
 				ContigBridge brg = bridge;
 				//extend and connect
 				while(true){
 					ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 					ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
-					ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
+					ctg.composite(contigS.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
 
-					ctg.head = headT;
+					ctg.head = headS;
 					//if (posT == 1){ 
-					if(!firstDir){
-						scaffoldT.addBackward(ctg,getReversedBridge(brg));
+					if(firstDir<0){
+						scaffoldS.addBackward(ctg,getReversedBridge(brg));
 					}else{
-						scaffoldT.addForward(ctg,brg);
+						scaffoldS.addForward(ctg,brg);
 					}				
-					if(scaffoldF.size()<=index) break;
+					if(scaffoldD.size()<=index) break;
 					System.out.println("Before removing index=" + index);
-					scaffoldF.view();
-					ctg = scaffoldF.remove(index);
-					brg = scaffoldF.bridges.remove(index);
+					scaffoldD.view();
+					ctg = scaffoldD.remove(index);
+					brg = scaffoldD.bridges.remove(index);
 				}
-				if(scaffoldF.closeBridge!=null && !scaffoldF.isEmpty()){
-					ctg = scaffoldF.removeFirst();
-					brg = scaffoldF.closeBridge;
+				if(scaffoldD.closeBridge!=null && !scaffoldD.isEmpty()){
+					ctg = scaffoldD.removeFirst();
+					brg = scaffoldD.closeBridge;
 					while(true){
 						//ctg.myVector = ScaffoldVector.composition(scaffoldF.circle,ctg.myVector);
-						ctg.myVector = scaffoldF.rotate(ctg.myVector, true);
+						ctg.myVector = scaffoldD.rotate(ctg.myVector, true);
 						ctg.composite(rev); // contigF->headF + headF->ctg = contigF->ctg
 						ctg.composite(trans); // contigT->contigF + contigF->ctg = contigT->ctg
-						ctg.composite(contigT.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
+						ctg.composite(contigS.getVector()); //headT->contigT + contigT->ctg = headT->ctg : relative position of this ctg w.r.t headT
 						//ctg.composite(scaffoldF.circle);
-						ctg.head = headT;
+						ctg.head = headS;
 						//if (posT == 1){ 
-						if(!firstDir){
-							scaffoldT.addBackward(ctg,getReversedBridge(brg));
+						if(firstDir<0){
+							scaffoldS.addBackward(ctg,getReversedBridge(brg));
 						}else{
-							scaffoldT.addForward(ctg,brg);
+							scaffoldS.addForward(ctg,brg);
 						}	
-						if(scaffoldF.size()<1) break;
-						brg = scaffoldF.bridges.removeFirst();
-						ctg = scaffoldF.removeFirst();		
+						if(scaffoldD.size()<1) break;
+						brg = scaffoldD.bridges.removeFirst();
+						ctg = scaffoldD.removeFirst();		
 					}	
 				}
 				//set the remaining
-				scaffoldT.trim();
-				scaffoldF.trim();
-				if(!scaffoldF.isEmpty()){
-					addScf=scaffoldF.getLast().getIndex(); //getLast: NoSuchElementException
-					changeHead(scaffoldF, scaffoldF.getLast());
+				scaffoldS.trim();
+				scaffoldD.trim();
+				if(!scaffoldD.isEmpty()){
+					addScf=scaffoldD.getLast().getIndex(); //getLast: NoSuchElementException
+					changeHead(scaffoldD, scaffoldD.getLast());
 				}
 			}
 			//now since scaffoldF is empty due to changeHead(), re-initialize it!(do we need this??)
-			scaffoldF = new Scaffold(contigs.get(headF));
+			scaffoldD = new Scaffold(contigs.get(headD));
 		}	
 		else
 			return false;
@@ -1155,7 +1171,7 @@ public abstract class ScaffoldGraph{
 		//===================================================================================================
 		if(verbose){ 
 			System.out.println("After Joining: " + (addScf<0?1:2) + " scaffolds!");
-			scaffolds[contigF.head].view();
+			scaffolds[contigD.head].view();
 			if(addScf >=0)
 				scaffolds[addScf].view();
 		}
@@ -1163,11 +1179,14 @@ public abstract class ScaffoldGraph{
 	}
 	//change head of scaffold scf to newHead. 
 	//This should move the content of scf to scaffolds[newHead.idx], leaving scf=null afterward
-	public void changeHead(Scaffold scf, Contig newHead){	
+	//Return values: 0 if failed; 1 if the scaffold after head change has same order as it was before changing
+	// -1 if new scaffold is reversed.
+	public int changeHead(Scaffold scf, Contig newHead){	
+		int retval=0;
 		if(!isMarker(newHead)){
 			if(verbose)
-				System.out.println("Cannot use repeat as a head! " + newHead.getName());
-			return;
+				System.out.println("Head node must be a marker! " + newHead.getName());
+			return 0;
 		}
 		//Scaffold scf = scaffolds[scfIndex];
 		int scfIndex = scf.scaffoldIndex;
@@ -1175,7 +1194,7 @@ public abstract class ScaffoldGraph{
 		if(headPos < 0){
 			if(verbose)
 				System.out.printf("Cannot find contig %d in scaffold %d\n" , newHead.getIndex(), scfIndex);
-			return;
+			return 0;
 		}
 		Scaffold newScf = new Scaffold(newHead.getIndex());
 		ScaffoldVector rev = ScaffoldVector.reverse(newHead.getVector()); //rev = newHead->head	
@@ -1183,7 +1202,7 @@ public abstract class ScaffoldGraph{
 		if(newHead.getRelDir() == 0){
 			if(verbose)
 				System.out.printf("Contig %d of scaffold %d got direction 0!\n" , newHead.getIndex(), scfIndex);
-			return;
+			return 0;
 		}
 		else if(newHead.getRelDir() > 0){
 			while(!scf.isEmpty())
@@ -1197,6 +1216,7 @@ public abstract class ScaffoldGraph{
 				scf.closeBridge = null;
 				scf.circle = null;
 			}
+			retval=1;
 		}
 		else{
 			while(!scf.isEmpty())
@@ -1212,6 +1232,7 @@ public abstract class ScaffoldGraph{
 				scf.closeBridge = null;
 				scf.circle = null;
 			}
+			retval=-1;
 		}
 
 		for (Contig ctg:newScf){					
@@ -1219,7 +1240,8 @@ public abstract class ScaffoldGraph{
 		}
 		newScf.setHead(newHead.getIndex());
 		scaffolds[newHead.getIndex()] = newScf;
-
+		
+		return retval;
 	}
 	public synchronized void printSequences(boolean allOut, boolean isBatch) throws IOException{
 		//countOccurence=new HashMap<Integer,Integer>();

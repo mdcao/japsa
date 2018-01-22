@@ -296,7 +296,8 @@ public final class Scaffold extends LinkedList<Contig>{
 			System.out.println("Close bridge: " + closeBridge.hashKey + " Circularized vector: " + circle);
 		}
 		for (Contig ctg:this){				
-			System.out.printf("  contig %s  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s cov=%.2f Astat=%.2f",ctg.getIndex(), ctg.leftMost(),ctg.rightMost(), ctg.getName(), ctg.getCoverage(), ctg.getAstatistics());
+			System.out.printf("  contig %s  ======" + (ctg.getRelDir() > 0?">":"<") + "%6d  %6d %s cov=%.2f Astat=%.2f (%s)",
+							ctg.getIndex(), ctg.leftMost(),ctg.rightMost(), ctg.getName(), ctg.getCoverage(), ctg.getAstatistics(),ScaffoldGraph.isMarker(ctg)?"marker":"repeat");
 			if (bridIter.hasNext()){
 				ContigBridge bridge = bridIter.next();
 				System.out.printf("    %d: %s\n", bridge.getTransVector().distance(bridge.firstContig, bridge.secondContig), bridge.hashKey);					
