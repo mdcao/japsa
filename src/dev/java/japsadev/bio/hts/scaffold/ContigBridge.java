@@ -709,17 +709,21 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	 */
 	@Override
 	public int compareTo(ContigBridge o) {
-//		return (int) (o.score - score);
-		if(o==null)
-			return -1;
+		assert o!=null:"Bridge is emptied!";
 		
 		int retval=0;
-		if(Math.min(o.score, score) > .66*Math.max(o.score, score))
-			retval=(int)(o.getSecondaryScore()-getSecondaryScore());	
 		
-		if(retval==0)
-			retval=(int)(o.score-score);
+//		if(Math.min(o.score, score) > .66*Math.max(o.score, score))
+//			retval=(int)(o.getSecondaryScore()-getSecondaryScore());	
+//		
+//		if(retval==0)
+//			retval=(int)(o.score-score);
+		
+		//Heuristic approach. TODO: test AWMC, GN_090, GN_091, GN_125, GN_131...
+		retval=(int)(o.score-score);
 
+		retval+=retval*2+(int)(o.getSecondaryScore()-getSecondaryScore());
+		
 		return retval;
 
 	}	

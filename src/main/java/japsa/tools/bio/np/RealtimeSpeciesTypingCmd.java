@@ -63,6 +63,9 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		
 		addDouble("qual", 1,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
+		
+		addDouble("alpha", 0.05, "Paramater alpha from multinomialCI");
+		addInt("minCount", 0, "Mininum number of mapped reads for a species to be considered");
 
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 30,   "Minimum number of seconds between analyses");
@@ -92,6 +95,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		boolean twoOnly      = cmdLine.getBooleanVal("twodonly");
 		RealtimeSpeciesTyping.JSON = cmdLine.getBooleanVal("web");
 		RealtimeSpeciesTyping.OUTSEQ = cmdLine.getBooleanVal("log");
+		RealtimeSpeciesTyping.ALPHA = cmdLine.getDoubleVal("alpha");
+		RealtimeSpeciesTyping.MIN_READS_COUNT = cmdLine.getIntVal("minCount");
 		
 		RealtimeSpeciesTyping paTyping = new RealtimeSpeciesTyping(indexFile, output);
 		paTyping.setMinQual(qual);

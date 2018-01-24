@@ -63,7 +63,9 @@ import java.util.Date;
 import java.util.HashMap;
 
 public abstract class ScaffoldGraph{
-	public static volatile int maxRepeatLength=7500; //for ribosomal repeat cluster in bacteria (Koren S et al 2013), it's 9.1kb for yeast.
+	//roughly estimation of maximum length of any repeat (should change to minMarkerLen)
+	//for ribosomal repeat cluster in bacteria (Koren S et al 2013), it's 9.1kb for yeast.
+	public static volatile int maxRepeatLength=7500; 
 	public static volatile int marginThres = 1000;
 	public static volatile int minContigLength = 200;
 	public static volatile int illuminaReadLength = 300; //Illumina MiSeq 2x300bp
@@ -107,6 +109,7 @@ public abstract class ScaffoldGraph{
 
 		int index = 0;
 		while ((seq = reader.nextSequence(Alphabet.DNA())) != null){
+		
 			Contig ctg = new Contig(index, seq);		
 
 			String 	name = seq.getName(),
@@ -136,13 +139,18 @@ public abstract class ScaffoldGraph{
 			*to read coverage (read bp per contig bp):
 			*Cx=Ck*L/(L-k+1)
 			*/
-			System.out.printf("%s before=%.2f",ctg.getName(), mycov);
+
+
+//			System.out.printf("%s before=%.2f",ctg.getName(), mycov);
 			mycov=mycov*illuminaReadLength/(illuminaReadLength-Graph.getKmerSize()+1);
 
-			estimatedCov += mycov * (seq.length()-Graph.getKmerSize());//check this????
-			estimatedLength += seq.length()-Graph.getKmerSize();
+			//Filter out short contigs (it's very noisy in big genomes)
+			if(seq.length() > maxRepeatLength){
+				estimatedCov += mycov * seq.length();//check this????
+				estimatedLength += seq.length();
+			}
 			
-			System.out.printf(" after=%.2f length=%d ave=%.2f\n", mycov, seq.length(), estimatedCov/estimatedLength);
+//			System.out.printf(" after=%.2f length=%d ave=%.2f\n", mycov, seq.length(), estimatedCov/estimatedLength);
 
 			ctg.setCoverage(mycov);
 
@@ -551,8 +559,10 @@ public abstract class ScaffoldGraph{
 		String readID = "";
 		ReadFilling readFilling = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
+		SAMRecord rec;
+		AlignmentRecord curAlnRec;
 		while (iter.hasNext()) {
-			SAMRecord rec = iter.next();			
+			rec = iter.next();			
 			
 			if (rec.getReadUnmappedFlag())
 				continue;
@@ -565,7 +575,7 @@ public abstract class ScaffoldGraph{
 				System.exit(1);
 			}
 				
-			AlignmentRecord myRec = new AlignmentRecord(rec, tmp);
+			curAlnRec = new AlignmentRecord(rec, tmp);
 //			Arrays.fill(tmp.isMapped, myRec.refStart, myRec.refEnd, 1);
 			
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
@@ -577,11 +587,11 @@ public abstract class ScaffoldGraph{
 			//	which is natural if it is the output from an aligner (bwa, minimap2)
 
 			//not the first occurrance				
-			if (readID.equals(myRec.readID)) {				
-				if (myRec.useful){				
-					for (AlignmentRecord s : samList) {
-						if (s.useful){
-							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
+			if (readID.equals(curAlnRec.readID)) {				
+				if (curAlnRec.useful){				
+					for (AlignmentRecord alnRec : samList) {
+						if (alnRec.useful){
+							this.addBridge(readFilling, alnRec, curAlnRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
 						}
 					}
 				}
@@ -593,10 +603,10 @@ public abstract class ScaffoldGraph{
 					
 					
 				samList = new ArrayList<AlignmentRecord>();
-				readID = myRec.readID;	
+				readID = curAlnRec.readID;	
 				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
 			}			
-			samList.add(myRec);
+			samList.add(curAlnRec);
 
 		}// while
 		iter.close();
@@ -1109,8 +1119,6 @@ public abstract class ScaffoldGraph{
 
 				}
 			}else{
-				System.out.println("Before removing index=" + index);
-				scaffoldD.view();
 				Contig 	ctg = scaffoldD.remove(index);
 				ContigBridge brg = bridge;
 				//extend and connect
@@ -1127,8 +1135,7 @@ public abstract class ScaffoldGraph{
 						scaffoldS.addForward(ctg,brg);
 					}				
 					if(scaffoldD.size()<=index) break;
-					System.out.println("Before removing index=" + index);
-					scaffoldD.view();
+
 					ctg = scaffoldD.remove(index);
 					brg = scaffoldD.bridges.remove(index);
 				}

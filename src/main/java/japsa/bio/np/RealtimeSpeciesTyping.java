@@ -55,6 +55,8 @@ import java.util.*;
 public class RealtimeSpeciesTyping {
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTyping.class);
 	public static boolean JSON = false;
+	public static double ALPHA=0.05;
+	public static int MIN_READS_COUNT=0;
 
 	private RealtimeSpeciesTyper typer;
 	private OutputStream outputStream;
@@ -265,7 +267,7 @@ public class RealtimeSpeciesTyping {
 
 		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, OutputStream outputStream) throws IOException {
 			typing = t;
-			rengine = new MultinomialCI(0.05);
+			rengine = new MultinomialCI(ALPHA);
 
 			countsOS = new SequenceOutputStream(outputStream);
 			if(!JSON)
@@ -287,7 +289,7 @@ public class RealtimeSpeciesTyping {
 			DoubleArray countArray = new DoubleArray();
 			ArrayList<String> speciesArray = new ArrayList<String> ();
 
-			int minCount = Math.max(1,sum/50);
+			int minCount = MIN_READS_COUNT>0?MIN_READS_COUNT:Math.max(1,sum/50);
 
 			for (int i = 0; i < count.length;i++){			
 				if (count[i] >= minCount){

@@ -273,13 +273,15 @@ public class RealtimeScaffolding {
 
 		String readID = "";
 		ReadFilling readFilling = null;
-		AlignmentRecord myRec = null;
+		AlignmentRecord curAlnRec = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
 
 		Thread thread = new Thread(scaffolder);
 		thread.start();	
+		
+		SAMRecord rec;
 		while (iter.hasNext()) {
-			SAMRecord rec = iter.next();
+			rec = iter.next();
 
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){		
 				if (!readID.equals(rec.getReadName())){
@@ -291,17 +293,17 @@ public class RealtimeScaffolding {
 				}
 				continue;		
 			}
-			myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
+			curAlnRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
-			if (readID.equals(myRec.readID)) {				
+			if (readID.equals(curAlnRec.readID)) {				
 
-				if (myRec.useful){				
-					for (AlignmentRecord s : samList) {
-						if (s.useful){				
+				if (curAlnRec.useful){				
+					for (AlignmentRecord alnRec : samList) {
+						if (alnRec.useful){				
 							//...update with synchronized
 							synchronized(this.graph){
-								graph.addBridge(readFilling, s, myRec, minCov);
+								graph.addBridge(readFilling, alnRec, curAlnRec, minCov);
 								//Collections.sort(graph.bridgeList);
 							}
 						}
@@ -309,7 +311,7 @@ public class RealtimeScaffolding {
 				}
 			} else {
 				samList = new ArrayList<AlignmentRecord>();
-				readID = myRec.readID;	
+				readID = curAlnRec.readID;	
 				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
 				synchronized(this){
 					currentReadCount ++;
@@ -317,7 +319,7 @@ public class RealtimeScaffolding {
 				}
 			}
 
-			samList.add(myRec);
+			samList.add(curAlnRec);
 
 		}// while
 		scaffolder.stopWaiting();

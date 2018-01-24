@@ -351,7 +351,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 							}
 						}
 						if(distance > -maxRepeatLength && bridge.getNumOfConnections() >= minSupportReads 
-								&& bridge.compareTo(stepBridge) <0){
+								&& (stepBridge==null||bridge.compareTo(stepBridge) <0)){
 							if(verbose){
 								bridge.display();
 //								System.out.println("Low ranges of " + bridge.firstContig.getName() + ": " + bridge.firstContig.displayLowConfidentRegions());
@@ -361,7 +361,7 @@ public class ScaffoldGraphDFS extends ScaffoldGraph {
 							//curScore = bridge.getScore();
 							stepBridge = bridge;
 							extendDir = aDir;
-						}else if(bridge.compareTo(stepBridge) > 0 || stepBridge==null){ //less significant or illegal bridge
+						}else if(stepBridge==null || bridge.compareTo(stepBridge) > 0 ){ //less significant or illegal bridge
 							if(verbose){
 								System.out.printf("Cannot form unique bridge from %d to %d with %d connections and score %.2f\n", 
 												ctg.getIndex(), nextContig.getIndex(), bridge.getNumOfConnections(), bridge.getScore());
