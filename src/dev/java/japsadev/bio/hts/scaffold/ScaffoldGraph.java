@@ -606,7 +606,10 @@ public abstract class ScaffoldGraph{
 				readID = curAlnRec.readID;	
 				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
 			}			
+			
+			assert curAlnRec.readID.equals(readID):curAlnRec.readID +" != " + readID;
 			samList.add(curAlnRec);
+
 
 		}// while
 		iter.close();

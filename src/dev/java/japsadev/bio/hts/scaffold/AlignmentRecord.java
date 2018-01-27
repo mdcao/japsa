@@ -213,11 +213,11 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	public String toString() {
 		return contig.index    
 				+ " " + refStart 
-				+ " " + refEnd
-				+ " " + contig.length()
+				+ " -> " + refEnd
+				+ " / " + contig.length()
 				+ " " + readStart 
-				+ " " + readEnd
-				+ " " + readLength				
+				+ " -> " + readEnd
+				+ " / " + readLength				
 				+ " " + strand;
 	}
 	

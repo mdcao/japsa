@@ -1249,11 +1249,13 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			if ( fromContig.getRelDir()>0 != fromAlignment.strand){
 				//swap
 				readFilling = read.reverse();
-				readFilling.sortAlignment();
 
 				fromAlignment = fromAlignment.reverseRead();
 				toAlignment = toAlignment.reverseRead();
 			}
+			
+			readFilling.sortAlignment();
+
 			//now readFilling is good to go
 			int posReadEnd   = fromAlignment.readAlignmentEnd();
 			int posReadFinal = toAlignment.readAlignmentStart();// I need as far as posReadFinal
@@ -1287,9 +1289,17 @@ public class ContigBridge implements Comparable<ContigBridge>{
 										"CONTIG",readFilling.readSequence.getName(),'+',"");
 
 						//P=0 get the orignial read name and position
-						feature.addDesc(readFilling.readSequence.getName() + "+("+(posReadEnd + 1) +"," + newPosReadEnd+")");
+						feature.addDesc(readFilling.readSequence.getName() + "+("+(posReadEnd + 1) +"," + newPosReadEnd+ " /" + readFilling.readSequence.length()+")");
 						anno.add(feature);
-						seqBuilder.append(readFilling.readSequence.subSequence(posReadEnd, newPosReadEnd));
+						
+						try{
+							seqBuilder.append(readFilling.readSequence.subSequence(posReadEnd, newPosReadEnd));
+						}catch(Exception e){
+							e.getStackTrace();
+							readFilling.print();
+							System.exit(1);
+						}
+						
 						posReadEnd = newPosReadEnd;
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());					
