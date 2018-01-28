@@ -609,7 +609,7 @@ public abstract class ScaffoldGraph{
 			
 			assert curAlnRec.readID.equals(readID):curAlnRec.readID +" != " + readID;
 			samList.add(curAlnRec);
-
+			readFilling.print();
 
 		}// while
 		iter.close();

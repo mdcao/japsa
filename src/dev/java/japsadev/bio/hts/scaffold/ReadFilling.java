@@ -65,7 +65,7 @@ public class ReadFilling{
 	public void print(){
 		System.out.printf(" Read filling: %s with %ssorted alignments: \n",readSequence.getName(),sorted?"":"un");
 		for(AlignmentRecord rec: alignments)
-			System.out.println(rec.readID + ": " + rec);
+			System.out.println("\t" + rec.readID + ": " + rec);
 	}
 	
 	public ReadFilling reverse(){
