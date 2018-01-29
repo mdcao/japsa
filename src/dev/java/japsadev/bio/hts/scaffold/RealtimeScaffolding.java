@@ -143,18 +143,22 @@ public class RealtimeScaffolding {
 		SAMRecordIterator iter = reader.iterator();
 
 		String readID = "";
+		byte[] fullSeq=null;
 		ReadFilling readFilling = null;
-		AlignmentRecord myRec = null;
+		AlignmentRecord curAlnRec = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
 
 		Thread thread = new Thread(scaffolder);
 		thread.start();	
+		
+		SAMRecord rec;
 		while (iter.hasNext()) {
-			SAMRecord rec = iter.next();
-
+			rec = iter.next();
+			
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){		
 				if (!readID.equals(rec.getReadName())){
-					readID = rec.getReadName();
+					fullSeq = rec.getReadBases();
+					readID=rec.getReadName();
 					synchronized(this){
 						currentReadCount ++;
 						currentBaseCount += rec.getReadLength();
@@ -162,17 +166,23 @@ public class RealtimeScaffolding {
 				}
 				continue;		
 			}
-			myRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
+			
+			Contig tmp = graph.contigs.get(rec.getReferenceIndex());
+			if(tmp==null){
+				Logging.error("Contig " + rec.getReferenceIndex() + " doesn't exist!");
+				System.exit(1);
+			}
+			curAlnRec = new AlignmentRecord(rec, tmp);
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
-			if (readID.equals(myRec.readID)) {				
+			if (readID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
 
-				if (myRec.useful){				
-					for (AlignmentRecord s : samList) {
-						if (s.useful){				
+				if (curAlnRec.useful){				
+					for (AlignmentRecord alnRec : samList) {
+						if (alnRec.useful){				
 							//...update with synchronized
 							synchronized(this.graph){
-								graph.addBridge(readFilling, s, myRec, minCov);
+								graph.addBridge(readFilling, alnRec, curAlnRec, minCov);
 								//Collections.sort(graph.bridgeList);
 							}
 						}
@@ -180,15 +190,20 @@ public class RealtimeScaffolding {
 				}
 			} else {
 				samList = new ArrayList<AlignmentRecord>();
-				readID = myRec.readID;	
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
+				readID = curAlnRec.readID;	
+				if(fullSeq==null)
+					fullSeq=rec.getReadBases();
+				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), fullSeq, "R" + readID), samList);	
+				fullSeq=null;
+
 				synchronized(this){
 					currentReadCount ++;
 					currentBaseCount += rec.getReadLength();
 				}
 			}
 
-			samList.add(myRec);
+			samList.add(curAlnRec);
+//			readFilling.print();
 
 		}// while
 		scaffolder.stopWaiting();
@@ -272,6 +287,7 @@ public class RealtimeScaffolding {
 		SAMRecordIterator iter = reader.iterator();
 
 		String readID = "";
+		byte[] fullSeq=null;
 		ReadFilling readFilling = null;
 		AlignmentRecord curAlnRec = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
@@ -282,10 +298,11 @@ public class RealtimeScaffolding {
 		SAMRecord rec;
 		while (iter.hasNext()) {
 			rec = iter.next();
-
+			
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){		
 				if (!readID.equals(rec.getReadName())){
-					readID = rec.getReadName();
+					fullSeq = rec.getReadBases();
+					readID=rec.getReadName();
 					synchronized(this){
 						currentReadCount ++;
 						currentBaseCount += rec.getReadLength();
@@ -293,10 +310,16 @@ public class RealtimeScaffolding {
 				}
 				continue;		
 			}
-			curAlnRec = new AlignmentRecord(rec, graph.contigs.get(rec.getReferenceIndex()));
+			
+			Contig tmp = graph.contigs.get(rec.getReferenceIndex());
+			if(tmp==null){
+				Logging.error("Contig " + rec.getReferenceIndex() + " doesn't exist!");
+				System.exit(1);
+			}
+			curAlnRec = new AlignmentRecord(rec, tmp);
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
-			if (readID.equals(curAlnRec.readID)) {				
+			if (readID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
 
 				if (curAlnRec.useful){				
 					for (AlignmentRecord alnRec : samList) {
@@ -312,7 +335,12 @@ public class RealtimeScaffolding {
 			} else {
 				samList = new ArrayList<AlignmentRecord>();
 				readID = curAlnRec.readID;	
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
+				if(fullSeq==null)
+					fullSeq=rec.getReadBases();
+				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), fullSeq, "R" + readID), samList);
+
+				fullSeq=null;
+
 				synchronized(this){
 					currentReadCount ++;
 					currentBaseCount += rec.getReadLength();
@@ -320,6 +348,7 @@ public class RealtimeScaffolding {
 			}
 
 			samList.add(curAlnRec);
+//			readFilling.print();
 
 		}// while
 		scaffolder.stopWaiting();

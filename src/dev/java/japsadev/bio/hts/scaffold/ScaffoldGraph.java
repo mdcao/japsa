@@ -440,15 +440,23 @@ public abstract class ScaffoldGraph{
 		SAMRecordIterator iter = reader.iterator();
 
 		String readID = "";
+		byte[] fullSeq = null; //in SAM file the first record contain full sequence of read (no hard clip)
 		ReadFilling readFilling = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
+		SAMRecord rec;
+		AlignmentRecord curAlnRec;
 		while (iter.hasNext()) {
-			SAMRecord rec = iter.next();			
-			
-			if (rec.getReadUnmappedFlag())
+			rec = iter.next();			
+
+			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){
+				if (!readID.equals(rec.getReadName())){
+					fullSeq = rec.getReadBases();		
+					readID=rec.getReadName();
+				}
+				
 				continue;
-			if (rec.getMappingQuality() < qual)
-				continue;
+				
+			}
 			
 			Contig tmp = contigs.get(rec.getReferenceIndex());
 			if(tmp==null){
@@ -456,7 +464,7 @@ public abstract class ScaffoldGraph{
 				System.exit(1);
 			}
 				
-			AlignmentRecord myRec = new AlignmentRecord(rec, tmp);
+			curAlnRec = new AlignmentRecord(rec, tmp);
 //			Arrays.fill(tmp.isMapped, myRec.refStart, myRec.refEnd, 1);
 			
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
@@ -468,11 +476,11 @@ public abstract class ScaffoldGraph{
 			//	which is natural if it is the output from an aligner (bwa, minimap2)
 
 			//not the first occurrance				
-			if (readID.equals(myRec.readID)) {				
-				if (myRec.useful){				
-					for (AlignmentRecord s : samList) {
-						if (s.useful){
-							this.addBridge(readFilling, s, myRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
+			if (readID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
+				if (curAlnRec.useful){				
+					for (AlignmentRecord alnRec : samList) {
+						if (alnRec.useful){
+							this.addBridge(readFilling, alnRec, curAlnRec, minCov); //stt(s) < stt(myRec) -> (s,myRec) appear once only!
 						}
 					}
 				}
@@ -482,12 +490,18 @@ public abstract class ScaffoldGraph{
 //				//process samlist here
 //				processAlignments(samList);
 					
-					
 				samList = new ArrayList<AlignmentRecord>();
-				readID = myRec.readID;	
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
+				readID = curAlnRec.readID;	
+				if(fullSeq==null)
+					fullSeq=rec.getReadBases();
+				
+				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), fullSeq, "R" + readID), samList);
+				fullSeq=null;
+
 			}			
-			samList.add(myRec);
+			
+			samList.add(curAlnRec);
+//			readFilling.print();
 
 		}// while
 		iter.close();
@@ -557,17 +571,23 @@ public abstract class ScaffoldGraph{
 		SAMRecordIterator iter = reader.iterator();
 
 		String readID = "";
+		byte[] fullSeq = null; //in SAM file the first record contain full sequence of read (no hard clip)
 		ReadFilling readFilling = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
 		SAMRecord rec;
 		AlignmentRecord curAlnRec;
 		while (iter.hasNext()) {
 			rec = iter.next();			
-			
-			if (rec.getReadUnmappedFlag())
+
+			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){
+				if (!readID.equals(rec.getReadName())){
+					fullSeq = rec.getReadBases();		
+					readID=rec.getReadName();
+				}
+				
 				continue;
-			if (rec.getMappingQuality() < qual)
-				continue;
+				
+			}
 			
 			Contig tmp = contigs.get(rec.getReferenceIndex());
 			if(tmp==null){
@@ -587,7 +607,7 @@ public abstract class ScaffoldGraph{
 			//	which is natural if it is the output from an aligner (bwa, minimap2)
 
 			//not the first occurrance				
-			if (readID.equals(curAlnRec.readID)) {				
+			if (readID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
 				if (curAlnRec.useful){				
 					for (AlignmentRecord alnRec : samList) {
 						if (alnRec.useful){
@@ -601,15 +621,18 @@ public abstract class ScaffoldGraph{
 //				//process samlist here
 //				processAlignments(samList);
 					
-					
 				samList = new ArrayList<AlignmentRecord>();
 				readID = curAlnRec.readID;	
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + readID), samList);	
+				if(fullSeq==null)
+					fullSeq=rec.getReadBases();
+				
+				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), fullSeq, "R" + readID), samList);
+				fullSeq=null;
+
 			}			
 			
-			assert curAlnRec.readID.equals(readID):curAlnRec.readID +" != " + readID;
 			samList.add(curAlnRec);
-			readFilling.print();
+//			readFilling.print();
 
 		}// while
 		iter.close();
