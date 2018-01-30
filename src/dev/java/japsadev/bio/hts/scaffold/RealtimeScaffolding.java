@@ -142,8 +142,8 @@ public class RealtimeScaffolding {
 		}
 		SAMRecordIterator iter = reader.iterator();
 
-		String readID = "";
-		byte[] fullSeq=null;
+		String curReadID = "";
+		Sequence fullSeq=null;
 		ReadFilling readFilling = null;
 		AlignmentRecord curAlnRec = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
@@ -156,9 +156,9 @@ public class RealtimeScaffolding {
 			rec = iter.next();
 			
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){		
-				if (!readID.equals(rec.getReadName())){
-					fullSeq = rec.getReadBases();
-					readID=rec.getReadName();
+				if (!curReadID.equals(rec.getReadName())){
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
+					curReadID=rec.getReadName();
 					synchronized(this){
 						currentReadCount ++;
 						currentBaseCount += rec.getReadLength();
@@ -175,7 +175,7 @@ public class RealtimeScaffolding {
 			curAlnRec = new AlignmentRecord(rec, tmp);
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
-			if (readID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
+			if (curReadID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
 
 				if (curAlnRec.useful){				
 					for (AlignmentRecord alnRec : samList) {
@@ -190,10 +190,12 @@ public class RealtimeScaffolding {
 				}
 			} else {
 				samList = new ArrayList<AlignmentRecord>();
-				readID = curAlnRec.readID;	
-				if(fullSeq==null)
-					fullSeq=rec.getReadBases();
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), fullSeq, "R" + readID), samList);	
+				curReadID = curAlnRec.readID;	
+				if(fullSeq==null || !fullSeq.getName().equals("R"+curReadID))
+//					fullSeq=rec.getReadBases();
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
+				
+				readFilling = new ReadFilling(fullSeq, samList);
 				fullSeq=null;
 
 				synchronized(this){
@@ -286,8 +288,8 @@ public class RealtimeScaffolding {
 		}
 		SAMRecordIterator iter = reader.iterator();
 
-		String readID = "";
-		byte[] fullSeq=null;
+		String curReadID = "";
+		Sequence fullSeq=null;
 		ReadFilling readFilling = null;
 		AlignmentRecord curAlnRec = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;		
@@ -300,9 +302,9 @@ public class RealtimeScaffolding {
 			rec = iter.next();
 			
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){		
-				if (!readID.equals(rec.getReadName())){
-					fullSeq = rec.getReadBases();
-					readID=rec.getReadName();
+				if (!curReadID.equals(rec.getReadName())){
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
+					curReadID=rec.getReadName();
 					synchronized(this){
 						currentReadCount ++;
 						currentBaseCount += rec.getReadLength();
@@ -319,7 +321,7 @@ public class RealtimeScaffolding {
 			curAlnRec = new AlignmentRecord(rec, tmp);
 //			System.out.println("Processing record of read " + rec.getReadName() + " and ref " + rec.getReferenceName() + (myRec.useful?": useful ":": useless ") + myRec);
 
-			if (readID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
+			if (curReadID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
 
 				if (curAlnRec.useful){				
 					for (AlignmentRecord alnRec : samList) {
@@ -334,11 +336,12 @@ public class RealtimeScaffolding {
 				}
 			} else {
 				samList = new ArrayList<AlignmentRecord>();
-				readID = curAlnRec.readID;	
-				if(fullSeq==null)
-					fullSeq=rec.getReadBases();
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), fullSeq, "R" + readID), samList);
-
+				curReadID = curAlnRec.readID;	
+				if(fullSeq==null || !fullSeq.getName().equals("R"+curReadID))
+//					fullSeq=rec.getReadBases();
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
+				
+				readFilling = new ReadFilling(fullSeq, samList);
 				fullSeq=null;
 
 				synchronized(this){

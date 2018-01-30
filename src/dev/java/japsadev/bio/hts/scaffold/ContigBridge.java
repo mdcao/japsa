@@ -1292,8 +1292,17 @@ public class ContigBridge implements Comparable<ContigBridge>{
 						feature.addDesc(readFilling.readSequence.getName() + "+("+(posReadEnd + 1) +"," + newPosReadEnd+ " /" + readFilling.readSequence.length()+")");
 						anno.add(feature);
 						
-						seqBuilder.append(readFilling.readSequence.subSequence(posReadEnd, newPosReadEnd));
+						try{
+							seqBuilder.append(readFilling.readSequence.subSequence(posReadEnd, newPosReadEnd));
+						}catch(Exception e){
+							System.out.printf("Error %s length=%d: subSequence(%d, %d)\n", 
+									readFilling.readSequence.getName(), readFilling.readSequence.length(), posReadEnd, newPosReadEnd);
+							readFilling.print();
+							e.printStackTrace();
 
+							System.exit(1);
+						}
+						
 						posReadEnd = newPosReadEnd;
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());					

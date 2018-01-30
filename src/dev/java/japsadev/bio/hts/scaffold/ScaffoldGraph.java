@@ -439,8 +439,12 @@ public abstract class ScaffoldGraph{
 
 		SAMRecordIterator iter = reader.iterator();
 
-		String readID = "";
-		byte[] fullSeq = null; //in SAM file the first record contain full sequence of read (no hard clip)
+		String curReadID = "";
+		
+//		byte[] fullSeq = null; //in SAM file the first record contain full sequence of read (no hard clip)
+//		String fullSeq = null;
+		Sequence fullSeq = null;
+		
 		ReadFilling readFilling = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
 		SAMRecord rec;
@@ -449,9 +453,10 @@ public abstract class ScaffoldGraph{
 			rec = iter.next();			
 
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){
-				if (!readID.equals(rec.getReadName())){
-					fullSeq = rec.getReadBases();		
-					readID=rec.getReadName();
+				if (!curReadID.equals(rec.getReadName())){
+//					fullSeq = rec.getReadBases();		
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + rec.getReadName());
+					curReadID=rec.getReadName();
 				}
 				
 				continue;
@@ -476,7 +481,7 @@ public abstract class ScaffoldGraph{
 			//	which is natural if it is the output from an aligner (bwa, minimap2)
 
 			//not the first occurrance				
-			if (readID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
+			if (curReadID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
 				if (curAlnRec.useful){				
 					for (AlignmentRecord alnRec : samList) {
 						if (alnRec.useful){
@@ -491,11 +496,13 @@ public abstract class ScaffoldGraph{
 //				processAlignments(samList);
 					
 				samList = new ArrayList<AlignmentRecord>();
-				readID = curAlnRec.readID;	
-				if(fullSeq==null)
-					fullSeq=rec.getReadBases();
+				curReadID = curAlnRec.readID;	
+				if(fullSeq==null || !fullSeq.getName().equals("R"+curReadID))
+//					fullSeq=rec.getReadBases();
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
+
 				
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), fullSeq, "R" + readID), samList);
+				readFilling = new ReadFilling(fullSeq, samList);
 				fullSeq=null;
 
 			}			
@@ -570,8 +577,12 @@ public abstract class ScaffoldGraph{
 
 		SAMRecordIterator iter = reader.iterator();
 
-		String readID = "";
-		byte[] fullSeq = null; //in SAM file the first record contain full sequence of read (no hard clip)
+		String curReadID = "";
+		
+//		byte[] fullSeq = null; //in SAM file the first record contain full sequence of read (no hard clip)
+//		String fullSeq = null;
+		Sequence fullSeq = null;
+		
 		ReadFilling readFilling = null;
 		ArrayList<AlignmentRecord> samList = null;// alignment record of the same read;	
 		SAMRecord rec;
@@ -580,9 +591,10 @@ public abstract class ScaffoldGraph{
 			rec = iter.next();			
 
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){
-				if (!readID.equals(rec.getReadName())){
-					fullSeq = rec.getReadBases();		
-					readID=rec.getReadName();
+				if (!curReadID.equals(rec.getReadName())){
+//					fullSeq = rec.getReadBases();		
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + rec.getReadName());
+					curReadID=rec.getReadName();
 				}
 				
 				continue;
@@ -607,7 +619,7 @@ public abstract class ScaffoldGraph{
 			//	which is natural if it is the output from an aligner (bwa, minimap2)
 
 			//not the first occurrance				
-			if (readID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
+			if (curReadID.equals(curAlnRec.readID) && fullSeq==null) { //meaning the readFilling is already set				
 				if (curAlnRec.useful){				
 					for (AlignmentRecord alnRec : samList) {
 						if (alnRec.useful){
@@ -622,11 +634,13 @@ public abstract class ScaffoldGraph{
 //				processAlignments(samList);
 					
 				samList = new ArrayList<AlignmentRecord>();
-				readID = curAlnRec.readID;	
-				if(fullSeq==null)
-					fullSeq=rec.getReadBases();
+				curReadID = curAlnRec.readID;	
+				if(fullSeq==null || !fullSeq.getName().equals("R"+curReadID))
+//					fullSeq=rec.getReadBases();
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
+
 				
-				readFilling = new ReadFilling(new Sequence(Alphabet.DNA5(), fullSeq, "R" + readID), samList);
+				readFilling = new ReadFilling(fullSeq, samList);
 				fullSeq=null;
 
 			}			
