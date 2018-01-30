@@ -157,8 +157,8 @@ public class RealtimeScaffolding {
 			
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){		
 				if (!curReadID.equals(rec.getReadName())){
-					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
 					curReadID=rec.getReadName();
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
 					synchronized(this){
 						currentReadCount ++;
 						currentBaseCount += rec.getReadLength();
@@ -303,8 +303,8 @@ public class RealtimeScaffolding {
 			
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){		
 				if (!curReadID.equals(rec.getReadName())){
-					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
 					curReadID=rec.getReadName();
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
 					synchronized(this){
 						currentReadCount ++;
 						currentBaseCount += rec.getReadLength();

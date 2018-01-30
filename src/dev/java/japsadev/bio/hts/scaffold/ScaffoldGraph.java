@@ -454,9 +454,9 @@ public abstract class ScaffoldGraph{
 
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){
 				if (!curReadID.equals(rec.getReadName())){
-//					fullSeq = rec.getReadBases();		
-					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + rec.getReadName());
 					curReadID=rec.getReadName();
+//					fullSeq = rec.getReadBases();		
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
 				}
 				
 				continue;
@@ -592,9 +592,9 @@ public abstract class ScaffoldGraph{
 
 			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual){
 				if (!curReadID.equals(rec.getReadName())){
-//					fullSeq = rec.getReadBases();		
-					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + rec.getReadName());
 					curReadID=rec.getReadName();
+//					fullSeq = rec.getReadBases();		
+					fullSeq = new Sequence(Alphabet.DNA5(), rec.getReadString(), "R" + curReadID);
 				}
 				
 				continue;
