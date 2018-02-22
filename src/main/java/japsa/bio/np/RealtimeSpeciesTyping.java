@@ -204,6 +204,7 @@ public class RealtimeSpeciesTyping {
 		LOG.info("started  RealtimeSpeciesTyper thread");
 
 		while (samIter.hasNext()){
+			try{
 			SAMRecord sam = samIter.next();
 			//LOG.info("sam read name = "+sam.getReadName());
 			//if (firstReadTime <=0)
@@ -249,6 +250,9 @@ public class RealtimeSpeciesTyping {
 					readList.add(readName);
 	
 				}
+			}catch(Exception exc){
+				exc.printStackTrace();
+			}
 		}//while
 
 		//final run
