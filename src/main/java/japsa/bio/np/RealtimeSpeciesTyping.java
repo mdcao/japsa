@@ -139,13 +139,15 @@ public class RealtimeSpeciesTyping {
 			if (line.startsWith("#"))
 				continue;
 
-			String [] toks = line.split(" ");
+			String [] toks = line.split("\\s+");
 			String sp =  toks[0];
 			String seq = toks[1].substring(1);
 
 			if (seq2Species.put(seq, sp) != null)
 				throw new RuntimeException("sequence " + seq +" presents multiple time");
-
+//			else
+//				LOG.info("==>adding " + seq + " to " + sp);
+			
 			if (species2ReadList.get(sp) == null){
 				LOG.debug("add species: "+sp);
 				species2ReadList.put(sp,new ArrayList<String>());
@@ -204,7 +206,7 @@ public class RealtimeSpeciesTyping {
 		LOG.info("started  RealtimeSpeciesTyper thread");
 
 		while (samIter.hasNext()){
-			try{
+//			try{
 			SAMRecord sam = samIter.next();
 			//LOG.info("sam read name = "+sam.getReadName());
 			//if (firstReadTime <=0)
@@ -250,9 +252,9 @@ public class RealtimeSpeciesTyping {
 					readList.add(readName);
 	
 				}
-			}catch(Exception exc){
-				exc.printStackTrace();
-			}
+//			}catch(Exception exc){
+//				exc.printStackTrace();
+//			}
 		}//while
 
 		//final run

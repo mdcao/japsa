@@ -259,7 +259,7 @@ public class RealtimeScaffolding {
 						"-I",
 						"40g",
 //						"-K",
-//						"20000",
+//						"200M",
 						mm2Index,
 						"-"
 						).
@@ -273,7 +273,7 @@ public class RealtimeScaffolding {
 						"-I",
 						"40g",
 //						"-K",
-//						"20000",
+//						"200M",
 						mm2Index,
 						inFile
 						);
