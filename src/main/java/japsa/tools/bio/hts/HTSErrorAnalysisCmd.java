@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
@@ -99,7 +100,13 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 	static void errorAnalysis(String bamFile, String refFile, String pattern, int qual) throws IOException{	
 
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(bamFile));	
+		SamReader samReader = null;//SamReaderFactory.makeDefault().open(new File(bamFile));
+
+                if ("-".equals(bamFile))
+		    samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+        	else
+                    samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
+
 
 		SAMRecordIterator samIter = samReader.iterator();
 		//Read the reference genome
@@ -122,7 +129,7 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 
 		int numNotAligned = 0;
 
-		String log = "###Read_name\tRead_length\tReference_length\tInsertions\tDeletions\tMismatches\n";
+		//String log = "###Read_name\tRead_length\tReference_length\tInsertions\tDeletions\tMismatches\n";
 		while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
 
@@ -167,7 +174,7 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 			japsa.util.HTSUtilities.IdentityProfile profile = 
 				HTSUtilities.identity(chr, readSeq, sam);			
 
-			log+=sam.getReadName() + "\t" + profile.readBase + "\t" + profile.refBase + "\t" + profile.baseIns + "\t" + profile.baseDel + "\t" + profile.mismatch+ "\n";
+			//log+=sam.getReadName() + "\t" + profile.readBase + "\t" + profile.refBase + "\t" + profile.baseIns + "\t" + profile.baseDel + "\t" + profile.mismatch+ "\n";
 
 			totBaseIns  += profile.baseIns;
 			totBaseDel  += profile.baseDel;
@@ -230,7 +237,7 @@ public class HTSErrorAnalysisCmd extends CommandLine{
 		System.out.println("=============================================================");
 		System.out.println("=============================================================");
 
-		System.out.println(log);
+		//System.out.println(log);
 	}
 
 }
