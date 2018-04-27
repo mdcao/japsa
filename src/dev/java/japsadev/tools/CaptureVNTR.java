@@ -101,6 +101,7 @@ public class CaptureVNTR extends CommandLine{
 		addString("directory", "./", "Directory with depth files");
 		addInt("stat", 2, "0,1,2");
 		addInt("readLength", 250, "Read length");
+		addDouble("downsample", 1, "Down sample ");
 
 		addInt("stage", 6, "Stage of processing:\n"
 			+ "0: Generate hmm profile, technology parameter is required\n"
@@ -142,6 +143,7 @@ public class CaptureVNTR extends CommandLine{
 		String resAllele    =  cmdLine.getStringVal("resAllele");
 		int    stat   =  cmdLine.getIntVal("stat");
 		int    readLength   =  cmdLine.getIntVal("readLength");
+		double downsample = cmdLine.getDoubleVal("downsample");
 
 		int stage = cmdLine.getIntVal("stage");	
 		String CI = cmdLine.getStringVal("HPD");	
@@ -183,7 +185,7 @@ public class CaptureVNTR extends CommandLine{
 			/*for(int i=0; i<resamples.length; i++){
 				resamples[i] = dir+"/"+resamples[i];
 			}*/
-			stage6_readDepthAnalysis(xafFile,new File(dir), resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength, CI.split(":"));
+			stage6_readDepthAnalysis(xafFile,new File(dir), resamples, resAllele, new File(dir+"/"+args[0]), output,stat, readLength, CI.split(":"), downsample);
 		}
 
 	}
@@ -336,7 +338,7 @@ public class CaptureVNTR extends CommandLine{
 		}
 	}
 
-	 static double downsample = 1.0; //7.2; // this will need to be modified mannually
+//	 static double downsample = 1.0; //7.2; // this will need to be modified mannually
 
 	/**
 	 * Analyse data resulted from stage 3
@@ -347,7 +349,7 @@ public class CaptureVNTR extends CommandLine{
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	static void stage6_readDepthAnalysis(String xafFile, File dir, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1, String[] cistring) throws IOException, InterruptedException{
+	static void stage6_readDepthAnalysis(String xafFile, File dir, String[] rData, String resAllele, File sDir, String outputFile, int stat, int readLength1, String[] cistring, double downsample) throws IOException, InterruptedException{
 		File[] sFiles = sDir.listFiles(new FileFilter(){
 
 			@Override
