@@ -95,6 +95,7 @@ public class SimulateCaptureCmd extends CommandLine{
 
 		addInt("num", 1000000, "Number of fragments ");
 		addInt("minFragment", 50 , "Minimum fragment size");
+		addInt("maxFragment", 10000 , "Maximum fragment size");
 
 		//addDouble("mismatch",0.01,"probability of mismatches");
 		//addDouble("deletion",0.01,"probability of deletion");
@@ -145,6 +146,8 @@ public class SimulateCaptureCmd extends CommandLine{
 		}
 		
 		int minFragment = cmdLine.getIntVal("minFragment");
+		int maxFragment = cmdLine.getIntVal("maxFragment");
+		
 		
 		String miseq       =  cmdLine.getStringVal("miseq");
 		String pacbio       =  cmdLine.getStringVal("pacbio");
@@ -307,7 +310,10 @@ public class SimulateCaptureCmd extends CommandLine{
 			//1. Generate the length of the next fragment
 			int fragLength = 
 					Math.max((int) Simulation.logLogisticSample(fmedian, fshape, rnd), minFragment);	
-
+			
+			if (fragLength > maxFragment)
+				fragLength = maxFragment;
+			
 			//Logging.info("Gen0 " + fragLength);
 
 			//2. Generate the position of the fragment
