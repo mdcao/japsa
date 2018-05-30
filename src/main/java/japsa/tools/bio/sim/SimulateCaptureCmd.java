@@ -94,6 +94,7 @@ public class SimulateCaptureCmd extends CommandLine{
 		addDouble("tshape", 0, "Shape parameter of the effective fragment size distribution");
 
 		addInt("num", 1000000, "Number of fragments ");
+		addInt("minFragment", 50 , "Minimum fragment size");
 
 		//addDouble("mismatch",0.01,"probability of mismatches");
 		//addDouble("deletion",0.01,"probability of deletion");
@@ -126,8 +127,8 @@ public class SimulateCaptureCmd extends CommandLine{
 		int smedian =  cmdLine.getIntVal("smedian");
 		double sshape = cmdLine.getDoubleVal("sshape");
 
-		int tmedian =  cmdLine.getIntVal("smedian");
-		double tshape = cmdLine.getDoubleVal("sshape");
+		int tmedian =  cmdLine.getIntVal("tmedian");
+		double tshape = cmdLine.getDoubleVal("tshape");
 
 		int seed =  cmdLine.getIntVal("seed");		
 		int num =   cmdLine.getIntVal("num");
@@ -142,6 +143,8 @@ public class SimulateCaptureCmd extends CommandLine{
 					+ "Use "+mllen+" instead.");
 			illen = mllen;
 		}
+		
+		int minFragment = cmdLine.getIntVal("minFragment");
 		
 		String miseq       =  cmdLine.getStringVal("miseq");
 		String pacbio       =  cmdLine.getStringVal("pacbio");
@@ -172,6 +175,7 @@ public class SimulateCaptureCmd extends CommandLine{
 					max = dist2[i];			
 			}
 		}
+		
 
 		//double [] dist2 = new double[smedian*4];
 		//double max = 0.0;
@@ -204,8 +208,7 @@ public class SimulateCaptureCmd extends CommandLine{
 
 		seed = Simulation.seed(seed);
 		Random rnd = new Random(seed);
-
-		logOS.print("#Seed " + seed + "\n");
+		logOS.print("#Seed " + seed + "\n");			
 
 		Genome genome = new Genome();		
 		genome.read(referenceFile);
@@ -303,7 +306,7 @@ public class SimulateCaptureCmd extends CommandLine{
 
 			//1. Generate the length of the next fragment
 			int fragLength = 
-					Math.max((int) Simulation.logLogisticSample(fmedian, fshape, rnd), 50);	
+					Math.max((int) Simulation.logLogisticSample(fmedian, fshape, rnd), minFragment);	
 
 			//Logging.info("Gen0 " + fragLength);
 

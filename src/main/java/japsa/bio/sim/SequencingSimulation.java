@@ -59,7 +59,7 @@ public class SequencingSimulation {
 		double aIns = aDel + ins;
 
 		//why - 10?/
-		len = Math.min(len, fragment.length() - 10); 
+		len = Math.min(len, fragment.length()); 
 
 		//Sequence read = new Sequence(fragment.alphabet(), len);
 		SequenceBuilder sb = new SequenceBuilder(fragment.alphabet(), len);
