@@ -460,7 +460,7 @@ public class SimulateCaptureCmd extends CommandLine{
 			//Logging.info("Gen2 " + fragLength);
 			//now that the fragment is to be sequenced
 			Sequence seq = chrList.get(chrIndex).subSequence(chrPos, chrPos + fragLength);
-			seq.setName(ID + "_" + chrList.get(chrIndex).getName() + "_" + (chrPos + 1) + "_" +(chrPos + fragLength));
+			seq.setName(ID + "_" + chrList.get(chrIndex).getName() + "_" + (chrPos + 1) + "_" +(chrPos + fragLength) + "_" + numFragment);
 
 			//if (sos != null)
 			//	seq.writeFasta(sos);
