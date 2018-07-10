@@ -106,7 +106,9 @@ public class SimulateGenomeCmd extends CommandLine{
 		String [] toks = svOption.trim().split(",");
 
 		for (int i =0; i < toks.length;i++){
-			svs.add(StructualVarition.parseSV(toks[i]));
+            if (toks[i].length()>0){
+    			svs.add(StructualVarition.parseSV(toks[i]));
+            }
 		}
 
 		int svsIndex = 0;
