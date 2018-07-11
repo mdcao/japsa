@@ -1260,7 +1260,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 						
 						seqBuilder.append(contig.contigSequence.subSequence(refLeft - 1, refRight));
 						//count the appearance by 1 more
-						ScaffoldGraph.oneMore(contig);
+						ScaffoldGraph.countOneMore(contig);
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());
 
@@ -1287,7 +1287,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 						
 						seqBuilder.append(Alphabet.DNA.complement(contig.contigSequence.subSequence(refRight - 1, refLeft)));
 						//count the appearance by 1 more
-						ScaffoldGraph.oneMore(contig);
+						ScaffoldGraph.countOneMore(contig);
 						
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());
@@ -1319,7 +1319,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 						
 						seqBuilder.append(contig.contigSequence.subSequence(refLeft - 1, refRight));
 						//count the appearance by 1 more
-						ScaffoldGraph.oneMore(contig);
+						ScaffoldGraph.countOneMore(contig);
 						
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());
@@ -1346,7 +1346,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 						
 						seqBuilder.append(Alphabet.DNA.complement(contig.contigSequence.subSequence(refRight - 1, refLeft)));
 						//count the appearance by 1 more
-						ScaffoldGraph.oneMore(contig);
+						ScaffoldGraph.countOneMore(contig);
 						
 						if(ScaffoldGraph.verbose)
 							System.out.println("Append to fill: " + feature.getDesc());

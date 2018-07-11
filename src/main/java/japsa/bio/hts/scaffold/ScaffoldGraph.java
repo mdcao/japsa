@@ -970,7 +970,7 @@ public class ScaffoldGraph{
 			jout.close();
 		}
 	}	
-	public static void oneMore(Contig ctg){
+	public static void countOneMore(Contig ctg){
 		if(countOccurence.get(ctg.getIndex())==null)
 			countOccurence.put(ctg.getIndex(), 1);
 		else
@@ -981,7 +981,7 @@ public class ScaffoldGraph{
 		Integer count = countOccurence.get(ctg.getIndex());
 		if(count==null) return true;
 		int estimatedOccurence = (int) Math.floor(ctg.coverage/estimatedCov);
-		if(estimatedOccurence <= Math.floor(.75*count))
+		if(estimatedOccurence <= Math.ceil(.85*count))
 			return true;
 		else
 			return false;

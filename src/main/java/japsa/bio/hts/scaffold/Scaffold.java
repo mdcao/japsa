@@ -432,7 +432,7 @@ public final class Scaffold extends LinkedList<Contig>{
 				//seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft-1, startLeft)));
 			}			
 			//count the appearance by 1 more
-			ScaffoldGraph.oneMore(leftContig);
+			ScaffoldGraph.countOneMore(leftContig);
 			
 			/* uncomment for longread-based */
 			startLeft = connection.filling(seq, anno);
@@ -490,7 +490,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			//seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft - 1, startLeft)));
 		}
 		//count the appearance by 1 more
-		ScaffoldGraph.oneMore(leftContig);
+		ScaffoldGraph.countOneMore(leftContig);
 		
 		if (bestCloseConnection != null){	
 			System.out.printf("Append bridge %d -- %d\n",closeBridge.firstContig.index,  closeBridge.secondContig.index);
@@ -595,7 +595,7 @@ public final class Scaffold extends LinkedList<Contig>{
 			else
 				seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft, startLeft)));
 			//count the appearance by 1 more
-			ScaffoldGraph.oneMore(leftContig);
+			ScaffoldGraph.countOneMore(leftContig);
 
 			startLeft = connection.filling(seq, new JapsaAnnotation());
 			leftContig = rightContig;			
@@ -643,7 +643,7 @@ public final class Scaffold extends LinkedList<Contig>{
 		else
 			seq.append(Alphabet.DNA.complement(leftContig.contigSequence.subSequence(endLeft, startLeft)));
 		//count the appearance by 1 more
-		ScaffoldGraph.oneMore(leftContig);
+		ScaffoldGraph.countOneMore(leftContig);
 		
 		if (bestCloseConnection != null)	
 			bestCloseConnection.filling(seq, new JapsaAnnotation());	
