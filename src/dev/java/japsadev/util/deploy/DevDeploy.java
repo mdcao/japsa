@@ -103,6 +103,7 @@ public class DevDeploy {
         tools.add(new CheckInductionCmd());
         
         tools.add(new SelectPlasmidReadsCmd());
+        tools.add(new FlankSeqsDetectorCmd());
 		//new 
 		//tools.add(new CheckInductionCmd());
 		//
