@@ -42,10 +42,10 @@ import htsjdk.samtools.SAMRecord;
 
 public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	static final double matchCost = 0;
-	int score;
+	public int score;
 
 	public String readID;
-	Contig contig;
+	public Contig contig;
 
 	public int refStart, refEnd;  //1-based position on ref of the start and end of the alignment
 	
@@ -60,7 +60,7 @@ public class AlignmentRecord implements Comparable<AlignmentRecord> {
 	public boolean strand = true;//positive
 	public boolean useful = false;
 	//SAMRecord mySam;
-	int qual=255; //alignment quality
+	public int qual=255; //alignment quality
 	
 	ArrayList<CigarElement> alignmentCigars = new ArrayList<CigarElement>();
 	
