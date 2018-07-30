@@ -70,6 +70,8 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 		addDouble("qual", 1, "Mininum quality");
 		addInt("insert", 10, "Minimum length of insert sequence in-between 2 flanking sequences");
 		addInt("tips", 20, "Maximum percentage of the overhangs compared to the corresponding flanking sequence");
+		addDouble("cover", 80, "Mininum percentage of flank sequence coverage for a valid alignment");
+
 		addStdHelp();	
 	}
 	/**
@@ -83,7 +85,8 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 		/**********************************************************************/
 		String flankSeqsFile= cmdLine.getStringVal("flankFile");
 		String bamFile = cmdLine.getStringVal("bamFile");
-		double qual = cmdLine.getDoubleVal("qual");
+		double 	qual = cmdLine.getDoubleVal("qual"),
+				flkCov = cmdLine.getDoubleVal("cover");
 		int insertLength = cmdLine.getIntVal("insert"),
 			tipsPercentage = cmdLine.getIntVal("tips");
 		
@@ -124,7 +127,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			}
 			Contig flk = flankSeqs.get(rec.getReferenceIndex());
 			curAlnRec=new AlignmentRecord(rec, flk);
-			if(curAlnRec.refEnd-curAlnRec.refStart < .5*flk.length())
+			if(curAlnRec.refEnd-curAlnRec.refStart < (double)flkCov*flk.length()/100.0)
 				continue;
 			//not too far from the tip of read
 			else if(Math.min(-curAlnRec.readAlignmentEnd()+curAlnRec.readLength, curAlnRec.readAlignmentStart()) > (double)flk.length()*tipsPercentage/100.0){
@@ -136,17 +139,6 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 				data=new HashMap<>();
 				data.put(flk, curAlnRec);
 				map.put(curReadName,  data);
-//			}else if(map.get(curReadName).size()==1 ){
-//				AlignmentRecord prev = map.get(curReadName).get(0);
-//				//not overlap each other
-//				if((prev.readStart-curAlnRec.readStart)*(prev.readEnd-curAlnRec.readStart) <= 0 
-//					|| (prev.readStart-curAlnRec.readEnd)*(prev.readEnd-curAlnRec.readEnd) <= 0 )
-//					continue;
-//					//the in-between must longer than insertLength
-//				if(prev.readAlignmentEnd()-prev.readAlignmentStart() + curAlnRec.readAlignmentEnd()-curAlnRec.readAlignmentStart() > curAlnRec.readLength -insertLength)
-//					continue;
-//				
-//				map.get(curReadName).add(curAlnRec);
 				
 			}else{
 				data=map.get(curReadName);
@@ -177,8 +169,17 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					flank1_1.add(r);
 				
 			}
-			else if(map.get(r).size()==2)
+			else if(map.get(r).keySet().size()==2){
+				AlignmentRecord aln0 = map.get(r).get(flankSeqs.get(0)),
+								aln1 = map.get(r).get(flankSeqs.get(1));
+				if((aln0.readStart-aln1.readStart)*(aln0.readEnd-aln1.readStart) <= 0 
+				|| (aln0.readStart-aln1.readEnd)*(aln0.readEnd-aln1.readEnd) <= 0 )
+					return;
+				//the in-between must longer than insertLength
+				if(aln0.readAlignmentEnd()-aln0.readAlignmentStart() + aln1.readAlignmentEnd()-aln1.readAlignmentStart() > aln1.readLength -insertLength)
+					return;
 				flank2.add(r);
+			}
 		});
 		System.out.println( "Total number of reads: " + totReadNum);
 		System.out.println("Number of reads with 0 flank sequences: " + flank0.size());
