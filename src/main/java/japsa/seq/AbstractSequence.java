@@ -232,7 +232,7 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 		}
 
 		for (int i = 0; i < length(); i++) {
-			if (i % 60 == 0)
+			if (i % 100 == 0)
 				out.print('\n');
 			out.print(charAt(i));			
 		}
