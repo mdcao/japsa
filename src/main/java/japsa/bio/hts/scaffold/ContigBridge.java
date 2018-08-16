@@ -64,7 +64,7 @@ import japsa.bio.np.ErrorCorrection;
 public class ContigBridge implements Comparable<ContigBridge>{
 
 	Contig firstContig, secondContig;
-	Range firstContigAlignedRange, secondContigAlignedRange;
+//	Range firstContigAlignedRange, secondContigAlignedRange;
 
 	final String hashKey;
 	final int orderIndex;
@@ -106,7 +106,7 @@ public class ContigBridge implements Comparable<ContigBridge>{
 		dolly.transVector=transVector;
 		dolly.score=score;
 		dolly.connections=connections;
-		dolly.firstContigAlignedRange=dolly.secondContigAlignedRange=null;
+//		dolly.firstContigAlignedRange=dolly.secondContigAlignedRange=null;
 
 		return dolly;
 
@@ -133,9 +133,9 @@ public class ContigBridge implements Comparable<ContigBridge>{
 	
 		//NB: firstAlignment for firstContig, secondAlignment for secondContig
 		Connection newConnect = new Connection(readSequence, firstAlignment,secondAlignment,trans);
-//		Range 	r1 = new Range(firstAlignment.refStart,firstAlignment.refEnd),
-//				r2 = new Range(secondAlignment.refStart,secondAlignment.refEnd);
-//		
+		Range 	r1 = new Range(firstAlignment.refStart,firstAlignment.refEnd),
+				r2 = new Range(secondAlignment.refStart,secondAlignment.refEnd);
+		
 //		if(firstContigAlignedRange == null || secondContigAlignedRange == null){
 //			firstContigAlignedRange = r1;
 //			secondContigAlignedRange = r2;
@@ -765,19 +765,28 @@ public class ContigBridge implements Comparable<ContigBridge>{
 			return false;
 	}
 	public void display(){
+//		System.out.printf("##################START########################\n"
+//				+ "Contig %3d (%d) -> Contig %3d (%d) Vector (%s) score = %f distance = %d r1 = %s r2 = %s\n",
+//				this.firstContig.index,
+//				this.firstContig.length(),
+//				this.secondContig.index,
+//				this.secondContig.length(),
+//				transVector.toString(),
+//				this.score,
+//				transVector.distance(firstContig, secondContig),
+//				firstContigAlignedRange.toString(),
+//				secondContigAlignedRange.toString()
+//				);
 		System.out.printf("##################START########################\n"
-				+ "Contig %3d (%d) -> Contig %3d (%d) Vector (%s) score = %f distance = %d r1 = %s r2 = %s\n",
+				+ "Contig %3d (%d) -> Contig %3d (%d) Vector (%s) score = %f distance = %d\n",
 				this.firstContig.index,
 				this.firstContig.length(),
 				this.secondContig.index,
 				this.secondContig.length(),
 				transVector.toString(),
 				this.score,
-				transVector.distance(firstContig, secondContig),
-				firstContigAlignedRange.toString(),
-				secondContigAlignedRange.toString()
+				transVector.distance(firstContig, secondContig)
 				);
-
 		Collections.sort(connections);
 		for (Connection connect:connections)
 			connect.display();
