@@ -108,7 +108,7 @@ public class ExpertModel {
 	// protected Distribution finalDist;
 	protected int posSize = 0;
 	protected int lengthSeqs = 0;// Total lengths of all sequences
-	protected int total = 1024 * 1024;
+	protected int total = Integer.MAX_VALUE;
 	MyBitSet bitSet, pBitSet;// To store if an particular offset has been stored
 
 	// Two expert seeds
@@ -626,9 +626,22 @@ public class ExpertModel {
 				actual++;
 			}
 
-			decoder.removeSymbolFromStream((int) (accu * total),
-					(int) ((accu + finalD[actual]) * total), total);
+			int low = (int) (accu * total);
+			int high =  (int) ((accu + finalD[actual]) * total);
+
+			decoder.removeSymbolFromStream(low, high, total);
 			seq.setSymbol(currentInd,  actual);
+
+			/***********************************************************************
+			if (currentInd > 45460){
+					System.err.print(currentInd + "\t" + actual);
+				for (int a = 0; a < Expert.alphabet().size(); a++) {
+					System.err.print("\t" + finalD[a]);
+				}
+				System.err.println("\t" + low + "\t" + high + "\t" + total + "\t" + accu + "\t" + mid);
+			}
+			 /***********************************************************************/
+
 
 			updateExperts(actual);
 			postCoding(seqArray, sid);
@@ -674,6 +687,16 @@ public class ExpertModel {
 				int high = (int) ((accu + finalD[actual]) * total);
 				encoder.encode(low, high, total);
 				/**********************************************************************/
+
+				/***********************************************************************
+				if (currentInd > 45460){
+					System.err.print(currentInd + "\t" + actual);
+					for (int a = 0; a < Expert.alphabet().size(); a++) {
+						System.err.print("\t" + finalD[a]);
+					}
+					System.err.println("\t" + low + "\t" + high + "\t" + total + "\t" + accu);
+				}
+				 /***********************************************************************/
 
 				updateExperts(actual);
 				postCoding(seqArray, sid);
