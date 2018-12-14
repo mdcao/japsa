@@ -74,6 +74,7 @@ algorithms, implementation, documentation and feedback:
 * [npAnalysis](https://github.com/mdcao/npAnalysis): Realtime identification of bacterial sample
 * [npReader](https://github.com/mdcao/npReader): Real-time extraction and analysis Oxford Nanopore sequencing data
 * [npBarcode](https://github.com/hsnguyen/npBarcode): Demultiplex barcoded Oxford Nanopore sequencing 
+* [npGraph](https://github.com/hsnguyen/assembly): Streaming scaffolding and visualisation 
 * [PhageXpress](https://github.com/mdcao/phagexpress)
 
 and more to come.
