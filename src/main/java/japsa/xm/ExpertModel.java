@@ -621,7 +621,7 @@ public class ExpertModel {
 			// Will later implement using binary search, for now just linear
 			// search
 
-			while (mid >= (int) ((accu + finalD[actual]) * total)) {
+			while (actual < finalD.length - 1 && (mid >= (int) ((accu + finalD[actual]) * total))) {
 				accu += finalD[actual];
 				actual++;
 			}
