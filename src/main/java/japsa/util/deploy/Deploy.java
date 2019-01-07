@@ -116,7 +116,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  */
 public class Deploy {	
 	public static ArrayList<Object> tools = new ArrayList<Object>();
-	public static String VERSION = "1.7-05b";
+	public static String VERSION = "1.9-01a";
 	public static final String FIELD_SEP = "\t";
 
 	public static boolean DEBUG = true;
