@@ -627,8 +627,10 @@ public class ExpertModel {
 			}
 
 			int low = (int) (accu * total);
-			//int high =  (int) ((accu + finalD[actual]) * total);
-			int high = (actual == finalD.length - 1)? total:  (int) ((accu + finalD[actual]) * total);
+			int high = (int) Math.ceil((accu + finalD[actual]) * total) ;
+			if (high > total)
+				high = total;
+			//int high = (actual == finalD.length - 1)? total:  (int) ((accu + finalD[actual]) * total);
 
 			decoder.removeSymbolFromStream(low, high, total);
 			seq.setSymbol(currentInd,  actual);
@@ -684,8 +686,13 @@ public class ExpertModel {
 				for (int j = 0; j < actual; ++j) {
 					accu += finalD[j];
 				}
-				int low = (int) (accu * total);
-				int high = (actual == finalD.length - 1)? total:  (int) ((accu + finalD[actual]) * total);
+				int low  = (int) (accu * total);
+				int high = (int) Math.ceil((accu + finalD[actual]) * total);
+				if (high > total)
+					high = total;
+
+				//int high = (int) Math.ceil((accu + finalD[actual]) * total);
+				//int high = (actual == finalD.length - 1)? total:  (int) ((accu + finalD[actual]) * total);
 				encoder.encode(low, high, total);
 				/**********************************************************************/
 
