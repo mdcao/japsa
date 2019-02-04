@@ -33,6 +33,16 @@
  ****************************************************************************/
 package japsa.bio.np;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import japsa.seq.Alphabet;
 import japsa.seq.Alphabet.DNA;
 import japsa.seq.FastaReader;
@@ -40,15 +50,6 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceBuilder;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Provides functionality for error correction and find the best allele/sequence.
@@ -98,122 +99,151 @@ public class ErrorCorrection {
     		return null;
     	
     }
+    
+    public static void writeAlignmentToFaiFile(List<Sequence> readList,String faiFile, String faoFile , int max)throws IOException, InterruptedException{
+    	{
+			SequenceOutputStream faiSt = SequenceOutputStream.makeOutputStream(faiFile);
+			int count = 0;
+			for (Sequence seq:readList){
+				LOG.info(seq.getName() + "  " + seq.length());
+				seq.writeFasta(faiSt);
+				count ++;
+				if (count >= max)
+				    break;//for
+			}
+			faiSt.close();
+		}
+    }
+    
+    public static void runMultipleAlignment(String faiFile, String faoFile) throws IOException, InterruptedException{
+    	{
+			String cmd  = "";
+			if (msa.startsWith("poa")){						
+				cmd = "poa -read_fasta " + faiFile + " -clustal " + faoFile + " -hb blosum80.mat";
+			}else if (msa.startsWith("muscle")){
+				cmd = "muscle -in " + faiFile + " -out " + faoFile + " -maxiters 5 -quiet";				
+			}else if (msa.startsWith("clustal")) {
+				cmd = "clustalo --force -i " + faiFile + " -o " + faoFile;
+			}else if (msa.startsWith("kalign")){
+				cmd = "kalign -gpo 60 -gpe 10 -tgpe 0 -bonus 0 -q -i " + faiFile	+ " -o " + faoFile;
+			}else if (msa.startsWith("msaprobs")){
+				cmd = "msaprobs -o " + faoFile + " " + faiFile;
+			}else if (msa.startsWith("mafft")){
+				cmd = "mafft_wrapper.sh  " + faiFile + " " + faoFile;
+			}else{
+				LOG.error("Unknown msa function " + msa);
+				throw new InterruptedException("Unknown msa function " + msa);
+			}
+
+			LOG.info("Running " + cmd);
+			Process process = Runtime.getRuntime().exec(cmd);
+			process.waitFor();
+			LOG.info("Done " + cmd);
+		}
+    }
+    
+    public static Sequence 	readMSA(String faoFile, int seql) throws IOException{
+    	SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), seql);
+		BufferedReader bf =  FastaReader.openFile(faoFile);
+		String line = bf.readLine();
+		while ( (line = bf.readLine()) != null){
+			if (line.startsWith("CONSENS0")){
+				for (int i = 10;i < line.length();i++){
+					char c = line.charAt(i);
+					int base = DNA.DNA().char2int(c);
+					if (base >= 0 && base < 4)
+						sb.append((byte)base);
+				}//for							
+			}//if
+		}//while
+		sb.setName("consensus");
+		LOG.info(sb.getName() + "  " + sb.length());
+		return sb.toSequence();
+    }
+    public static ArrayList<Sequence> readMultipleAlignment(String faoFile) throws IOException{
+    	ArrayList<Sequence> seqList = new ArrayList<Sequence>();
+		{
+			SequenceReader msaReader = FastaReader.getReader(faoFile);
+			Sequence nSeq = null;
+			while ((nSeq = msaReader.nextSequence(Alphabet.DNA())) != null) {
+				seqList.add(nSeq);						
+			}
+			msaReader.close();
+		}
+		return seqList;
+
+    }
+
+    public static Sequence getConsensus(ArrayList<Sequence> seqList){
+    	
+    		Sequence consensus = null;
+			int [] coef = new int[seqList.size()];			
+			for (int y = 0; y < seqList.size(); y++){
+				coef[y] = 1;
+				//if (seqList.get(y).getName().contains("twodi"))
+				//	coef[y] = 2;				
+			}
+
+			//TODO: combine error profiles?? 
+			int [] counts = new int[6];
+
+			SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), seqList.get(0).length());
+			for (int x = 0; x < seqList.get(0).length();x++){		
+				Arrays.fill(counts, 0);
+				for (int y = 0; y < seqList.size(); y++){					
+					byte base = seqList.get(y).getBase(x);
+					if (base >= 6) 
+						counts[4] += coef[y];//N
+					else
+						counts[base] += coef[y];
+				}//for y
+				int maxIdx = 0;
+				for (int y = 1; y < counts.length; y++){
+					if (counts[y] > counts[maxIdx])
+						maxIdx = y;					
+				}//for y
+				if (maxIdx < Alphabet.DNA.GAP){//not a gap
+					sb.append((byte)maxIdx);
+				}//if
+			}//for x
+			sb.setName("consensus");
+			LOG.info(sb.getName() + "  " + sb.length());
+			consensus = sb.toSequence();
+		return consensus;
+    }
+    
 	public static Sequence consensusSequence(List<Sequence> readList, int max, String prefix, String msa) throws IOException, InterruptedException{
 		//String faiFile = prefix + "_" + this.currentReadCount;
 		Sequence consensus = null;
 		if (readList != null && readList.size() > 0){
-			//1.0 write alignment to faiFile
 			if (readList.size() == 1){
 				readList.get(0).setName("consensus");
 				consensus = readList.get(0);
 			}else{
+				
 				String faiFile = prefix + "_ai.fasta";//name of fasta files of reads mapped to the gene				
 				String faoFile = prefix + "_ao.fasta";//name of fasta files of reads mapped to the gene
-				{
-					SequenceOutputStream faiSt = SequenceOutputStream.makeOutputStream(faiFile);
-					int count = 0;
-					for (Sequence seq:readList){
-						LOG.info(seq.getName() + "  " + seq.length());
-						seq.writeFasta(faiSt);
-						count ++;
-						if (count >= max)
-						    break;//for
-					}
-					faiSt.close();
-				}
+				//1.0 write alignment to faiFile
 
+				writeAlignmentToFaiFile(readList, faiFile, faoFile, max);
+				
 				//2.0 Run multiple alignment
-				{
-					String cmd  = "";
-					if (msa.startsWith("poa")){						
-						cmd = "poa -read_fasta " + faiFile + " -clustal " + faoFile + " -hb blosum80.mat";
-					}else if (msa.startsWith("muscle")){
-						cmd = "muscle -in " + faiFile + " -out " + faoFile + " -maxiters 5 -quiet";				
-					}else if (msa.startsWith("clustal")) {
-						cmd = "clustalo --force -i " + faiFile + " -o " + faoFile;
-					}else if (msa.startsWith("kalign")){
-						cmd = "kalign -gpo 60 -gpe 10 -tgpe 0 -bonus 0 -q -i " + faiFile	+ " -o " + faoFile;
-					}else if (msa.startsWith("msaprobs")){
-						cmd = "msaprobs -o " + faoFile + " " + faiFile;
-					}else if (msa.startsWith("mafft")){
-						cmd = "mafft_wrapper.sh  " + faiFile + " " + faoFile;
-					}else{
-						LOG.error("Unknown msa function " + msa);
-						return null;
-					}
-
-					LOG.info("Running " + cmd);
-					Process process = Runtime.getRuntime().exec(cmd);
-					process.waitFor();
-					LOG.info("Done " + cmd);
+				try{
+					runMultipleAlignment(faiFile, faoFile);
+				}catch(InterruptedException exc){
+					return null;
 				}
-
-
+				
 				if ("poa".equals(msa)){
-					SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), readList.get(0).length());
-					BufferedReader bf =  FastaReader.openFile(faoFile);
-					String line = bf.readLine();
-					while ( (line = bf.readLine()) != null){
-						if (line.startsWith("CONSENS0")){
-							for (int i = 10;i < line.length();i++){
-								char c = line.charAt(i);
-								int base = DNA.DNA().char2int(c);
-								if (base >= 0 && base < 4)
-									sb.append((byte)base);
-							}//for							
-						}//if
-					}//while
-					sb.setName("consensus");
-					LOG.info(sb.getName() + "  " + sb.length());
-					return sb.toSequence();
+					return readMSA(faoFile, readList.get(0).length());
+					
 				}
 
 				//3.0 Read in multiple alignment
-				ArrayList<Sequence> seqList = new ArrayList<Sequence>();
-				{
-					SequenceReader msaReader = FastaReader.getReader(faoFile);
-					Sequence nSeq = null;
-					while ((nSeq = msaReader.nextSequence(Alphabet.DNA())) != null) {
-						seqList.add(nSeq);						
-					}
-					msaReader.close();
-				}
-
-				//4.0 get consensus and write to facFile				
-				{
-					int [] coef = new int[seqList.size()];			
-					for (int y = 0; y < seqList.size(); y++){
-						coef[y] = 1;
-						//if (seqList.get(y).getName().contains("twodi"))
-						//	coef[y] = 2;				
-					}
-
-					//TODO: combine error profiles?? 
-					int [] counts = new int[6];
-
-					SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), seqList.get(0).length());
-					for (int x = 0; x < seqList.get(0).length();x++){		
-						Arrays.fill(counts, 0);
-						for (int y = 0; y < seqList.size(); y++){					
-							byte base = seqList.get(y).getBase(x);
-							if (base >= 6) 
-								counts[4] += coef[y];//N
-							else
-								counts[base] += coef[y];
-						}//for y
-						int maxIdx = 0;
-						for (int y = 1; y < counts.length; y++){
-							if (counts[y] > counts[maxIdx])
-								maxIdx = y;					
-						}//for y
-						if (maxIdx < Alphabet.DNA.GAP){//not a gap
-							sb.append((byte)maxIdx);
-						}//if
-					}//for x
-					sb.setName("consensus");
-					LOG.info(sb.getName() + "  " + sb.length());
-					consensus = sb.toSequence();
-				}
+				ArrayList<Sequence> seqList = readMultipleAlignment(faoFile);
+				//4.0 get consensus and write to facFile	
+				
+				consensus = getConsensus(seqList);
 			}
 		}
 		return consensus;
