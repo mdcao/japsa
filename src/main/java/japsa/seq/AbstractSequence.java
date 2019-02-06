@@ -318,7 +318,7 @@ Comparable<japsa.seq.AbstractSequence>, CharSequence {
 
 
 	/**
-	 * Write in JSA format to an output stream. For speed, a buffered stream should
+	 * Write to an output stream. For speed, a buffered stream should
 	 * be used. The pointer should be at the beginning of a line
 	 * @param out
 	 * @throws IOException

@@ -80,6 +80,7 @@ import japsa.tools.seq.AlignmentEMCmd;
 import japsa.tools.seq.AnnotateRegionsCmd;
 import japsa.tools.seq.AnnotateVCFCmd;
 import japsa.tools.seq.Bed2JapsaCmd;
+import japsa.tools.seq.BinningSequenceCmd;
 import japsa.tools.seq.BuildGeneDatabaseCmd;
 import japsa.tools.seq.ExtractGeneSequenceCmd;
 import japsa.tools.seq.ExtractRefSeqGenes;
@@ -172,6 +173,7 @@ public class Deploy {
 		tools.add(new NanoporeReadFilterCmd());		
 		//tools.add(new SpeciesMixtureTypingCmd());		
 		tools.add(new RealtimeSpeciesTypingCmd());
+		tools.add(new BinningSequenceCmd());
 		tools.add(new RealtimeMLSTCmd());
 		tools.add(new RealtimeStrainTypingCmd());
 		tools.add(new RealtimeResistanceGeneCmd());
