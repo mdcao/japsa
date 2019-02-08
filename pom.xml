@@ -81,6 +81,16 @@
 		    <artifactId>arithcode</artifactId>
 		    <version>1.1</version>
 		</dependency>
+		<dependency>
+		    <groupId>de.unikonstanz.inf</groupId>
+		    <artifactId>mdsj</artifactId>
+		    <version>0.2</version>
+		</dependency>
+		<dependency>
+		    <groupId>nz.ac.auckland</groupId>
+		    <artifactId>pal</artifactId>
+		    <version>1.5.1</version>
+		</dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
