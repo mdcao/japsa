@@ -42,8 +42,8 @@ public class AntibioticTree {
 		this.tree = new SimpleTree(root);
 	}
 	
-	public static Tree readTree(String f) throws IOException{
+	public static Tree[] readTree(String f) throws IOException{
 		 AntibioticTree t = new AntibioticTree(f);
-		 return t.tree;
+		 return new Tree[] {t.tree};
 	}
 }

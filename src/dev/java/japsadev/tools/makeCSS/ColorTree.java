@@ -1,24 +1,23 @@
 package japsadev.tools.makeCSS;
 import java.awt.Color;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.text.Normalizer;
-import java.text.Normalizer.Form;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import japsa.bio.np.ErrorCorrection;
+import japsadev.bio.phylo.NCBITree;
+import japsadev.bio.phylo.Slug;
 import mdsj.MDSJ;
 import pal.misc.Identifier;
 import pal.tree.Node;
@@ -29,7 +28,8 @@ import pal.tree.TreeUtils;
 //
 
 public class ColorTree {
-	boolean slug = true;
+	 private static final Logger LOG = LoggerFactory.getLogger(ColorTree.class);
+	//boolean slug = true;
 	boolean species = true;
 	double[][] distances ;
 	Identifier[]  identifiers;
@@ -37,14 +37,35 @@ public class ColorTree {
 static double maxlight = 85;
 //https://journals.sagepub.com/doi/full/10.4137/EBO.S7565#_i6
 public static void main(String[] args){
-	try{
+	try{ 
 	System.err.println(getHex(240,100,30,1));
-		ColorTree ct = new ColorTree(args[1] , false, args[0].equals("species"));
-		ct.color();
-		String default_hex = "#8888887F";
-		
+	String f = args[1];
+	boolean species = args[0].equals("species");
+	if(species){	
+		NCBITree trees = NCBITree.readTree(f);
+		Tree[] tree = trees.tree;
+		for(int i=0; i<tree.length; i++){
+			System.err.println(i);;
+			ColorTree ct = new ColorTree(tree[i]);
+			ct.color();
+			String default_hex = "#8888887F";
+			
+		}
+		trees.print(new File(f+".out"));
+	}else{
+		Tree[] tree =AntibioticTree.readTree(f);;
+		for(int i=0; i<tree.length; i++){
+			System.err.println(i);;
+			ColorTree ct = new ColorTree(tree[i]);
+			ct.color();
+			String default_hex = "#8888887F";
+			
+		}
+	}
+	
+	
 		//ct.addColorToIndex(args[2], Integer.parseInt(args[3]), "\\s+", default_hex, getHex(0,0,100,0));
-		ct.printSlug(args[2]);
+	//	ct.printSlug(args[2]);
 
 	}catch(Exception exc){
 		exc.printStackTrace();
@@ -52,15 +73,19 @@ public static void main(String[] args){
 	}
 }
 
+public void printTree(String out) throws Exception{
+	
+}
 
 public void printSlug(String out) throws Exception{
 	PrintWriter pw = new PrintWriter(new FileWriter(out));
+	/*
 	for(Iterator<String> it = this.colors.keySet().iterator(); it.hasNext();){
 		String key = it.next();
 		String value = colors.get(key);
 		pw.println(key+"\t"+value);
 		
-	}
+	}*/
 	pw.close();
 }
 
@@ -99,11 +124,15 @@ public void printSlug(String out) throws Exception{
 			return X;
  }
  void color() throws Exception{
-	 double[] startend_ = this.startend;
-	 double[][] X = distances;
-	 System.err.println(X.length);
-	 System.err.println(identifiers.length);
- 	 color(X);
+	 if(this.tree.getExternalNodeCount()==1){
+		tree.getExternalNode(0).getIdentifier().setAttribute("css" ,	"#ffffff00");   // for homo sapiens
+	 }else{
+		 double[] startend_ = this.startend;
+		 double[][] X = distances;
+		 System.err.println(X.length);
+		 System.err.println(identifiers.length);
+	 	 color(X);
+	 }
  }
  
 
@@ -144,73 +173,46 @@ public  void color(double[][] X) throws Exception {
 	PrintWriter range = new PrintWriter(new FileWriter(new File("range.txt")));
 	double maxdepth = 0;
 	for(int i=0; i<cnt; i++){
+		 double depth = ((Number)this.identifiers[i].getAttribute("level")).intValue();
+		 if(depth>maxdepth)maxdepth = depth;
+	}
+	for(int i=0; i<cnt; i++){
 		
 		double h = ((double)norms_set.headSet(norms[i]).size())/normsize;
 		double t = ((double)thetas_set.headSet(thetas[i]).size())/thetasize;
 		 t = t*0.6  + 0.4;  //to make sure >0.4 saturatoin
-		// range.println(h+" "+t);
-		//String value = getHex(h * 360.0,t * 100.0, 80.0,1.0);
-		String key =slug ?  Slug.toSlug(identifiers[i].getName()): identifiers[i].getName();
-		if(colors1.containsKey(key)) {
-			
-			System.err.println("warning already has "+key);
-		}
-		double depth = ((Number)this.identifiers[i].getAttribute("level")).intValue();
-		if(depth>maxdepth)maxdepth = depth;
-		colors1.put(key, new double[] {h,t, depth});
-		
+		 double depth = ((Number)this.identifiers[i].getAttribute("level")).intValue();
+		 double lightness = depth/maxdepth;
+		 String hexvalue = getHex(h * 360,t * 100,lightness,1.0);
+		 identifiers[i].setAttribute("css", hexvalue);
+		 identifiers[i].setAttribute("cssvals", new double[] {h,t, depth});
 	}
 	System.err.println("max depth " +maxdepth);
 	int sze1 = colors1.size();
 	System.err.println(sze1);
+	
+	//NodeUtils.postorderSuccessor(tree.getExternalNode(0));
 	for(int i=internal.length-1; i>=0;  i--){
 		Node n = internal[i];
 		int cc = n.getChildCount();
 		double[] d = new double[]{0,0,0};
-		d[2] = ((Number)n.getIdentifier().getAttribute("level")).intValue();
 		List<String> l = new ArrayList<String>();
-		String ident = n.getIdentifier().getName();
-		String key1 =slug ?  Slug.toSlug(ident): ident;
-	
+		Identifier id = n.getIdentifier();
 		for(int j =0; j<cc; j++){
 			Node child = n.getChild(j);
-			String c_ident = child.getIdentifier().getName();
-			String key =slug ?  Slug.toSlug(c_ident): c_ident;
-			l.add(key);
-			double[] d1 = colors1.get(key);
+			Identifier c_ident = child.getIdentifier();
+			double[] d1 = (double[]) c_ident.getAttribute("cssvals");
+			//System.err.println(d1);
 			d[0]+=d1[0];
 			d[1]+=d1[1];
-			
 		}
 		d[0] = d[0]/cc;
 		d[1] = d[1]/cc;
-		
-		
-		if(colors1.containsKey(key1)){
-			System.err.println("warning1 already has "+key1);
-		}
-		colors1.put(key1, d);
-	}
-	int sze2 = colors1.size();
-	System.err.println(sze2);
-	for(Iterator<String> it = colors1.keySet().iterator(); it.hasNext();){
-		String key1 = it.next();
-		double[] d = colors1.get(key1);
-		double h = d[0];
-		double t = d[1]; 
-		double avgdepth =  (d[2]);
-	
-		double lightness = maxlight*(avgdepth/maxdepth);
-		range.println(key1+""+h+" "+t+" "+avgdepth+" "+lightness);
-		try{
-			if(lightness>=0){
-				String value = getHex(h * 360,t * 100,lightness,1.0);
-				colors.put(key1, value);
-		}
-		}catch(Exception exc){
-			System.err.println("problem with "+key1);
-			exc.printStackTrace();
-		}
+		d[2] = ((Number)n.getIdentifier().getAttribute("level")).intValue();
+		 double lightness = d[2]/maxdepth;
+		String hexvalue = getHex(d[0] * 360,d[1] * 100,lightness,1.0);
+		id.setAttribute("css", hexvalue);
+			id.setAttribute("cssvals", d);
 	}
 	range.close();
 }
@@ -218,34 +220,33 @@ public  void color(double[][] X) throws Exception {
 
 
 
-Map<String, String> colors = new HashMap<String, String>();
+//Map<String, String> colors = new HashMap<String, String>();
 //Map<String, String> groups1 = new HashMap<String, String>();
 //Map<String, List<String>> groups= new HashMap<String, List<String>>(); //maps slug to the group it belongs
-Map<String, double[]> colors1 = new HashMap<String, double[]>();
+//Map<String, double[]> colors1 = new HashMap<String, double[]>();
 
  
 Node[] internal = new Node[0];
 Tree tree; 
 
-ColorTree(String f, boolean split, boolean species) throws Exception{
-		colors.put("grch38",	"#ffffff00");  // transparent for human
-		slug = true;
-		
-		 tree =species ? NCBITree.readTree(f) : AntibioticTree.readTree(f);;
+
+
+ColorTree(Tree tree) throws Exception{
+		//colors.put("grch38",	"#ffffff00");  // transparent for human
+		//slug = true;
+		this.tree = tree;
 		int cnt = tree.getExternalNodeCount();
 		System.err.println("read tree with "+cnt);
 	//Tree tree = new ReadTree(f);
 	setBL(tree.getRoot(), 100, 0.5);
-	
-	{
+	Identifier[] identifier = getIdentifiers(tree);
+	this.identifiers = (identifier);
+	this.startend= (new double[] {0,1});
+	if(cnt>1){
 		distances =  getMatrix(tree);
-		Identifier[] identifier = getIdentifiers(tree);
-		//if(!species) this.getGroups(identifier, this.slug, groups);
-		//else{
-			internal  = NodeUtils.getInternalNodes(tree.getRoot(), true);
-		//}
-		this.identifiers = (identifier);
-		this.startend= (new double[] {0,1});
+		internal  = NodeUtils.getInternalNodes(tree.getRoot(), true);
+	
+	
 	}
 	
 	
@@ -271,18 +272,6 @@ private static void setBL(Node root, double d, double frac) {
 	}
 	}
 	
-}
-
-static class Slug{
-	private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
-	private static final Pattern WHITESPACE = Pattern.compile("[\\s_]");
-	public static String toSlug(String input) {
-	  Matcher matcher = WHITESPACE.matcher(input);
-	 String nowhitespace = WHITESPACE.matcher(input).replaceAll("_");
-	  String normalized = Normalizer.normalize(nowhitespace, Form.NFD);
-	  String slug = NONLATIN.matcher(normalized).replaceAll("");
-	  return slug.toLowerCase(Locale.ENGLISH);
-	}
 }
 
 public static String getHex(double h, double s, double l, double alpha){

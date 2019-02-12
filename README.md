@@ -23,15 +23,8 @@ Details of installation (including for Windows) and usage of Japsa can be found
 in its documentation hosted on [ReadTheDocs](http://japsa.readthedocs.org/en/latest/index.html) 
 
 Alternatively, build with maven (experimental). 
-First you need to manually install a JAR file that is not available on Maven
-public repo to your local repo
-```
-mvn install:install-file \
- 	-Dfile=./libs/colloquial.jar \
-	-DgroupId=com.colloquial \
-	-DartifactId=arithcode \
-	-Dversion=1.1 \
-	-Dpackaging=jar
+First you need to manually install  JAR files that are not available on Maven
+public repo to your local repo.  This can be achieved using the install_mvn.sh script provided.
 ```
 then 
 ```
