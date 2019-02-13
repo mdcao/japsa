@@ -12,9 +12,11 @@ import pal.tree.SimpleNode;
 import pal.tree.SimpleTree;
 import pal.tree.Tree;
 
-public class AntibioticTree {
+public class AntibioticTree implements CommonTree{
 	Tree tree;
 	Map<String, Node> nodes = new HashMap<String, Node>();
+	
+	
 	 public  Node make(String line, int  level, Node parent){
 		   String name = line;
 		   Node n = nodes.get(line);
@@ -43,8 +45,27 @@ public class AntibioticTree {
 		this.tree = new SimpleTree(root);
 	}
 	
-	public static Tree[] readTree(File f) throws IOException{
-		 AntibioticTree t = new AntibioticTree(f);
-		 return new Tree[] {t.tree};
+	public static AntibioticTree readTree(File f) throws IOException{
+		 return new AntibioticTree(f);
+	}
+
+
+	@Override
+	public String[][] getTaxonomy(String in) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	@Override
+	public void print(File out) throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public Tree[] getTrees() {
+		return new Tree[] {tree};
 	}
 }

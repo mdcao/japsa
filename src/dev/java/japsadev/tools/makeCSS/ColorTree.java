@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import japsadev.bio.phylo.AntibioticTree;
+import japsadev.bio.phylo.CommonTree;
 import japsadev.bio.phylo.NCBITree;
 import mdsj.MDSJ;
 import pal.misc.Identifier;
@@ -31,20 +32,27 @@ public class ColorTree {
 	boolean species = true;
 	double[][] distances ;
 	Identifier[]  identifiers;
+	
+	
 	double[] startend ; // this partitions the hue space
 static double maxlight = 85;
 //https://journals.sagepub.com/doi/full/10.4137/EBO.S7565#_i6
 public static void main(String[] args){
 	try{ 
-	System.err.println(getHex(240,100,30,1));
+//	File speciesIndex = new File("speciesIndex");
+	
 	File f = new File(args[1]);
 	boolean species = args[0].equals("species");
-		Tree[] tree =species?NCBITree.readTree(f):  AntibioticTree.readTree(f);
+	
+	 CommonTree trees =species? NCBITree.readTree(f, null):  AntibioticTree.readTree(f);
+	 Tree[] tree = trees.getTrees();
 		for(int i=0; i<tree.length; i++){
 			System.err.println(i);;
+			//if(tree[i].getExternalNodeCount()>1000) continue;
 			ColorTree ct = new ColorTree(tree[i]);
 			ct.color();
 		}
+		trees.print(new File(f.getName()+".css"));
 
 	}catch(Exception exc){
 		exc.printStackTrace();
@@ -213,7 +221,7 @@ ColorTree(Tree tree) throws Exception{
 		//slug = true;
 		this.tree = tree;
 		int cnt = tree.getExternalNodeCount();
-		System.err.println("read tree with "+cnt);
+		System.err.println("read tree with "+cnt + tree.getRoot().getIdentifier().getName());
 	//Tree tree = new ReadTree(f);
 	setBL(tree.getRoot(), 100, 0.5);
 	Identifier[] identifier = getIdentifiers(tree);

@@ -16,6 +16,10 @@ public static void main(String[] args){
 	
 }
 }
+
+
+//"wget ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/bacteria/assembly_summary.txt";
+
 public static void runProcess(boolean bacterial) throws Exception{
 
 	String str = bacterial ? "bacteria" : "viral";
