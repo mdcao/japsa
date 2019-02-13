@@ -1,6 +1,7 @@
-package japsadev.tools.makeCSS;
+package japsadev.bio.phylo;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,7 +29,7 @@ public class AntibioticTree {
 	   }
 		
 	 
-	public AntibioticTree(String file) throws IOException {
+	public AntibioticTree(File file) throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		String nextLine = br.readLine();
 		Node root = make("root", -1, null);
@@ -42,7 +43,7 @@ public class AntibioticTree {
 		this.tree = new SimpleTree(root);
 	}
 	
-	public static Tree[] readTree(String f) throws IOException{
+	public static Tree[] readTree(File f) throws IOException{
 		 AntibioticTree t = new AntibioticTree(f);
 		 return new Tree[] {t.tree};
 	}

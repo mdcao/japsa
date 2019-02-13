@@ -2,18 +2,24 @@ package japsadev.bio.phylo;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import pal.misc.Identifier;
 import pal.tree.Node;
@@ -25,49 +31,87 @@ import pal.tree.Tree;
 /** written by Lachlan Coin to parse txt files from commontree */
 public  class NCBITree {
  //Identifier attributes are css for hex value 
+ //private static String default_source="src/test/resources/commontree.txt.css.gz";
  
+	 public static void main(String[] args){
+		   try{
+			   NCBITree t = new NCBITree(new File(args[0]));
+			  String[][] taxa =  t.getTaxonomy(t.tree[0].getExternalNode(0).getIdentifier().getName());
+			  System.err.println(Arrays.asList(taxa[0]));
+			  System.err.println(Arrays.asList(taxa[1]));
+			t.print(new File("commontree.txt.out1.gz"));
+			//  NCBITree t1 = new NCBITree("commontree.txt.out1");
+			 // t1.print(new File("commontree.txt.out2"));*/
+			//   System.err.println(t.tree.getExternalNodeCount());
+		   }catch(Exception exc){
+			   exc.printStackTrace();
+		   }
+	   }
+	 
+	 public static NCBITree read(File f) throws IOException{
+		 return new NCBITree(f);
+	 }
+	 
+	 /**Returns String[][] res where res[0] is an array of taxonomy and res[1] is an array of css colors 
+	  * includes current node all the way up to the root
+	  * */
+	 public String[][] getTaxonomy(String in ){
+		String slug =  Slug.toSlug(in);
+		TreePos p = this.slugToPos.get(slug);
+		Node node = null;
+		if(p!=null){
+			if(p.external) node = 	this.tree[p.tree_index].getExternalNode(p.node_index);
+			else node = 	this.tree[p.tree_index].getInternalNode(p.node_index);
+		}
+		 List<String> tax = new ArrayList<String>();
+		 List<String> css = new ArrayList<String>();
+		 while(node!=null){
+			 tax.add(node.getIdentifier().getName());
+			 css.add((String) node.getIdentifier().getAttribute("css"));
+			 if(node.isRoot()) node = null;
+			 else node = node.getParent();
+		 }
+		 return new String[][] {tax.toArray(new String[0]), css.toArray(new String[0])};
+	 }
+	 
+	 public static Tree[] readTree(File f) throws IOException{
+		 NCBITree t = new NCBITree(f);
+		 return t.tree;
+	}
+	
   public  Tree[] tree;
    
-   static class TreePos{
-	   public TreePos(int i, int j) {
+  private  static class TreePos{
+	   public TreePos(int i, int j, boolean external) {
 		   this.tree_index = i;
 		   this.node_index = j;
+		   this.external= external;
 		// TODO Auto-generated constructor stub
 	}
+	   boolean external;
 	int tree_index;
 	   int node_index;
    }
    
    //this maps the slug to its tree and position in it.
-   Map<String,TreePos > slugToPos = new HashMap<String, TreePos>();
+   private Map<String,TreePos > slugToPos = new HashMap<String, TreePos>();
    
   
-   
-  
-Set<Node> done = new HashSet<Node>();
-
- Node depthFirstNext(Node curr){
-
-	 if(!curr.isLeaf()){
-		 for(int i=0; i<curr.getChildCount(); i++){
-			 if(!done.contains(curr.getChild(i))) return curr.getChild(i);
-		 }
-	 }
-	 if(curr.isRoot()) return null;
-	 return depthFirstNext(curr.getParent());
- }
-   
    public  void print(File out) throws IOException{
-	   PrintWriter pw = new PrintWriter(new FileWriter(out));
-	   done.clear();
+	   PrintStream pw ;
+	   if(out.getName().endsWith(".gz")){
+		  pw = new PrintStream(new GZIPOutputStream(new FileOutputStream(out)));
+	   }else{
+		   pw = new PrintStream((new FileOutputStream(out)));
+	   }
+	//   PrintWriter pw = new PrintWriter(new FileWriter(out));
+	 
 	   for(int i=0; i<tree.length; i++){
-		   
-		 Node root= tree[i].getRoot();
-		   Set<String> done = new HashSet<String>();
-
-		 Node node = root;
-		inner: for(int j=0; node !=null  ;j++){
-			 System.err.println(i+" "+j);
+		 Iterator<Node> n = NodeUtils.depthFirstIterator(tree[i].getRoot());  
+		
+		inner: for(int j=0; n.hasNext()  ;j++){
+		//	 System.err.println(i+" "+j);
+			 Node node = n.next();
 			 Identifier id  = node.getIdentifier();
 			 String nme =id.getName();
 			
@@ -76,21 +120,22 @@ Set<Node> done = new HashSet<Node>();
 			 String prefix = ((String)id.getAttribute("prefix"));		
 			
 			//System.err
-			 pw.print(prefix+nme+"\t");
-			 if(hex!=null) pw.println(hex);
+			 pw.print(prefix+nme);
+			 if(hex!=null) pw.println("\t"+hex);
 			 else pw.println();
-			 this.done.add(node);
-			 node = depthFirstNext(node);
-			 if(node==root) break inner;
 		 }
+		 pw.println("------------------------------------");
 	   }
+	   
 	   pw.close();
-   }
-   
+   }   
+  
+
+
  
 	private static final Pattern plusminus = Pattern.compile("[+|-][a-zA-Z\\[\\']");
 	
-	 int getLevel(String nextLine){
+	 private int getLevel(String nextLine){
 		/*int a = nextLine.indexOf('-')+1;
 		int b = nextLine.indexOf('+')+1;
 		return Math.max(a, b);*/
@@ -102,16 +147,11 @@ Set<Node> done = new HashSet<Node>();
 	}
 	
 	
-   public static void main(String[] args){
-	   try{
-		   NCBITree t = new NCBITree(args[0]);
-		  t.print(new File("test"));
-		//   System.err.println(t.tree.getExternalNodeCount());
-	   }catch(Exception exc){
-		   exc.printStackTrace();
-	   }
-   }
-   public static Node make(String line, int  level){
+	
+  
+   private static Node make(String line_, int  level){
+	   String[] lines = line_.split("\t");
+	   String line = lines[0];
 	   String name = line;
 	   String prefix = "";
 	   if(level>=0) {
@@ -121,14 +161,23 @@ Set<Node> done = new HashSet<Node>();
 	   Node n = new SimpleNode(name, 0.1);
 	   n.getIdentifier().setAttribute("level",level);
 	   n.getIdentifier().setAttribute("prefix",prefix);
+	   if(lines.length>1){
+		   n.getIdentifier().setAttribute("css",lines[1]);
+	   }
 	   return n;
    }
 	
 	
 	
 	
-public NCBITree(String file) throws IOException {
-	BufferedReader br = new BufferedReader(new FileReader(file));
+protected NCBITree(File file) throws IOException {
+	BufferedReader br;
+	if(file.getName().endsWith(".gz")){
+		br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
+	}
+	else{
+		br = new BufferedReader(new FileReader(file));
+	}
 	String nextLine = br.readLine();
 	List<Node> roots = new ArrayList<Node>();
 	outer: while(nextLine !=null){
@@ -171,7 +220,12 @@ public NCBITree(String file) throws IOException {
 			int cnt =tree[i].getExternalNodeCount();
 			for(int j=0; j<cnt; j++){
 				String name = tree[i].getExternalNode(j).getIdentifier().getName();
-				this.slugToPos.put(Slug.toSlug(name), new TreePos(i,j));
+				this.slugToPos.put(Slug.toSlug(name), new TreePos(i,j, true));
+			}
+			cnt =tree[i].getInternalNodeCount();
+			for(int j=0; j<cnt; j++){
+				String name = tree[i].getInternalNode(j).getIdentifier().getName();
+				this.slugToPos.put(Slug.toSlug(name), new TreePos(i,j, false));
 			}
 		}
 		
@@ -182,10 +236,6 @@ public NCBITree(String file) throws IOException {
 	
 	
 	
-	public static NCBITree readTree(String f) throws IOException{
-		 NCBITree t = new NCBITree(f);
-		 
-		 return t;
-	}
+	
 	
 }

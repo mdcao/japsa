@@ -6,7 +6,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -15,9 +14,8 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import japsa.bio.np.ErrorCorrection;
+import japsadev.bio.phylo.AntibioticTree;
 import japsadev.bio.phylo.NCBITree;
-import japsadev.bio.phylo.Slug;
 import mdsj.MDSJ;
 import pal.misc.Identifier;
 import pal.tree.Node;
@@ -39,33 +37,14 @@ static double maxlight = 85;
 public static void main(String[] args){
 	try{ 
 	System.err.println(getHex(240,100,30,1));
-	String f = args[1];
+	File f = new File(args[1]);
 	boolean species = args[0].equals("species");
-	if(species){	
-		NCBITree trees = NCBITree.readTree(f);
-		Tree[] tree = trees.tree;
+		Tree[] tree =species?NCBITree.readTree(f):  AntibioticTree.readTree(f);
 		for(int i=0; i<tree.length; i++){
 			System.err.println(i);;
 			ColorTree ct = new ColorTree(tree[i]);
 			ct.color();
-			String default_hex = "#8888887F";
-			
 		}
-		trees.print(new File(f+".out"));
-	}else{
-		Tree[] tree =AntibioticTree.readTree(f);;
-		for(int i=0; i<tree.length; i++){
-			System.err.println(i);;
-			ColorTree ct = new ColorTree(tree[i]);
-			ct.color();
-			String default_hex = "#8888887F";
-			
-		}
-	}
-	
-	
-		//ct.addColorToIndex(args[2], Integer.parseInt(args[3]), "\\s+", default_hex, getHex(0,0,100,0));
-	//	ct.printSlug(args[2]);
 
 	}catch(Exception exc){
 		exc.printStackTrace();
@@ -73,9 +52,7 @@ public static void main(String[] args){
 	}
 }
 
-public void printTree(String out) throws Exception{
-	
-}
+
 
 public void printSlug(String out) throws Exception{
 	PrintWriter pw = new PrintWriter(new FileWriter(out));

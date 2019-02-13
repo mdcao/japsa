@@ -89,7 +89,7 @@
 		<dependency>
 		    <groupId>nz.ac.auckland</groupId>
 		    <artifactId>pal</artifactId>
-		    <version>1.5.1</version>
+		    <version>1.5.1.1</version>
 		</dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
