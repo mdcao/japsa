@@ -25,7 +25,11 @@ public class CSSProcessCommand {
 	  private static final Logger LOG = LoggerFactory.getLogger(CSSProcessCommand.class);
 
 	public static void main(String[] args){
-		
+		  File resistant_gene_list = new File("resistant_genes_list.txt");
+		  File resistance_treeout = new File("resistancetree.txt.css");
+		  if(resistant_gene_list.exists() && ! resistance_treeout.exists()){
+			  makeResistanceTree(resistant_gene_list, resistance_treeout);
+		  }
 		  File taxdump = new File("taxdump/names.dmp");
 		  File speciesIndex = new File("speciesIndex");
 		  File taxon_file = new File("taxonid.txt");
@@ -49,11 +53,18 @@ public class CSSProcessCommand {
 			  LOG.info("adding extra nodes from speciesIndex");
 			  addExtraNodesFromSpeciesIndex(treeout, taxon_file, taxdump, speciesIndex, treeout_mod);
 		  }
-		  String totest = "Homo sapiens:Capnocytophaga canimorsus:Staphylococcus aureus:NC_023018.1";
 		  if(treeout_mod.exists()){
+			  String totest = "Homo sapiens:Capnocytophaga canimorsus:Staphylococcus aureus:NC_023018.1";
+
 			  LOG.info("testing");
 
 			  test(treeout_mod, totest.split(":"));
+		  }
+		  
+		  if(resistance_treeout.exists()){
+			  LOG.info("testing");
+			  String totest = "blaCTX:tetX";
+			  test(resistance_treeout, totest.split(":"));
 		  }
 	}
 	
@@ -76,6 +87,24 @@ public class CSSProcessCommand {
 	public static void addCSSToTree(File treein, File treeout){
 		try{ 
 		 CommonTree trees = new NCBITree(treein);
+		 Tree[] tree = trees.getTrees();
+			for(int i=0; i<tree.length; i++){
+				if(tree[i].getExternalNodeCount()>10){
+					ColorTree ct = new ColorTree(tree[i]);
+					ct.color();
+				}
+			}
+			trees.print(treeout);
+
+		}catch(Exception exc){
+			exc.printStackTrace();
+			
+		}
+	}
+	
+	public static void makeResistanceTree(File resistant_gene_list, File treeout){
+		try{ 
+		 CommonTree trees = new AntibioticTree(resistant_gene_list);
 		 Tree[] tree = trees.getTrees();
 			for(int i=0; i<tree.length; i++){
 				if(tree[i].getExternalNodeCount()>10){

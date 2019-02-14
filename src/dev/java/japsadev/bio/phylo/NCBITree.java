@@ -32,7 +32,7 @@ import pal.tree.SimpleTree;
 import pal.tree.Tree;
 
 /** written by Lachlan Coin to parse txt files from commontree */
-public  class NCBITree implements CommonTree {
+public  class NCBITree extends CommonTree {
 	
 	  private static final Logger LOG = LoggerFactory.getLogger(NCBITree.class);
 	
@@ -67,24 +67,7 @@ public  class NCBITree implements CommonTree {
 		 return new NCBITree(f);
 	 }
 	 
-	 /* (non-Javadoc)
-	 * @see japsadev.bio.phylo.CommonTree#getTaxonomy(java.lang.String)
-	 */
-	 @Override
-	public String[][] getTaxonomy(String in ){
 	
-		Node node = this.getNode(in);
-		
-		 List<String> tax = new ArrayList<String>();
-		 List<String> css = new ArrayList<String>();
-		 while(node!=null){
-			 tax.add(node.getIdentifier().getName());
-			 css.add((String) node.getIdentifier().getAttribute("css"));
-			 if(node.isRoot()) node = null;
-			 else node = node.getParent();
-		 }
-		 return new String[][] {tax.toArray(new String[0]), css.toArray(new String[0])};
-	 }
 	 
 	/* private Node getNode(String in) {
 		return this.getNode(this.getSlug(in));
@@ -115,8 +98,8 @@ public  class NCBITree implements CommonTree {
 	 private TreePos getSlug(String str){
 		return  this.slugToPos.get(Slug.toSlug(str));
 	 }*/
-	 
-	 private Node getNode(String specName) {
+	 @Override
+	public Node getNode(String specName) {
 		 String specName1 = null;
 		 Node n = slugToNode.get(Slug.toSlug(specName, this.slug_sep));
 		 if(n==null ) n= slugToNodeShort.get(Slug.toSlug(specName, 3, this.slug_sep));
@@ -205,7 +188,7 @@ private Node getNode(TreePos tp) {
 */
 
 
-public  Tree[] tree;
+
    
   private  static class TreePos{
 	   public TreePos(int i, int j, boolean external) {
@@ -228,49 +211,7 @@ public  Tree[] tree;
    private Map<String,Node > slugToNodeShort = new HashMap<String, Node>();
 //   private Map<String,Node > shortSlugToNode = new HashMap<String, Node>();
   
-   /* (non-Javadoc)
- * @see japsadev.bio.phylo.CommonTree#print(java.io.File)
- */
-@Override
-public  void print(File out) throws IOException{
-	   PrintStream pw ;
-	   if(out.getName().endsWith(".gz")){
-		  pw = new PrintStream(new GZIPOutputStream(new FileOutputStream(out)));
-	   }else{
-		   pw = new PrintStream((new FileOutputStream(out)));
-	   }
-	//   PrintWriter pw = new PrintWriter(new FileWriter(out));
-	 
-	   for(int i=0; i<tree.length; i++){
-		 Iterator<Node> n = NodeUtils.preOrderIterator(tree[i].getRoot());  
-		
-		inner: for(int j=0; n.hasNext()  ;j++){
-		//	 System.err.println(i+" "+j);
-			 Node node = n.next();
-			 Identifier id  = node.getIdentifier();
-			 String nme =id.getName();
-			
-			 Integer level = ((Integer)id.getAttribute("level")).intValue();
-			 String hex = ((String)id.getAttribute("css"));		
-			// String hex = ((String)id.getAttribute("level"));	
-			 String alias = ((String)id.getAttribute("alias"));	
-			 String alias1 = ((String)id.getAttribute("alias1"));	
-			 String prefix = ((String)id.getAttribute("prefix"));	
-			 double height = node.getNodeHeight();
-			//System.err
-			 pw.print(prefix+nme);
-			 if(hex!=null) pw.print("\tcss="+hex);
-			 if(alias!=null) pw.print("\talias="+alias);
-			 if(alias1!=null) pw.print("\talias1="+alias1);
-			 if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
-
-			 pw.println();
-		 }
-		 pw.println("------------------------------------");
-	   }
-	   
-	   pw.close();
-   }   
+  
   
 
 
