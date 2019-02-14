@@ -26,7 +26,7 @@ public class NCBITreeTest {
 	  assertTrue(commontree.exists());
 	  /*
 	   * this should work but for some reason I get a cannot find symbol for NCBITree
-	  if(false){
+
 	NCBITree t = new NCBITree(commontree);
 		  String[][] taxa =  t.getTaxonomy("Staphylococcus aureus");
 		  assertTrue(taxa[0].length>1);
@@ -43,7 +43,12 @@ public class NCBITreeTest {
 		  assertTrue(taxa[1].length>0);
 		LOG.info(""+Arrays.asList(taxa[0]));
 		LOG.info(""+Arrays.asList(taxa[1]));
-	  }*/
+		taxa =  t.getTaxonomy("NC_001440.1");
+		  assertTrue(taxa[0].length>0);
+		  assertTrue(taxa[1].length>0);
+		LOG.info(""+Arrays.asList(taxa[0]));
+		LOG.info(""+Arrays.asList(taxa[1]));
+			*/
 	  
   }
 

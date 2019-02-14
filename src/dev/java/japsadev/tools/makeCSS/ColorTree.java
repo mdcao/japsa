@@ -19,6 +19,7 @@ import japsadev.bio.phylo.CommonTree;
 import japsadev.bio.phylo.NCBITree;
 import mdsj.MDSJ;
 import pal.misc.Identifier;
+import pal.tree.ClockTree;
 import pal.tree.Node;
 import pal.tree.NodeUtils;
 import pal.tree.Tree;
@@ -31,7 +32,7 @@ public class ColorTree {
 	//boolean slug = true;
 	boolean species = true;
 	double[][] distances ;
-	Identifier[]  identifiers;
+	Node[]  identifiers;
 	
 	
 	double[] startend ; // this partitions the hue space
@@ -109,9 +110,9 @@ public void printSlug(String out) throws Exception{
 			return X;
  }
  void color() throws Exception{
-	 if(this.tree.getExternalNodeCount()==1){
-		tree.getExternalNode(0).getIdentifier().setAttribute("css" ,	"#ffffff00");   // for homo sapiens
-	 }else{
+	 if(tree!=null){
+		 
+	 
 		 double[] startend_ = this.startend;
 		 double[][] X = distances;
 		 System.err.println(X.length);
@@ -119,6 +120,7 @@ public void printSlug(String out) throws Exception{
 	 	 color(X);
 	 }
  }
+ 
  
 
  
@@ -156,23 +158,23 @@ public  void color(double[][] X) throws Exception {
 	double normsize = norms_set.size();
 	double thetasize = thetas_set.size();
 	PrintWriter range = new PrintWriter(new FileWriter(new File("range.txt")));
-	double maxdepth = 0;
-	for(int i=0; i<cnt; i++){
-		 double depth = ((Number)this.identifiers[i].getAttribute("level")).intValue();
-		 if(depth>maxdepth)maxdepth = depth;
-	}
+	double maxheight = tree.getRoot().getNodeHeight();
+	System.err.println("max depth "+maxheight);
+
 	for(int i=0; i<cnt; i++){
 		
 		double h = ((double)norms_set.headSet(norms[i]).size())/normsize;
 		double t = ((double)thetas_set.headSet(thetas[i]).size())/thetasize;
-		 t = t*0.6  + 0.4;  //to make sure >0.4 saturatoin
-		 double depth = ((Number)this.identifiers[i].getAttribute("level")).intValue();
-		 double lightness = depth/maxdepth;
+		 t = t*0.6  + 0.4;  //to make sure >0.4 saturation
+		 double height =this.identifiers[i].getNodeHeight();
+		 double lightness = 85*(1- height/maxheight);
 		 String hexvalue = getHex(h * 360,t * 100,lightness,1.0);
-		 identifiers[i].setAttribute("css", hexvalue);
-		 identifiers[i].setAttribute("cssvals", new double[] {h,t, depth});
+		 identifiers[i].getIdentifier().setAttribute("css", hexvalue);
+		 identifiers[i].getIdentifier().setAttribute("height", height);
+		 
+		 identifiers[i].getIdentifier().setAttribute("cssvals", new double[] {h,t, height});
 	}
-	System.err.println("max depth " +maxdepth);
+	System.err.println("max depth " +maxheight);
 	int sze1 = colors1.size();
 	System.err.println(sze1);
 	
@@ -193,10 +195,14 @@ public  void color(double[][] X) throws Exception {
 		}
 		d[0] = d[0]/cc;
 		d[1] = d[1]/cc;
-		d[2] = ((Number)n.getIdentifier().getAttribute("level")).intValue();
-		 double lightness = d[2]/maxdepth;
+		//d[2] = ((Number)n.getIdentifier().getAttribute("level")).intValue();
+		 double height =n.getNodeHeight();
+		 d[2] = height;
+		 double lightness = 85*(1- height/maxheight);
 		String hexvalue = getHex(d[0] * 360,d[1] * 100,lightness,1.0);
 		id.setAttribute("css", hexvalue);
+		id.setAttribute("height", height);
+
 			id.setAttribute("cssvals", d);
 	}
 	range.close();
@@ -212,28 +218,39 @@ public  void color(double[][] X) throws Exception {
 
  
 Node[] internal = new Node[0];
-Tree tree; 
+ClockTree tree; 
 
 
 
-ColorTree(Tree tree) throws Exception{
+ColorTree(Tree tree_in) throws Exception{
 		//colors.put("grch38",	"#ffffff00");  // transparent for human
 		//slug = true;
-		this.tree = tree;
-		int cnt = tree.getExternalNodeCount();
-		System.err.println("read tree with "+cnt + tree.getRoot().getIdentifier().getName());
-	//Tree tree = new ReadTree(f);
-	setBL(tree.getRoot(), 100, 0.5);
-	Identifier[] identifier = getIdentifiers(tree);
-	this.identifiers = (identifier);
+	//setBL(tree.getRoot(), 100, 0.5);
+	tree_in.getRoot().getIdentifier().setAttribute("css" ,	"#000000ff");   // for homo sapiens
+	if(tree_in.getExternalNodeCount()==1){
+				tree_in.getExternalNode(0).getIdentifier().setAttribute("css" ,	"#00000000");   // for homo sapiens
+	}else{
+		this.tree = new ClockTree(tree_in) ;
+	/*	Node root = tree.getRoot();
+		double h1 = root.getNodeHeight();
+		double[] h = new double[root.getChildCount()];
+		for(int i=0; i<h.length; i++){
+			h[i] = root.getChild(i).getNodeHeight();
+		}*/
+		int cnt = tree_in.getExternalNodeCount();
+		System.err.println("read tree with "+cnt + tree_in.getRoot().getIdentifier().getName());
+	this.identifiers = new Node[tree_in.getExternalNodeCount()];
+	for(int i=0; i<identifiers.length; i++){
+		identifiers[i] = tree_in.getExternalNode(i);
+	}
 	this.startend= (new double[] {0,1});
 	if(cnt>1){
-		distances =  getMatrix(tree);
-		internal  = NodeUtils.getInternalNodes(tree.getRoot(), true);
+		distances =  getMatrix(tree_in);
+		internal  = NodeUtils.getInternalNodes(tree_in.getRoot(), true);
 	
 	
 	}
-	
+	}
 	
 }
 

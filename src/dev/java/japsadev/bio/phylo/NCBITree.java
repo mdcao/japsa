@@ -21,6 +21,9 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import pal.misc.Identifier;
 import pal.tree.Node;
 import pal.tree.NodeUtils;
@@ -30,6 +33,10 @@ import pal.tree.Tree;
 
 /** written by Lachlan Coin to parse txt files from commontree */
 public  class NCBITree implements CommonTree {
+	
+	  private static final Logger LOG = LoggerFactory.getLogger(NCBITree.class);
+	
+
  //Identifier attributes are css for hex value 
  //private static String default_source="src/test/resources/commontree.txt.css.gz";
  
@@ -42,7 +49,7 @@ public  class NCBITree implements CommonTree {
 			   t.gid = new GetTaxonID(new File("taxonid"), new File("taxdump/names.dmp"));
 				 
 				t.addSpeciesIndex(new File(args[1]));
-
+				t.gid.err.close();
 			   System.err.println("here");
 			  String[][] taxa =  t.getTaxonomy(t.tree[0].getExternalNode(0).getIdentifier().getName());
 			  System.err.println(Arrays.asList(taxa[0]));
@@ -110,22 +117,37 @@ public  class NCBITree implements CommonTree {
 	 }*/
 	 
 	 private Node getNode(String specName) {
+		 String specName1 = null;
+		 Node n = slugToNode.get(Slug.toSlug(specName, this.slug_sep));
+		 if(n==null ) n= slugToNodeShort.get(Slug.toSlug(specName, 3, this.slug_sep));
+		 if(n!=null) return n;
 		 if(gid!=null){
-			 String specName1 = this.gid.getName(specName);
-			 if(specName1!=null) specName = specName1;
+			 specName1 = this.gid.getName(specName);
+			
+			 if(specName1!=null){
+				 
+				 n =  slugToNode.get(Slug.toSlug(specName1, this.slug_sep));
+				 if(n==null ) n= slugToNodeShort.get(Slug.toSlug(specName1, 3, this.slug_sep));
+			 }
+			
 		 }
-		return  slugToNode.get(Slug.toSlug(specName, this.slug_sep));
+		
+		
+		 return n;
 	}
 	 
 	 public Node getSlug(String specName, String alias1){
-		 
+		// System.err.println(alias1);
 		 Node n1 = getNode(specName);
+		 Node n2 = getNode(alias1);
 		 //
 		 //if(n2==null && n1!=null) return n1;
 		 //else if(n1==null && n2!=null) return n2;
 		 if(n1==null ){
-			 Node n2 = getNode(alias1);
-			 if(n2==null) return slugToNode.get("unclassified");
+			 
+			 if(n2==null){
+				 return slugToNode.get("unclassified");
+			 }
 			return n2;
 		 }
 		else return n1;
@@ -203,6 +225,7 @@ public  Tree[] tree;
    //this maps the slug to its tree and position in it.
   // private Map<String,TreePos > slugToPos = new HashMap<String, TreePos>();
    private Map<String,Node > slugToNode = new HashMap<String, Node>();
+   private Map<String,Node > slugToNodeShort = new HashMap<String, Node>();
 //   private Map<String,Node > shortSlugToNode = new HashMap<String, Node>();
   
    /* (non-Javadoc)
@@ -219,7 +242,7 @@ public  void print(File out) throws IOException{
 	//   PrintWriter pw = new PrintWriter(new FileWriter(out));
 	 
 	   for(int i=0; i<tree.length; i++){
-		 Iterator<Node> n = NodeUtils.depthFirstIterator(tree[i].getRoot());  
+		 Iterator<Node> n = NodeUtils.preOrderIterator(tree[i].getRoot());  
 		
 		inner: for(int j=0; n.hasNext()  ;j++){
 		//	 System.err.println(i+" "+j);
@@ -227,16 +250,20 @@ public  void print(File out) throws IOException{
 			 Identifier id  = node.getIdentifier();
 			 String nme =id.getName();
 			
-			 int level = ((Integer)id.getAttribute("level")).intValue();
+			 Integer level = ((Integer)id.getAttribute("level")).intValue();
 			 String hex = ((String)id.getAttribute("css"));		
+			// String hex = ((String)id.getAttribute("level"));	
 			 String alias = ((String)id.getAttribute("alias"));	
 			 String alias1 = ((String)id.getAttribute("alias1"));	
-			 String prefix = ((String)id.getAttribute("prefix"));		
+			 String prefix = ((String)id.getAttribute("prefix"));	
+			 double height = node.getNodeHeight();
 			//System.err
 			 pw.print(prefix+nme);
 			 if(hex!=null) pw.print("\tcss="+hex);
 			 if(alias!=null) pw.print("\talias="+alias);
 			 if(alias1!=null) pw.print("\talias1="+alias1);
+			 if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
+
 			 pw.println();
 		 }
 		 pw.println("------------------------------------");
@@ -286,7 +313,7 @@ public  void print(File out) throws IOException{
 		 this.putSlug(n);
 		 return n;
 	 }
-   private String collapse(String[] line, int start, int end, String string) {
+   public static String collapse(String[] line, int start, int end, String string) {
 	StringBuffer sb = new StringBuffer(line[start]);
 
 	for(int i=start+1; i<end; i++){
@@ -304,10 +331,10 @@ public  void print(File out) throws IOException{
 	   String shortSlug= Slug.toSlug(name,3, slug_sep);
 	  // String shortSlug1= Slug.toSlug(name,1, slug_sep);
 	   boolean contains = slugToNode.containsKey(slug);
-	   boolean containsShort = slugToNode.containsKey(shortSlug);
+	   //boolean containsShort = slugToNode.containsKey(shortSlug);
 	
-	   if(!contains)  slugToNode.put(slug, n);
-	   if(!containsShort)  slugToNode.put(shortSlug, n);
+	    slugToNode.put(slug, n);
+	     slugToNodeShort.put(shortSlug, n);
 	   //if(!containsShort1)  slugToNode.put(shortSlug1, n);
 		return contains;
    }
@@ -341,8 +368,9 @@ private Node make(String line_, int  level, Node parent){
 	
 Node unclassified	;
 	
-protected NCBITree(File file) throws IOException {
+public NCBITree(File file) throws IOException {
 	BufferedReader br;
+	
 	if(file.getName().endsWith(".gz")){
 		br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
 	}
@@ -411,21 +439,12 @@ protected NCBITree(File file) throws IOException {
 		System.err.println(tree.length);
 		System.err.println(this.slugToNode.size());
 		for(int i=0; i<tree.length; i++){
-			System.err.println(roots.get(i).getIdentifier().getName());
+			//System.err.println(roots.get(i).getIdentifier().getName());
 			tree[i] = new SimpleTree(roots.get(i));
 			int cnt =tree[i].getInternalNodeCount();
 			int cnt1 =tree[i].getExternalNodeCount();
-			System.err.println(cnt+" "+cnt1);
-			/*
-			for(int j=cnt-1; j>=0; j--){
-				String name = tree[i].getInternalNode(j).getIdentifier().getName();
-				this.slugToPos.put(Slug.toSlug(name), new TreePos(i,j, false));
-			}
-		
-			for(int j=0; j<cnt1; j++){
-				String name = tree[i].getExternalNode(j).getIdentifier().getName();
-				this.slugToPos.put(Slug.toSlug(name), new TreePos(i,j, true));
-			}*/
+			//System.err.println(cnt+" "+cnt1);
+			
 			
 		}
 		
@@ -433,6 +452,11 @@ protected NCBITree(File file) throws IOException {
 	}
 	
 	
+	public NCBITree(File treein, File taxonid, File taxdump) throws IOException {
+		this(treein);
+		gid = new GetTaxonID(taxonid, taxdump);
+}
+
 	public void addSpeciesIndex(File speciesIndex) throws  IOException{
 		if(speciesIndex!=null && speciesIndex.exists()){
 			PrintWriter missing = new PrintWriter(new FileWriter("missing.txt"));
