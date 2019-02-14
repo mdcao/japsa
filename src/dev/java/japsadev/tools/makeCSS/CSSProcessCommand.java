@@ -25,34 +25,51 @@ public class CSSProcessCommand {
 	  private static final Logger LOG = LoggerFactory.getLogger(CSSProcessCommand.class);
 
 	public static void main(String[] args){
+		//input files
 		  File resistant_gene_list = new File("resistant_genes_list.txt");
+		  File taxdump = new File("taxdump/names.dmp");
+		  File speciesIndex = new File("speciesIndex");
+		
+		 
+		  File treein = new File("commontree.txt");  //obtained from Step 3
+		
+		  
+		  //output files
+		  File taxon_file = new File("taxonid.txt");
 		  File resistance_treeout = new File("resistancetree.txt.css");
+		  File treeout = new File("commontree.txt.css");
+		  File treeout_mod = new File("commontree.txt.css.mod");
+		  
+		/*Step 1 read resistance gene tree and color it */
 		  if(resistant_gene_list.exists() && ! resistance_treeout.exists()){
 			  makeResistanceTree(resistant_gene_list, resistance_treeout);
 		  }
-		  File taxdump = new File("taxdump/names.dmp");
-		  File speciesIndex = new File("speciesIndex");
-		  File taxon_file = new File("taxonid.txt");
+		  
+		  //Step2 get taxon information
 		  if(taxdump.exists() && speciesIndex.exists() && !taxon_file.exists()){
 			  LOG.info("getting taxon information");
 			  getTaxaForSpecies(taxdump, speciesIndex, taxon_file);
 		  }
-		 
-		   /*the file taxonid.txt should be uploaded to 
+		  
+		  /*Step -3 is manual step
+		   the file taxon_file should be uploaded to 
 		   https://www.ncbi.nlm.nih.gov/Taxonomy/CommonTree/wwwcmt.cgi
 		   and then download commontree.txt and put it in same directory  (selecting root and including unranked taxa)
 		   */
-		  File treein = new File("commontree.txt");
-		  File treeout = new File("commontree.txt.css");
+		
+		  /*Step 4 color species tree  */
 		  if(treein.exists() && !treeout.exists()){
 			  LOG.info("adding CSS to tree");
 			  addCSSToTree(treein, treeout);
 		  }
-		  File treeout_mod = new File("commontree.txt.css.mod");
+		
+		  /*Step 5 place the lines from speciesIndex in the tree and add color  */
 		  if(treeout.exists() && ! treeout_mod.exists()){
 			  LOG.info("adding extra nodes from speciesIndex");
 			  addExtraNodesFromSpeciesIndex(treeout, taxon_file, taxdump, speciesIndex, treeout_mod);
 		  }
+		  
+		  /*Step 6 testing */
 		  if(treeout_mod.exists()){
 			  String totest = "Homo sapiens:Capnocytophaga canimorsus:Staphylococcus aureus:NC_023018.1";
 
