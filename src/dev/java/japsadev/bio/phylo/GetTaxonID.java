@@ -18,9 +18,9 @@ import java.util.zip.GZIPInputStream;
 public class GetTaxonID {
   Set<String> taxon_set = new HashSet<String>();
 	Map<String, String> name2Taxa = new HashMap<String, String>();
+	Map<String, String> name2Taxa4 = new HashMap<String, String>();
 	Map<String, String> name2Taxa3 = new HashMap<String, String>();
 	Map<String, String> name2Taxa2 = new HashMap<String, String>();
-	Map<String, String> name2Taxa1 = new HashMap<String, String>();
 
 
 
@@ -28,7 +28,7 @@ public class GetTaxonID {
   public GetTaxonID(){
   }
   
-  public String getName(final String specName){
+  public String getSciName(final String specName){
 	  String taxa = getTaxa(specName);
 	  if(taxa!=null){
 			 return taxa2Sci.get(taxa);
@@ -37,34 +37,53 @@ public class GetTaxonID {
   }
   
   public String getTaxa(final String specName){
-	  String slug1 =  Slug.toSlug(specName, "");
-		String slug3 =  Slug.toSlug(specName, 4,"");
-		String slug2 =  Slug.toSlug(specName, 3,"");
-		String slug2_ =  Slug.toSlug(specName, 2,"");
-	 String taxa = this.name2Taxa.get(slug1);
+	  String slug =  Slug.toSlug(specName, "");
+		String slug4 =  Slug.toSlug(specName, 4,"");
+		String slug3 =  Slug.toSlug(specName, 3,"");
+		String slug2 =  Slug.toSlug(specName, 2,"");
+	 String taxa = this.name2Taxa.get(slug);
+	 if(taxa==null) taxa = name2Taxa4.get(slug4);
 	 if(taxa==null) taxa = name2Taxa3.get(slug3);
 	 if(taxa==null) taxa = name2Taxa2.get(slug2);
-	 if(taxa==null) taxa = name2Taxa1.get(slug2_);
-	 
+	 //if(specName.indexOf("229E-related")>=0){
+	//	  System.err.println('h');
+	 // }
 	// err.println(specName+"->"+slug1+"->"+slug2+"->"+slug3+"->"+taxa);
 	 return taxa;
   }
   void putTaxa(String nme, String taxa){
+	 
 	  String slug = Slug.toSlug(nme, "");
-	  String slug3 = Slug.toSlug(nme, 4,"");
-	  String slug2 = Slug.toSlug(nme, 3,"");
-	  String slug2_ = Slug.toSlug(nme, 2,"");
-
+	  String slug4 = Slug.toSlug(nme, 4,"");
+	  String slug3 = Slug.toSlug(nme, 3,"");
+	  String slug2 = Slug.toSlug(nme, 2,"");
 	  name2Taxa.put(slug, taxa);
-	   name2Taxa3.put(slug3, null);
-	//	 err.println("putting "+nme+"->"+slug+"->"+slug2+"->"+slug3+"->"+taxa);
-
-	 // else  name2Taxa3.put(slug3, taxa);
-	  //if(name2Taxa2.containsKey(slug2)) name2Taxa2.put(slug2, null);
-	    name2Taxa2.put(slug2, taxa);
-	    name2Taxa1.put(slug2_, taxa);
+	  name2Taxa4.put(slug4, taxa);
+	  name2Taxa3.put(slug3, taxa);
+	  name2Taxa2.put(slug2, taxa);
+	  if(nme.indexOf("229E-related")>=0){
+		  System.err.println(slug);
+		  System.err.println('h');
+	  }
   }
   PrintWriter err;
+  
+  public Map<String, String> nodeToParent = new HashMap<String,String >();
+  
+  public void addNodeDmp(File file) throws IOException{
+	  BufferedReader br = getBR(file);
+	  String st = "";
+	  while((st = br.readLine())!=null){
+		  String[] str = st.split("\\|");
+		
+			 nodeToParent.put(str[0].trim(), str[1].trim());
+		 
+	  }
+	  br.close();
+  }
+  
+  
+  
   public GetTaxonID(File file, File names_dmp)  throws IOException{
 	//  err = new PrintWriter(new FileWriter(new File("err.txt")));
 	  if(file!=null && file.exists()){
@@ -127,30 +146,73 @@ static BufferedReader getBR(File file)throws IOException{
 }
  public void process(File file)throws IOException {
 	  BufferedReader br = getBR(file);
-	
-		//PrintWriter pw = new PrintWriter(new FileWriter(added_taxon));
-		//PrintWriter missing = new PrintWriter(new FileWriter(missing_file));
 		String st;
 		while((st = br.readLine())!=null){
 		 String[] str = st.split("\\s+");
-		 String specName = str[0];
-		 if(str[0].indexOf("GRCh38")>=0){
-			 specName= "Homo_sapiens";
-			 str[0] = specName;
-		 }
-		 String taxa = this.getTaxa(specName);
-		 String alias1 = NCBITree.collapse(str, 2, str.length, " ");
-		 String taxa1 = this.getTaxa(alias1);
-		if(taxa!=null) this.taxon_set.add(taxa);
-		if(taxa1!=null) this.taxon_set.add(taxa1);
-		
+		 String taxa = this.processAlias(str, st);
+		if(taxa!=null) {
+			
+			this.taxon_set.add(taxa);
 		}
-	//	missing.close();
-	//	pw.close();
-	
+		}
 }
-Map<String, String> slugToTaxon = new HashMap<String, String>();
-Map<String, String> slugToTaxonShort = new HashMap<String, String>();
+ 
+ /* a few special cases */
+ static String[] African_Cassava_Mosaic =  
+		 (">AF|>AJ|>AM|>AY|>DQ|>EF|>EU|>FJ|>FM|>FN|>FR|>GQ|>GU|>HE|>HG|>HM|>HQ|>J0|>JF|>JN|>JX|>KC|>KF|>KM|>KP|>KR"
+		 + "|>KT|>KU|>KX|>X1|>X6|>Z2|>Z8|>AF|>AJ|>AM|>AY|>DQ|>EF|>EU|>FJ|>FM|>FN|>FR|>GQ|"
+		 + ">GU|>HE|>HG|>HM|>HQ|>J0|>JF|>JN|>JX|>KC|>KF|>KM|>KP|>KR|>KT|>KU|>KX|>X1|>X6|>Z2|>Z8|>JQ|>KJ").split("\\|");
+ static String[][] spec = new String[][]{
+		 ">chr	      :>HLA        :>Kqp".split(":"),
+		 "Homo_sapiens:Homo_sapiens:Klebsiella_quasipneumoniae".split(":")
+ 	};
+ 	static{
+ 		for(int i=0; i<spec[0].length; i++){
+ 			spec[0][i] = spec[0][i].trim();
+ 		}
+ 		
+ 	}
+ 	String processAlias(String[] str, String st){
+ 	 String alias1 = collapse(str, 1);
+ 	/* int compg = alias1.indexOf(", complete genome");
+ 	 if(compg>=0){
+ 		 alias1 = alias1.substring(0, compg);
+ 	 }*/
+	 if(  st.indexOf("GRCh38")>=0){
+		 alias1= "Homo_sapiens";
+		// str[0] = specName;
+	 }else{
+		 for(int i=0; i<African_Cassava_Mosaic.length; i++){
+			 if(st.startsWith(African_Cassava_Mosaic[i])){
+				 alias1="African_Cassava_Mosaic";
+			 }
+		 }
+		 for(int i=0; i<spec[0].length; i++){
+			 if(st.startsWith(spec[0][i])){
+				 alias1=spec[1][i];
+			 }
+		 }
+		
+	 }
+	 if(alias1.startsWith(">")) alias1 = alias1.substring(1);
+	 
+	return  this.getTaxa(alias1);
+	
+ 	}
+ 	
+ 	 public static String collapse(String[] line, int start) {
+ 		int end = line.length; String string = " ";
+ 		StringBuffer sb = new StringBuffer(line[start]);
+
+ 		for(int i=start+1; i<end; i++){
+ 			sb.append(string+line[i]);
+ 		}
+ 		return sb.toString();
+ 	}
+ 
+ 
+/*Map<String, String> slugToTaxon = new HashMap<String, String>();
+//Map<String, String> slugToTaxonShort = new HashMap<String, String>();
   void processGenBank(String[] files) throws IOException{
 	  for(int i=0; i<files.length; i++){
 		  File file = new File(files[i]);
@@ -176,6 +238,8 @@ Map<String, String> slugToTaxonShort = new HashMap<String, String>();
 			//
 		}
 	  }
-  }
+  }*/
+
+
   
 }

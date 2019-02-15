@@ -42,7 +42,7 @@ public class AntibioticTree extends CommonTree{
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		String nextLine = br.readLine();
 		Node root = make("root", -1, null, "");
-		
+		roots.add(root);
 		outer: while((nextLine=br.readLine()) !=null){
 			String[] str = nextLine.split("\\s+");
 			Node parent = make(str[2], 2, root, "+-");
@@ -50,6 +50,7 @@ public class AntibioticTree extends CommonTree{
 		}
 		br.close();
 		this.tree = new Tree[] {new SimpleTree(root)};
+		
 	}
 	
 	public static AntibioticTree readTree(File f) throws IOException{

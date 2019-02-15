@@ -34,8 +34,8 @@ public abstract class CommonTree {
 		   }
 		//   PrintWriter pw = new PrintWriter(new FileWriter(out));
 		 
-		   for(int i=0; i<tree.length; i++){
-			 Iterator<Node> n = NodeUtils.preOrderIterator(tree[i].getRoot());  
+		   for(int i=0; i<this.roots.size(); i++){
+			 Iterator<Node> n = NodeUtils.preOrderIterator(roots.get(i));  
 			
 			inner: for(int j=0; n.hasNext()  ;j++){
 			//	 System.err.println(i+" "+j);
@@ -49,12 +49,14 @@ public abstract class CommonTree {
 				 String alias = ((String)id.getAttribute("alias"));	
 				 String alias1 = ((String)id.getAttribute("alias1"));	
 				 String prefix = ((String)id.getAttribute("prefix"));	
+				Integer taxon = ((Integer)id.getAttribute("taxon"));	
 				 double height = node.getNodeHeight();
 				//System.err
 				 pw.print(prefix+nme);
 				 if(hex!=null) pw.print("\tcss="+hex);
 				 if(alias!=null) pw.print("\talias="+alias);
 				 if(alias1!=null) pw.print("\talias1="+alias1);
+				 if(taxon!=null) pw.print("\ttaxon="+taxon);
 				 if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
 
 				 pw.println();
@@ -65,7 +67,7 @@ public abstract class CommonTree {
 		   pw.close();
 	   }   
 	abstract public Node getNode(String specName);
-	
+	List<Node> roots = new ArrayList<Node>();
 	
 	public Tree[] getTrees(){
 		return tree;
