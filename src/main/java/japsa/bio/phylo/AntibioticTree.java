@@ -1,4 +1,4 @@
-package japsadev.bio.phylo;
+package japsa.bio.phylo;
 
 import java.io.BufferedReader;
 import java.io.File;

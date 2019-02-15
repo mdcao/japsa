@@ -1,6 +1,5 @@
-package japsadev.tools.makeCSS;
+package japsa.bio.phylo;
 
-import static junit.framework.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Arrays;
@@ -8,11 +7,6 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import japsadev.bio.phylo.AntibioticTree;
-import japsadev.bio.phylo.CommonTree;
-import japsadev.bio.phylo.GetTaxonID;
-import japsadev.bio.phylo.NCBITree;
-import japsadev.bio.phylo.NCBITreeTest;
 import pal.tree.Tree;
 
 /** commands for making CSS tree */

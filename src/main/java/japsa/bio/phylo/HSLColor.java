@@ -4,7 +4,7 @@
  * 
  * */
 
-package japsadev.tools.makeCSS;
+package japsa.bio.phylo;
 import java.awt.Color;
 
 /**

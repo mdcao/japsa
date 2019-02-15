@@ -1,4 +1,5 @@
-package japsadev.tools.makeCSS;
+package japsa.bio.phylo;
+
 import java.awt.Color;
 import java.io.File;
 import java.io.FileWriter;
@@ -14,9 +15,7 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import japsadev.bio.phylo.AntibioticTree;
-import japsadev.bio.phylo.CommonTree;
-import japsadev.bio.phylo.NCBITree;
+
 import mdsj.MDSJ;
 import pal.misc.Identifier;
 import pal.tree.ClockTree;

@@ -1,4 +1,4 @@
-package japsadev.bio.phylo;
+package japsa.bio.phylo;
 
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
