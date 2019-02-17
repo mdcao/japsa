@@ -38,30 +38,8 @@ public  class NCBITree extends CommonTree {
  
 
 	 GetTaxonID gid = null;
-	 public static void main(String[] args){
-		   try{
-			   NCBITree t = new NCBITree(new File(args[0]), null, null);//, new File(args[1]));
-			   
-			   t.gid = new GetTaxonID(new File("taxonid"), new File("taxdump/names.dmp"));
-				 
-				t.addSpeciesIndex(new File(args[1]));
-				t.gid.err.close();
-			   System.err.println("here");
-			  String[][] taxa =  t.getTaxonomy(t.tree[0].getExternalNode(0).getIdentifier().getName());
-			  System.err.println(Arrays.asList(taxa[0]));
-			  System.err.println(Arrays.asList(taxa[1]));
-			t.print(new File(args[0]+".mod"));
-			//  NCBITree t1 = new NCBITree("commontree.txt.out1");
-			 // t1.print(new File("commontree.txt.out2"));*/
-			//   System.err.println(t.tree.getExternalNodeCount());
-		   }catch(Exception exc){
-			   exc.printStackTrace();
-		   }
-	   }
 	 
-	 public static CommonTree read(File f) throws IOException{
-		 return new NCBITree(f);
-	 }
+	
 	 
 	
 	 
@@ -71,18 +49,7 @@ public  class NCBITree extends CommonTree {
 
 	
 
-	public static Tree[] readTree(File f) throws IOException{
-		 NCBITree t = new NCBITree(f);
-		 return t.tree;
-	}
-	 
-	 public static NCBITree readTree(File f, File speciesIndex) throws IOException{
-		 NCBITree t = new NCBITree(f);
-		if(speciesIndex!=null){
-			t.addSpeciesIndex(speciesIndex);
-		}
-		return t;
-	}
+	
 	 
 	/* private void putSlug1(String str, TreePos tp){
 		String slug = Slug1.toSlug1(str);
@@ -95,55 +62,46 @@ public  class NCBITree extends CommonTree {
 		return  this.slugToPos.get(Slug1.toSlug1(str));
 	 }*/
 	 
-	 public Node getNode(String specName, String taxa) {
-		 Node n =  slugToNode.get(slug(specName, false));
-		 if(n==null) {
-			 n = slugToNode1.get(Integer.parseInt(taxa));
+	 public Integer getTaxa(String sciname){
+		 return gid.getTaxa(sciname);
+	 }
+	 
+	 public Node getNode(String sciName) {
+		 if(useTaxaAsSlug){
+			return  slugToNode1.get(getTaxa(sciName));
+		 }else{
+			 return slugToNode.get(sciName);
 		 }
+	 }
+public Node getNode(Integer taxa) {
+		 
+		 Node n =  slugToNode1.get(taxa);
+		
 		 return n;
 	 }
-	 @Override
-	public Node getNode(String specName) {
-		 Node n;
-		// String specName1 = null;
-		/* if(gid!=null){
-			 specName1 = this.gid.getSciName(specName);
-			 if(specName1!=null){
-				specName = specName1;
-			 }
-		 }*/
-		 n =  slugToNode.get(slug(specName, false));
-		 return n;
-	}
+	
 	 
-	 public Node getSlug1( String alias1){
-		 Node n2 = getNode(alias1);
-			 if(n2==null){
-				 return slugToNode.get("unclassified");
-			 }
-			return n2;
-	 }
-	 
+	 	 
 	 
 	
 	 /*str is a line from species index */
 	 private void updateTree(String st, int lineno, double bl, PrintWriter missing){
 		 String[] str = st.split("\\s+");
 		// String specName = str[0];
-		String taxa = gid.processAlias(str,st);
+		Integer taxa = gid.processAlias(str,st);
 		String alias1 = gid.collapse(str, 1);
 		String sciname = taxa==null ? null : gid.taxa2Sci.get(taxa);
 		Node n;
 		if(sciname==null && taxa==null)   {
 			n = this.unclassified;
 			Node n1 =  this.createFromSpeciesFile(str,alias1,  n, lineno, bl);
-			
-			System.err.println(n1.getIdentifier().getAttribute("level"));
-			System.err.println(n1.getIdentifier().getAttribute("prefix"));
-			System.err.println(n1.getIdentifier());
+		//	System.err.println(n1.getIdentifier().getAttribute("level"));
+			//System.err.println(n1.getIdentifier().getAttribute("prefix"));
+			//System.err.println(n1.getIdentifier());
 		}
 		else{
-			n = getNode(sciname, taxa);
+			n = this.slugToNode1.get(taxa);//getNode( taxa);
+			
 			this.createFromSpeciesFile(str,alias1,  n, lineno, bl);
 			//System.err.println(n.getIdentifier().getName());
 		}
@@ -195,7 +153,7 @@ private Node getNode(TreePos tp) {
 	   int node_index;
    }
    
-   private Map<String,Node > slugToNode = new HashMap<String, Node>();
+   //private Map<String,Node > slugToNode = new HashMap<String, Node>();
   
   
   
@@ -209,6 +167,7 @@ private Node getNode(TreePos tp) {
 		/*int a = nextLine.indexOf('-')+1;
 		int b = nextLine.indexOf('+')+1;
 		return Math.max(a, b);*/
+		 if(true) return line.indexOf("+-");
 		 int level;
 		 Matcher matcher = plusminus.matcher(line);
 		 if(matcher.find()){
@@ -295,43 +254,62 @@ private Node getNode(TreePos tp) {
 	   }
 	   else return Slug.toSlug(name, slug_sep);
    }
- Map<Integer, Node> slugToNode1 = new HashMap<Integer, Node>();
+   
+	 final boolean useTaxaAsSlug;
+	 Map<String, Node> slugToNode = new HashMap<String, Node>();
+     Map<Integer, Node> slugToNode1 = new HashMap<Integer, Node>();
  
- public boolean putSlug1( Node n){
-	  String name = n.getIdentifier().getName();
+ public void putSlug1( Node n){
+	
+	 if(useTaxaAsSlug){
 	  Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
-	  boolean contains;
-		   String slug = slug(name, false);
-		   contains = slugToNode.containsKey(slug);
-		    if(!contains) slugToNode.put(slug, n);
-	 if(taxon !=null) {
-		 slugToNode1.put(taxon, n);
-		 if(taxon.intValue()==1739614){
-			 System.err.println("h");
-		 }
+	  boolean   contains = slugToNode1.containsKey(taxon);
+		if(!contains) {
+			slugToNode1.put(taxon, n);
+		}
+	 }else{
+		 String name = n.getIdentifier().getName();
+		 boolean   contains = slugToNode.containsKey(name);
+			if(!contains) {
+				slugToNode.put(name, n);
+			}
 	 }
-		return contains;
    }
    
- private Node make(String line_, Node child, Integer taxon){
-	Node n =  slugToNode.get(slug(line_, false));
+ private Node make( Integer taxon, Node child){
+	String sci =  gid.taxa2Sci.get(taxon);
+	Node n =  getNode(taxon);
 
 	 if(n==null) {
-		 n = new SimpleNode(line_, 0.1);
+		 n = new SimpleNode(sci, 0.1);
 		 n.getIdentifier().setAttribute("taxon", taxon);
 		 putSlug1(n);
 	 }
 	 if(child!=null){
+		// String name = child.getIdentifier().getName();
+		 //if(name.indexOf("Sclerophthora macrospora virus A")>=0){
+			//   System.err.println("h");
+		   //}
 		 n.addChild(child);
 	 }
 	 return n;
  }
- 
+PrintWriter err;
+
+	
+	
+
 private Node make(String line_, int  level, Node parent){
+	  
 	   String[] lines = line_.split("\t");
 	   String line = lines[0];
 	   String name = line;
+	   err.println(name);err.flush();
 	   String prefix = "";
+	  // if(line_.indexOf("Sclerophthora macrospora virus A")>=0){
+	//	   System.err.println("h");
+	 //  }
+	   
 	   if(level>=0) {
 		   name = line.substring(level, line.length());
 		   prefix = line.substring(0,level);
@@ -342,29 +320,25 @@ private Node make(String line_, int  level, Node parent){
 		   name = name.substring(pm_ind+2);
 		  
 	   }
-	   /*String trimmed = name.trim();
-	   int ind1 = name.indexOf(trimmed);
-	   if(ind1>=0){
-		   			prefix = prefix+name.substring(0, ind1); 
-				   name = trimmed;
-	   }
-	   if(prefix.indexOf("+-")<0) {
-		   prefix = prefix+"+-";
-	   }*/
-	   /*if(gid!=null){
-		   //makes sure we use scientific name
-			  String name1 = this.gid.getName(name);
-			  if(name1!=null) name = name1;
-		 }*/
 	   Node n = new SimpleNode(name, 0.1);
 	   n.getIdentifier().setAttribute("level",level);
 	   n.getIdentifier().setAttribute("prefix",prefix);
+	   Integer taxonvalue = null;
 	  for(int i=1; i<lines.length; i++){
 		   String[] v = lines[i].split("=");
 		  Object value = v[1];
-		   if(v[0].equals("taxon")) value = Integer.parseInt((String) value);
+		   if(v[0].equals("taxon")){
+			   taxonvalue = Integer.parseInt((String) value);
+			   value = taxonvalue;
+			   this.name2Taxa.put(name, taxonvalue);
+		   }
 		   n.getIdentifier().setAttribute(v[0],value);
 	   }
+	  if(name.equals("unclassified")){
+		  n.getIdentifier().setAttribute("taxon", -1);
+		  
+	  }
+	  
 	   putSlug1(n);
 	   if(parent!=null) parent.addChild(n);
 	   return n;
@@ -372,32 +346,31 @@ private Node make(String line_, int  level, Node parent){
 	
 	
 Node unclassified	;
-
+/**
 public NCBITree(File file, File taxonid, File taxdump) throws IOException {
 	this(file, 
 	(taxonid!=null && taxonid.exists()) ?  new GetTaxonID(taxonid, taxdump) : null);
-}
+} */
 
 
 
-public NCBITree(File file, GetTaxonID gid) throws IOException {	
+public NCBITree(GetTaxonID gid) throws IOException {	
 	this.gid = gid;
+	this.useTaxaAsSlug = true;
 	BufferedReader br;
-	if(file.getName().indexOf("nodes.dmp")>=0 && gid!=null){
-		gid.addNodeDmp(file);
-		System.err.println(gid.taxon_set.size());
-		for(Iterator<String> it = gid.taxon_set.iterator();it.hasNext();){
-			String nxt = it.next();
-			String parent= gid.nodeToParent.get(nxt);
-			Node   n = make(gid.taxa2Sci.get(nxt), null, Integer.parseInt(nxt));
+		
+		for(Iterator<Integer> it = gid.taxon_set.iterator();it.hasNext();){
+			Integer nxt = it.next();
+			Integer parent= gid.nodeToParent.get(nxt);
+			Node   n = make( nxt, null);
 			List<Node>l = new ArrayList<Node>();
 			l.add(n);
 			inner: while(nxt!=null){
-				String nextparent = gid.nodeToParent.get(parent);
-				if(parent==nxt) parent = null;
+				Integer nextparent = gid.nodeToParent.get(parent);
+				if(parent.equals(nxt)) parent = null;
 				
 				if(parent!=null){
-					Node p = make(gid.taxa2Sci.get(parent), n, Integer.parseInt(parent));
+					Node p = make(parent, n);
 					l.add(p);
 					n = p;
 				}
@@ -428,16 +401,36 @@ public NCBITree(File file, GetTaxonID gid) throws IOException {
 					id.setAttribute("prefix", prefix);
 				}
 			}
+			Integer i0= (Integer) l.get(0).getIdentifier().getAttribute("taxon");
+			//System.err.println(i0);;
+			
 			//System.err.println(l.get(0).getIdentifier());
 			if(!roots.contains(n) ){
-				System.err.println("new root "+n.getIdentifier());;
+				//System.err.println("new root "+n.getIdentifier());;
 				roots.add(n);
 			}
+			if(i0!=null){
+			/*	if(i0.equals(new Integer(191289))){
+				//	Node n1 = this.slugToNode.get(l.get(0).getIdentifier().getName());
+					Node n2 = this.slugToNode1.get(i0);
+					for(int i=0; i<l.size(); i++){
+						System.err.println(l.get(i).getIdentifier());
+					}
+					System.err.println("roots");
+					for(int i=0; i<roots.size(); i++){
+						System.err.println(roots.get(i).getIdentifier());
+					}
+					System.err.println('h');
+				}*/}
 		}
-	}
+	//}
 }
-	public NCBITree(File file) throws IOException {
+Map<String, Integer> name2Taxa= new HashMap<String, Integer>();
+
+public NCBITree(File file, boolean useTaxaAsAsslug) throws IOException {
 //	this(f, null);
+	    this.useTaxaAsSlug = useTaxaAsAsslug;
+		err= new PrintWriter(new FileWriter(new File("error.txt")));
 		BufferedReader br;
 		if(file.getName().endsWith(".gz")){
 			br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
@@ -468,6 +461,9 @@ public NCBITree(File file, GetTaxonID gid) throws IOException {
 		parentlevel =0;
 		inner: while((nextLine = br.readLine())!=null){
 			nextLines = nextLine.split("\t");
+			// if(nextLine.indexOf("Sclerophthora macrospora virus A")>=0){
+			//	   System.err.println("h");
+			 //  }
 			if(nextLine.startsWith("--")){
 				nextLine=br.readLine();
 				nextLines = nextLine==null ? null : nextLine.split("\t");
@@ -495,7 +491,9 @@ public NCBITree(File file, GetTaxonID gid) throws IOException {
 		
 		}
 		br.close();
-	
+	   if(err!=null){
+		   err.close();
+	   }
 
 	
 		
@@ -516,7 +514,7 @@ public NCBITree(File file, GetTaxonID gid) throws IOException {
 		System.err.println("making trees");
 		this.tree = new Tree[roots.size()];
 		System.err.println(tree.length);
-		System.err.println(this.slugToNode.size());
+	//	System.err.println(this.slugToNode.size());
 		for(int i=0; i<tree.length; i++){
 			tree[i] = new SimpleTree(roots.get(i));
 			int cnt =tree[i].getInternalNodeCount();

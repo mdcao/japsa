@@ -16,32 +16,32 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 /** extract taxon ids matching speciesIndex from a list of assembly summary files */
 public class GetTaxonID {
-  Set<String> taxon_set = new HashSet<String>();
-	Map<String, String> name2Taxa = new HashMap<String, String>();
-	Map<String, String> name2Taxa4 = new HashMap<String, String>();
-	Map<String, String> name2Taxa3 = new HashMap<String, String>();
-	Map<String, String> name2Taxa2 = new HashMap<String, String>();
+  Set<Integer> taxon_set = new HashSet<Integer>();
+	Map<String, Integer> name2Taxa = new HashMap<String, Integer>();
+	Map<String, Integer> name2Taxa4 = new HashMap<String, Integer>();
+	Map<String, Integer> name2Taxa3 = new HashMap<String, Integer>();
+	Map<String, Integer> name2Taxa2 = new HashMap<String, Integer>();
 
 
 
-	Map<String, String> taxa2Sci = new HashMap<String, String>();
+	Map<Integer, String> taxa2Sci = new HashMap<Integer, String>();
   public GetTaxonID(){
   }
   
   public String getSciName(final String specName){
-	  String taxa = getTaxa(specName);
+	  Integer taxa = getTaxa(specName);
 	  if(taxa!=null){
 			 return taxa2Sci.get(taxa);
 		 }
 	  else return null;
   }
   
-  public String getTaxa(final String specName){
+  public Integer getTaxa(final String specName){
 	  String slug =  Slug.toSlug(specName, "");
 		String slug4 =  Slug.toSlug(specName, 4,"");
 		String slug3 =  Slug.toSlug(specName, 3,"");
 		String slug2 =  Slug.toSlug(specName, 2,"");
-	 String taxa = this.name2Taxa.get(slug);
+	 Integer taxa = this.name2Taxa.get(slug);
 	 if(taxa==null) taxa = name2Taxa4.get(slug4);
 	 if(taxa==null) taxa = name2Taxa3.get(slug3);
 	 if(taxa==null) taxa = name2Taxa2.get(slug2);
@@ -51,7 +51,7 @@ public class GetTaxonID {
 	// err.println(specName+"->"+slug1+"->"+slug2+"->"+slug3+"->"+taxa);
 	 return taxa;
   }
-  void putTaxa(String nme, String taxa){
+  void putTaxa(String nme, Integer taxa){
 	 
 	  String slug = Slug.toSlug(nme, "");
 	  String slug4 = Slug.toSlug(nme, 4,"");
@@ -61,45 +61,39 @@ public class GetTaxonID {
 	  name2Taxa4.put(slug4, taxa);
 	  name2Taxa3.put(slug3, taxa);
 	  name2Taxa2.put(slug2, taxa);
-	  if(nme.indexOf("229E-related")>=0){
-		  System.err.println(slug);
-		  System.err.println('h');
-	  }
+	 
   }
   PrintWriter err;
   
-  public Map<String, String> nodeToParent = new HashMap<String,String >();
+  public Map<Integer, Integer> nodeToParent = new HashMap<Integer,Integer >();
   
   public void addNodeDmp(File file) throws IOException{
 	  BufferedReader br = getBR(file);
 	  String st = "";
 	  while((st = br.readLine())!=null){
 		  String[] str = st.split("\\|");
-		
-			 nodeToParent.put(str[0].trim(), str[1].trim());
+			 nodeToParent.put(Integer.parseInt(str[0].trim()), Integer.parseInt(str[1].trim()));
 		 
 	  }
 	  br.close();
   }
   
-  
-  
-  public GetTaxonID(File file, File names_dmp)  throws IOException{
-	//  err = new PrintWriter(new FileWriter(new File("err.txt")));
-	  if(file!=null && file.exists()){
-		  BufferedReader br = getBR(file);
-		  String st = "";
-		  while((st = br.readLine())!=null){
-			  taxon_set.add(st.split("\\s+")[0]);
-		  }
-		  br.close();
+  public void read(File taxon_set) throws IOException{
+	  BufferedReader br1 = getBR(taxon_set);
+	  String st1;
+	  while((st1 = br1.readLine())!=null){
+		  this.taxon_set.add(Integer.parseInt(st1.split("\t")[0]));
 	  }
-	  if(names_dmp.exists()){
+	  br1.close();
+  }
+  
+  public GetTaxonID( File names_dmp, File node_dmp)  throws IOException{
+	  
 		  BufferedReader br = getBR(names_dmp);
 		  String st = "";
 		  while((st = br.readLine())!=null){
 			  String[] str = st.split("\t");
-			  String taxa = str[0];
+			  Integer taxa = Integer.parseInt(str[0]);
 			  //if(taxon_set.contains(taxa)){
 				  	String nme = str[2];;
 				  	String type = str[6];
@@ -112,27 +106,19 @@ public class GetTaxonID {
 			
 		  }
 		  br.close();
-	  }
+	 
+	  this.addNodeDmp(node_dmp);
 		// TODO Auto-generated constructor stub
 	}
   
   public void print(File out) throws IOException{
 	  PrintWriter pw = new PrintWriter(new FileWriter(out));
-	  for(Iterator<String> it = taxon_set.iterator(); it.hasNext();){
+	  for(Iterator<Integer> it = taxon_set.iterator(); it.hasNext();){
 		  pw.println(it.next());
 	  }
 	  pw.close();
   }
-public static void main(String[] args){
-	  try{
-		 GetTaxonID gid = new GetTaxonID(new File("taxonid"), new File("taxdump/names.dmp"));
-		  gid.process(new File("speciesIndex"));
-		  gid.print(new File("taxonid.new"));
-		 
-	  }catch(Exception exc){
-		  exc.printStackTrace();
-	  }
-  }
+
 
 static BufferedReader getBR(File file)throws IOException{
 	 BufferedReader br;
@@ -149,7 +135,7 @@ static BufferedReader getBR(File file)throws IOException{
 		String st;
 		while((st = br.readLine())!=null){
 		 String[] str = st.split("\\s+");
-		 String taxa = this.processAlias(str, st);
+		 Integer taxa = this.processAlias(str, st);
 		if(taxa!=null) {
 			
 			this.taxon_set.add(taxa);
@@ -172,7 +158,7 @@ static BufferedReader getBR(File file)throws IOException{
  		}
  		
  	}
- 	String processAlias(String[] str, String st){
+ 	Integer processAlias(String[] str, String st){
  	 String alias1 = collapse(str, 1);
  	/* int compg = alias1.indexOf(", complete genome");
  	 if(compg>=0){

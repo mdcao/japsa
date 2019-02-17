@@ -19,8 +19,17 @@ public class CSSProcessCommand {
 	  private static final Logger LOG = LoggerFactory.getLogger(CSSProcessCommand.class);
 
 	public static void main(String[] args){
-		//input files
+		
+		
 		  File resistant_gene_list = new File("resistant_genes_list.txt");
+		  File taxdir = new File("taxdump");
+		  
+		  if(!taxdir.exists()) taxdir =  new File("../taxdump");
+		  if(!taxdir.exists()){
+			  throw new RuntimeException("cannot find taxdump/ directory.  Please make a symbolic link into the "
+			  		+ "working directory, or into parent directory");
+			  
+		  }
 		  File taxdump = new File("taxdump/names.dmp");
 		  File nodesdmp= new File("taxdump/nodes.dmp");
 		  File speciesIndex = new File("speciesIndex");
@@ -35,49 +44,64 @@ public class CSSProcessCommand {
 		  File treeout = new File("commontree.txt.css");
 		  File treeout_mod = new File("commontree.txt.css.mod");
 		  
-		  GetTaxonID gid = null;
-		  NCBITree trees_species = null ;
-		  AntibioticTree trees_drugs = null;
+		 
+		  //NCBITree trees_species = null ;
+		//  AntibioticTree trees_drugs = null;
 		  
 		/*Step 1 read resistance gene tree and color it */
 		  if(resistant_gene_list.exists() && ! resistance_treeout.exists()){
-			  trees_drugs  = makeResistanceTree(resistant_gene_list, resistance_treeout);
+			  makeResistanceTree(resistant_gene_list, resistance_treeout);
 		  }
+		 
+		  
+		 
+		  try{  
+		  
+			  GetTaxonID gid  = new GetTaxonID(taxdump, nodesdmp);
 		  
 		  //Step2 get taxon information
 		  if(taxdump.exists() && speciesIndex.exists() && !taxon_file.exists()){
 			  LOG.info("getting taxon information");
-			 gid =  getTaxaForSpecies(taxdump, speciesIndex, taxon_file);
+			 getTaxaForSpecies(gid, speciesIndex, taxon_file);
 		  }
 		//  if(true) return;
 		  /*step -3 read tree */
-		  if(taxdump.exists() && taxon_file.exists() && !treein.exists()){
+		  if( taxon_file.exists() && !treein.exists()){
 			  LOG.info("making tree");
-			  trees_species = readTaxaTree(gid, nodesdmp,  taxon_file,  taxdump, treein);
+			
+			 readTaxaTree(gid,taxon_file,  treein);
 			 
 		  }
 		 
 		  /*Step 4 color species tree  */
 		  if(treein.exists() && !treeout.exists()){
 			  LOG.info("adding CSS to tree");
-			  addCSSToTree(trees_species, treein, treeout);
+			  addCSSToTree(treein, treeout);
 		  }
 		
 		  /*Step 5 place the lines from speciesIndex in the tree and add color  */
 		  if(treeout.exists() && ! treeout_mod.exists()){
 			  LOG.info("adding extra nodes from speciesIndex");
-			  trees_species = addExtraNodesFromSpeciesIndex(trees_species, treeout, taxon_file, taxdump, speciesIndex, treeout_mod);
+			 addExtraNodesFromSpeciesIndex( gid, treeout, taxon_file, taxdump, speciesIndex, treeout_mod);
 		  }
 		  
+		  }catch(Exception exc){
+			  exc.printStackTrace();
+		  }
+		 
+		  
+		
+	}
+	
+	public static void test(String[] args){
+		  File treeout_mod = new File("commontree.txt.css.mod");
+		  File resistance_treeout = new File("resistancetree.txt.css");
+
 		  /*Step 6 testing */
 		  if(treeout_mod.exists()){
 			  String totest = "NC_004355.1:AJ717516.1:NC_023018.1:Homo sapiens:Capnocytophaga canimorsus:Staphylococcus aureus:NC_023018.1:NC_002645.1";
-			 
 			  LOG.info("testing");
-
 			  test(treeout_mod, totest.split(":"));
-		
-
 		  }
 		  
 		  if(resistance_treeout.exists()){
@@ -85,13 +109,13 @@ public class CSSProcessCommand {
 			  String totest = "blaCTX:tetX";
 			  test(resistance_treeout, totest.split(":"));
 		  }
+	  
 	}
 	
-	public static GetTaxonID getTaxaForSpecies(File taxdump, File speciesIndex, File output){
-		GetTaxonID gid = null;
+	public static GetTaxonID getTaxaForSpecies(GetTaxonID gid, File speciesIndex, File output){
+		//GetTaxonID gid = null;
 		  try{
-			  File taxaToInclude = null;
-			gid = new GetTaxonID(taxaToInclude, taxdump);
+			
 			  if(true){
 			 // gid.processGenBank(assembly_summary_inputs);
 			  gid.process(speciesIndex);
@@ -103,13 +127,15 @@ public class CSSProcessCommand {
 		  return gid;
 	}
 	
-	public static NCBITree readTaxaTree(GetTaxonID gid, File nodesdmp, File taxonid, File taxdump, File treeout){
+	public static NCBITree readTaxaTree(GetTaxonID gid, File taxonFile ,File treeout){
 		 NCBITree trees = null;
 		try{ 
-		 trees= 
-				 gid == null ?  new NCBITree(nodesdmp, taxonid, taxdump) : new NCBITree(nodesdmp, gid);
-				
-		 
+			  gid.read(taxonFile); // this tells which nodes to include in tree
+			 boolean cts =  gid.taxon_set.contains("191289");
+			//System.err.println(gid.taxon_set.size());
+			//System.err.println(gid.taxa2Sci.get("191289"));
+			trees = new NCBITree(gid);
+			
 			trees.print(treeout);
 
 		}catch(Exception exc){
@@ -119,11 +145,11 @@ public class CSSProcessCommand {
 		return trees;
 	}
 	
-	public static CommonTree addCSSToTree(CommonTree trees1, File treein, File treeout){
+	public static CommonTree addCSSToTree( File treein, File treeout){
 		CommonTree trees = null;
 		try{ 
 		  trees = //trees1==null ? 
-				  new NCBITree(treein, null, null);  //need to re-read
+				  new NCBITree(treein, false);  //need to re-read
 		  //: trees1;
 		 Tree[] tree = trees.getTrees();
 			for(int i=0; i<tree.length; i++){
@@ -160,23 +186,26 @@ public class CSSProcessCommand {
 		return null;
 	}
 	
-	public static NCBITree addExtraNodesFromSpeciesIndex(NCBITree trees1, File treein, File taxonid, File taxdump, File speciesIndex, File treeout){
+	public static void addExtraNodesFromSpeciesIndex(GetTaxonID gid1, File treein, File taxonid, File taxdump, File speciesIndex, File treeout){
 		NCBITree t  = null;
 		try{
-			   t = trees1 == null ? new NCBITree(treein, taxonid, taxdump) : trees1;//, new File(args[1]));
+			System.err.println(gid1.getTaxa("Sclerophthora macrospora virus A"));
+			   t = new NCBITree(treein, true) ;
+			   t.gid  = gid1;//, new File(args[1]));
+			   
 				t.addSpeciesIndex(speciesIndex);
 				t.print(treeout);
 		   }catch(Exception exc){
 			   exc.printStackTrace();
 		   }
-		return t;
+		//return t;
 	   }
 	
 	
 	public static void test(File treein, String[] totest){
 		
 		try{
-		NCBITree t = new NCBITree(treein);
+		NCBITree t = new NCBITree(treein, false);
 		for(int i=0; i<totest.length; i++){
 		  String[][] taxa =  t.getTaxonomy(totest[i]);
 		  LOG.info(totest[i]);
