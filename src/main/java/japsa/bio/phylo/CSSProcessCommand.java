@@ -99,7 +99,7 @@ public class CSSProcessCommand {
 
 		  /*Step 6 testing */
 		  if(treeout_mod.exists()){
-			  String totest = "NC_004355.1:AJ717516.1:NC_023018.1:Homo sapiens:Capnocytophaga canimorsus:Staphylococcus aureus:NC_023018.1:NC_002645.1";
+			  String totest = "NC_023018.1:Homo sapiens:Capnocytophaga canimorsus:Staphylococcus aureus:NC_023018.1:NC_002645.1";
 			  LOG.info("testing");
 			  test(treeout_mod, totest.split(":"));
 		  }

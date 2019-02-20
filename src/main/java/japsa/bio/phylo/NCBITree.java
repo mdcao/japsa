@@ -89,7 +89,7 @@ public Node getNode(Integer taxa) {
 		 String[] str = st.split("\\s+");
 		// String specName = str[0];
 		Integer taxa = gid.processAlias(str,st);
-		String alias1 = gid.collapse(str, 1);
+		String alias1 = gid.collapse(str, 2);
 		String sciname = taxa==null ? null : gid.taxa2Sci.get(taxa);
 		Node n;
 		if(sciname==null && taxa==null)   {
