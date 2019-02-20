@@ -159,7 +159,7 @@ static BufferedReader getBR(File file)throws IOException{
  		
  	}
  	Integer processAlias(String[] str, String st){
- 	 String alias1 = collapse(str, 1);
+ 	 String alias1 = collapse(str, 2);
  	/* int compg = alias1.indexOf(", complete genome");
  	 if(compg>=0){
  		 alias1 = alias1.substring(0, compg);
