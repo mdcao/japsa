@@ -134,7 +134,7 @@ static BufferedReader getBR(File file)throws IOException{
 	  BufferedReader br = getBR(file);
 		String st;
 		while((st = br.readLine())!=null){
-		 String[] str = st.split("\\s+");
+		 String[] str = st.split("\t");
 		 Integer taxa = this.processAlias(str, st);
 		if(taxa!=null) {
 			
@@ -159,7 +159,10 @@ static BufferedReader getBR(File file)throws IOException{
  		
  	}
  	Integer processAlias(String[] str, String st){
- 	 String alias1 = collapse(str, 2);
+ 	 //the fourth column should be taxa id
+ 		if(str[2].length()>0) return Integer.parseInt(str[2]);
+ 		String alias1 = collapse(str[1].split("\\s+"), 1);
+ 	 
  	/* int compg = alias1.indexOf(", complete genome");
  	 if(compg>=0){
  		 alias1 = alias1.substring(0, compg);

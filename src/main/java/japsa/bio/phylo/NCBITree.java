@@ -86,10 +86,10 @@ public Node getNode(Integer taxa) {
 	
 	 /*str is a line from species index */
 	 private void updateTree(String st, int lineno, double bl, PrintWriter missing){
-		 String[] str = st.split("\\s+");
+		 String[] str = st.split("\t");
 		// String specName = str[0];
 		Integer taxa = gid.processAlias(str,st);
-		String alias1 = gid.collapse(str, 2);
+	  String alias1 = gid.collapse(str[1].split("\\s+"), 1);
 		String sciname = taxa==null ? null : gid.taxa2Sci.get(taxa);
 		Node n;
 		if(sciname==null && taxa==null)   {
@@ -516,7 +516,9 @@ public NCBITree(File file, boolean useTaxaAsAsslug) throws IOException {
 		System.err.println(tree.length);
 	//	System.err.println(this.slugToNode.size());
 		for(int i=0; i<tree.length; i++){
-			tree[i] = new SimpleTree(roots.get(i));
+			Node root = roots.get(i);
+			while(root.getChildCount()==1) root = root.getChild(0);
+			tree[i] = new SimpleTree(root);
 			int cnt =tree[i].getInternalNodeCount();
 			int cnt1 =tree[i].getExternalNodeCount();
 		}

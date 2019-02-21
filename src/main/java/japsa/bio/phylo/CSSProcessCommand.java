@@ -7,6 +7,7 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import pal.tree.Node;
 import pal.tree.Tree;
 
 /** commands for making CSS tree */
@@ -154,8 +155,17 @@ public class CSSProcessCommand {
 		 Tree[] tree = trees.getTrees();
 			for(int i=0; i<tree.length; i++){
 				if(tree[i].getExternalNodeCount()>10){
+					
 					ColorTree ct = new ColorTree(tree[i]);
 					ct.color();
+					Node actualroot = trees.roots.get(i);
+					Node root = ct.tree.getRoot();
+					Object css = root.getIdentifier().getAttribute("css");
+					while(root!=actualroot){
+						System.err.println("coloring down");
+						actualroot.getIdentifier().setAttribute("css", css);
+						actualroot = actualroot.getChild(0);
+					}
 				}
 			}
 			trees.print(treeout);
