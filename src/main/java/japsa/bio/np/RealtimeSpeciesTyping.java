@@ -139,9 +139,10 @@ public class RealtimeSpeciesTyping {
 			if (line.startsWith("#"))
 				continue;
 
-			String [] toks = line.split("\\s+");
+			String [] toks = line.split("\t");
+			String[] toks1 = toks[1].split("\\s+");
 			String sp =  toks[0];
-			String seq = toks[1].substring(1);
+			String seq = toks1[1].substring(1);
 
 			if (seq2Species.put(seq, sp) != null)
 				throw new RuntimeException("sequence " + seq +" presents multiple time");
