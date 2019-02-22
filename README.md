@@ -26,8 +26,8 @@ Alternatively, build with maven (experimental).
 First you need to manually install  JAR files that are not available on Maven
 public repo to your local repo.  This can be achieved using the install_mvn.sh script provided.
 ```
-then 
-```
+./install_mvn.sh
+
 mvn clean package install
 ```
 you might need to try packaging Japsa again if failed. A SNAPSHOT is then created and you can invoke
