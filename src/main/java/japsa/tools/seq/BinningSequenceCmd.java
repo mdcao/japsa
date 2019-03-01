@@ -139,6 +139,21 @@ public class BinningSequenceCmd extends CommandLine{
 			
 			line=mapReader.readLine();
 		}
+		//one last time
+		if(curSpecies!=null && curList!=null){
+			if(!filterSet.contains(curSpecies) && curList.size()>minRead){
+				for(String readID:curList){
+					if(binMap.containsKey(readID)){
+						LOG.info("Read {} map to multiple species -> put to unclassifed!", readID);
+						binMap.put(readID, "unclassifed");
+					}else
+						binMap.put(readID, curSpecies);
+				}
+					
+			}else
+				LOG.info("{} excluded, readCount={}",curSpecies,curList.size());
+		}
+		
 		//filter out bins with insufficient reads number
 		Map<String, Long> counted = binMap.values().parallelStream()
 	            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
