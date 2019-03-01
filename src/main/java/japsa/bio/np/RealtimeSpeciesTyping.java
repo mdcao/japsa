@@ -140,9 +140,17 @@ public class RealtimeSpeciesTyping {
 				continue;
 
 			String [] toks = line.split("\t");
-			String[] toks1 = toks[1].split("\\s+");
-			String sp =  toks[0];
-			String seq = toks1[0].substring(1);
+			String sp=null,seq=null;
+			if(toks.length>1){ //new speciesIndex format: species\t>contig_name\ttaxid
+				String [] tmp = toks[1].split("\\s+");
+				sp =  toks[0];
+				seq = tmp[0].substring(1);
+			}else{ //old speciesIndex format: species\scontig_name
+				String [] tmp=line.split("\\s+");
+				sp=tmp[0];
+				seq = tmp[1].substring(1);
+			}
+
 
 			if (seq2Species.put(seq, sp) != null)
 				throw new RuntimeException("sequence " + seq +" presents multiple time");
