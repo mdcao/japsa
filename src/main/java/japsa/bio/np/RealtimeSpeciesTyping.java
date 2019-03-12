@@ -141,18 +141,7 @@ public class RealtimeSpeciesTyping {
 
 
 			String sp=null,seq=null;
-			
-//			String [] toks = line.split("\t");
-//			if(toks.length>1){ //new speciesIndex format: species\t>contig_name\ttaxid
-//				String [] tmp = toks[1].split("\\s+");
-//				sp =  toks[0];
-//				seq = tmp[0].substring(1);
-//			}else{ //old speciesIndex format: species\s>contig_name
-//				String [] tmp=line.split("\\s+");
-//				sp=tmp[0];
-//				seq = tmp[1].substring(1);
-//			}
-			
+				
 			String [] toks = line.split(">");
 			if(toks.length < 2){
 				LOG.info("Illegal speciesIndex file!");
