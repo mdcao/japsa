@@ -139,18 +139,28 @@ public class RealtimeSpeciesTyping {
 			if (line.startsWith("#"))
 				continue;
 
-			String [] toks = line.split("\t");
-			String sp=null,seq=null;
-			if(toks.length>1){ //new speciesIndex format: species\t>contig_name\ttaxid
-				String [] tmp = toks[1].split("\\s+");
-				sp =  toks[0];
-				seq = tmp[0].substring(1);
-			}else{ //old speciesIndex format: species\scontig_name
-				String [] tmp=line.split("\\s+");
-				sp=tmp[0];
-				seq = tmp[1].substring(1);
-			}
 
+			String sp=null,seq=null;
+			
+//			String [] toks = line.split("\t");
+//			if(toks.length>1){ //new speciesIndex format: species\t>contig_name\ttaxid
+//				String [] tmp = toks[1].split("\\s+");
+//				sp =  toks[0];
+//				seq = tmp[0].substring(1);
+//			}else{ //old speciesIndex format: species\s>contig_name
+//				String [] tmp=line.split("\\s+");
+//				sp=tmp[0];
+//				seq = tmp[1].substring(1);
+//			}
+			
+			String [] toks = line.split(">");
+			if(toks.length < 2){
+				LOG.info("Illegal speciesIndex file!");
+				System.exit(1);
+			}
+				
+			sp=toks[0].trim();
+			seq=toks[1].split("\\s+")[0];
 
 			if (seq2Species.put(seq, sp) != null)
 				throw new RuntimeException("sequence " + seq +" presents multiple time");
@@ -158,7 +168,7 @@ public class RealtimeSpeciesTyping {
 //				LOG.info("==>adding " + seq + " to " + sp);
 			
 			if (species2ReadList.get(sp) == null){
-				LOG.debug("add species: "+sp);
+//				LOG.info("add species: "+sp);
 				species2ReadList.put(sp,new ArrayList<String>());
 			}			
 		}//while
