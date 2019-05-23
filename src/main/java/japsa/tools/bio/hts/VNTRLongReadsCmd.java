@@ -56,9 +56,7 @@ import japsa.xm.expert.MarkovExpert;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
@@ -66,6 +64,9 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import org.apache.commons.math3.stat.clustering.Cluster;
+import org.apache.commons.math3.stat.clustering.Clusterable;
+import org.apache.commons.math3.stat.clustering.KMeansPlusPlusClusterer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -318,10 +319,13 @@ public class VNTRLongReadsCmd  extends CommandLine {
 	}
 
 	static private void processBatch(ArrayList<Sequence> readBatch, ProfileDP dpBatch, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
+		double[] copy_counts =  new double[readBatch.size()];
+
 
 		for (int round = 0; round < 5;round ++){
 			double myCost = 0;
 			int countIns = 0, countDel = 0, countMG = 0, countMB = 0;
+			//Estimate error profiles
 			for (Sequence readSeq:readBatch){
 				EmissionState bestState = dpBatch.align(readSeq);
 				//TODO: make a filter here: select only eligible alignment
@@ -345,6 +349,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			dpBatch.setMatchProbability(matchP);			
 		}//round
 
+		//actually calling
+		int index = 0;
 		for (Sequence readSeq:readBatch){
 			MarkovExpert expert = new MarkovExpert(1);
 			double costM = 0;
@@ -362,6 +368,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			double alignScore = bestState.getScore();
 			//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
 			double bestIter = bestState.getIter() + fraction;
+			copy_counts[index] = bestIter;
 			profilePositions.clear();
 			seqPositions.clear();
 			costGeneration.clear();
@@ -520,6 +527,11 @@ public class VNTRLongReadsCmd  extends CommandLine {
 	}
 	/*******************************************************************/				
 
+	static private void clustering(ArrayList<Double> copies){
+		KMeansPlusPlusClusterer clusterer = new  KMeansPlusPlusClusterer(new Random());
+		clusterer.cluster(copies,2,100);
+
+	}
 	static private void processRead(Sequence readSeq, ProfileDP dp, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
 
 		MarkovExpert expert = new MarkovExpert(1);
@@ -891,5 +903,49 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				trVar.addEvidence(seqList.size());
 			}
 		}// if
+	}
+}
+
+
+class ReadAllele implements Clusterable<ReadAllele> {
+	double copy_number;
+
+	public ReadAllele(double cn){
+		copy_number = cn;
+	}
+
+	public double distanceFrom(ReadAllele p) {
+		return Math.abs(copy_number - p.copy_number);
+	}
+
+	public ReadAllele centroidOf(Collection<ReadAllele> pp) {
+		double sum = 0.0;
+		for (ReadAllele p:pp){
+			sum += p.copy_number;
+		}
+		return new ReadAllele(sum/pp.size());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ReadAllele)) {
+			return false;
+		}
+		ReadAllele p = (ReadAllele) o;
+
+		return copy_number == p.copy_number;
+	}
+
+	static double inertia(List<Cluster<ReadAllele>> clusters){
+		double sum = 0.0;
+		int count = 0;
+		for (Cluster<ReadAllele> cluster: clusters){
+			ReadAllele cenroid = cluster.getCenter();
+			for (ReadAllele allele:cluster.getPoints()){
+				sum += allele.distanceFrom(cenroid);
+				count ++;
+			}
+		}
+		return sum / count;
 	}
 }

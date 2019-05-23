@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="mdsj">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/libs/mdsj.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
