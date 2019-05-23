@@ -22,13 +22,13 @@ public class RepeatCluster {
 	public static void main(String[] args){
 		try{
 			String[] alleles = "24:23:24:24:24:23:23:24:23:22:23:24:24:23:24:23:23:23:23:23:23:23:23:23:22:23:24:23:23:23".split(":");
-			Integer[] alleles1 = new Integer[alleles.length];
+			Double[] alleles1 = new Double[alleles.length];
 			for(int i=0; i<alleles1.length; i++){
-				alleles1 [i] = Integer.parseInt(alleles[i]);
+				alleles1 [i] = Double.parseDouble(alleles[i]);
 			}
-			RepeatCluster rc = new RepeatCluster(Arrays.asList(alleles1));
+			Number[] d =RepeatCluster.genotype(Arrays.asList(alleles1));
 			
-			Number[] d = rc.genotype();
+		
 			if(d==null) System.err.println("null");
 			else System.err.println(Arrays.asList(d));
 		}catch(Exception exc){
@@ -36,8 +36,8 @@ public class RepeatCluster {
 		}
 	}
 
-	public static Number[] genotype(Integer[] alleles1){
-		RepeatCluster rc = new RepeatCluster(Arrays.asList(alleles1));
+	public static Number[] genotype(List<Double> all){
+		RepeatCluster rc = new RepeatCluster(all);
 		
 		Number[] d = rc.genotype();
 		if(d==null || d.length==0) return new Number[] {Double.NaN, Double.NaN};
@@ -46,16 +46,16 @@ public class RepeatCluster {
 	}
 	
 	Clusterer clust;
-	Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
-	Map<Integer, Integer> removed = new HashMap<Integer, Integer>();
-	List<Integer> alleles; 
+	Map<Double, Integer> counts = new HashMap<Double, Integer>();
+	Map<Double, Integer> removed = new HashMap<Double, Integer>();
+	List<Double> alleles; 
 	List<DoublePoint> alleles1 ;
 	List<CentroidCluster<DoublePoint>> clusters; 
 	int[] size; //cluster size
 	int min_ind =-1; //index of smallest cluster
 	
-	RepeatCluster(List<Integer> alleles){
-		this.alleles = new ArrayList<Integer>();
+	RepeatCluster(List<Double> alleles){
+		this.alleles = new ArrayList<Double>();
 		this.alleles1 = new ArrayList<DoublePoint>();
 		for(int i=0; i<alleles.size(); i++){
 			this.alleles.add(alleles.get(i));
@@ -123,7 +123,7 @@ public class RepeatCluster {
 	//	  counts=genoBC$counts
 		  
 	//	  if(!is.null(geno)) return (list(geno=geno,counts=counts,cluster=NULL))
-		  Number[] genotypes = counts.keySet().toArray(new Integer[counts.size()]);
+		  Number[] genotypes = counts.keySet().toArray(new Double[counts.size()]);
 		  if(genotypes.length<=2) return genotypes;
 		 
 		 kmeans();
@@ -149,18 +149,18 @@ public class RepeatCluster {
 	
 	
 	
-    static void getcounts(Map<Integer, Integer> counts, Map<Integer, Integer> removed,  List<Integer> alleles, int thresh1){
+    static void getcounts(Map<Double, Integer> counts, Map<Double, Integer> removed,  List<Double> alleles, int thresh1){
     	counts.clear();
     	removed.clear();
-    	Map<Integer, Integer> counts1 = new HashMap<Integer, Integer>();
+    	Map<Double, Integer> counts1 = new HashMap<Double, Integer>();
     	  for(int i=0;i<alleles.size(); i++){
     		  Integer cnt = counts1.containsKey(alleles.get(i)) ? counts1.get(alleles.get(i)) : 0;
     		  counts1.put(alleles.get(i), cnt+1);
     	  }
     	  
 		  
-		  for(Iterator<Integer> it = counts1.keySet().iterator(); it.hasNext();){
-			  Integer key = it.next();
+		  for(Iterator<Double> it = counts1.keySet().iterator(); it.hasNext();){
+			  Double key = it.next();
 			  Integer value = counts1.get(key);
 			  if(value <= thresh1){
 				  removed.put(key, value);
