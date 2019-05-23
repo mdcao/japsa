@@ -319,8 +319,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 	}
 
 	static private void processBatch(ArrayList<Sequence> readBatch, ProfileDP dpBatch, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
-		double[] copy_counts =  new double[readBatch.size()];
-
+		ArrayList<ReadAllele> read_alleles = new ArrayList<ReadAllele>(readBatch.size());
 
 		for (int round = 0; round < 5;round ++){
 			double myCost = 0;
@@ -368,7 +367,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			double alignScore = bestState.getScore();
 			//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
 			double bestIter = bestState.getIter() + fraction;
-			copy_counts[index] = bestIter;
+			read_alleles.add(new ReadAllele(readSeq.getName(), bestIter));
+
 			profilePositions.clear();
 			seqPositions.clear();
 			costGeneration.clear();
@@ -500,7 +500,6 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				lastSeqPos = seqPos;	
 
 			}//for x
-
 			//move to out of the loop
 			outOS.print("<-----------------RIGHT " + costR
 					+  " " +  stateR
@@ -524,14 +523,31 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			outOS.print("##" + readSeq.getName() +"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + costM + "\t" + costM / readSeq.length() + "\t"  + costL + "\t" + stateL + "\t" + costR + "\t" + stateR + "\t" + (alignScore - costL - costR) + "\t" + stateRep + "\t" + pass + '\n');			
 			outOS.print("==================================================================\n");	
 		}
+
+		List<Cluster<ReadAllele>> clusters = clustering(read_alleles);
+		outOS.print(" Number of alleles: " + clusters.size() + ":\n");
+		for (Cluster<ReadAllele> cluster: clusters){
+			outOS.print("  Allele " + cluster.getCenter().copy_number + " with " + cluster.getPoints().size() + " reads \n");
+		}
+
 	}
 	/*******************************************************************/				
 
-	static private void clustering(ArrayList<Double> copies){
-		KMeansPlusPlusClusterer clusterer = new  KMeansPlusPlusClusterer(new Random());
-		clusterer.cluster(copies,2,100);
+	static private List<Cluster<ReadAllele>> clustering(ArrayList<ReadAllele> alleles){
+		KMeansPlusPlusClusterer<ReadAllele> clusterer = new KMeansPlusPlusClusterer<ReadAllele>(new Random());
+		List<Cluster<ReadAllele>> clusters2 = clusterer.cluster(alleles,2,20);
+		List<Cluster<ReadAllele>> clusters1 = clusterer.cluster(alleles,1,20);
 
+		double  elbow2 = ReadAllele.inertia(clusters2);
+		double  elbow1 = ReadAllele.inertia(clusters1);
+
+		if (elbow2 < elbow1){
+			return clusters2;
+		}else{
+			return clusters1;
+		}
 	}
+
 	static private void processRead(Sequence readSeq, ProfileDP dp, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
 
 		MarkovExpert expert = new MarkovExpert(1);
@@ -908,7 +924,14 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 
 class ReadAllele implements Clusterable<ReadAllele> {
+	String readName = "";
 	double copy_number;
+
+
+	public ReadAllele(String name, double cn){
+		readName = name + "";//copy
+		copy_number = cn;
+	}
 
 	public ReadAllele(double cn){
 		copy_number = cn;
