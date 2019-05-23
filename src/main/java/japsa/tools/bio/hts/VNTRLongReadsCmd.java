@@ -315,10 +315,10 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 			outOS.print(trVar.toString(headers));
 			outOS.print('\n');
-			Number[] genotypes = RepeatCluster.genotype(accumulator);
-			Number[] genotypes_batch = RepeatCluster.genotype(accumulator_batch);
-			outOS.print("Genotypes\t"+Arrays.asList(genotypes)+"\n");
-			outOS.print("Genotypes batch\t"+Arrays.asList(genotypes_batch)+"\n");
+			Number[][] genotypes = RepeatCluster.genotype(accumulator);
+			Number[][] genotypes_batch = RepeatCluster.genotype(accumulator_batch);
+			outOS.print("Genotypes|Counts\t"+Arrays.asList(genotypes[0])+"\t"+Arrays.asList(genotypes[1])+"\n");
+			outOS.print("Genotypes_batch|Counts\t"+Arrays.asList(genotypes_batch[0])+"\t"+Arrays.asList(genotypes_batch[1])+"\n");
 
 		}// for
 
