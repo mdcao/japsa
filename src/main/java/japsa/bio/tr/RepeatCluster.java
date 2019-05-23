@@ -40,8 +40,8 @@ public class RepeatCluster {
 		RepeatCluster rc = new RepeatCluster(Arrays.asList(alleles1));
 		
 		Number[] d = rc.genotype();
-		if(d.length==1) return new Number[] {d[0], d[0]};
-		else if(d.length==0) return new Number[] {Double.NaN, Double.NaN};
+		if(d==null || d.length==0) return new Number[] {Double.NaN, Double.NaN};
+		else if(d.length==1) return new Number[] {d[0], d[0]};
 		else return d;
 	}
 	
