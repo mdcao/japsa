@@ -72,6 +72,7 @@ import japsa.xm.expert.Expert;
 import japsa.xm.expert.MarkovExpert;
 
 
+
 /**
  * VNTR typing using long reads
  * 
@@ -328,9 +329,11 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 	static private void processBatch(ArrayList<Sequence> readBatch, ProfileDP dpBatch, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS, List<Double> accumulator ) throws IOException{
 
+
 		for (int round = 0; round < 5;round ++){
 			double myCost = 0;
 			int countIns = 0, countDel = 0, countMG = 0, countMB = 0;
+			//Estimate error profiles
 			for (Sequence readSeq:readBatch){
 				EmissionState bestState = dpBatch.align(readSeq);
 				//TODO: make a filter here: select only eligible alignment
@@ -354,6 +357,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			dpBatch.setMatchProbability(matchP);			
 		}//round
 
+		//actually calling
+		int index = 0;
 		for (Sequence readSeq:readBatch){
 			MarkovExpert expert = new MarkovExpert(1);
 			double costM = 0;
@@ -371,6 +376,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			double alignScore = bestState.getScore();
 			//System.out.println("Score " + alignScore + " vs " + readSeq.length()*2 + " (" + alignScore/readSeq.length() +")");
 			double bestIter = bestState.getIter() + fraction;
+			read_alleles.add(new ReadAllele(readSeq.getName(), bestIter));
+
 			profilePositions.clear();
 			seqPositions.clear();
 			costGeneration.clear();
@@ -502,7 +509,6 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				lastSeqPos = seqPos;	
 
 			}//for x
-
 			//move to out of the loop
 			outOS.print("<-----------------RIGHT " + costR
 					+  " " +  stateR
@@ -527,10 +533,35 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			outOS.print("==================================================================\n");	
 			accumulator.add(bestIter);
 		}
+
+		List<Cluster<ReadAllele>> clusters = clustering(read_alleles);
+		outOS.print(" Number of alleles: " + clusters.size() + ":\n");
+		for (Cluster<ReadAllele> cluster: clusters){
+			outOS.print("  Allele " + cluster.getCenter().copy_number + " with " + cluster.getPoints().size() + " reads \n");
+		}
+
 	}
 	/*******************************************************************/				
 
+
+	static private List<Cluster<ReadAllele>> clustering(ArrayList<ReadAllele> alleles){
+		KMeansPlusPlusClusterer<ReadAllele> clusterer = new KMeansPlusPlusClusterer<ReadAllele>(new Random());
+		List<Cluster<ReadAllele>> clusters2 = clusterer.cluster(alleles,2,20);
+		List<Cluster<ReadAllele>> clusters1 = clusterer.cluster(alleles,1,20);
+
+		double  elbow2 = ReadAllele.inertia(clusters2);
+		double  elbow1 = ReadAllele.inertia(clusters1);
+
+		if (elbow2 < elbow1){
+			return clusters2;
+		}else{
+			return clusters1;
+		}
+	}
+
+
 	static private void processRead(Sequence readSeq, ProfileDP dp, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS, List<Double> accumulator ) throws IOException{
+
 
 		MarkovExpert expert = new MarkovExpert(1);
 		double costM = 0;
@@ -902,5 +933,56 @@ public class VNTRLongReadsCmd  extends CommandLine {
 				trVar.addEvidence(seqList.size());
 			}
 		}// if
+	}
+}
+
+
+class ReadAllele implements Clusterable<ReadAllele> {
+	String readName = "";
+	double copy_number;
+
+
+	public ReadAllele(String name, double cn){
+		readName = name + "";//copy
+		copy_number = cn;
+	}
+
+	public ReadAllele(double cn){
+		copy_number = cn;
+	}
+
+	public double distanceFrom(ReadAllele p) {
+		return Math.abs(copy_number - p.copy_number);
+	}
+
+	public ReadAllele centroidOf(Collection<ReadAllele> pp) {
+		double sum = 0.0;
+		for (ReadAllele p:pp){
+			sum += p.copy_number;
+		}
+		return new ReadAllele(sum/pp.size());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ReadAllele)) {
+			return false;
+		}
+		ReadAllele p = (ReadAllele) o;
+
+		return copy_number == p.copy_number;
+	}
+
+	static double inertia(List<Cluster<ReadAllele>> clusters){
+		double sum = 0.0;
+		int count = 0;
+		for (Cluster<ReadAllele> cluster: clusters){
+			ReadAllele cenroid = cluster.getCenter();
+			for (ReadAllele allele:cluster.getPoints()){
+				sum += allele.distanceFrom(cenroid);
+				count ++;
+			}
+		}
+		return sum / count;
 	}
 }
