@@ -22,9 +22,9 @@ public class RepeatCluster {
 	public static void main(String[] args){
 		try{
 			String[] alleles = "24:23:24:24:24:23:23:24:23:22:23:24:24:23:24:23:23:23:23:23:23:23:23:23:22:23:24:23:23:23".split(":");
-			Double[] alleles1 = new Double[alleles.length];
+			ReadAllele[] alleles1 = new ReadAllele[alleles.length];
 			for(int i=0; i<alleles1.length; i++){
-				alleles1 [i] = Double.parseDouble(alleles[i]);
+				alleles1 [i] = new ReadAllele("", Double.parseDouble(alleles[i]));
 			}
 			Number[][] d =RepeatCluster.genotype(Arrays.asList(alleles1));
 			if(d==null) System.err.println("null");
@@ -34,10 +34,13 @@ public class RepeatCluster {
 		}
 	}
 
-	public static Number[][] genotype(List<Double> all){
+	public static Number[][] genotype(List<ReadAllele> all){
 		RepeatCluster rc = new RepeatCluster(all);
-		
-		Number[][] d = rc.genotype();
+		return rc.geno();
+	}
+	
+	public Number[][] geno(){
+		Number[][] d = genotype();
 		if(d==null || d.length==0 || d[0].length==0){
 			Number[] n1 = new Number[] {Double.NaN, Double.NaN};
 			Number[] n2 = new Number[] {0,0};
@@ -60,14 +63,14 @@ public class RepeatCluster {
 	int[] size; //cluster size
 	int min_ind =-1; //index of smallest cluster
 	
-	RepeatCluster(List<Double> alleles){
+	public RepeatCluster(List<ReadAllele> alleles){
 		this.alleles = new ArrayList<Double>();
 		this.alleles1 = new ArrayList<DoublePoint>();
 		for(int i=0; i<alleles.size(); i++){
-			this.alleles.add(alleles.get(i));
-			alleles1.add(new DoublePoint(new double[] {alleles.get(i)}));
+			this.alleles.add(alleles.get(i).copy_number);
+			alleles1.add(new DoublePoint(new double[] {alleles.get(i).copy_number}));
 		}
-		getcounts(counts, removed, alleles, 2);
+		getcounts(counts, removed, this.alleles, thresh_indiv);
 		clust = new KMeansPlusPlusClusterer(2);
 //		clust = new FuzzyKMeansClusterer((int) 2, 2.0);
 	}
@@ -125,16 +128,8 @@ public class RepeatCluster {
 	
 	
 	/*default thresh_cluster is 2 and thresh_indiv is 2 */
-	 public Number[][] genotype(){
-		  
-	//	  gecountsnoBC = .genotypeByCounts(alleles, thresh_indiv);
-	//	  geno = genoBC$res
-	//	  counts=genoBC$counts
-		  
-	//	  if(!is.null(geno)) return (list(geno=geno,counts=counts,cluster=NULL))
+	 private Number[][] genotype(){
 		  Number[][] genotypes = getGenotypes();
-		
-		 
 		  if(genotypes[0].length<=2) return genotypes;
 		 
 		 kmeans();
@@ -170,6 +165,33 @@ public class RepeatCluster {
 		return new Number[][] {n,n1};
 	}
 
+    public static List<ReadAllele> removeOutliers(List<ReadAllele>alleles, int thresh1){
+    	Map<Double, Integer> counts1 = new HashMap<Double, Integer>();
+  	  for(int i=0;i<alleles.size(); i++){
+  		  Integer cnt = counts1.containsKey(alleles.get(i).copy_number) ? counts1.get(alleles.get(i).copy_number) : 0;
+  		  counts1.put(alleles.get(i).copy_number, cnt+1);
+  	  }
+  	Map<Double, Integer> removed = new HashMap<Double, Integer>();
+  	List<ReadAllele> reads_to_keep = new ArrayList<ReadAllele>();
+  	List<ReadAllele> reads_to_remove = new ArrayList<ReadAllele>();
+  	 for(Iterator<Double> it = counts1.keySet().iterator(); it.hasNext();){
+		  Double key = it.next();
+		  Integer value = counts1.get(key);
+		  List<ReadAllele> reads_to_change = reads_to_keep;
+		  if(value < thresh1){
+			  removed.put(key, value);
+			  reads_to_change = reads_to_remove;
+		  }
+		 for(int i=0; i<alleles.size(); i++){
+				  if(Math.abs(alleles.get(i).copy_number = key.doubleValue()) < 1e-5){
+					  reads_to_change.add(alleles.get(i));
+				  }
+		 }
+		  
+	  }
+  	  return reads_to_keep;
+    }
+    
 	static void getcounts(Map<Double, Integer> counts, Map<Double, Integer> removed,  List<Double> alleles, int thresh1){
     	counts.clear();
     	removed.clear();
@@ -183,7 +205,7 @@ public class RepeatCluster {
 		  for(Iterator<Double> it = counts1.keySet().iterator(); it.hasNext();){
 			  Double key = it.next();
 			  Integer value = counts1.get(key);
-			  if(value <= thresh1){
+			  if(value < thresh1){
 				  removed.put(key, value);
 				 
 			  }else{
