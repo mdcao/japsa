@@ -34,15 +34,32 @@
  ****************************************************************************/
 package japsa.tools.bio.hts;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 import japsa.bio.alignment.MultipleAlignment;
 import japsa.bio.alignment.ProfileDP;
 import japsa.bio.alignment.ProfileDP.EmissionState;
+import japsa.bio.tr.RepeatCluster;
 import japsa.bio.tr.TandemRepeat;
 import japsa.bio.tr.TandemRepeatVariant;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
-import japsa.seq.SequenceOutputStream;
 import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.seq.XAFReader;
 import japsa.util.ByteArray;
@@ -54,21 +71,6 @@ import japsa.util.deploy.Deployable;
 import japsa.xm.expert.Expert;
 import japsa.xm.expert.MarkovExpert;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-import org.apache.commons.math3.stat.clustering.Cluster;
-import org.apache.commons.math3.stat.clustering.Clusterable;
-import org.apache.commons.math3.stat.clustering.KMeansPlusPlusClusterer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -193,7 +195,9 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		ArrayList<Sequence> readSequences = new ArrayList<Sequence>(); 
 
 		//Go through the list of repeats
-		while (xafReader.next() != null){	
+		while (xafReader.next() != null){
+			List<Double> accumulator = new ArrayList<Double>();
+			List<Double> accumulator_batch = new ArrayList<Double>();
 			TandemRepeat str = TandemRepeat.read(xafReader);
 
 			//start,end = the start and end of the region (including flanks)
@@ -251,7 +255,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			{
 				Sequence refRepeat = seq.subSequence(start, end);
 				refRepeat.setName("reference");
-				processRead(refRepeat, dp, fraction,  hmmFlank, hmmPad, period,  outOS );
+				processRead(refRepeat, dp, fraction,  hmmFlank, hmmPad, period,  outOS , accumulator);
 
 			}
 
@@ -308,18 +312,23 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			//readSequences: an array of reads
 
 			ProfileDP dpBatch = new ProfileDP(hmmSeq, hmmFlank + hmmPad, hmmFlank + hmmPad + str.getPeriod() - 1);//-1 for 0-index, inclusive
-			processBatch(readSequences, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS );
+			processBatch(readSequences, dpBatch, fraction,  hmmFlank, hmmPad, period,  outOS, accumulator_batch );
 
 			outOS.print(trVar.toString(headers));
 			outOS.print('\n');
+			Number[][] genotypes = RepeatCluster.genotype(accumulator);
+			Number[][] genotypes_batch = RepeatCluster.genotype(accumulator_batch);
+			outOS.print("Genotypes|Counts\t"+Arrays.asList(genotypes[0])+"\t"+Arrays.asList(genotypes[1])+"\n");
+			outOS.print("Genotypes_batch|Counts\t"+Arrays.asList(genotypes_batch[0])+"\t"+Arrays.asList(genotypes_batch[1])+"\n");
+
 		}// for
 
 		reader.close();
 		outOS.close();
 	}
 
-	static private void processBatch(ArrayList<Sequence> readBatch, ProfileDP dpBatch, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
-		ArrayList<ReadAllele> read_alleles = new ArrayList<ReadAllele>(readBatch.size());
+	static private void processBatch(ArrayList<Sequence> readBatch, ProfileDP dpBatch, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS, List<Double> accumulator ) throws IOException{
+
 
 		for (int round = 0; round < 5;round ++){
 			double myCost = 0;
@@ -522,6 +531,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			/*****************************************************************/				
 			outOS.print("##" + readSeq.getName() +"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + costM + "\t" + costM / readSeq.length() + "\t"  + costL + "\t" + stateL + "\t" + costR + "\t" + stateR + "\t" + (alignScore - costL - costR) + "\t" + stateRep + "\t" + pass + '\n');			
 			outOS.print("==================================================================\n");	
+			accumulator.add(bestIter);
 		}
 
 		List<Cluster<ReadAllele>> clusters = clustering(read_alleles);
@@ -532,6 +542,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 	}
 	/*******************************************************************/				
+
 
 	static private List<Cluster<ReadAllele>> clustering(ArrayList<ReadAllele> alleles){
 		KMeansPlusPlusClusterer<ReadAllele> clusterer = new KMeansPlusPlusClusterer<ReadAllele>(new Random());
@@ -548,7 +559,9 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		}
 	}
 
-	static private void processRead(Sequence readSeq, ProfileDP dp, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS ) throws IOException{
+
+	static private void processRead(Sequence readSeq, ProfileDP dp, double fraction, int hmmFlank, int hmmPad, int period, SequenceOutputStream outOS, List<Double> accumulator ) throws IOException{
+
 
 		MarkovExpert expert = new MarkovExpert(1);
 		double costM = 0;
@@ -724,6 +737,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 		/*****************************************************************/				
 		outOS.print("##" + readSeq.getName() +"\t"+bestIter+"\t"+readSeq.length() +"\t" +alignScore+"\t" + alignScore/readSeq.length() + '\t' + costM + "\t" + costM / readSeq.length() + "\t"  + costL + "\t" + stateL + "\t" + costR + "\t" + stateR + "\t" + (alignScore - costL - costR) + "\t" + stateRep + "\t" + pass + '\n');			
 		outOS.print("==================================================================\n");	
+		accumulator.add(bestIter);
 	}
 
 	public static Sequence getReadPosition(SAMRecord rec, int startRef, int endRef){
