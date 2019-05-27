@@ -559,7 +559,7 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 	static private Number[][] clustering(List<ReadAllele> accumulator){
 		Number[] res = new Number[]{Double.NaN, Double.NaN};
-		if(accumulator.size()<2) return new Number[][] {res};
+		if(accumulator.size()<2) return new Number[][] {res, res};
 		KMeansPlusPlusClusterer<ReadAllele> clusterer = new KMeansPlusPlusClusterer<ReadAllele>(new Random());
 		List<Cluster<ReadAllele>> clusters2 = clusterer.cluster(accumulator,2,20);
 		List<Cluster<ReadAllele>> clusters1 = clusterer.cluster(accumulator,1,20);
