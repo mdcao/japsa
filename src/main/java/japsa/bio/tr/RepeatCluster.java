@@ -26,7 +26,9 @@ public class RepeatCluster {
 			for(int i=0; i<alleles1.length; i++){
 				alleles1 [i] = new ReadAllele("", Double.parseDouble(alleles[i]));
 			}
-			Number[][] d =RepeatCluster.genotype(Arrays.asList(alleles1));
+			List<ReadAllele> l1 = Arrays.asList(alleles1);
+			RepeatCluster.removeOutliers(l1, 2);
+			Number[][] d =RepeatCluster.genotype(l1);
 			if(d==null) System.err.println("null");
 			else System.err.println(Arrays.asList(d[0])+";"+ Arrays.asList(d[1]));
 		}catch(Exception exc){
@@ -166,25 +168,25 @@ public class RepeatCluster {
 	}
 
     public static List<ReadAllele> removeOutliers(List<ReadAllele>alleles, int thresh1){
-    	Map<Double, Integer> counts1 = new HashMap<Double, Integer>();
+    Map<Double, Integer> counts1 = new HashMap<Double, Integer>();
   	  for(int i=0;i<alleles.size(); i++){
   		  Integer cnt = counts1.containsKey(alleles.get(i).copy_number) ? counts1.get(alleles.get(i).copy_number) : 0;
   		  counts1.put(alleles.get(i).copy_number, cnt+1);
   	  }
   	Map<Double, Integer> removed = new HashMap<Double, Integer>();
   	List<ReadAllele> reads_to_keep = new ArrayList<ReadAllele>();
-  	List<ReadAllele> reads_to_remove = new ArrayList<ReadAllele>();
+ // 	List<ReadAllele> reads_to_remove = new ArrayList<ReadAllele>();
   	 for(Iterator<Double> it = counts1.keySet().iterator(); it.hasNext();){
 		  Double key = it.next();
 		  Integer value = counts1.get(key);
-		  List<ReadAllele> reads_to_change = reads_to_keep;
+		//  List<ReadAllele> reads_to_change = reads_to_keep;
 		  if(value < thresh1){
 			  removed.put(key, value);
-			  reads_to_change = reads_to_remove;
+		//	  reads_to_change = reads_to_remove;
 		  }
 		 for(int i=0; i<alleles.size(); i++){
 				  if(Math.abs(alleles.get(i).copy_number = key.doubleValue()) < 1e-5){
-					  reads_to_change.add(alleles.get(i));
+					  reads_to_keep.add(alleles.get(i));
 				  }
 		 }
 		  

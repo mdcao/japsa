@@ -322,12 +322,17 @@ public class VNTRLongReadsCmd  extends CommandLine {
 			outOS.print('\n');
 			Number[][] genotypes = RepeatCluster.genotype(accumulator);
 			Number[][] genotypes_batch = RepeatCluster.genotype(accumulator_batch);
-			Number[][] genotypes1 = clustering(RepeatCluster.removeOutliers(accumulator,2));
-			Number[][] genotypes_batch1 = clustering(RepeatCluster.removeOutliers(accumulator_batch,2));
-			outOS.print("Genotypes|Counts\t"+Arrays.asList(genotypes[0])+"\t"+Arrays.asList(genotypes[1])+"\n");
-			outOS.print("Genotypes_batch|Counts\t"+Arrays.asList(genotypes_batch[0])+"\t"+Arrays.asList(genotypes_batch[1])+"\n");
-			outOS.print("Genotypes|Counts\t"+Arrays.asList(genotypes1[0])+"\t"+Arrays.asList(genotypes1[1])+"\n");
-			outOS.print("Genotypes_batch|Counts\t"+Arrays.asList(genotypes_batch1[0])+"\t"+Arrays.asList(genotypes_batch1[1])+"\n");
+			Number[][] genotypes1 = clustering(accumulator);
+			Number[][] genotypes_batch1 = clustering(accumulator_batch);
+			Number[][] genotypes2 = clustering(RepeatCluster.removeOutliers(accumulator,2));
+			Number[][] genotypes_batch2 = clustering(RepeatCluster.removeOutliers(accumulator_batch,2));
+		
+			outOS.print("Genotypes|Counts_outliers\t"+Arrays.asList(genotypes[0])+"\t"+Arrays.asList(genotypes[1])+"\n");
+			outOS.print("Genotypes_batch|Counts_outliers\t"+Arrays.asList(genotypes_batch[0])+"\t"+Arrays.asList(genotypes_batch[1])+"\n");
+			outOS.print("Genotypes|Counts_elbow\t"+Arrays.asList(genotypes1[0])+"\t"+Arrays.asList(genotypes1[1])+"\n");
+			outOS.print("Genotypes_batch|Counts_elbow\t"+Arrays.asList(genotypes_batch1[0])+"\t"+Arrays.asList(genotypes_batch1[1])+"\n");
+			outOS.print("Genotypes|Counts_elbow_outliers\t"+Arrays.asList(genotypes2[0])+"\t"+Arrays.asList(genotypes2[1])+"\n");
+			outOS.print("Genotypes_batch|Counts_elbouw_outliers\t"+Arrays.asList(genotypes_batch2[0])+"\t"+Arrays.asList(genotypes_batch2[1])+"\n");
 		}// for
 
 		reader.close();
@@ -553,6 +558,8 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 
 	static private Number[][] clustering(List<ReadAllele> accumulator){
+		Number[] res = new Number[]{Double.NaN, Double.NaN};
+		if(accumulator.size()<2) return new Number[][] {res};
 		KMeansPlusPlusClusterer<ReadAllele> clusterer = new KMeansPlusPlusClusterer<ReadAllele>(new Random());
 		List<Cluster<ReadAllele>> clusters2 = clusterer.cluster(accumulator,2,20);
 		List<Cluster<ReadAllele>> clusters1 = clusterer.cluster(accumulator,1,20);
