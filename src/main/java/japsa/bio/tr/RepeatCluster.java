@@ -14,6 +14,8 @@ import org.apache.commons.math3.ml.clustering.Clusterer;
 import org.apache.commons.math3.ml.clustering.DoublePoint;
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
 
+import japsa.tools.bio.hts.VNTRLongReadsCmd;
+
 public class RepeatCluster {
 	
 	static int thresh_cluster = 2; // any clusters this size or smaller are removed 
@@ -27,7 +29,7 @@ public class RepeatCluster {
 				alleles1 [i] = new ReadAllele("", Double.parseDouble(alleles[i]));
 			}
 			List<ReadAllele> l1 = Arrays.asList(alleles1);
-			RepeatCluster.removeOutliers(l1, 2);
+			Number[][] n1 = VNTRLongReadsCmd.clustering(RepeatCluster.removeOutliers(l1, 2));
 			Number[][] d =RepeatCluster.genotype(l1);
 			if(d==null) System.err.println("null");
 			else System.err.println(Arrays.asList(d[0])+";"+ Arrays.asList(d[1]));
@@ -50,7 +52,7 @@ public class RepeatCluster {
 		}
 		else if(d[0].length==1){
 			Number[] n1 = new Number[] {d[0][0], d[0][0]};
-			Number[] n2 = new Number[] {d[0][1].doubleValue()/2.0, d[0][1].doubleValue()/2.0};
+			Number[] n2 = new Number[] {d[0][0].doubleValue()};
 			return new Number[][] {n1,n2};
 		}
 		else return d;
@@ -183,12 +185,13 @@ public class RepeatCluster {
 		  if(value < thresh1){
 			  removed.put(key, value);
 		//	  reads_to_change = reads_to_remove;
+		  }else{
+			 for(int i=0; i<alleles.size(); i++){
+					  if(Math.abs(alleles.get(i).copy_number - key.doubleValue()) < 1e-5){
+						  reads_to_keep.add(alleles.get(i));
+					  }
+			 }
 		  }
-		 for(int i=0; i<alleles.size(); i++){
-				  if(Math.abs(alleles.get(i).copy_number = key.doubleValue()) < 1e-5){
-					  reads_to_keep.add(alleles.get(i));
-				  }
-		 }
 		  
 	  }
   	  return reads_to_keep;
