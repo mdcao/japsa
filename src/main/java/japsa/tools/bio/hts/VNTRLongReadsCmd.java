@@ -320,18 +320,18 @@ public class VNTRLongReadsCmd  extends CommandLine {
 
 			outOS.print(trVar.toString(headers));
 			outOS.print('\n');
-			Number[][] genotypes = RepeatCluster.genotype(accumulator);
+		//	Number[][] genotypes = RepeatCluster.genotype(accumulator);
 			Number[][] genotypes_batch = RepeatCluster.genotype(accumulator_batch);
-			Number[][] genotypes1 = clustering(accumulator);
+			//Number[][] genotypes1 = clustering(accumulator);
 			Number[][] genotypes_batch1 = clustering(accumulator_batch);
-			Number[][] genotypes2 = clustering(RepeatCluster.removeOutliers(accumulator,2));
+			//Number[][] genotypes2 = clustering(RepeatCluster.removeOutliers(accumulator,2));
 			Number[][] genotypes_batch2 = clustering(RepeatCluster.removeOutliers(accumulator_batch,2));
 		
-			outOS.print("Genotypes|Counts_outliers\t"+Arrays.asList(genotypes[0])+"\t"+Arrays.asList(genotypes[1])+"\n");
+			//outOS.print("Genotypes|Counts_outliers\t"+Arrays.asList(genotypes[0])+"\t"+Arrays.asList(genotypes[1])+"\n");
 			outOS.print("Genotypes_batch|Counts_outliers\t"+Arrays.asList(genotypes_batch[0])+"\t"+Arrays.asList(genotypes_batch[1])+"\n");
-			outOS.print("Genotypes|Counts_elbow\t"+Arrays.asList(genotypes1[0])+"\t"+Arrays.asList(genotypes1[1])+"\n");
+			//outOS.print("Genotypes|Counts_elbow\t"+Arrays.asList(genotypes1[0])+"\t"+Arrays.asList(genotypes1[1])+"\n");
 			outOS.print("Genotypes_batch|Counts_elbow\t"+Arrays.asList(genotypes_batch1[0])+"\t"+Arrays.asList(genotypes_batch1[1])+"\n");
-			outOS.print("Genotypes|Counts_elbow_outliers\t"+Arrays.asList(genotypes2[0])+"\t"+Arrays.asList(genotypes2[1])+"\n");
+			//outOS.print("Genotypes|Counts_elbow_outliers\t"+Arrays.asList(genotypes2[0])+"\t"+Arrays.asList(genotypes2[1])+"\n");
 			outOS.print("Genotypes_batch|Counts_elbouw_outliers\t"+Arrays.asList(genotypes_batch2[0])+"\t"+Arrays.asList(genotypes_batch2[1])+"\n");
 		}// for
 
