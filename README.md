@@ -38,7 +38,7 @@ java -cp ./target/japsa-1.0-SNAPSHOT.jar japsa.tools.bio.np.RealtimeSpeciesTypin
 Convenient scripts (like install by make) would be added soon.
 
 ### Authors and Contributors
-Japsa is currently maintained by  Minh Duc Cao (@mdcao)and Son Hoang Nguyen](https://github.com/hsnguyen). The following 
+Japsa is currently maintained by  Minh Duc Cao (@mdcao) and [Son Hoang Nguyen](https://github.com/hsnguyen). The following 
 people (in alphatical order) have contributed to the development of Japsa, including ideas, 
 algorithms, implementation, documentation and feedback:
 
