@@ -50,11 +50,6 @@ public class RepeatCluster {
 			Number[] n2 = new Number[] {0,0};
 			return new Number[][] {n1,n2};
 		}
-		else if(d[0].length==1){
-			Number[] n1 = new Number[] {d[0][0], d[0][0]};
-			Number[] n2 = new Number[] {d[0][0].doubleValue()};
-			return new Number[][] {n1,n2};
-		}
 		else return d;
 	}
 	
