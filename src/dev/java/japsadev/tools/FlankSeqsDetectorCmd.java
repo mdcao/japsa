@@ -163,10 +163,24 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			if(map.get(r).isEmpty())
 				flank0.add(r);
 			else if(map.get(r).keySet().size()==1){
-				if(map.get(r).containsKey(flankSeqs.get(0)))
+				if(map.get(r).containsKey(flankSeqs.get(0))){
+					AlignmentRecord alg=map.get(r).get(flankSeqs.get(0));
+					int totAlgFlank=alg.readAlignmentEnd()-alg.readAlignmentStart();
+//					if( totAlgFlank > alg.readLength -insertLength)
+//						return;
+					System.out.printf("Found read with only 1 flank sequence %s, insert length=%d\n", flankSeqs.get(0).getName(), (alg.readLength-totAlgFlank));
 					flank1_0.add(r);
-				else if(map.get(r).containsKey(flankSeqs.get(1)))
+					
+				}
+				else if(map.get(r).containsKey(flankSeqs.get(1))){
+					AlignmentRecord alg=map.get(r).get(flankSeqs.get(1));
+					int totAlgFlank=alg.readAlignmentEnd()-alg.readAlignmentStart();
+//					if( totAlgFlank > alg.readLength -insertLength)
+//						return;
+					System.out.printf("Found read with only 1 flank sequence %s, insert length=%d\n", flankSeqs.get(1).getName(), (alg.readLength-totAlgFlank));
 					flank1_1.add(r);
+					
+				}
 				
 			}
 			else if(map.get(r).keySet().size()==2){
@@ -176,11 +190,15 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 				|| (aln0.readStart-aln1.readEnd)*(aln0.readEnd-aln1.readEnd) <= 0 )
 					return;
 				//the in-between must longer than insertLength
-				if(aln0.readAlignmentEnd()-aln0.readAlignmentStart() + aln1.readAlignmentEnd()-aln1.readAlignmentStart() > aln1.readLength -insertLength)
+				int totAlgFlank=aln0.readAlignmentEnd()-aln0.readAlignmentStart() + aln1.readAlignmentEnd()-aln1.readAlignmentStart();
+				if( totAlgFlank > aln1.readLength -insertLength)
 					return;
+				
+				System.out.println("Found read with both flank sequences, insert length=" + (aln1.readLength-totAlgFlank));
 				flank2.add(r);
 			}
 		});
+		System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 		System.out.println( "Total number of reads: " + totReadNum);
 		System.out.println("Number of reads with 0 flank sequences: " + flank0.size());
 		flank0.stream().forEach(r->System.out.println(r));
