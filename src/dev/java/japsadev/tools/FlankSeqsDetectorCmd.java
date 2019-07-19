@@ -168,7 +168,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					int totAlgFlank=alg.readAlignmentEnd()-alg.readAlignmentStart();
 //					if( totAlgFlank > alg.readLength -insertLength)
 //						return;
-					System.out.printf("Found read with only 1 flank sequence %s, insert length=%d\n", flankSeqs.get(0).getName(), (alg.readLength-totAlgFlank));
+					System.out.printf("Found read %s with only 1 flank sequence %s, insert length=%d\n", r, flankSeqs.get(0).getName(), (alg.readLength-totAlgFlank));
 					flank1_0.add(r);
 					
 				}
@@ -177,7 +177,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					int totAlgFlank=alg.readAlignmentEnd()-alg.readAlignmentStart();
 //					if( totAlgFlank > alg.readLength -insertLength)
 //						return;
-					System.out.printf("Found read with only 1 flank sequence %s, insert length=%d\n", flankSeqs.get(1).getName(), (alg.readLength-totAlgFlank));
+					System.out.printf("Found read %s with only 1 flank sequence %s, insert length=%d\n", r, flankSeqs.get(1).getName(), (alg.readLength-totAlgFlank));
 					flank1_1.add(r);
 					
 				}
@@ -194,7 +194,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 				if( totAlgFlank > aln1.readLength -insertLength)
 					return;
 				
-				System.out.println("Found read with both flank sequences, insert length=" + (aln1.readLength-totAlgFlank));
+				System.out.printf("Found read %s with both flank sequences, insert length=%d\n", r, (aln1.readLength-totAlgFlank));
 				flank2.add(r);
 			}
 		});
