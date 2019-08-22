@@ -146,7 +146,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			if (!readID.equals(curSAMRecord.getReadName())){
 				//output prev
 				if(fr!=null)
-					System.out.println(fr);
+					System.out.println(fr.print());
 					
 				//update for next
 				readID = curSAMRecord.getReadName();
@@ -374,5 +374,27 @@ class FlankRecord{
 			trueFlank=(t0<t1?refRec.readStart:refRec.readEnd);
 		}
 		return retval+trueFlank;
+	} 
+	
+	public String print(){
+		String retval = readID+"\t";
+		
+		int trueFlank=-1;
+		if(refRec!=null){			
+			if(f0Rec!=null){
+				int t0=(refRec.readStart-f0Rec.readStart)*(refRec.readStart-f0Rec.readEnd),
+					t1=(refRec.readEnd-f0Rec.readStart)*(refRec.readEnd-f0Rec.readEnd);
+				
+				trueFlank=(t0<t1?refRec.refStart:refRec.refEnd);
+			}
+			retval+=refRec.contig.getName()+"\t"+refRec.refStart+"\t"+refRec.refEnd+"\t"+refRec.strand+"\t";
+			
+		}else{
+			retval+="NA\tNA\tNA\tNA\t";
+
+		}
+		
+
+		return retval+(trueFlank==-1?"NA":trueFlank);
 	}
 }
