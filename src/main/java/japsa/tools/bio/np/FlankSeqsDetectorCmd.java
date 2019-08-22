@@ -146,7 +146,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			if (!readID.equals(curSAMRecord.getReadName())){
 				//output prev
 				if(fr!=null)
-					System.out.println(fr.print());
+					System.out.println(fr.printJunctionOnRef());
 					
 				//update for next
 				readID = curSAMRecord.getReadName();
@@ -376,7 +376,7 @@ class FlankRecord{
 		return retval+trueFlank;
 	} 
 	
-	public String print(){
+	public String printJunctionOnRef(){
 		String retval = readID+"\t";
 		
 		int trueFlank=-1;
