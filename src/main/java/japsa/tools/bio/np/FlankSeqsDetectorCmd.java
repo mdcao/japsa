@@ -158,11 +158,17 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			if(refSeqs.containsKey(refName)){
 				ctg=refSeqs.get(refName);
 				curAlnRecord=new AlignmentRecord(curSAMRecord, ctg);
+				//increase score if primary
+				if(!curSAMRecord.getSupplementaryAlignmentFlag())
+					curAlnRecord.score+=100;
+
 				if(curAlnRecord.readAlignmentEnd()-curAlnRecord.readAlignmentStart() < insertLength){
 					LOG.info("Ignore integration size too short: {}", curAlnRecord.toString());
 					continue;
 				}
-				fr.refRec=curAlnRecord;
+				if(fr.refRec==null||fr.refRec.score < curAlnRecord.score)
+					fr.refRec=curAlnRecord;
+				
 			}else{
 				
 				if(flankSeqs.get(0).getName().equals(refName)){
@@ -174,7 +180,8 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					else if(Math.min(-curAlnRecord.readAlignmentEnd()+curAlnRecord.readLength, curAlnRecord.readAlignmentStart()) > (double)ctg.length()*tipsPercentage/100.0){
 						continue;
 					}
-					fr.f0Rec=curAlnRecord;
+					if(fr.f0Rec==null||fr.f0Rec.score < curAlnRecord.score)
+						fr.f0Rec=curAlnRecord;
 					
 				}else if(flankSeqs.size()>1 && flankSeqs.get(1).getName().equals(refName)){
 					ctg=flankSeqs.get(1);
@@ -185,7 +192,8 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					else if(Math.min(-curAlnRecord.readAlignmentEnd()+curAlnRecord.readLength, curAlnRecord.readAlignmentStart()) > (double)ctg.length()*tipsPercentage/100.0){
 						continue;
 					}
-					fr.f1Rec=curAlnRecord;
+					if(fr.f1Rec==null||fr.f1Rec.score < curAlnRecord.score)
+						fr.f1Rec=curAlnRecord;
 				}else{
 					LOG.info("Flank not found: {} != {}!", refName, flankSeqs.get(0).getName());
 					System.exit(1);
