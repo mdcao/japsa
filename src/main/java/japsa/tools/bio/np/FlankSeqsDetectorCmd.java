@@ -158,16 +158,18 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			if(refSeqs.containsKey(refName)){
 				ctg=refSeqs.get(refName);
 				curAlnRecord=new AlignmentRecord(curSAMRecord, ctg);
-				//increase score if primary
-				if(!curSAMRecord.getSupplementaryAlignmentFlag())
-					curAlnRecord.score+=100;
 
 				if(curAlnRecord.readAlignmentEnd()-curAlnRecord.readAlignmentStart() < insertLength){
 					LOG.info("Ignore integration size too short: {}", curAlnRecord.toString());
 					continue;
 				}
-				if(fr.refRec==null||fr.refRec.score < curAlnRecord.score)
+				if(fr.refRec==null||fr.refRec.qual < curAlnRecord.qual)
 					fr.refRec=curAlnRecord;
+				else if(fr.refRec.qual == curAlnRecord.qual){
+					LOG.info("Ignore read with confusing alignment to {}:\n {} \nvs\n {}", refName, curAlnRecord.toString(), fr.refRec);
+					fr.refRec=null;
+					continue;
+				}
 				
 			}else{
 				
@@ -180,8 +182,13 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					else if(Math.min(-curAlnRecord.readAlignmentEnd()+curAlnRecord.readLength, curAlnRecord.readAlignmentStart()) > (double)ctg.length()*tipsPercentage/100.0){
 						continue;
 					}
-					if(fr.f0Rec==null||fr.f0Rec.score < curAlnRecord.score)
+					if(fr.f0Rec==null||fr.f0Rec.qual < curAlnRecord.qual)
 						fr.f0Rec=curAlnRecord;
+					else if(fr.f0Rec.qual == curAlnRecord.qual){
+						LOG.info("Ignore read with confusing alignment to {}:\n {} \nvs\n {}", refName, curAlnRecord.toString(), fr.refRec);
+						fr.f0Rec=null;
+						continue;
+					}
 					
 				}else if(flankSeqs.size()>1 && flankSeqs.get(1).getName().equals(refName)){
 					ctg=flankSeqs.get(1);
@@ -192,8 +199,13 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					else if(Math.min(-curAlnRecord.readAlignmentEnd()+curAlnRecord.readLength, curAlnRecord.readAlignmentStart()) > (double)ctg.length()*tipsPercentage/100.0){
 						continue;
 					}
-					if(fr.f1Rec==null||fr.f1Rec.score < curAlnRecord.score)
+					if(fr.f1Rec==null||fr.f1Rec.qual < curAlnRecord.qual)
 						fr.f1Rec=curAlnRecord;
+					else if(fr.f1Rec.qual == curAlnRecord.qual){
+						LOG.info("Ignore read with confusing alignment to {}:\n {} \nvs\n {}", refName, curAlnRecord.toString(), fr.refRec);
+						fr.f1Rec=null;
+						continue;
+					}
 				}else{
 					LOG.info("Flank not found: {} != {}!", refName, flankSeqs.get(0).getName());
 					System.exit(1);
