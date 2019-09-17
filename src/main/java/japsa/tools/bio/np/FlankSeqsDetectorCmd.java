@@ -38,6 +38,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.math3.ml.clustering.Cluster;
+import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
+import org.apache.commons.math3.ml.clustering.DoublePoint;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +83,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 		addDouble("qual", 1, "Mininum quality");
 		addInt("insert", 10, "Minimum length of insert sequence in-between 2 flanking sequences");
 		addInt("tips", 20, "Maximum percentage of the overhangs compared to the corresponding flanking sequence");
+		addInt("distance", 3, "Distance for DBSCAN clustering algorithm.");
 		addDouble("cover", 80, "Mininum percentage of flank sequence coverage for a valid alignment");
 
 		addStdHelp();	
@@ -95,6 +103,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 		double 	qual = cmdLine.getDoubleVal("qual"),
 				flkCov = cmdLine.getDoubleVal("cover");
 		int insertLength = cmdLine.getIntVal("insert"),
+			distance = cmdLine.getIntVal("distance"),
 			tipsPercentage = cmdLine.getIntVal("tips");
 		
 		SequenceReader seqReader = SequenceReader.getReader(flankSeqsFile);
@@ -128,7 +137,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 		AlignmentRecord curAlnRecord=null;
 		FlankRecord fr=null;
 		String readID = "";
-
+		List<FlankRecord> records=new ArrayList<>();
 		while (iter.hasNext()) {
 	
 			try {
@@ -145,8 +154,10 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 								
 			if (!readID.equals(curSAMRecord.getReadName())){
 				//output prev
-				if(fr!=null)
-					System.out.println(fr.printJunctionOnRef());
+				if(fr!=null){
+//					System.out.println(fr.printJunctionOnRef());
+					records.add(new FlankRecord(fr));
+				}
 					
 				//update for next
 				readID = curSAMRecord.getReadName();
@@ -216,162 +227,82 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			
 		}// while
 		iter.close();
-		/**********************************************************************/
-	}
-	
+		/**********************************************************************
+		 * DBSCAN clustering
+		 */
+		
+		List<DoublePoint> points = new ArrayList<DoublePoint>();
+		for(int i=0;i<records.size();i++){
+			FlankRecord frec = records.get(i);
+			frec.calculateTF();
+			if(frec.trueFlank>0)
+				points.add(new DoublePoint(new double[]{frec.trueFlank, new Double(i)}));
+		}
+		
+		DBSCANClusterer dbscan = new DBSCANClusterer(distance, 0, (a,b)->Math.abs(a[0]- b[0]));
+		List<Cluster<DoublePoint>> cluster = dbscan.cluster(points);
+		for(int i=0;i<cluster.size();i++) {
+			Cluster<DoublePoint> c=cluster.get(i);
+			TFCluster tfCluster=new TFCluster();
+			for(DoublePoint p:c.getPoints()){ 
+				records.get((int)p.getPoint()[1]).setTFCluster(tfCluster);
+				tfCluster.add((int)p.getPoint()[0]);
+			}
 
-//	public static void main(String[] args) throws IOException{
-//		/*********************** Setting up script ****************************/		 
-//		/*********************** Setting up script ****************************/		
-//		CommandLine cmdLine = new FlankSeqsDetectorCmd();		
-//		args = cmdLine.stdParseLine(args);
-//		/**********************************************************************/
-//		String flankSeqsFile= cmdLine.getStringVal("flankFile");
-//		String bamFile = cmdLine.getStringVal("bamFile");
-//		double 	qual = cmdLine.getDoubleVal("qual"),
-//				flkCov = cmdLine.getDoubleVal("cover");
-//		int insertLength = cmdLine.getIntVal("insert"),
-//			tipsPercentage = cmdLine.getIntVal("tips");
-//		
-//		SequenceReader seqReader = SequenceReader.getReader(flankSeqsFile);
-//		Sequence seq;
-//		ArrayList<Contig> flankSeqs = new ArrayList<>(); 
-//		int index=0;
-//		while ((seq = seqReader.nextSequence(Alphabet.DNA())) != null)
-//			flankSeqs.add(new Contig(index++,seq));
-//		
-//		seqReader.close();
-//		
-//		if(flankSeqs.size() > 2){
-//			System.err.println("More than 2 sequences!");
-//			System.exit(1);
-//		}
-//		
-//		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-//		SamReader reader = SamReaderFactory.makeDefault().open(new File(bamFile));
-//		SAMRecordIterator iter = reader.iterator();
-//
-//		SAMRecord rec;
-//		AlignmentRecord curAlnRec;
-//		String curReadName = "";
-//		HashMap<String, HashMap<Contig, AlignmentRecord>> map = new HashMap<>();
-////		HashMap<String, Sequence> readsMap = new HashMap<>(); 
-//		while (iter.hasNext()) {
-//			rec = iter.next();			
-//			curReadName=rec.getReadName();
-////			if(!readsMap.containsKey(curReadName)){
-////				
-////			}
-//			
-//			if (rec.getReadUnmappedFlag() || rec.getMappingQuality() < qual || rec.isSecondaryOrSupplementary()){	
-//				if(!map.containsKey(curReadName))
-//					map.put(curReadName, new HashMap<>());
-//				continue;	
-//			}
-//			Contig flk = flankSeqs.get(rec.getReferenceIndex());
-//			curAlnRec=new AlignmentRecord(rec, flk);
-//			if(curAlnRec.refEnd-curAlnRec.refStart < (double)flkCov*flk.length()/100.0)
-//				continue;
-//			//not too far from the tip of read
-//			else if(Math.min(-curAlnRec.readAlignmentEnd()+curAlnRec.readLength, curAlnRec.readAlignmentStart()) > (double)flk.length()*tipsPercentage/100.0){
-//				continue;
-//			}
-//					
-//			HashMap<Contig, AlignmentRecord> data;
-//			if(!map.containsKey(curReadName) || map.get(curReadName).isEmpty()){
-//				data=new HashMap<>();
-//				data.put(flk, curAlnRec);
-//				map.put(curReadName,  data);
-//				
-//			}else{
-//				data=map.get(curReadName);
-//				if(!data.containsKey(flk)){
-//					data.put(flk, curAlnRec);
-//				}else if(data.get(flk).score < curAlnRec.score){
-//					data.replace(flk, curAlnRec);
-//				}
-//			}				
-//		
-//			
-//
-//		}// while
-//		iter.close();
-//		/**********************************************************************/
-//		int totReadNum = map.keySet().size();
-//		ArrayList<String>  	flank0 = new ArrayList<String>(),
-//							flank1_0 = new ArrayList<String>(),
-//							flank1_1 = new ArrayList<String>(),
-//							flank2 = new ArrayList<String>();
-//		map.keySet().stream().forEach(r->{
-//			if(map.get(r).isEmpty())
-//				flank0.add(r);
-//			else if(map.get(r).keySet().size()==1){
-//				if(map.get(r).containsKey(flankSeqs.get(0))){
-//					AlignmentRecord alg=map.get(r).get(flankSeqs.get(0));
-//					int totAlgFlank=alg.readAlignmentEnd()-alg.readAlignmentStart();
-////					if( totAlgFlank > alg.readLength -insertLength)
-////						return;
-//					System.out.printf("Found read %s with only 1 flank sequence %s, insert length=%d\n", r, flankSeqs.get(0).getName(), (alg.readLength-totAlgFlank));
-//					flank1_0.add(r);
-//					
-//				}
-//				else if(map.get(r).containsKey(flankSeqs.get(1))){
-//					AlignmentRecord alg=map.get(r).get(flankSeqs.get(1));
-//					int totAlgFlank=alg.readAlignmentEnd()-alg.readAlignmentStart();
-////					if( totAlgFlank > alg.readLength -insertLength)
-////						return;
-//					System.out.printf("Found read %s with only 1 flank sequence %s, insert length=%d\n", r, flankSeqs.get(1).getName(), (alg.readLength-totAlgFlank));
-//					flank1_1.add(r);
-//					
-//				}
-//				
-//			}
-//			else if(map.get(r).keySet().size()==2){
-//				AlignmentRecord aln0 = map.get(r).get(flankSeqs.get(0)),
-//								aln1 = map.get(r).get(flankSeqs.get(1));
-//				if((aln0.readStart-aln1.readStart)*(aln0.readEnd-aln1.readStart) <= 0 
-//				|| (aln0.readStart-aln1.readEnd)*(aln0.readEnd-aln1.readEnd) <= 0 )
-//					return;
-//				//the in-between must longer than insertLength
-//				int totAlgFlank=aln0.readAlignmentEnd()-aln0.readAlignmentStart() + aln1.readAlignmentEnd()-aln1.readAlignmentStart();
-//				if( totAlgFlank > aln1.readLength -insertLength)
-//					return;
-//				
-//				System.out.printf("Found read %s with both flank sequences, insert length=%d\n", r, (aln1.readLength-totAlgFlank));
-//				flank2.add(r);
-//			}
-//		});
-//		System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-//		System.out.println( "Total number of reads: " + totReadNum);
-//		System.out.println("Number of reads with 0 flank sequences: " + flank0.size());
-//		flank0.stream().forEach(r->System.out.println(r));
-//		System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-//		
-//		System.out.printf("Number of reads with only 1 flank sequence %s: %d \n" , flankSeqs.get(0).getName(), flank1_0.size());
-//		flank1_0.stream().forEach(r->System.out.println(r));
-//		System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-//		
-//		System.out.printf("Number of reads with only 1 flank sequence %s: %d \n" , flankSeqs.get(1).getName(), flank1_1.size());
-//		flank1_1.stream().forEach(r->System.out.println(r));
-//		System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-//		
-//		System.out.println("Number of reads with 2 flank sequences: " + flank2.size());
-//		flank2.stream().forEach(r->System.out.println(r));
-//		System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-//	}
+		}
+		
+		for(FlankRecord rec:records)
+			System.out.println(rec.print());
+	}
+
 
 
 }
+class TFCluster{
+	private static final AtomicInteger count = new AtomicInteger(0); 
+	private final int ID;
 
+	List<Integer> values;
+	
+	TFCluster(){
+		ID=count.incrementAndGet();
+		values=new ArrayList<Integer>();
+	}
+	public int getId(){
+		return ID;
+	}
+	public void add(int value){
+		values.add(value);
+	}
+	public String toString(){
+		//TODO: return stats as well
+		DescriptiveStatistics stats = new DescriptiveStatistics(values.stream().mapToDouble(i->i).toArray());
+
+		return getId()+"\t"+values.size()+"\t"+(int)stats.getMin()+"\t"+(int)stats.getMax()+"\t"+Math.round(stats.getMean())+"\t"+stats.getKurtosis();
+	}
+}
 class FlankRecord{
 	String readID;
 	AlignmentRecord f0Rec, f1Rec, refRec;
-	
+	int trueFlank;
+	TFCluster cluster;
 	FlankRecord(String readID){
 		this.readID=readID;
 		f0Rec=f1Rec=refRec=null;
+		trueFlank=-1;
+		cluster=null;
 	}
-	
+	FlankRecord(FlankRecord rec){
+		readID=rec.readID;
+		f0Rec=rec.f0Rec;
+		f1Rec=rec.f1Rec;
+		refRec=rec.refRec;
+		trueFlank=rec.trueFlank;
+		cluster=rec.cluster;
+	}
+	public void setTFCluster(TFCluster cluster){
+		this.cluster=cluster;
+	}
 	public String toString(){
 		String retval = readID+"\t";
 		if(f0Rec!=null)
@@ -386,35 +317,25 @@ class FlankRecord{
 			retval+=f1Rec.readStart+"\t"+f1Rec.readEnd+"\t";
 		else retval+="-1\t-1\t";
 		
-		int trueFlank=-1; 
-		if(f0Rec!=null && refRec!=null){
-			int t0=(refRec.readStart-f0Rec.readStart)*(refRec.readStart-f0Rec.readEnd),
-				t1=(refRec.readEnd-f0Rec.readStart)*(refRec.readEnd-f0Rec.readEnd);
-			
-			trueFlank=(t0<t1?refRec.readStart:refRec.readEnd);
-		}
 		return retval+trueFlank;
 	} 
-	
-	public String printJunctionOnRef(){
-		String retval = readID+"\t";
-		
-		int trueFlank=-1;
-		if(refRec!=null){			
-			if(f0Rec!=null){
-				int t0=(refRec.readStart-f0Rec.readStart)*(refRec.readStart-f0Rec.readEnd),
+	//call to calculate true flank
+	public void calculateTF(){
+		if(refRec!=null && f0Rec!=null){
+			int t0=(refRec.readStart-f0Rec.readStart)*(refRec.readStart-f0Rec.readEnd),
 					t1=(refRec.readEnd-f0Rec.readStart)*(refRec.readEnd-f0Rec.readEnd);
 				
 				trueFlank=(t0<t1?refRec.refStart:refRec.refEnd);
-			}
-			retval+=refRec.contig.getName()+"\t"+refRec.refStart+"\t"+refRec.refEnd+"\t"+refRec.strand+"\t";
-			
-		}else{
-			retval+="NA\tNA\tNA\tNA\t";
-
 		}
+	}
+	public String print(){
+		String retval = readID+"\t";
 		
+		if(refRec!=null)			
+			retval+=refRec.contig.getName()+"\t"+refRec.refStart+"\t"+refRec.refEnd+"\t"+refRec.strand+"\t";		
+		else
+			retval+="-1\t-1\t-1\t-1\t";		
 
-		return retval+(trueFlank==-1?"NA":trueFlank);
+		return retval+""+trueFlank+"\t"+(cluster==null?"-1\t-1\t-1\t-1\t-1\t-1":cluster.toString());
 	}
 }
