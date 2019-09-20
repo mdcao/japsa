@@ -37,8 +37,13 @@ package japsa.tools.bio.np;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.ml.clustering.Cluster;
@@ -66,7 +71,7 @@ import japsa.bio.hts.scaffold.Contig;
 
 @Deployable(
 		scriptName = "jsa.np.flankDetect",
-		scriptDesc = "Detect flanking sequences from both ends of nanopore reads"
+		scriptDesc = "Detect flanking sequences from both ends of nanopore reads. Results will be printed to stdout while logs to stderr."
 		)
 public class FlankSeqsDetectorCmd extends CommandLine{
     private static final Logger LOG = LoggerFactory.getLogger(FlankSeqsDetectorCmd.class);
@@ -138,6 +143,9 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 		FlankRecord fr=null;
 		String readID = "";
 		List<FlankRecord> records=new ArrayList<>();
+		/**********************************************************************
+		 ********************** Junctions detection ***************************
+		 **********************************************************************/
 		while (iter.hasNext()) {
 	
 			try {
@@ -148,7 +156,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			}
 			
 			if (curSAMRecord.getReadUnmappedFlag() || curSAMRecord.getMappingQuality() < qual || curSAMRecord.isSecondaryAlignment()){		
-				LOG.info("Ignore unmapped, low-quality or not primarily map record from {}...", curSAMRecord.getReadName());
+				LOG.info("Ignore record! Unmapped, low-quality or secondary alignment from {}...", curSAMRecord.getReadName());
 				continue;		
 			}
 								
@@ -171,13 +179,13 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 				curAlnRecord=new AlignmentRecord(curSAMRecord, ctg);
 
 				if(curAlnRecord.readAlignmentEnd()-curAlnRecord.readAlignmentStart() < insertLength){
-					LOG.info("Ignore integration size too short: {}", curAlnRecord.toString());
+					LOG.info("Ignore record! Integration size too short: {}", curAlnRecord.toString());
 					continue;
 				}
 				if(fr.refRec==null||fr.refRec.qual < curAlnRecord.qual)
 					fr.refRec=curAlnRecord;
 				else if(fr.refRec.qual == curAlnRecord.qual){
-					LOG.info("Ignore read with confusing alignment to {}:\n {} \nvs\n {}", refName, curAlnRecord.toString(), fr.refRec);
+					LOG.info("Ignore record! Confusing alignment on {}:\n {} \n {}", refName, curAlnRecord.toString(), fr.refRec);
 					fr.refRec=null;
 					continue;
 				}
@@ -196,7 +204,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					if(fr.f0Rec==null||fr.f0Rec.qual < curAlnRecord.qual)
 						fr.f0Rec=curAlnRecord;
 					else if(fr.f0Rec.qual == curAlnRecord.qual){
-						LOG.info("Ignore read with confusing alignment to {}:\n {} \nvs\n {}", refName, curAlnRecord.toString(), fr.refRec);
+						LOG.info("Ignore record! Confusing alignment on {}:\n {} \n {}", refName, curAlnRecord.toString(), fr.refRec);
 						fr.f0Rec=null;
 						continue;
 					}
@@ -213,7 +221,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 					if(fr.f1Rec==null||fr.f1Rec.qual < curAlnRecord.qual)
 						fr.f1Rec=curAlnRecord;
 					else if(fr.f1Rec.qual == curAlnRecord.qual){
-						LOG.info("Ignore read with confusing alignment to {}:\n {} \nvs\n {}", refName, curAlnRecord.toString(), fr.refRec);
+						LOG.info("Ignore record! Confusing alignment on {}:\n {} \n {}", refName, curAlnRecord.toString(), fr.refRec);
 						fr.f1Rec=null;
 						continue;
 					}
@@ -223,14 +231,12 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 				}
 					
 			}
-
 			
 		}// while
 		iter.close();
 		/**********************************************************************
-		 * DBSCAN clustering
-		 */
-		
+		 ********************** DBSCAN clustering *****************************
+		 **********************************************************************/		
 		List<DoublePoint> points = new ArrayList<DoublePoint>();
 		for(int i=0;i<records.size();i++){
 			FlankRecord frec = records.get(i);
@@ -238,7 +244,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			if(frec.trueFlank>0)
 				points.add(new DoublePoint(new double[]{frec.trueFlank, new Double(i)}));
 		}
-		
+		//minPts=0 to report every clusters, even ones with only 1 point
 		DBSCANClusterer dbscan = new DBSCANClusterer(distance, 0, (a,b)->Math.abs(a[0]- b[0]));
 		List<Cluster<DoublePoint>> cluster = dbscan.cluster(points);
 		for(int i=0;i<cluster.size();i++) {
@@ -250,7 +256,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 			}
 
 		}
-		
+		System.out.println("#ReadID\tTarget\tStart\tEnd\tStrand\tJunction\tClusterID\tCount\tMin\tMax\tMod\tR50(bp)\tR80(bp)");
 		for(FlankRecord rec:records)
 			System.out.println(rec.print());
 	}
@@ -258,29 +264,60 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 
 
 }
+//To maintain distribution for each cluster detected.
 class TFCluster{
 	private static final AtomicInteger count = new AtomicInteger(0); 
 	private final int ID;
-
-	List<Integer> values;
+	private int size;
+	HashMap<Integer, Integer> distribution;
 	
 	TFCluster(){
 		ID=count.incrementAndGet();
-		values=new ArrayList<Integer>();
+		distribution=new HashMap<>();
+		size=0;
 	}
 	public int getId(){
 		return ID;
 	}
 	public void add(int value){
-		values.add(value);
+		if(distribution.containsKey(value))
+			distribution.put(value, distribution.get(value)+1);
+		else
+			distribution.put(value, 1);
+		size++;
 	}
 	public String toString(){
-		//TODO: return stats as well
-		DescriptiveStatistics stats = new DescriptiveStatistics(values.stream().mapToDouble(i->i).toArray());
+//		DescriptiveStatistics stats = new DescriptiveStatistics(values.stream().mapToDouble(i->i).toArray());
 
-		return getId()+"\t"+values.size()+"\t"+(int)stats.getMin()+"\t"+(int)stats.getMax()+"\t"+Math.round(stats.getMean())+"\t"+stats.getKurtosis();
+		Set<Integer> keys=distribution.keySet();
+		
+		int min=Collections.min(keys), 
+			max=Collections.max(keys);
+		final int max_values=Collections.max(distribution.values());
+		//if there is more than 1 modes, take the average
+		double rmode=keys.stream().filter(k->(distribution.get(k)==max_values)).mapToDouble(k->k).average().orElse(Double.NaN);
+		int mod=(int) Math.round(rmode);
+		//calculate rX = minimal range from the mode making up X% of cluster size. 
+		// E.g. r50=2 meaning values from [mod-2,mod+2] making up 50% of the cluster
+		int r50=-1, r80=-1;
+		int count=distribution.containsKey(mod)?distribution.get(mod):0;
+		for(int i=0; i < max-min+1; i++){
+			if(r50<0 && count>=.5*size)
+				r50=i;
+			if(r80<0 && count>=.8*size){
+				r80=i;
+				break;
+			}
+			count+=distribution.containsKey(mod+i)?distribution.get(mod+i):0;
+			count+=distribution.containsKey(mod-i)?distribution.get(mod-i):0;
+		}
+		
+		return getId()+"\t"+size+"\t"+min+"\t"+max+"\t"+(int)mod+"\t"+(r50<0?"NA":r50)+"\t"+(r80<0?"NA":r80);
+
 	}
 }
+// A record contains alignments to Human reference and flank sequences
+// The 3'-LTR junction site (trueFlank) is induced here
 class FlankRecord{
 	String readID;
 	AlignmentRecord f0Rec, f1Rec, refRec;
@@ -307,15 +344,15 @@ class FlankRecord{
 		String retval = readID+"\t";
 		if(f0Rec!=null)
 			retval+=f0Rec.readStart+"\t"+f0Rec.readEnd+"\t";
-		else retval+="-1\t-1\t";
+		else retval+="NA\tNA\t";
 		
 		if(refRec!=null)
 			retval+=refRec.readStart+"\t"+refRec.readEnd+"\t";
-		else retval+="-1\t-1\t";
+		else retval+="NA\tNA\t";
 		
 		if(f1Rec!=null)
 			retval+=f1Rec.readStart+"\t"+f1Rec.readEnd+"\t";
-		else retval+="-1\t-1\t";
+		else retval+="NA\tNA\t";
 		
 		return retval+trueFlank;
 	} 
@@ -332,10 +369,10 @@ class FlankRecord{
 		String retval = readID+"\t";
 		
 		if(refRec!=null)			
-			retval+=refRec.contig.getName()+"\t"+refRec.refStart+"\t"+refRec.refEnd+"\t"+refRec.strand+"\t";		
+			retval+=refRec.contig.getName()+"\t"+refRec.refStart+"\t"+refRec.refEnd+"\t"+(refRec.strand?"+":"-")+"\t";		
 		else
-			retval+="-1\t-1\t-1\t-1\t";		
+			retval+="NA\tNA\tNA\tNA\t";		
 
-		return retval+""+trueFlank+"\t"+(cluster==null?"-1\t-1\t-1\t-1\t-1\t-1":cluster.toString());
+		return retval+""+(trueFlank<0?"NA":trueFlank)+"\t"+(cluster==null?"NA\tNA\tNA\tNA\tNA\tNA\tNA":cluster.toString());
 	}
 }
