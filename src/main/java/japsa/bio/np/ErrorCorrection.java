@@ -124,6 +124,8 @@ public class ErrorCorrection {
 				cmd = "muscle -in " + faiFile + " -out " + faoFile + " -maxiters 5 -quiet";				
 			}else if (msa.startsWith("clustal")) {
 				cmd = "clustalo --force -i " + faiFile + " -o " + faoFile;
+			}else if (msa.startsWith("kalign3")){
+				cmd = "kalign -i " + faiFile	+ " -o " + faoFile;
 			}else if (msa.startsWith("kalign")){
 				cmd = "kalign -gpo 60 -gpe 10 -tgpe 0 -bonus 0 -q -i " + faiFile	+ " -o " + faoFile;
 			}else if (msa.startsWith("msaprobs")){
