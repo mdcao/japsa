@@ -36,6 +36,8 @@ package japsa.bio.np;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -246,6 +248,9 @@ public class ErrorCorrection {
 				//4.0 get consensus and write to facFile	
 				
 				consensus = getConsensus(seqList);
+				
+				Files.deleteIfExists(Paths.get(faiFile));
+				Files.deleteIfExists(Paths.get(faoFile));
 			}
 		}
 		return consensus;
