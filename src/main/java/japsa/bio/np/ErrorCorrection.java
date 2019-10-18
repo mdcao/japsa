@@ -34,8 +34,12 @@
 package japsa.bio.np;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -119,34 +123,81 @@ public class ErrorCorrection {
     
     public static void runMultipleAlignment(String faiFile, String faoFile) throws IOException, InterruptedException{
     	{
-			String cmd  = "";
+			String[] cmd;
+    	    File temp = File.createTempFile("tempfile", ".tmp"); 
 			if (msa.startsWith("poa")){						
-				cmd = "poa -read_fasta " + faiFile + " -clustal " + faoFile + " -hb blosum80.mat";
+				//create a temporary matrix file similar to blosum80.mat	    		
+	    	    PrintWriter printer = new PrintWriter(new BufferedWriter(new FileWriter(temp)));
+	    	    printer.println("GAP-PENALTIES=12 6 6");
+	    	    printer.println("   A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  B  Z  X  ?  a  g  t  c  u  ]  n");
+	    	    printer.println("A  7 -3 -3 -3 -1 -2 -2  0 -3 -3 -3 -1 -2 -4 -1  2  0 -5 -4 -1 -3 -2 -1 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"R -3  9 -1 -3 -6  1 -1 -4  0 -5 -4  3 -3 -5 -3 -2 -2 -5 -4 -4 -2  0 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"N -3 -1  9  2 -5  0 -1 -1  1 -6 -6  0 -4 -6 -4  1  0 -7 -4 -5  5 -1 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"D -3 -3  2 10 -7 -1  2 -3 -2 -7 -7 -2 -6 -6 -3 -1 -2 -8 -6 -6  6  1 -3 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"C -1 -6 -5 -7 13 -5 -7 -6 -7 -2 -3 -6 -3 -4 -6 -2 -2 -5 -5 -2 -6 -7 -4 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"Q -2  1  0 -1 -5  9  3 -4  1 -5 -4  2 -1 -5 -3 -1 -1 -4 -3 -4 -1  5 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"E -2 -1 -1  2 -7  3  8 -4  0 -6 -6  1 -4 -6 -2 -1 -2 -6 -5 -4  1  6 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"G  0 -4 -1 -3 -6 -4 -4  9 -4 -7 -7 -3 -5 -6 -5 -1 -3 -6 -6 -6 -2 -4 -3 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"H -3  0  1 -2 -7  1  0 -4 12 -6 -5 -1 -4 -2 -4 -2 -3 -4  3 -5 -1  0 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"I -3 -5 -6 -7 -2 -5 -6 -7 -6  7  2 -5  2 -1 -5 -4 -2 -5 -3  4 -6 -6 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"L -3 -4 -6 -7 -3 -4 -6 -7 -5  2  6 -4  3  0 -5 -4 -3 -4 -2  1 -7 -5 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"K -1  3  0 -2 -6  2  1 -3 -1 -5 -4  8 -3 -5 -2 -1 -1 -6 -4 -4 -1  1 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"M -2 -3 -4 -6 -3 -1 -4 -5 -4  2  3 -3  9  0 -4 -3 -1 -3 -3  1 -5 -3 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"F -4 -5 -6 -6 -4 -5 -6 -6 -2 -1  0 -5  0 10 -6 -4 -4  0  4 -2 -6 -6 -3 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"P -1 -3 -4 -3 -6 -3 -2 -5 -4 -5 -5 -2 -4 -6 12 -2 -3 -7 -6 -4 -4 -2 -3 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"S  2 -2  1 -1 -2 -1 -1 -1 -2 -4 -4 -1 -3 -4 -2  7  2 -6 -3 -3  0 -1 -1 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"T  0 -2  0 -2 -2 -1 -2 -3 -3 -2 -3 -1 -1 -4 -3  2  8 -5 -3  0 -1 -2 -1 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"W -5 -5 -7 -8 -5 -4 -6 -6 -4 -5 -4 -6 -3  0 -7 -6 -5 16  3 -5 -8 -5 -5 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"Y -4 -4 -4 -6 -5 -3 -5 -6  3 -3 -2 -4 -3  4 -6 -3 -3  3 11 -3 -5 -4 -3 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"V -1 -4 -5 -6 -2 -4 -4 -6 -5  4  1 -4  1 -2 -4 -3  0 -5 -3  7 -6 -4 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"B -3 -2  5  6 -6 -1  1 -2 -1 -6 -7 -1 -5 -6 -4  0 -1 -8 -5 -6  6  0 -3 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"Z -2  0 -1  1 -7  5  6 -4  0 -6 -5  1 -3 -6 -2 -1 -2 -5 -4 -4  0  6 -1 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"X -1 -2 -2 -3 -4 -2 -2 -3 -2 -2 -2 -2 -2 -3 -3 -1 -1 -5 -3 -2 -3 -1 -2 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"? -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"a -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9  4 -2 -2 -2 -2 -9  0\n"
+	    	    			+	"g -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -2  4 -2 -2 -2 -9  0\n"
+	    	    			+	"t -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -2 -2  4 -2  4 -9  0\n"
+	    	    			+	"c -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -2 -2 -2  4 -2 -9  0\n"
+	    	    			+	"u -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -2 -2  4 -2  4 -9  0\n"
+	    	    			+	"] -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9\n"
+	    	    			+	"n -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 -9  0  0  0  0  0 -9  0");
+	    	    
+	    	    printer.close();			    	
+				//invoke
+				cmd = new String[]{"poa", "-read_fasta", faiFile, "-clustal", faoFile, "-hb", temp.getAbsolutePath()};
+				
+			}else if (msa.startsWith("spoa")){
+				cmd = new String[]{"spoa", faiFile};	
 			}else if (msa.startsWith("muscle")){
-				cmd = "muscle -in " + faiFile + " -out " + faoFile + " -maxiters 5 -quiet";				
+				cmd = new String[]{"muscle", "-in", faiFile, "-out", faoFile, "-maxiters", "5", "-quiet"};				
 			}else if (msa.startsWith("clustal")) {
-				cmd = "clustalo --force -i " + faiFile + " -o " + faoFile;
+				cmd = new String[]{"clustalo", "--force", "-i", faiFile, "-o", faoFile};
 			}else if (msa.startsWith("kalign3")){
-				cmd = "kalign -i " + faiFile	+ " -o " + faoFile;
+				cmd = new String[]{"kalign", "-i", faiFile, "-o", faoFile};
 			}else if (msa.startsWith("kalign")){
-				cmd = "kalign -gpo 60 -gpe 10 -tgpe 0 -bonus 0 -q -i " + faiFile	+ " -o " + faoFile;
+				cmd = new String[]{"kalign", "-gpo", "60", "-gpe", "10", "-tgpe", "0", "-bonus", "0", "-q", "-i", faiFile, "-o", faoFile};
 			}else if (msa.startsWith("msaprobs")){
-				cmd = "msaprobs -o " + faoFile + " " + faiFile;
+				cmd = new String[]{"msaprobs", "-o", faoFile, faiFile};
 			}else if (msa.startsWith("mafft")){
-				cmd = "mafft_wrapper.sh  " + faiFile + " " + faoFile;
+				cmd = new String[]{"mafft_wrapper.sh", faiFile, faoFile};
 			}else{
 				LOG.error("Unknown msa function " + msa);
 				throw new InterruptedException("Unknown msa function " + msa);
 			}
 
-			LOG.info("Running " + cmd);
-			Process process = Runtime.getRuntime().exec(cmd);
+			LOG.info("Running " + Arrays.toString(cmd));
+			ProcessBuilder builder = new ProcessBuilder(cmd).redirectErrorStream(true);
+			if (msa.startsWith("spoa")){
+				builder.redirectOutput(new File(faoFile));			
+			}
+			Process process = builder.start();
 			process.waitFor();
-			LOG.info("Done " + cmd);
+			LOG.info("Done " + Arrays.toString(cmd));
+			temp.deleteOnExit();
 		}
     }
     
-    public static Sequence 	readMSA(String faoFile, int seql) throws IOException{
+    public static Sequence 	readPOAOutput(String faoFile, int seql) throws IOException{
     	SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), seql);
 		BufferedReader bf =  FastaReader.openFile(faoFile);
 		String line = bf.readLine();
@@ -159,6 +210,20 @@ public class ErrorCorrection {
 						sb.append((byte)base);
 				}//for							
 			}//if
+		}//while
+		sb.setName("consensus");
+		LOG.info(sb.getName() + "  " + sb.length());
+		return sb.toSequence();
+    }
+    public static Sequence 	readSPOAOutput(String faoFile, int seql) throws IOException{
+    	SequenceBuilder sb = new SequenceBuilder(Alphabet.DNA(), seql);
+		BufferedReader bf =  FastaReader.openFile(faoFile);
+		String line = bf.readLine();
+		while ( (line = bf.readLine()) != null){
+			if (line.startsWith("Consensus")){
+				continue;						
+			}//if
+			sb.append(new Sequence(Alphabet.DNA(), line, "consensus"));
 		}//while
 		sb.setName("consensus");
 		LOG.info(sb.getName() + "  " + sb.length());
@@ -238,10 +303,12 @@ public class ErrorCorrection {
 					return null;
 				}
 				
-				if ("poa".equals(msa)){
-					return readMSA(faoFile, readList.get(0).length());
-					
+				if ("poa".equals(msa))
+					return readPOAOutput(faoFile, readList.get(0).length());	
+				else if("spoa".equals(msa)){
+					return readSPOAOutput(faoFile, readList.get(0).length());
 				}
+				
 
 				//3.0 Read in multiple alignment
 				ArrayList<Sequence> seqList = readMultipleAlignment(faoFile);
