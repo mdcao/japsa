@@ -244,8 +244,10 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 		List<DoublePoint> points = new ArrayList<DoublePoint>();
 		HashMap<Integer, List<FlankRecord>> tf2record = new HashMap<>(); //map each unique TF value to a list of records
 		int f1=0, f2=0, f12=0, f0=0;
+		System.err.printf("#Read\tReference\t%s\t%s\n",flankSeqs.get(0).getName(),flankSeqs.size()>1?flankSeqs.get(1).getName():"NA");
 		for(int i=0;i<records.size();i++){
 			FlankRecord frec = records.get(i);
+			System.err.printf("%s\t%d\t%d\t%d\n", frec.readID, frec.refRec!=null?1:0, frec.f0Rec!=null?1:0,frec.f1Rec!=null?1:0);
 			if(frec.refRec==null)
 				continue;
 			else if(frec.f0Rec!=null && frec.f1Rec!=null){
