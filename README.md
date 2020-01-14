@@ -63,11 +63,11 @@ algorithms, implementation, documentation and feedback:
 * [eXpert Model](https://github.com/mdcao/xm): The expert model compression model
 * [XMas](https://github.com/mdcao/XMas): Phylogenetic distance method using information theory
 * [capsim](https://github.com/mdcao/capsim): Simulation of capture sequencing
-* [npScarf](https://github.com/mdcao/npScarf): Scaffold and Complete assemblies in real-time fashion
+* [npScarf](https://github.com/mdcao/npScarf): Scaffold and Complete assemblies in real-time fashion (abandoned)
 * [npAnalysis](https://github.com/mdcao/npAnalysis): Realtime identification of bacterial sample
 * [npReader](https://github.com/mdcao/npReader): Real-time extraction and analysis Oxford Nanopore sequencing data
 * [npBarcode](https://github.com/hsnguyen/npBarcode): Demultiplex barcoded Oxford Nanopore sequencing 
-* [npGraph](https://github.com/hsnguyen/assembly): Streaming scaffolding and visualisation 
+* [npGraph](https://github.com/hsnguyen/assembly): Streaming scaffolding and visualisation (replacing npScarf)
 * [PhageXpress](https://github.com/mdcao/phagexpress)
 
 and more to come.
