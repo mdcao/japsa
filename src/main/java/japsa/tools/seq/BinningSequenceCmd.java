@@ -81,7 +81,9 @@ public class BinningSequenceCmd extends CommandLine{
 
 		addString("output", "bins", "Output directory containing binned reads.");		
 
-		addString("filter", "", "List of species (separated by comma) to excluded from the binning");
+		addString("exclude", "", "List of species (separated by comma) to be excluded from the binning results");
+		addString("include", "", "List of species (separated by comma) to be included into the binning results");
+
 		addInt("minRead", 0, "Mininum number of read count for the output bins (japsa only)");
 
 		addStdHelp();		
@@ -95,23 +97,32 @@ public class BinningSequenceCmd extends CommandLine{
 		String seqFile = cmdLine.getStringVal("sequence");		
 		String mapFile = cmdLine.getStringVal("map");
 		String typer = cmdLine.getStringVal("typer");
-		String filter = cmdLine.getStringVal("filter");
+		String exclude = cmdLine.getStringVal("exclude");
+		String include = cmdLine.getStringVal("include");
+
 		String outputDir = cmdLine.getStringVal("output");
 		int minRead = cmdLine.getIntVal("minRead");	
 
 		/**********************************************************************/
-		binning(seqFile, mapFile, typer, filter, outputDir, minRead);
+		binning(seqFile, mapFile, typer, include, exclude, outputDir, minRead);
 
 	}
 
-	public static void binning(String seqFile, String mapFile, String typer, String filter, String outputDir, int minRead) throws IOException{
+	public static void binning(String seqFile, String mapFile, String typer, String include, String exclude, String outputDir, int minRead) throws IOException{
 
 		//0.Make the filter conditions
-		HashSet<String> filterSet = new HashSet<String>();
-		if(!filter.isEmpty()){
-			String[] toks = filter.split(",");
+		HashSet<String> excludeSet = new HashSet<String>(),
+						includeSet = new HashSet<String>();
+		if(!exclude.isEmpty()){
+			String[] toks = exclude.split(",");
 			for(String tok:toks)
-				filterSet.add(tok);
+				excludeSet.add(tok);
+		}
+		
+		if(!include.isEmpty()){
+			String[] toks = include.split(",");
+			for(String tok:toks)
+				includeSet.add(tok);
 		}
 		
 		//1.Load the map
@@ -124,7 +135,7 @@ public class BinningSequenceCmd extends CommandLine{
 			while(line!=null){
 				if(line.startsWith(">")){
 					if(curSpecies!=null && curList!=null){
-						if(!filterSet.contains(curSpecies) && curList.size()>minRead){
+						if(!excludeSet.contains(curSpecies) && curList.size()>minRead){
 							for(String readID:curList){
 								if(binMap.containsKey(readID)){
 									LOG.info("Read {} map to multiple species -> unknown!", readID);
@@ -145,7 +156,7 @@ public class BinningSequenceCmd extends CommandLine{
 			}
 			//one last time
 			if(curSpecies!=null && curList!=null){
-				if(!filterSet.contains(curSpecies) && curList.size()>minRead){
+				if(!excludeSet.contains(curSpecies) && curList.size()>minRead){
 					for(String readID:curList){
 						if(binMap.containsKey(readID)){
 							LOG.info("Read {} map to multiple species -> unknown!", readID);
@@ -155,20 +166,20 @@ public class BinningSequenceCmd extends CommandLine{
 					}
 						
 				}else
-					LOG.info("{} excluded, readCount={}",curSpecies,curList.size());
+					LOG.info("{} excluded due to criteria, readCount={}",curSpecies,curList.size());
 			}
 		}else if(typer.toLowerCase().startsWith("k")) {
 			
 			while(line!=null){
 				String[] toks=line.split("\\s+");
-				if(!filterSet.contains(toks[2])){
+				if(!excludeSet.contains(toks[2])){
 					if(binMap.containsKey(toks[1])){
 						LOG.info("Read {} map to multiple species -> unknown!", toks[1]);
 						binMap.put(toks[1], "unknown");
 					}else
 						binMap.put(toks[1],toks[2]);					
 				}else
-					LOG.info("bin {} excluded!",toks[2]);
+					LOG.info("bin {} excluded due to criteria!",toks[2]);
 				
 				line=mapReader.readLine();
 			}
@@ -185,7 +196,14 @@ public class BinningSequenceCmd extends CommandLine{
 				.filter(a->counted.get(a.getValue())>minRead)
 				.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 		
+		//screen bins with regards to includeList
+		if(includeSet.size()>0)
+			binMap=(HashMap<String, String>) binMap.entrySet().stream()
+					.filter(a->includeSet.contains(a))
+					.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		
 		mapReader.close();		
+		
 		
 		//2.Binning based on the map
 		SequenceReader seqReader = SequenceReader.getReader(seqFile);
@@ -220,7 +238,7 @@ public class BinningSequenceCmd extends CommandLine{
 				if(out!=null)
 					seq.print(out);
 			}else
-				LOG.info("{} not found in any bin!", seq.getName());
+				LOG.info("{} is not gonna be reported!", seq.getName());
 		}
 		
 		for(SequenceOutputStream out:bin2File.values()){
