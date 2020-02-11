@@ -76,11 +76,13 @@ public class BinningSequenceCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addString("sequence", null, "The FASTQ file of all nanopore reads",true);
-		addString("map", null, "species2read map file from running species typing",true);		
+		addString("map", null, "Map file from running species typing",true);	
+		addString("typer", "j", "SpeciesTyping software used to generate the map: JAPSA(j) or kraken2(k)");		
+
 		addString("output", "bins", "Output directory containing binned reads.");		
 
 		addString("filter", "", "List of species (separated by comma) to excluded from the binning");
-		addInt("minRead", 0, "Mininum number of read count for the output bins");
+		addInt("minRead", 0, "Mininum number of read count for the output bins (japsa only)");
 
 		addStdHelp();		
 	} 
@@ -92,16 +94,17 @@ public class BinningSequenceCmd extends CommandLine{
 		/**********************************************************************/		
 		String seqFile = cmdLine.getStringVal("sequence");		
 		String mapFile = cmdLine.getStringVal("map");
+		String typer = cmdLine.getStringVal("typer");
 		String filter = cmdLine.getStringVal("filter");
 		String outputDir = cmdLine.getStringVal("output");
 		int minRead = cmdLine.getIntVal("minRead");	
 
 		/**********************************************************************/
-		binning(seqFile, mapFile, filter, outputDir, minRead);
+		binning(seqFile, mapFile, typer, filter, outputDir, minRead);
 
 	}
 
-	public static void binning(String seqFile, String mapFile, String filter, String outputDir, int minRead) throws IOException{
+	public static void binning(String seqFile, String mapFile, String typer, String filter, String outputDir, int minRead) throws IOException{
 
 		//0.Make the filter conditions
 		HashSet<String> filterSet = new HashSet<String>();
@@ -117,43 +120,64 @@ public class BinningSequenceCmd extends CommandLine{
 		String line=mapReader.readLine();
 		String curSpecies=null;
 		ArrayList<String> curList=null;
-		while(line!=null){
-			if(line.startsWith(">")){
-				if(curSpecies!=null && curList!=null){
-					if(!filterSet.contains(curSpecies) && curList.size()>minRead){
-						for(String readID:curList){
-							if(binMap.containsKey(readID)){
-								LOG.info("Read {} map to multiple species -> put to unclassifed!", readID);
-								binMap.put(readID, "unclassifed");
-							}else
-								binMap.put(readID, curSpecies);
-						}
-							
-					}else
-						LOG.info("{} excluded, readCount={}",curSpecies,curList.size());
-				}
-				curSpecies=line.substring(1).trim();
-				curList=new ArrayList<>();
-			}else
-				curList.add(line.trim());
+		if(typer.toLowerCase().startsWith("j")) {
+			while(line!=null){
+				if(line.startsWith(">")){
+					if(curSpecies!=null && curList!=null){
+						if(!filterSet.contains(curSpecies) && curList.size()>minRead){
+							for(String readID:curList){
+								if(binMap.containsKey(readID)){
+									LOG.info("Read {} map to multiple species -> unknown!", readID);
+									binMap.put(readID, "unknown");
+								}else
+									binMap.put(readID, curSpecies);
+							}
+								
+						}else
+							LOG.info("{} excluded, readCount={}",curSpecies,curList.size());
+					}
+					curSpecies=line.substring(1).trim();
+					curList=new ArrayList<>();
+				}else
+					curList.add(line.trim());
+				
+				line=mapReader.readLine();
+			}
+			//one last time
+			if(curSpecies!=null && curList!=null){
+				if(!filterSet.contains(curSpecies) && curList.size()>minRead){
+					for(String readID:curList){
+						if(binMap.containsKey(readID)){
+							LOG.info("Read {} map to multiple species -> unknown!", readID);
+							binMap.put(readID, "unknown");
+						}else
+							binMap.put(readID, curSpecies);
+					}
+						
+				}else
+					LOG.info("{} excluded, readCount={}",curSpecies,curList.size());
+			}
+		}else if(typer.toLowerCase().startsWith("k")) {
 			
-			line=mapReader.readLine();
-		}
-		//one last time
-		if(curSpecies!=null && curList!=null){
-			if(!filterSet.contains(curSpecies) && curList.size()>minRead){
-				for(String readID:curList){
-					if(binMap.containsKey(readID)){
-						LOG.info("Read {} map to multiple species -> put to unclassifed!", readID);
-						binMap.put(readID, "unclassifed");
+			while(line!=null){
+				String[] toks=line.split("\\s+");
+				if(!filterSet.contains(toks[2])){
+					if(binMap.containsKey(toks[1])){
+						LOG.info("Read {} map to multiple species -> unknown!", toks[1]);
+						binMap.put(toks[1], "unknown");
 					}else
-						binMap.put(readID, curSpecies);
-				}
-					
-			}else
-				LOG.info("{} excluded, readCount={}",curSpecies,curList.size());
+						binMap.put(toks[1],toks[2]);					
+				}else
+					LOG.info("bin {} excluded!",toks[2]);
+				
+				line=mapReader.readLine();
+			}
+			
+			
+		}else {
+			LOG.error("Unrecognized typer suffix {}!", typer);
+			System.exit(1);
 		}
-		
 		//filter out bins with insufficient reads number
 		Map<String, Long> counted = binMap.values().parallelStream()
 	            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
