@@ -77,7 +77,7 @@ public class BinningSequenceCmd extends CommandLine{
 
 		addString("sequence", null, "The FASTQ file of all nanopore reads",true);
 		addString("map", null, "species2read map file from running species typing",true);		
-		addString("outputDir", "bins", "Output directory containing binned reads.");		
+		addString("output", "bins", "Output directory containing binned reads.");		
 
 		addString("filter", "", "List of species (separated by comma) to excluded from the binning");
 		addInt("minRead", 0, "Mininum number of read count for the output bins");
