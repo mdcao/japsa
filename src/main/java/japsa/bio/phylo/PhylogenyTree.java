@@ -71,6 +71,10 @@ public class PhylogenyTree {
 		height = 0;
 	}
 
+	public double height(){
+		return height;
+	}
+	
 	// Create an internal tree
 	public PhylogenyTree(PhylogenyTree parent, PhylogenyTree left,
 		PhylogenyTree right) {

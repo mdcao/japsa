@@ -61,7 +61,7 @@ public class RealtimeSpeciesTyping {
 	private RealtimeSpeciesTyper typer;
 	private OutputStream outputStream;
 	private BufferedReader indexBufferedReader;
-
+	private HashSet<String> filterSet = new HashSet<String>();
 	/**
 	 * Minimum quality of alignment
 	 */
@@ -139,9 +139,17 @@ public class RealtimeSpeciesTyping {
 			if (line.startsWith("#"))
 				continue;
 
-			String [] toks = line.split("\\s+");
-			String sp =  toks[0];
-			String seq = toks[1].substring(1);
+
+			String sp=null,seq=null;
+				
+			String [] toks = line.split(">");
+			if(toks.length < 2){
+				LOG.info("Illegal speciesIndex file!");
+				System.exit(1);
+			}
+				
+			sp=toks[0].trim();
+			seq=toks[1].split("\\s+")[0];
 
 			if (seq2Species.put(seq, sp) != null)
 				throw new RuntimeException("sequence " + seq +" presents multiple time");
@@ -149,7 +157,7 @@ public class RealtimeSpeciesTyping {
 //				LOG.info("==>adding " + seq + " to " + sp);
 			
 			if (species2ReadList.get(sp) == null){
-				LOG.debug("add species: "+sp);
+//				LOG.info("add species: "+sp);
 				species2ReadList.put(sp,new ArrayList<String>());
 			}			
 		}//while
@@ -185,6 +193,19 @@ public class RealtimeSpeciesTyping {
 		typing(bamInputStream, readNumber, timeNumber);
 	}
 
+	/**
+	 * @param filter the species keywords list (separated by comma) to excluded
+	 */
+	public void setFilter(String filter) {
+		if(!filter.isEmpty()){
+			String[] toks = filter.split(";");
+			for(String tok:toks)
+				if(!tok.isEmpty()){
+					filterSet.add(tok);
+				}
+		}
+		
+	}
 	public void typing(InputStream bamInputStream, int readNumber, int timeNumber) throws IOException, InterruptedException{
 		//if (readNumber <= 0)
 		//	readNumber = 1;			
@@ -204,7 +225,7 @@ public class RealtimeSpeciesTyping {
 		LOG.info("starting RealtimeSpeciesTyper thread");
 		thread.start();
 		LOG.info("started  RealtimeSpeciesTyper thread");
-
+		HashSet<String> skipList = new HashSet<>();
 		while (samIter.hasNext()){
 //			try{
 			SAMRecord sam = samIter.next();
@@ -234,7 +255,18 @@ public class RealtimeSpeciesTyping {
 				continue;
 			}
 
+			if(skipList.contains(readName)){
+				LOG.debug("filter {}", readName);
+				continue;
+			}
+			
 			refName = sam.getReferenceName();
+			if(filterSet.contains(seq2Species.get(refName))){
+				if(!sam.isSecondaryOrSupplementary())
+					skipList.add(readName);
+				continue;
+			}
+			
 			String species = seq2Species.get(refName);
 			if (species == null){
 				throw new RuntimeException(" Can't find species with ref " + refName + " line " + currentReadCount );
@@ -401,4 +433,5 @@ public class RealtimeSpeciesTyping {
 			return typing.currentReadCount;
 		}
 	}
+
 }

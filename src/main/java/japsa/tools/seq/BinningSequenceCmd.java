@@ -35,6 +35,7 @@
 package japsa.tools.seq;
 
 import japsa.seq.Alphabet;
+import japsa.seq.FastqReader;
 import japsa.seq.FastqSequence;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -52,7 +53,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 /**
@@ -134,25 +139,44 @@ public class BinningSequenceCmd extends CommandLine{
 			
 			line=mapReader.readLine();
 		}
+		//one last time
+		if(curSpecies!=null && curList!=null){
+			if(!filterSet.contains(curSpecies) && curList.size()>minRead){
+				for(String readID:curList){
+					if(binMap.containsKey(readID)){
+						LOG.info("Read {} map to multiple species -> put to unclassifed!", readID);
+						binMap.put(readID, "unclassifed");
+					}else
+						binMap.put(readID, curSpecies);
+				}
+					
+			}else
+				LOG.info("{} excluded, readCount={}",curSpecies,curList.size());
+		}
+		
+		//filter out bins with insufficient reads number
+		Map<String, Long> counted = binMap.values().parallelStream()
+	            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+		binMap=(HashMap<String, String>) binMap.entrySet().stream()
+				.filter(a->counted.get(a.getValue())>minRead)
+				.collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		
 		mapReader.close();		
 		
 		//2.Binning based on the map
 		SequenceReader seqReader = SequenceReader.getReader(seqFile);
-		Sequence seq = seqReader.nextSequence(Alphabet.DNA());
 		String extension;
-		if(seq instanceof FastqSequence)
+		if(seqReader instanceof FastqReader)
 			extension=".fastq";
 		else
 			extension=".fasta";
-		
-		
+				
 		//set appropriate output stream first
 		Set<String> outBins=new HashSet<String>(binMap.values());
 		HashMap<String, SequenceOutputStream> bin2File = new HashMap<String, SequenceOutputStream>();
-		File 	file=new File(seqFile),
-				outDir=new File(outputDir);		
+		File 	outDir=new File(outputDir);		
 		if(!outDir.exists() && outDir.mkdirs()){
-			LOG.info("Output binned reads into {}", outputDir);
+			LOG.info("Output binned-reads into {}", outputDir);
 		}
 		else{
 			LOG.error("Output folder {} already exist or cannot be created!\n\tERROR: Please specify another output directory...",outputDir);
@@ -164,12 +188,19 @@ public class BinningSequenceCmd extends CommandLine{
 			bin2File.put(bin, new SequenceOutputStream(new FileOutputStream(outFile)));
 		}
 		
+		Sequence seq = null;
+		while((seq=seqReader.nextSequence(Alphabet.DNA()))!=null){	
+			String binName=binMap.get(seq.getName().split("\\s+")[0]);
+			if(binName!=null){
+				SequenceOutputStream out=bin2File.get(binName);
+				if(out!=null)
+					seq.print(out);
+			}else
+				LOG.info("{} not found in any bin!", seq.getName());
+		}
 		
-		String binName=binMap.get(seq.getName());
-		if(binName!=null){
-			SequenceOutputStream out=bin2File.get(binName);
-			if(out!=null)
-				seq.print(out);
+		for(SequenceOutputStream out:bin2File.values()){
+			out.close();
 		}
 		seqReader.close();
 	}

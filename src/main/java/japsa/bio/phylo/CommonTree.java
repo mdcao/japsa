@@ -1,4 +1,4 @@
-package japsadev.bio.phylo;
+package japsa.bio.phylo;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,27 +34,30 @@ public abstract class CommonTree {
 		   }
 		//   PrintWriter pw = new PrintWriter(new FileWriter(out));
 		 
-		   for(int i=0; i<tree.length; i++){
-			 Iterator<Node> n = NodeUtils.preOrderIterator(tree[i].getRoot());  
+		   for(int i=0; i<this.roots.size(); i++){
+			   System.err.println(roots.get(i).getIdentifier().getName());
+			 Iterator<Node> n = NodeUtils.preOrderIterator(roots.get(i));  
 			
-			inner: for(int j=0; n.hasNext()  ;j++){
-			//	 System.err.println(i+" "+j);
+			inner: while(n.hasNext()){
 				 Node node = n.next();
+				 
 				 Identifier id  = node.getIdentifier();
 				 String nme =id.getName();
-				
+				//if(nme.indexOf("unclassified ssRNA")>=0){
+				//	System.err.println("h");
+				//}
 				 Integer level = ((Integer)id.getAttribute("level")).intValue();
 				 String hex = ((String)id.getAttribute("css"));		
-				// String hex = ((String)id.getAttribute("level"));	
 				 String alias = ((String)id.getAttribute("alias"));	
 				 String alias1 = ((String)id.getAttribute("alias1"));	
 				 String prefix = ((String)id.getAttribute("prefix"));	
+				Integer taxon = ((Integer)id.getAttribute("taxon"));	
 				 double height = node.getNodeHeight();
-				//System.err
 				 pw.print(prefix+nme);
 				 if(hex!=null) pw.print("\tcss="+hex);
 				 if(alias!=null) pw.print("\talias="+alias);
 				 if(alias1!=null) pw.print("\talias1="+alias1);
+				 if(taxon!=null) pw.print("\ttaxon="+taxon);
 				 if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
 
 				 pw.println();
@@ -65,7 +68,7 @@ public abstract class CommonTree {
 		   pw.close();
 	   }   
 	abstract public Node getNode(String specName);
-	
+	List<Node> roots = new ArrayList<Node>();
 	
 	public Tree[] getTrees(){
 		return tree;

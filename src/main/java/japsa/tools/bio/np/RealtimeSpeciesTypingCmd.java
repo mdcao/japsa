@@ -66,6 +66,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		
 		addDouble("alpha", 0.05, "Paramater alpha from multinomialCI");
 		addInt("minCount", 0, "Mininum number of mapped reads for a species to be considered");
+		addString("filter", "", "List of species (separated by semicolon) to excluded from typing");
 
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 30,   "Minimum number of seconds between analyses");
@@ -88,7 +89,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String output    = cmdLine.getStringVal("output");
 		String bamFile   = cmdLine.getStringVal("bamFile");			
 		String indexFile = cmdLine.getStringVal("indexFile");
-		
+		String filter = cmdLine.getStringVal("filter");
+
 		int number       = cmdLine.getIntVal("read");
 		int time       = cmdLine.getIntVal("time");		
 		double qual      = cmdLine.getDoubleVal("qual");				
@@ -100,7 +102,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		
 		RealtimeSpeciesTyping paTyping = new RealtimeSpeciesTyping(indexFile, output);
 		paTyping.setMinQual(qual);
-		paTyping.setTwoOnly(twoOnly);		
+		paTyping.setTwoOnly(twoOnly);	
+		paTyping.setFilter(filter);
 		paTyping.typing(bamFile, number, time);		
 	}
 }

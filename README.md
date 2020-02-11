@@ -26,8 +26,8 @@ Alternatively, build with maven (experimental).
 First you need to manually install  JAR files that are not available on Maven
 public repo to your local repo.  This can be achieved using the install_mvn.sh script provided.
 ```
-then 
-```
+./install_mvn.sh
+
 mvn clean package install
 ```
 you might need to try packaging Japsa again if failed. A SNAPSHOT is then created and you can invoke
@@ -38,7 +38,7 @@ java -cp ./target/japsa-1.0-SNAPSHOT.jar japsa.tools.bio.np.RealtimeSpeciesTypin
 Convenient scripts (like install by make) would be added soon.
 
 ### Authors and Contributors
-Japsa is currently maintained by  ~~Minh Duc Cao (@mdcao)~~ [Son Hoang Nguyen](https://github.com/hsnguyen). The following 
+Japsa is currently maintained by  Minh Duc Cao (@mdcao) and [Son Hoang Nguyen](https://github.com/hsnguyen). The following 
 people (in alphatical order) have contributed to the development of Japsa, including ideas, 
 algorithms, implementation, documentation and feedback:
 
@@ -63,11 +63,11 @@ algorithms, implementation, documentation and feedback:
 * [eXpert Model](https://github.com/mdcao/xm): The expert model compression model
 * [XMas](https://github.com/mdcao/XMas): Phylogenetic distance method using information theory
 * [capsim](https://github.com/mdcao/capsim): Simulation of capture sequencing
-* [npScarf](https://github.com/mdcao/npScarf): Scaffold and Complete assemblies in real-time fashion
+* [npScarf](https://github.com/mdcao/npScarf): Scaffold and Complete assemblies in real-time fashion (abandoned)
 * [npAnalysis](https://github.com/mdcao/npAnalysis): Realtime identification of bacterial sample
 * [npReader](https://github.com/mdcao/npReader): Real-time extraction and analysis Oxford Nanopore sequencing data
 * [npBarcode](https://github.com/hsnguyen/npBarcode): Demultiplex barcoded Oxford Nanopore sequencing 
-* [npGraph](https://github.com/hsnguyen/assembly): Streaming scaffolding and visualisation 
+* [npGraph](https://github.com/hsnguyen/assembly): Streaming scaffolding and visualisation (replacing npScarf)
 * [PhageXpress](https://github.com/mdcao/phagexpress)
 
 and more to come.

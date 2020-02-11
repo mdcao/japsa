@@ -1,4 +1,5 @@
-package japsadev.tools.makeCSS;
+package japsa.bio.phylo;
+
 import java.awt.Color;
 import java.io.File;
 import java.io.FileWriter;
@@ -14,9 +15,7 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import japsadev.bio.phylo.AntibioticTree;
-import japsadev.bio.phylo.CommonTree;
-import japsadev.bio.phylo.NCBITree;
+
 import mdsj.MDSJ;
 import pal.misc.Identifier;
 import pal.tree.ClockTree;
@@ -37,43 +36,9 @@ public class ColorTree {
 	
 	double[] startend ; // this partitions the hue space
 static double maxlight = 85;
-//https://journals.sagepub.com/doi/full/10.4137/EBO.S7565#_i6
-public static void main(String[] args){
-	try{ 
-//	File speciesIndex = new File("speciesIndex");
-	
-	File f = new File(args[1]);
-	boolean species = args[0].equals("species");
-	
-	 CommonTree trees =species? NCBITree.readTree(f, null):  AntibioticTree.readTree(f);
-	 Tree[] tree = trees.getTrees();
-		for(int i=0; i<tree.length; i++){
-			System.err.println(i);;
-			//if(tree[i].getExternalNodeCount()>1000) continue;
-			ColorTree ct = new ColorTree(tree[i]);
-			ct.color();
-		}
-		trees.print(new File(f.getName()+".css"));
-
-	}catch(Exception exc){
-		exc.printStackTrace();
-		
-	}
-}
 
 
 
-public void printSlug(String out) throws Exception{
-	PrintWriter pw = new PrintWriter(new FileWriter(out));
-	/*
-	for(Iterator<String> it = this.colors.keySet().iterator(); it.hasNext();){
-		String key = it.next();
-		String value = colors.get(key);
-		pw.println(key+"\t"+value);
-		
-	}*/
-	pw.close();
-}
 
  static double rand =0;
  

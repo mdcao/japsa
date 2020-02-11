@@ -52,6 +52,8 @@ import japsa.tools.bio.hts.VNTRLongReadsCmd;
 import japsa.tools.bio.hts.VNTRLongReadsV2Cmd;
 import japsa.tools.bio.np.BarCodeAnalysisCmd;
 import japsa.tools.bio.np.FastNanoporeReaderCmd;
+import japsa.tools.bio.np.FlankSeqsDetectorCmd;
+import japsa.tools.bio.np.ConsensusCmd;
 import japsa.tools.bio.np.NPScarfCmd;
 import japsa.tools.bio.np.NanoporeReadFilterCmd;
 import japsa.tools.bio.np.NanoporeReaderCmd;
@@ -180,6 +182,8 @@ public class Deploy {
 		tools.add(new RegulateTimeCmd());		
 		tools.add(new NPScarfCmd());
 		tools.add(new BarCodeAnalysisCmd());
+		tools.add(new FlankSeqsDetectorCmd());
+		tools.add(new ConsensusCmd());
 		//tools.add(new SpeciesMixtureCmd());
 		//tools.add(new BaseMethylationCmd());
 
