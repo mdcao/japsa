@@ -153,8 +153,11 @@ public static class IdentityProfile1{
 				roundedPositions[i] = 1+i*(int)round;
 			}*/
 			codepth = new SparseRealMatrix[nmes.length];
+			all_clusters = new CigarClusters[nmes.length];
+			
 			for(int i=0; i<this.codepth.length; i++){
 				codepth[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
+				all_clusters[i] =  new CigarClusters();
 			}
 		}
 		private int round(int pos){
@@ -164,7 +167,7 @@ public static class IdentityProfile1{
 	
 		
 		static int refThresh = 80;  //
-		static double round = 100.0;
+		static double round = 10.0;
 		
 		static String[] nmes = "5_3:5_no3:no5_3:no5_no3".split(":");
 		
@@ -182,7 +185,7 @@ public static class IdentityProfile1{
 					this.codepth[index].setEntry(pos1, pos2, value+1);
 				}
 			}
-			this.all_clusters.matchCluster(coRefPositions);  // this also clears current cluster
+			this.all_clusters[index].matchCluster(coRefPositions);  // this also clears current cluster
 		}
 
 	
@@ -192,7 +195,7 @@ public static class IdentityProfile1{
 
 		public SparseRealMatrix[] codepth;
 		private CigarCluster coRefPositions = new CigarCluster("reuseable");
-		private CigarClusters all_clusters = new CigarClusters();
+		private CigarClusters[] all_clusters;
 		private Integer[] roundedPositions;//, corefSum;
 		public int[] match, mismatch, refClipped, baseDel, baseIns;
 		public int  numIns, numDel,  readClipped, refBase, readBase;
@@ -206,18 +209,20 @@ public static class IdentityProfile1{
 		}
 		
 		public void printClusters(File outfile1) throws IOException{
-			File outfile1_ = new File(outfile1.getParentFile(), outfile1.getName()+round+".gz");
-			PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1_))));
-			StringBuffer sb = new StringBuffer("pos");
-			for(int i=0 ; i<this.roundedPositions.length; i++){
-				sb.append(",");
-				sb.append(roundedPositions[i]*round+1);
+			for(int index=0; index < this.codepth.length; index++){
+				File outfile1_ = new File(outfile1.getParentFile(), outfile1.getName()+nmes[index]+"_"+round+".gz");
+				PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1_))));
+				StringBuffer sb = new StringBuffer("pos");
+				for(int i=0 ; i<this.roundedPositions.length; i++){
+					sb.append(",");
+					sb.append(roundedPositions[i]*round+1);
+				}
+				pw.println(sb.toString());
+				for(int i=0; i<this.all_clusters[index].l.size(); i++){
+					pw.println(this.all_clusters[index].l.get(i).summary(this.roundedPositions));
+				}
+				pw.close();
 			}
-			pw.println(sb.toString());
-			for(int i=0; i<this.all_clusters.l.size(); i++){
-				pw.println(this.all_clusters.l.get(i).summary(this.roundedPositions));
-			}
-			pw.close();
 		}
 		
 		public void printCoRef(File outfile1) throws  IOException {
