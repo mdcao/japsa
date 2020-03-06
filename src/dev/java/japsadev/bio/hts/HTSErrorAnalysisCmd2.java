@@ -125,6 +125,7 @@ public class HTSErrorAnalysisCmd2 extends CommandLine{
 		File bam = new File(bamFileDir+"/"+bamFile);
 		File outfile = new File(bam.getParentFile(), bam.getName()+".txt");
 		File outfile1 = new File(bam.getParentFile(), bam.getName()+"coref.txt");
+		File outfile2 = new File(bam.getParentFile(), bam.getName()+"clusters.txt");
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader = null;//SamReaderFactory.makeDefault().open(new File(bamFile));
 
@@ -216,6 +217,7 @@ pw.close();
 
 
 pr1.printCoRef(outfile1);
+pr1.printClusters(outfile2);
 
 		System.out.println("========================= TOTAL ============================");
 		}

@@ -5,10 +5,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
@@ -18,15 +23,110 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import japsa.seq.Sequence;
 
+
 public class HTSUtilities {
 
+public static class CigarClusters{
+	static double thresh = 0.9;
+	
+	List<CigarCluster> l = new ArrayList<CigarCluster>();
+	
+	public void matchCluster(CigarCluster c1){
+		double[] sc = new double[l.size()];
+		int min_index = 0;
+		double best_score = 0;
+		for(int i=0; i<l.size(); i++){
+			sc[i] = l.get(i).similarity(c1);
+			if(sc[i] > best_score){
+				min_index = i;
+				best_score = sc[i];
+			}
+		}
+		if(min_index<sc.length && sc[min_index] >= thresh){
+			l.get(min_index).merge(c1);
+		}else{
+		
+			CigarCluster newc = new CigarCluster("ID"+l.size());
+			newc.merge(c1);
+			l.add(newc);
+			System.err.println("new cluster "+best_score+" "+min_index);
+			System.err.println(l.size());
+			
+		}
+		c1.map.clear();
+	}
+	
+	
+}
+	
+public static class CigarCluster{
+	
+	final String id;
+	
+	public CigarCluster(String id){
+		this.id = id;
+	}
+	
+	private SortedMap<Integer, Integer> map = new TreeMap<Integer, Integer>();
+	public void add(int round) {
+		map.put(round, map.containsKey(round) ? map.get(round)+1 : 1);
+	}
+	public String toString(){
+		return map.keySet().toString();
+	}
+	public Iterator<Integer> keys() {
+		return map.keySet().iterator();
+	}
+	public Iterator<Integer> tailKeys(int st) {
+		return map.tailMap(st).keySet().iterator();
+	}
+
+	public String summary(Integer[] positions){
+		StringBuffer sb = new StringBuffer(id);
+		for(int i=0; i<positions.length; i++){
+			int i1 = positions[i];
+			int v = map.containsKey(i1) ? map.get(i1) : 0;
+			sb.append(",");
+			sb.append(v);
+		}
+		return sb.toString();
+	}
+	
+	public double similarity(CigarCluster c1){
+		//if(true) return 1.0;
+		int intersection =0; 
+		int union =map.size();
+		for(Iterator<Integer> it = c1.map.keySet().iterator(); it.hasNext(); ){
+			if(map.containsKey(it.next())){
+				intersection ++;
+				
+			}else{
+				union++;
+			}
+		}
+		return ((double)intersection)/(double) union;
+		//Set<Integer> union = Stream.concat(setA.stream(), setB.stream()).collect(Collectors.toSet());
+		//Set<Integer> intersect = setA.stream().filter(setB::contains).collect(Collectors.toSet());
+		//return ((double)intersect.size())/((double) union.size());
+	}
+	
+	
+	
+	public void merge(CigarCluster c1){
+		Iterator<Entry<Integer, Integer>> it = c1.map.entrySet().iterator();
+		while(it.hasNext()){
+			Entry<Integer, Integer> entry = it.next();
+			Integer key  =entry.getKey();
+			int curr =  map.containsKey(key) ? map.get(key): 0;
+			map.put(key, curr + entry.getValue());
+		}
+	}
+}
+	
 public static class IdentityProfile1{
 		
 		public IdentityProfile1(Sequence refSeq) {
 			readClipped = 0;
-		//	refClipped = sam.getAlignmentStart() + refSeq.length() - sam.getAlignmentEnd();
-			
-			
 			numDel = 0;
 			numIns = 0;
 			match  = new int[refSeq.length()];
@@ -43,35 +143,28 @@ public static class IdentityProfile1{
 
 			refBase = 0;
 			readBase = 0;//the number of bases from ref and read
-			roundedPositions = new int[1+round(refSeq.length())];
-			for(int i=0; i<roundedPositions.length; i++){
-				roundedPositions[i] = 1+i*10;
+			//following should be made more efficient
+			Set<Integer>roundedPos = new HashSet<Integer>();
+			for(int i=0; i<refSeq.length(); i++){
+				roundedPos.add(round(i));
 			}
+			roundedPositions = roundedPos.toArray(new Integer[0]);
+			/*for(int i=0; i<roundedPositions.length; i++){
+				roundedPositions[i] = 1+i*(int)round;
+			}*/
 			codepth = new SparseRealMatrix[nmes.length];
 			for(int i=0; i<this.codepth.length; i++){
 				codepth[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
 			}
-			//corefSum = new int[roundedPositions.length];
-			//Arrays.fill(corefSum, 0);
 		}
 		private int round(int pos){
-			//return pos;
-			int res =  (int) Math.floor((double)pos/10.0);
-			//System.err.println(pos+"->"+res);
+			int res =  (int) Math.floor((double)pos/round);
 			return res;
 		}
-		//static int round = 10;
-		
-	/*	private void checkDiaganol(int i){
-			System.err.println("checking diag" +i);
-			int dim = this.codepth.getColumnDimension();
-				double sc = codepth.getEntry(i, i);
-				for(int j=0; j<dim; j++ ){
-					if(codepth.getEntry(i, j)>sc) throw new RuntimeException(sc+" "+i+" "+j+" "+codepth.getEntry(i, j));//+" "+corefSum[i]);
-				}
-		}*/
+	
 		
 		static int refThresh = 80;  //
+		static double round = 100.0;
 		
 		static String[] nmes = "5_3:5_no3:no5_3:no5_no3".split(":");
 		
@@ -79,31 +172,28 @@ public static class IdentityProfile1{
 			int index =0;
 			if(startPos<refThresh) index = distToEnd < refThresh ? 0 : 1;
 			else index = distToEnd < refThresh ? 2 : 3;
-			//if(index==1) System.err.println("found non leader read");
-			Iterator<Integer> it = coRefPositions.iterator();
+			Iterator<Integer> it = coRefPositions.keys();
 			while(it.hasNext()){
 				Integer pos1 = it.next();
-				Iterator<Integer> it2 = coRefPositions.tailSet(pos1).iterator();
-				//corefSum[pos1]+=1;
+				Iterator<Integer> it2 = coRefPositions.tailKeys(pos1);
 				while(it2.hasNext()){
 					Integer pos2 = it2.next();
 					double value = codepth[index].getEntry(pos1, pos2);
 					this.codepth[index].setEntry(pos1, pos2, value+1);
 				}
 			}
-			//this.checkDiaganol();
-			coRefPositions.clear();
+			this.all_clusters.matchCluster(coRefPositions);  // this also clears current cluster
 		}
 
 	
 		public void addRefPositions(int position) {
 			coRefPositions.add(round(position));
-			
 		}
 
 		public SparseRealMatrix[] codepth;
-		private SortedSet<Integer> coRefPositions = new TreeSet<Integer>();
-		private int[] roundedPositions;//, corefSum;
+		private CigarCluster coRefPositions = new CigarCluster("reuseable");
+		private CigarClusters all_clusters = new CigarClusters();
+		private Integer[] roundedPositions;//, corefSum;
 		public int[] match, mismatch, refClipped, baseDel, baseIns;
 		public int  numIns, numDel,  readClipped, refBase, readBase;
 		
@@ -115,26 +205,30 @@ public static class IdentityProfile1{
 			pw.flush();
 		}
 		
-		
+		public void printClusters(File outfile1) throws IOException{
+			File outfile1_ = new File(outfile1.getParentFile(), outfile1.getName()+round+".gz");
+			PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1_))));
+			StringBuffer sb = new StringBuffer("pos");
+			for(int i=0 ; i<this.roundedPositions.length; i++){
+				sb.append(",");
+				sb.append(roundedPositions[i]*round+1);
+			}
+			pw.println(sb.toString());
+			for(int i=0; i<this.all_clusters.l.size(); i++){
+				pw.println(this.all_clusters.l.get(i).summary(this.roundedPositions));
+			}
+			pw.close();
+		}
 		
 		public void printCoRef(File outfile1) throws  IOException {
 			for(int index=0; index < this.codepth.length; index++){
-				File outfile1_ = new File(outfile1.getParentFile(), outfile1.getName()+"."+nmes[index]+".gz");
+				File outfile1_ = new File(outfile1.getParentFile(), outfile1.getName()+"."+round+nmes[index]+".gz");
 			PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1_))));
-			
-			
-			/*List<Integer> nonZeroRows = new ArrayList<Integer>();
-			for(int i=0; i<corefSum.length; i++){
-				if(corefSum[i]>=thresh){
-					nonZeroRows.add(i);
-				}
-			}*/
 			int len = this.codepth[index].getRowDimension();
 			
 			for(int i=0;i<len; i++){
 				int row = i; //nonZeroRows.get(i);
-				pw.print(roundedPositions[row]);
-			//	this.checkDiaganol(row);
+				pw.print(roundedPositions[row]*round+1);
 				for(int j=0; j<len; j++){
 					int col = j;//nonZeroRows.get(j);
 					int val = col>=row ? (int) this.codepth[index].getEntry(row, col) : 0;
