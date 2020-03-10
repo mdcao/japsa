@@ -1,4 +1,4 @@
-package japsadev.util;
+package japsa.util;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,7 +24,7 @@ import htsjdk.samtools.SAMRecord;
 import japsa.seq.Sequence;
 
 
-public class HTSUtilities {
+public class TranscriptUtils {
 
 public static class CigarClusters{
 	static double thresh = 0.9;

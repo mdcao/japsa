@@ -31,7 +31,7 @@
  * 28/05/2014 - Minh Duc Cao: Created                                        
  ****************************************************************************/
 
-package japsadev.bio.hts;
+package japsa.tools.bio.hts;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -50,9 +50,9 @@ import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
-import japsadev.util.HTSUtilities;
+import japsa.util.TranscriptUtils;
 import japsa.util.deploy.Deployable;
-import japsadev.util.HTSUtilities.IdentityProfile1;
+import japsa.util.TranscriptUtils.IdentityProfile1;
 
 
 /**
@@ -61,12 +61,12 @@ import japsadev.util.HTSUtilities.IdentityProfile1;
  */
 
 @Deployable(
-	scriptName = "jsa.hts.errorAnalysis",
+	scriptName = "jsa.hts.viralanalysis",
 	scriptDesc = "Error analysis of sequencing data")
-public class HTSErrorAnalysisCmd2 extends CommandLine{
+public class ViralTranscriptAnalysisCmd extends CommandLine{
 //	private static final Logger LOG = LoggerFactory.getLogger(HTSErrorAnalysisCmd.class);
 
-	public HTSErrorAnalysisCmd2(){
+	public ViralTranscriptAnalysisCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
@@ -83,7 +83,7 @@ public class HTSErrorAnalysisCmd2 extends CommandLine{
 
 
 	public static void main(String [] args) throws IOException, InterruptedException{		 		
-		CommandLine cmdLine = new HTSErrorAnalysisCmd2();		
+		CommandLine cmdLine = new ViralTranscriptAnalysisCmd();		
 		args = cmdLine.stdParseLine(args);		
 
 		String reference = cmdLine.getStringVal("reference");		
@@ -201,7 +201,7 @@ public class HTSErrorAnalysisCmd2 extends CommandLine{
 			}
 
 			
-				HTSUtilities.identity1(chr, readSeq, sam, profiles.get(currentIndex));			
+				TranscriptUtils.identity1(chr, readSeq, sam, profiles.get(currentIndex));			
 
 			//log+=sam.getReadName() + "\t" + profile.readBase + "\t" + profile.refBase + "\t" + profile.baseIns + "\t" + profile.baseDel + "\t" + profile.mismatch+ "\n";
 
