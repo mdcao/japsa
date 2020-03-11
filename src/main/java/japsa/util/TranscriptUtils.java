@@ -25,6 +25,7 @@ import org.apache.commons.math3.linear.SparseRealMatrix;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
 
 public class TranscriptUtils {
 
@@ -67,36 +68,41 @@ public class TranscriptUtils {
 			return clusterID;
 		}
 
-		public void getConsensus(Annotation annot, Sequence refseq, Integer[] positions, PrintWriter exonP , PrintWriter seqFasta) {
+		public void getConsensus(Annotation annot, Sequence refseq, Integer[] positions, PrintWriter exonP , SequenceOutputStream seqFasta) throws IOException{
 			int[] first_last = new int[2];
 			for(int i=0; i<l.size(); i++) {
 				CigarCluster cc = l.get(i);
 				int[][] exons = cc.getExons( positions,0.5);
 				String id = cc.id;
-				StringBuffer idline = new StringBuffer(">"+id);
-				StringBuffer seqline = new StringBuffer();
+				StringBuffer descline = new StringBuffer();
+				//StringBuffer seqline = new StringBuffer();
+				Sequence subseq = null;
 				for(int j=0; j<exons.length; j++) {
 					int start = exons[j][0];
 					int end = exons[j][1];
-					exonP.println(id+","+start+","+end);
+					exonP.println(id+","+start+","+end+","+cc.readCount);
 
 					
-					annot.calcORFOverlap(start, end, first_last);
+					//annot.calcORFOverlap(start, end, first_last);
 
 					int len = end-start+1;
-					idline.append(";");
-					idline.append(start); idline.append("-"); idline.append(end); idline.append(","); idline.append(len);
+					descline.append(";");
+					descline.append(start); descline.append("-"); descline.append(end); descline.append(","); descline.append(len);
 					
-					idline.append("|");idline.append(annot.getInfo(first_last[0]));
-					idline.append("|");idline.append(annot.getInfo(first_last[1]));
+					//descline.append("|");descline.append(annot.getInfo(first_last[0]));
+					//descline.append("|");descline.append(annot.getInfo(first_last[1]));
 					
 				
-					Sequence subseq  = refseq.subSequence(start, end);
+					if(subseq==null) subseq  = refseq.subSequence(start, end);
+					else subseq = subseq.concatenate(refseq.subSequence(start, end));
 				
-					seqline.append(subseq.toString());
+					//seqline.append(subseq.toString());
 				}
-				seqFasta.println(idline.toString());
-				seqFasta.println(seqline.toString());
+				subseq.setName(id);
+				subseq.setDesc(descline.toString());
+				subseq.writeFasta(seqFasta);
+			//	seqFasta.println(idline.toString());
+			//	seqFasta.println(seqline.toString());
 			}
 			
 		}
@@ -455,8 +461,7 @@ public class TranscriptUtils {
 				File outfile5_ = new File(outfile5.getParentFile(),
 						outfile5.getName() + "." + nmes[i] + ".gz");
 				
-				PrintWriter seqFasta =  new PrintWriter(
-						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile5_))));
+				SequenceOutputStream seqFasta =  new SequenceOutputStream(new GZIPOutputStream(new FileOutputStream(outfile5_)));
 				this.all_clusters[i].getConsensus(annot, this.genome, this.roundedPositions, exonsP, seqFasta);
 				exonsP.close();
 				seqFasta.close();
