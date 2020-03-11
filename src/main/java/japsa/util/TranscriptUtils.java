@@ -68,11 +68,11 @@ public class TranscriptUtils {
 			return clusterID;
 		}
 
-		public void getConsensus(Annotation annot, Sequence refseq, Integer[] positions, PrintWriter exonP , SequenceOutputStream seqFasta) throws IOException{
+		public void getConsensus(Annotation annot, Sequence refseq, Integer[] positions, PrintWriter exonP , SequenceOutputStream seqFasta, double[] depth) throws IOException{
 			int[] first_last = new int[2];
 			for(int i=0; i<l.size(); i++) {
 				CigarCluster cc = l.get(i);
-				int[][] exons = cc.getExons( positions,0.5);
+				int[][] exons = cc.getExons( positions,0.3,5, depth);
 				String id = cc.id;
 				StringBuffer descline = new StringBuffer();
 				//StringBuffer seqline = new StringBuffer();
@@ -155,18 +155,30 @@ public class TranscriptUtils {
 		double getDepth(Integer i) {
 			return this.map.containsKey(i) ? (double) map.get(i) :  0.0;
 		}
-		public int[][] getExons( Integer[] positions, double threshPerc) {
+		
+		
+		public int[][] getExons( Integer[] positions, double threshPerc, int numsteps, double[] depth) {
 			List<Integer> start = new ArrayList<Integer>();
 			List<Integer> end = new ArrayList<Integer>();
 			double thresh = (double) readCount*threshPerc;
 			boolean in =false;
+			Arrays.fill(depth, 0);
 			for(int i=0; i<positions.length; i++) {
-				double dep = getDepth(positions[i]);
+				depth[i] = getDepth(positions[i]);
+			}
+			outer: for(int i=0; i<positions.length; i++) {
+				double dep = depth[i];
 				if(!in && dep>=thresh) {
+					for(int j = 1; j<numsteps && i+j < depth.length; j++) {
+						if(depth[i+j]<thresh) continue outer; // no longer jumping in
+					}
 					in = true; 
 					start.add(positions[i]);
 				}
 				if(in && dep<thresh) {
+					for(int j = 1; j<numsteps && i+j < depth.length; j++) {
+						if(depth[i+j]>=thresh) continue outer; // no longer jumping out
+					}
 					in  = false;
 					end.add(positions[i-1]);
 				}
@@ -330,6 +342,7 @@ public class TranscriptUtils {
 				roundedPos.add(round(i));
 			}
 			roundedPositions = roundedPos.toArray(new Integer[0]);
+			this.depth = new double[roundedPos.size()];
 			/*
 			 * for(int i=0; i<roundedPositions.length; i++){ roundedPositions[i] =
 			 * 1+i*(int)round; }
@@ -386,6 +399,7 @@ public class TranscriptUtils {
 		private CigarCluster coRefPositions = new CigarCluster("reuseable");
 		private CigarClusters[] all_clusters;
 		private Integer[] roundedPositions;// , corefSum;
+		private final double[] depth; // convenience matrix for depth
 		public int[] match, mismatch, refClipped, baseDel, baseIns;
 		public int numIns, numDel, readClipped, refBase, readBase;
 
@@ -462,7 +476,7 @@ public class TranscriptUtils {
 						outfile5.getName() + "." + nmes[i] + ".gz");
 				
 				SequenceOutputStream seqFasta =  new SequenceOutputStream(new GZIPOutputStream(new FileOutputStream(outfile5_)));
-				this.all_clusters[i].getConsensus(annot, this.genome, this.roundedPositions, exonsP, seqFasta);
+				this.all_clusters[i].getConsensus(annot, this.genome, this.roundedPositions, exonsP, seqFasta, this.depth);
 				exonsP.close();
 				seqFasta.close();
 			}
