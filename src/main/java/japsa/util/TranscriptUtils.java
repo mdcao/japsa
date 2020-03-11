@@ -304,12 +304,12 @@ public class TranscriptUtils {
 			this.startThresh = startThresh; this.endThresh = endThresh;
 					
 			this.calculateCoExpression = calculateCoExpression;
-			 outfile = new File(bam.getParentFile(), bam.getName() + genome_index+ ".txt");
-			 outfile1 = new File(bam.getParentFile(), bam.getName()  + genome_index+ "coref.txt");
-			 outfile2 = new File(bam.getParentFile(), bam.getName()  + genome_index+"clusters.txt");
-			 outfile3 = new File(bam.getParentFile(), bam.getName()  + genome_index+ "readToCluster.txt.gz");
-			 outfile4 = new File(bam.getParentFile(), bam.getName()  + genome_index+ "exons.txt.gz");
-			 outfile5 = new File(bam.getParentFile(), bam.getName()  + genome_index+ "clusters.fa.gz");
+			 outfile = new File(bam.getParentFile(), bam.getName() + "."+genome_index+ ".txt");
+			 outfile1 = new File(bam.getParentFile(), bam.getName()  +"."+ genome_index+ "coref.txt");
+			 outfile2 = new File(bam.getParentFile(), bam.getName()  +"."+ genome_index+"clusters.txt");
+			 outfile3 = new File(bam.getParentFile(), bam.getName()  + "."+genome_index+ "readToCluster.txt");
+			 outfile4 = new File(bam.getParentFile(), bam.getName()  +"."+ genome_index+ "exons.txt");
+			 outfile5 = new File(bam.getParentFile(), bam.getName()  + "."+genome_index+ "clusters.fa");
 			 readClusters = new PrintWriter[nmes.length];
 			 for(int index1 =0; index1<nmes.length; index1++) {
 				 File outfile3_ = new File(outfile3.getParentFile(),
@@ -416,7 +416,7 @@ public class TranscriptUtils {
 		}
 
 		public void printClusters(File outfile1) throws IOException {
-			for (int index = 0; index < this.codepth.length; index++) {
+			for (int index = 0; index < this.all_clusters.length; index++) {
 				File outfile1_ = new File(outfile1.getParentFile(),
 						outfile1.getName() + nmes[index] + "_" + round + ".gz");
 				PrintWriter pw = new PrintWriter(
