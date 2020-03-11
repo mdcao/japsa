@@ -91,7 +91,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 		int bin = cmdLine.getIntVal("bin");
 		String pattern = cmdLine.getStringVal("pattern");
 		String bamFile = cmdLine.getStringVal("bamFile");
-		String annotFile = cmdLine.getStringVal("annotationFile");
+		String annotFile = cmdLine.getStringVal("annotation");
 		boolean coexp = cmdLine.getBooleanVal("coexpression");
 		double overlapThresh = cmdLine.getDoubleVal("overlapThresh");
 		int startThresh = cmdLine.getIntVal("startThresh");

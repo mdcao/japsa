@@ -483,7 +483,8 @@ public class TranscriptUtils {
 
 		int readPos = 0;// start from 0
 		int refPos = sam.getAlignmentStart() - 1;// convert to 0-based index
-		String id = sam.getHeader().getId();
+		//String id = sam.getHeader().getId();
+		String id = sam.getReadName();
 		for (final CigarElement e : sam.getCigar().getCigarElements()) {
 			final int length = e.getLength();
 
