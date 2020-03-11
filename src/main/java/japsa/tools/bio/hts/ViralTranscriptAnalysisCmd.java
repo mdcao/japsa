@@ -93,6 +93,9 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String annotFile = cmdLine.getStringVal("annotation");
 		boolean coexp = cmdLine.getBooleanVal("coexpression");
+		if(coexp && bin <10) {
+			throw new Error(" this not good idea");
+		}
 		double overlapThresh = cmdLine.getDoubleVal("overlapThresh");
 		int startThresh = cmdLine.getIntVal("startThresh");
 		int endThresh = cmdLine.getIntVal("endThresh");
@@ -104,7 +107,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
 	 */
-	static void errorAnalysis(String bamFileDir, String refFile, String annot_file,  String pattern, int qual, int round, boolean coexp, double overlapThresh, int startThresh, int endThresh) throws IOException {
+	static void errorAnalysis(String bamFileDir, String refFile, String annot_file,  String pattern, int qual, int round, final boolean coexp, double overlapThresh, int startThresh, int endThresh) throws IOException {
 		File bfDir = new File(bamFileDir);
 		
 		String[] bamFiles_ = bfDir.list(new FilenameFilter() {

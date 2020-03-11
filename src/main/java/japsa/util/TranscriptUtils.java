@@ -329,7 +329,9 @@ public class TranscriptUtils {
 			all_clusters = new CigarClusters[nmes.length];
 
 			for (int i = 0; i < this.codepth.length; i++) {
-				codepth[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
+				if(this.calculateCoExpression) {
+					codepth[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
+				}
 				all_clusters[i] = new CigarClusters(overlapThresh);
 			}
 		}
@@ -410,7 +412,10 @@ public class TranscriptUtils {
 		}
 
 		public void printCoRef(File outfile1) throws IOException {
+			if(calculateCoExpression) {
 			for (int index = 0; index < this.codepth.length; index++) {
+				SparseRealMatrix cod = this.codepth[index];
+				if(cod==null) continue;
 				File outfile1_ = new File(outfile1.getParentFile(),
 						outfile1.getName() + "." +  nmes[index] + ".gz");
 				PrintWriter pw = new PrintWriter(
@@ -422,7 +427,7 @@ public class TranscriptUtils {
 					pw.print(roundedPositions[row] * round + 1);
 					for (int j = 0; j < len; j++) {
 						int col = j;// nonZeroRows.get(j);
-						int val = col >= row ? (int) this.codepth[index].getEntry(row, col) : 0;
+						int val = col >= row ? (int) cod.getEntry(row, col) : 0;
 						// (int) this.codepth[index].getEntry(col, row);
 						pw.print(",");
 						pw.print(val);
@@ -430,6 +435,7 @@ public class TranscriptUtils {
 					pw.println();
 				}
 				pw.close();
+			}
 			}
 
 		}
