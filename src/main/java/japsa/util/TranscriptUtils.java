@@ -215,6 +215,7 @@ public class TranscriptUtils {
 	//	5'UTR,5'UTR,1,265,265,forward,none
 
 	public	Annotation(File f) throws IOException{
+			
 			BufferedReader br = new BufferedReader(new FileReader(f)) ;
 			List<String> header = Arrays.asList(br.readLine().split(","));
 			int gene_ind = header.indexOf("gene");
@@ -237,6 +238,8 @@ public class TranscriptUtils {
 			orfs = new int[start.size()][];
 			overlap = new int[start.size()];
 			orf_len = new int[start.size()];
+			this.start_offset = new int[start.size()];
+			this.end_offset = new int[start.size()];
 			for(int i=0; i<orf_len.length; i++) {
 				orf_len[i] = end.get(i) - start.get(i)+1;
 				orfs[i] = new int[] {start.get(i),end.get(i)};
@@ -247,10 +250,10 @@ public class TranscriptUtils {
 			if(i<0 || overlap[i] <0) return "NA";
 			else return this.genes.get(i)+","+this.start_offset[i]+","+this.end_offset[i];
 		}
-	public int[] overlap;
-	public int[] orf_len;
-	public int[] start_offset; //relative start position of ORF
-	public int[] end_offset; //relative end position of ORF
+	public final int[] overlap;
+	public final int[] orf_len;
+	public final int[] start_offset; //relative start position of ORF
+	public final int[] end_offset; //relative end position of ORF
 		public void calcORFOverlap(int start, int end, int[] first_last) {
 			//could consider correcting here to keep in-fram
 			int first = -1;
