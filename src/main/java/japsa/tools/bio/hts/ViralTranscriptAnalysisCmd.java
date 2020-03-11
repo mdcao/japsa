@@ -71,6 +71,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 		addString("bamFile", null, "Name of bam file", true);
 		addString("reference", null, "Name of reference genome", true);
 		addString("annotation", null, "ORF annotation file", true);
+		addInt("maxReads", Integer.MAX_VALUE, "ORF annotation file");
 
 		addString("pattern", null, "Pattern of read name, used for filtering");
 		addInt("qual", 0, "Minimum quality required");
@@ -99,7 +100,8 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 		double overlapThresh = cmdLine.getDoubleVal("overlapThresh");
 		int startThresh = cmdLine.getIntVal("startThresh");
 		int endThresh = cmdLine.getIntVal("endThresh");
-		errorAnalysis(bamFile, reference, annotFile, pattern, qual, bin, coexp, overlapThresh, startThresh, endThresh);
+		int maxReads = cmdLine.getIntVal("maxReads");
+		errorAnalysis(bamFile, reference, annotFile, pattern, qual, bin, coexp, overlapThresh, startThresh, endThresh,maxReads);
 
 		// paramEst(bamFile, reference, qual);
 	}
@@ -107,7 +109,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
 	 */
-	static void errorAnalysis(String bamFileDir, String refFile, String annot_file,  String pattern, int qual, int round, final boolean coexp, double overlapThresh, int startThresh, int endThresh) throws IOException {
+	static void errorAnalysis(String bamFileDir, String refFile, String annot_file,  String pattern, int qual, int round, final boolean coexp, double overlapThresh, int startThresh, int endThresh, int max_reads) throws IOException {
 		File bfDir = new File(bamFileDir);
 		
 		String[] bamFiles_ = bfDir.list(new FilenameFilter() {
@@ -158,7 +160,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 			int numReads = 0;
 
 			int numNotAligned = 0;
-			int max_reads = Integer.MAX_VALUE;
+		//	int max_reads = Integer.MAX_VALUE;
 			// String log =
 			// "###Read_name\tRead_length\tReference_length\tInsertions\tDeletions\tMismatches\n";
 			for (int cntr = 0; samIter.hasNext() && cntr < max_reads; cntr++) {
