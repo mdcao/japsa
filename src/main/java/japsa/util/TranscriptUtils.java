@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
@@ -26,9 +27,34 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
+import pal.distance.DistanceMatrix;
+import pal.misc.IdGroup;
+import pal.misc.SimpleIdGroup;
+import pal.tree.NeighborJoiningTree;
+import pal.tree.NodeUtils;
 
 public class TranscriptUtils {
 
+	static String getString(int[] c) {
+		StringBuffer sb = new StringBuffer(c[0]);
+		for(int i=1; i<c.length;i++) {
+			sb.append(",");sb.append(c[i]);
+		}
+		return sb.toString();
+	}
+	 static String getString(String string, int num_sources2, boolean print_index) {
+		 StringBuffer sb = new StringBuffer(string);
+		 if(print_index)sb.append(0);
+			for(int i=1; i<num_sources2;i++) {
+				sb.append(",");sb.append(string);
+				if(print_index)sb.append(i);
+			}
+			return sb.toString();
+	}
+	static double round2 = 100;
+	
+	static String[] nmes = "5_3:5_no3:no5_3:no5_no3".split(":");
+	
 	public static class CigarClusters {
 		final double thresh;
 		
@@ -36,51 +62,84 @@ public class TranscriptUtils {
 			this.thresh = thresh;
 		}
 
-		List<CigarCluster> l = new ArrayList<CigarCluster>();
-
-		public String matchCluster(CigarCluster c1) {
-			double[] sc = new double[l.size()];
-			int min_index = 0;
-			double best_score = 0;
-			String clusterID="";
-			for (int i = 0; i < l.size(); i++) {
-				sc[i] = l.get(i).similarity(c1);
-				if (sc[i] > best_score) {
-					min_index = i;
-					best_score = sc[i];
+		DistanceMatrix getDistanceMatrix(int len){
+			double[][] res = new double[len][];
+			String[] labels = new String[len];
+			for(int i=0; i<len; i++) {
+				
+				res[i] = new double[len];
+				CigarCluster cc = l.get(i);
+				labels[i] = cc.id;
+				res[i][i] =0;
+				for(int j=0; j<i; j++) {
+					CigarCluster cc_j = l.get(j);
+					double dist = 1-cc.similarity(cc_j, true);
+					res[i][j] = dist;
+					res[j][i] = dist;
 				}
 			}
-			if (min_index < sc.length && sc[min_index] >= thresh) {
-				CigarCluster clust = l.get(min_index);
+			IdGroup group = new  SimpleIdGroup(labels);
+			DistanceMatrix dm = new DistanceMatrix(res, group);
+			return dm;
+		}
+		List<CigarCluster> l = new ArrayList<CigarCluster>();
+
+		List<Integer> matching = new ArrayList<Integer>();
+		List<Double> scores = new ArrayList<Double>();
+		
+		public String matchCluster(CigarCluster c1, int source_index, int num_sources) {
+			matching.clear();
+			scores.clear();
+			String clusterID="";
+			for (int i = 0; i < l.size(); i++) {	
+				double sc = l.get(i).similarity(c1, false);
+				if (sc > thresh) {
+					matching.add(i);
+					scores.add(sc);
+				}
+			}
+			double best_sc =0;
+			int best_index=-1;
+			for(int i=0; i<matching.size(); i++) {
+				double sc = l.get(matching.get(i)).similarity(c1, true);
+				if(sc>best_sc) {
+					best_sc = sc;
+					best_index = matching.get(i);
+				}
+			}
+			
+			if (best_sc >= thresh) {
+				CigarCluster clust = l.get(best_index);
 				clust.merge(c1);
 				clusterID = clust.id;
 			} else {
-
-				CigarCluster newc = new CigarCluster("ID" + l.size());
+				CigarCluster newc = new CigarCluster("ID"+ l.size(), c1.index,num_sources);
+				newc.readCount[source_index]++;
 				newc.merge(c1);
 				clusterID = newc.id;
 				l.add(newc);
-				System.err.println("new cluster " + best_score + " " + min_index);
+				System.err.println("new cluster " + best_sc + " " + best_index);
 				System.err.println(l.size());
-
 			}
-			c1.map.clear();
+			c1.clear();
 			return clusterID;
 		}
 
-		public void getConsensus(Annotation annot, Sequence refseq, Integer[] positions, PrintWriter exonP , SequenceOutputStream seqFasta, double[] depth) throws IOException{
+		public void getConsensus(Annotation annot, Sequence refseq, Integer[] positions, PrintWriter exonP , SequenceOutputStream seqFasta, double[] depth, int num_sources) throws IOException{
 			int[] first_last = new int[2];
+			
+			exonP.println("ID,index,start,end,"+getString("count", num_sources,true));
 			for(int i=0; i<l.size(); i++) {
 				CigarCluster cc = l.get(i);
-				int[][] exons = cc.getExons( positions,0.3,5, depth);
+				int[][] exons = cc.getExons( positions,0.3,10, depth);
 				String id = cc.id;
-				StringBuffer descline = new StringBuffer();
-				//StringBuffer seqline = new StringBuffer();
+				String read_count = getString(cc.readCount);
+				StringBuffer descline = new StringBuffer(cc.index+","+read_count);
 				Sequence subseq = null;
 				for(int j=0; j<exons.length; j++) {
 					int start = exons[j][0];
 					int end = exons[j][1];
-					exonP.println(id+","+start+","+end+","+cc.readCount);
+					exonP.println(id+","+cc.index+","+start+","+end+","+read_count);
 
 					
 					//annot.calcORFOverlap(start, end, first_last);
@@ -110,23 +169,30 @@ public class TranscriptUtils {
 	}
 
 	public static class CigarCluster {
-
-		
-		
-		
-
-		
+		int index;
 		
 		final String id;
 
-		public CigarCluster(String id) {
+		public CigarCluster(String id, int index, int num_sources) {
 			this.id = id;
+			this.index = index;
+			this.readCount = new int[num_sources];
 		}
 
-		private SortedMap<Integer, Integer> map = new TreeMap<Integer, Integer>();
+		private SortedMap<Integer, Integer> map = new TreeMap<Integer, Integer>(); //coverate at high res
+		
+		public void clear() {
+			map.clear();
+			map100.clear();
+			Arrays.fill(readCount, 0);
+		}
+		
+		private SortedMap<Integer, Integer> map100 = new TreeMap<Integer, Integer>(); //coverage at low res (every 100bp)
 
 		public void add(int round) {
+			int round1 = (int) Math.floor(round/round2);
 			map.put(round, map.containsKey(round) ? map.get(round) + 1 : 1);
+			map100.put(round1, map.containsKey(round1) ? map.get(round1) + 1 : 1);
 		}
 
 		public String toString() {
@@ -142,7 +208,7 @@ public class TranscriptUtils {
 		}
 
 		public String summary(Integer[] positions) {
-			StringBuffer sb = new StringBuffer(id+"_"+readCount);
+			StringBuffer sb = new StringBuffer(id+","+index+","+getString(this.readCount));
 			for (int i = 0; i < positions.length; i++) {
 				int i1 = positions[i];
 				int v = map.containsKey(i1) ? map.get(i1) : 0;
@@ -160,7 +226,7 @@ public class TranscriptUtils {
 		public int[][] getExons( Integer[] positions, double threshPerc, int numsteps, double[] depth) {
 			List<Integer> start = new ArrayList<Integer>();
 			List<Integer> end = new ArrayList<Integer>();
-			double thresh = (double) readCount*threshPerc;
+			double thresh = (double) readCountSum()*threshPerc;
 			boolean in =false;
 			Arrays.fill(depth, 0);
 			for(int i=0; i<positions.length; i++) {
@@ -190,12 +256,24 @@ public class TranscriptUtils {
 			}
 			return exons;
 		}
-		int readCount =1;
-		public double similarity(CigarCluster c1) {
-			// if(true) return 1.0;
+		private int readCountSum() {
+			int sum=0;
+			for(int i=0; i<this.readCount.length; i++) sum = sum+readCount[i];
+			return sum;
+		}
+
+		int[] readCount;
+		
+		
+		public double similarity(CigarCluster c1, boolean highRes) {
+			if(index !=c1.index) return 0;
+			return highRes? this.similarity(map, c1.map):  this.similarity(map100, c1.map100);
+		}
+		
+		public double similarity(Map<Integer, Integer> map, Map<Integer, Integer> m1) {
 			int intersection = 0;
 			int union = map.size();
-			for (Iterator<Integer> it = c1.map.keySet().iterator(); it.hasNext();) {
+			for (Iterator<Integer> it = m1.keySet().iterator(); it.hasNext();) {
 				if (map.containsKey(it.next())) {
 					intersection++;
 
@@ -204,15 +282,12 @@ public class TranscriptUtils {
 				}
 			}
 			return ((double) intersection) / (double) union;
-			// Set<Integer> union = Stream.concat(setA.stream(),
-			// setB.stream()).collect(Collectors.toSet());
-			// Set<Integer> intersect =
-			// setA.stream().filter(setB::contains).collect(Collectors.toSet());
-			// return ((double)intersect.size())/((double) union.size());
 		}
 
 		public void merge(CigarCluster c1) {
-			this.readCount++;
+			for(int i=0; i<this.readCount.length;i++) {
+				readCount[i]+=c1.readCount[i];
+			}
 			Iterator<Entry<Integer, Integer>> it = c1.map.entrySet().iterator();
 			while (it.hasNext()) {
 				Entry<Integer, Integer> entry = it.next();
@@ -293,32 +368,32 @@ public class TranscriptUtils {
 	}
 	
 	public static class IdentityProfile1 {
-		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5;
+		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5, outfile6;
 		
 		
 		
-		public IdentityProfile1(Sequence refSeq, File bam, int genome_index, int round, boolean calculateCoExpression, double overlapThresh, int startThresh, int endThresh) throws IOException {
+		public IdentityProfile1(Sequence refSeq, File resDir, int num_sources, int genome_index, int round, boolean calculateCoExpression, double overlapThresh, int startThresh, int endThresh) throws IOException {
 			//File readClusterFile = new File(outdir, "readclusters.txt.gz");
 			this.round = (double) round;
+			this.num_sources = num_sources;
+			this.coRefPositions = new CigarCluster("reuseable",0,num_sources);
+			 TranscriptUtils.round2 = 100.0/round;
 			this.genome = refSeq;
 			this.startThresh = startThresh; this.endThresh = endThresh;
-					
+			this.source_index = 0;		
 			this.calculateCoExpression = calculateCoExpression;
-			 outfile = new File(bam.getParentFile(), bam.getName() + "."+genome_index+ ".txt");
-			 outfile1 = new File(bam.getParentFile(), bam.getName()  +"."+ genome_index+ "coref.txt");
-			 outfile2 = new File(bam.getParentFile(), bam.getName()  +"."+ genome_index+"clusters.txt");
-			 outfile3 = new File(bam.getParentFile(), bam.getName()  + "."+genome_index+ "readToCluster.txt");
-			 outfile4 = new File(bam.getParentFile(), bam.getName()  +"."+ genome_index+ "exons.txt");
-			 outfile5 = new File(bam.getParentFile(), bam.getName()  + "."+genome_index+ "clusters.fa");
-			 readClusters = new PrintWriter[nmes.length];
-			 for(int index1 =0; index1<nmes.length; index1++) {
-				 File outfile3_ = new File(outfile3.getParentFile(),
-						outfile3.getName() + "." + round + nmes[index1] + ".gz");
-				 this.readClusters[index1] = new PrintWriter(
-						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3_))));
-					readClusters[index1].println("readID,clusterId");
-			 }
-		
+			 outfile = new File(resDir,genome_index+ ".txt");
+			 outfile1 = new File(resDir, genome_index+ "coref.txt");
+			 outfile2 = new File(resDir, genome_index+"clusters.txt.gz");
+			 outfile3 = new File(resDir,genome_index+ "readToCluster.txt.gz");
+			 outfile4 = new File(resDir,genome_index+ "exons.txt.gz");
+			 outfile5 = new File(resDir,genome_index+ "clusters.fa.gz");
+			 outfile6 = new File(resDir,genome_index+ "tree.txt.gz");
+			 readClusters = new PrintWriter(
+						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3))));
+				this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
+			readClusters.println("readID,clusterId,type,source");
+			
 			readClipped = 0;
 			numDel = 0;
 			numIns = 0;
@@ -335,7 +410,8 @@ public class TranscriptUtils {
 			Arrays.fill(refClipped, 0);
 
 			refBase = 0;
-			readBase = 0;// the number of bases from ref and read
+			readBase = 0;
+			// the number of bases from ref and read
 			// following should be made more efficient
 			Set<Integer> roundedPos = new HashSet<Integer>();
 			for (int i = 0; i < refSeq.length(); i++) {
@@ -348,13 +424,12 @@ public class TranscriptUtils {
 			 * 1+i*(int)round; }
 			 */
 			codepth = new SparseRealMatrix[nmes.length];
-			all_clusters = new CigarClusters[nmes.length];
+			all_clusters =new CigarClusters(overlapThresh);
 
 			for (int i = 0; i < this.codepth.length; i++) {
 				if(this.calculateCoExpression) {
 					codepth[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
 				}
-				all_clusters[i] = new CigarClusters(overlapThresh);
 			}
 		}
 
@@ -367,7 +442,7 @@ public class TranscriptUtils {
 		final  double round ;
 		private final boolean calculateCoExpression;
 
-		static String[] nmes = "5_3:5_no3:no5_3:no5_no3".split(":");
+		
 
 		public void processRefPositions(int startPos, int distToEnd, String id) {
 			int index = 0;
@@ -387,8 +462,9 @@ public class TranscriptUtils {
 					}
 				}
 			}
-			String clusterID = this.all_clusters[index].matchCluster(coRefPositions); // this also clears current cluster
-			this.readClusters[index].println(id+","+clusterID);
+			coRefPositions.index = index;
+			String clusterID = this.all_clusters.matchCluster(coRefPositions, this.source_index, this.num_sources); // this also clears current cluster
+			this.readClusters.println(id+","+clusterID+","+index+","+source_index);
 		}
 
 		public void addRefPositions(int position) {
@@ -396,15 +472,20 @@ public class TranscriptUtils {
 		}
 
 		public SparseRealMatrix[] codepth;
-		private CigarCluster coRefPositions = new CigarCluster("reuseable");
-		private CigarClusters[] all_clusters;
+		private final CigarCluster coRefPositions;
+		private CigarClusters all_clusters;
 		private Integer[] roundedPositions;// , corefSum;
 		private final double[] depth; // convenience matrix for depth
 		public int[] match, mismatch, refClipped, baseDel, baseIns;
 		public int numIns, numDel, readClipped, refBase, readBase;
 
-		private final PrintWriter[]  readClusters;
+		private final PrintWriter readClusters;
 		private final Sequence genome;
+		private final int num_sources;
+		public int source_index; //source index
+		public void updateSourceIndex(int i) {
+			this.source_index = i;
+		}
 		
 		public void print(PrintWriter pw, Sequence seq) {
 			pw.println("pos,base,match,mismatch,refClipped,baseDel,baseIns");
@@ -416,23 +497,23 @@ public class TranscriptUtils {
 		}
 
 		public void printClusters(File outfile1) throws IOException {
-			for (int index = 0; index < this.all_clusters.length; index++) {
-				File outfile1_ = new File(outfile1.getParentFile(),
-						outfile1.getName() + nmes[index] + "_" + round + ".gz");
+			
 				PrintWriter pw = new PrintWriter(
-						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1_))));
-				StringBuffer sb = new StringBuffer("pos");
+						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1))));
+				StringBuffer sb = new StringBuffer("pos,NA,"+getString("NA",num_sources,false)+",");
+
 				for (int i = 0; i < this.roundedPositions.length; i++) {
 					sb.append(",");
 					sb.append(roundedPositions[i] * round + 1);
 				}
 				pw.println(sb.toString());
-				for (int i = 0; i < this.all_clusters[index].l.size(); i++) {
-					pw.println(this.all_clusters[index].l.get(i).summary(this.roundedPositions));
+				for (int i = 0; i < this.all_clusters.l.size(); i++) {
+					pw.println(this.all_clusters.l.get(i).summary(this.roundedPositions));
 				}
 				pw.close();
-			}
 		}
+
+		
 
 		public void printCoRef(File outfile1) throws IOException {
 			if(calculateCoExpression) {
@@ -464,29 +545,31 @@ public class TranscriptUtils {
 		}
 		
 		public void getConsensus(Annotation annot) throws IOException {
-			
-			for(int i=0; i<all_clusters.length; i++) {
-				File outfile3_ = new File(outfile4.getParentFile(),
-						outfile4.getName() + "." + nmes[i] + ".gz");
-				
+						
 				PrintWriter exonsP =  new PrintWriter(
-						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3_))));
+						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile4))));
 				
-				File outfile5_ = new File(outfile5.getParentFile(),
-						outfile5.getName() + "." + nmes[i] + ".gz");
 				
-				SequenceOutputStream seqFasta =  new SequenceOutputStream(new GZIPOutputStream(new FileOutputStream(outfile5_)));
-				this.all_clusters[i].getConsensus(annot, this.genome, this.roundedPositions, exonsP, seqFasta, this.depth);
+				SequenceOutputStream seqFasta =  new SequenceOutputStream(new GZIPOutputStream(new FileOutputStream(outfile5)));
+				this.all_clusters.getConsensus(annot, this.genome, this.roundedPositions, exonsP, seqFasta, this.depth, this.num_sources);
 				exonsP.close();
 				seqFasta.close();
-			}
+			
+			
+		}
+		public void printTree() throws IOException{
+			PrintWriter treeP =  new PrintWriter(
+					new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile6))));
+			DistanceMatrix dm = this.all_clusters.getDistanceMatrix(this.roundedPositions.length);
+			NeighborJoiningTree tree = new NeighborJoiningTree(dm);
+			//treeP.print(tree.toString());
+			NodeUtils.printNH(treeP, tree.getRoot(), true, false, 0, false);
+			treeP.close();
 			
 		}
 
 		public void finalise()  throws IOException{
-			for(int i=0; i<readClusters.length; i++) {
-			this.readClusters[i].close();
-			}
+			this.readClusters.close();
 			IdentityProfile1 pr1 = this;
 			PrintWriter pw = new PrintWriter(new FileWriter(outfile));
 			pr1.print(pw, genome);

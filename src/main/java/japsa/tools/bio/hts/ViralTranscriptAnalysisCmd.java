@@ -71,6 +71,8 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 		addString("bamFile", null, "Name of bam file", true);
 		addString("reference", null, "Name of reference genome", true);
 		addString("annotation", null, "ORF annotation file", true);
+		addString("resdir", "results"+System.currentTimeMillis(), "results directory");
+
 		addInt("maxReads", Integer.MAX_VALUE, "ORF annotation file");
 
 		addString("pattern", null, "Pattern of read name, used for filtering");
@@ -93,6 +95,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 		String pattern = cmdLine.getStringVal("pattern");
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String annotFile = cmdLine.getStringVal("annotation");
+		String resdir = cmdLine.getStringVal("resdir");
 		boolean coexp = cmdLine.getBooleanVal("coexpression");
 		if(coexp && bin <10) {
 			throw new Error(" this not good idea");
@@ -101,7 +104,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 		int startThresh = cmdLine.getIntVal("startThresh");
 		int endThresh = cmdLine.getIntVal("endThresh");
 		int maxReads = cmdLine.getIntVal("maxReads");
-		errorAnalysis(bamFile, reference, annotFile, pattern, qual, bin, coexp, overlapThresh, startThresh, endThresh,maxReads);
+		errorAnalysis(bamFile, reference, annotFile, resdir,pattern, qual, bin, coexp, overlapThresh, startThresh, endThresh,maxReads);
 
 		// paramEst(bamFile, reference, qual);
 	}
@@ -109,28 +112,36 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
 	 */
-	static void errorAnalysis(String bamFileDir, String refFile, String annot_file,  String pattern, int qual, int round, final boolean coexp, double overlapThresh, int startThresh, int endThresh, int max_reads) throws IOException {
-		File bfDir = new File(bamFileDir);
+	static void errorAnalysis(String bamFiles, String refFile, String annot_file,  String resdir, String pattern, int qual, int round, final boolean coexp, double overlapThresh, int startThresh, int endThresh, int max_reads) throws IOException {
 		
-		String[] bamFiles_ = bfDir.list(new FilenameFilter() {
-
-			@Override
-			public boolean accept(File dir, String name) {
-				return name.endsWith(".bam");
-			}
-
-		});
-		if (bamFiles_ == null || bamFiles_.length == 0) {
-			File bf = new File(bamFileDir);
-			bamFileDir = bf.getParentFile().getAbsolutePath();
-			bamFiles_ = new String[] { bf.getName() };
-		}
+		String[] bamFiles_ = bamFiles.split(":");
+		
+		
 		int len = bamFiles_.length;
 		// len = 1;
-		for (int ii = 0; ii < len; ii++) {
+		
+		ArrayList<Sequence> genomes = SequenceReader.readAll(refFile, Alphabet.DNA());
 
+		// get the first chrom
+		File resDir =  new File(resdir);
+
+		ArrayList<IdentityProfile1> profiles = new ArrayList<IdentityProfile1>();
+		for (int jj = 0; jj < genomes.size(); jj++) {
+			Sequence ref = genomes.get(jj);
+			profiles.add(new IdentityProfile1(ref, resDir, len,jj, round, coexp, overlapThresh, startThresh, endThresh));
+
+		}
+		
+		for (int ii = 0; ii < len; ii++) {
+			
+			int currentIndex = 0;
+			Sequence chr = genomes.get(currentIndex);
+			
 			String bamFile = bamFiles_[ii];
-			File bam = new File(bamFileDir + "/" + bamFile);
+			File bam = new File( bamFile);
+			for (int jj = 0; jj < genomes.size(); jj++) {
+				profiles.get(jj).updateSourceIndex(ii);
+			}
 			
 			SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 			SamReader samReader = null;// SamReaderFactory.makeDefault().open(new File(bamFile));
@@ -142,19 +153,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 
 			SAMRecordIterator samIter = samReader.iterator();
 			// Read the reference genome
-			ArrayList<Sequence> genomes = SequenceReader.readAll(refFile, Alphabet.DNA());
-
-			// get the first chrom
-			int currentIndex = 0;
-			Sequence chr = genomes.get(currentIndex);
-
-			ArrayList<IdentityProfile1> profiles = new ArrayList<IdentityProfile1>();
-
-			for (int jj = 0; jj < genomes.size(); jj++) {
-				Sequence ref = genomes.get(jj);
-				profiles.add(new IdentityProfile1(ref, bam,jj, round, coexp, overlapThresh, startThresh, endThresh));
-
-			}
+			
 
 			long totReadBase = 0, totRefBase = 0;
 			int numReads = 0;
@@ -210,13 +209,15 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 
 			}
 			samReader.close();
-			Annotation annot = new Annotation(new File(annot_file));
-			for(int i=0; i<profiles.size(); i++) {
-				profiles.get(i).finalise();
-				profiles.get(i).getConsensus(annot);
-			}
 			
 		}
+		Annotation annot = new Annotation(new File(annot_file));
+		for(int i=0; i<profiles.size(); i++) {
+			profiles.get(i).finalise();
+			profiles.get(i).getConsensus(annot);
+			profiles.get(i).printTree();
+		}
+		
 		// Done
 
 		// System.out.println(log);
