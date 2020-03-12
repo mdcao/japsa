@@ -124,7 +124,8 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 
 		// get the first chrom
 		File resDir =  new File(resdir);
-
+		if(!resDir.exists()) resDir.mkdir();
+		else if(!resDir.isDirectory()) throw new RuntimeException(resDir+"should be a directory");
 		ArrayList<IdentityProfile1> profiles = new ArrayList<IdentityProfile1>();
 		for (int jj = 0; jj < genomes.size(); jj++) {
 			Sequence ref = genomes.get(jj);

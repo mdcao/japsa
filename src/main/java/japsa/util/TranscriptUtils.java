@@ -87,12 +87,12 @@ public class TranscriptUtils {
 		List<Integer> matching = new ArrayList<Integer>();
 		List<Double> scores = new ArrayList<Double>();
 		
-		public String matchCluster(CigarCluster c1, int source_index, int num_sources) {
+		public String matchCluster(CigarCluster c1, int index, int source_index, int num_sources) {
 			matching.clear();
 			scores.clear();
 			String clusterID="";
 			for (int i = 0; i < l.size(); i++) {	
-				double sc = l.get(i).similarity(c1, false);
+				double sc = l.get(i).similarity(c1,index,  false);
 				if (sc > thresh) {
 					matching.add(i);
 					scores.add(sc);
@@ -101,7 +101,7 @@ public class TranscriptUtils {
 			double best_sc =0;
 			int best_index=-1;
 			for(int i=0; i<matching.size(); i++) {
-				double sc = l.get(matching.get(i)).similarity(c1, true);
+				double sc = l.get(matching.get(i)).similarity(c1, index,true);
 				if(sc>best_sc) {
 					best_sc = sc;
 					best_index = matching.get(i);
@@ -113,7 +113,7 @@ public class TranscriptUtils {
 				clust.merge(c1);
 				clusterID = clust.id;
 			} else {
-				CigarCluster newc = new CigarCluster("ID"+ l.size(), c1.index,num_sources);
+				CigarCluster newc = new CigarCluster("ID"+ l.size(), index,num_sources);
 				newc.readCount[source_index]++;
 				newc.merge(c1);
 				clusterID = newc.id;
@@ -169,7 +169,7 @@ public class TranscriptUtils {
 	}
 
 	public static class CigarCluster {
-		int index;
+		final private int index;
 		
 		final String id;
 
@@ -265,8 +265,13 @@ public class TranscriptUtils {
 		int[] readCount;
 		
 		
-		public double similarity(CigarCluster c1, boolean highRes) {
-			if(index !=c1.index) return 0;
+		public double similarity(CigarCluster c1,int index, boolean highRes) {
+			if(this.index !=index) return 0;
+			return highRes? this.similarity(map, c1.map):  this.similarity(map100, c1.map100);
+		}
+		
+		public double similarity(CigarCluster c1,boolean highRes) {
+			//if(this.index !=index) return 0;
 			return highRes? this.similarity(map, c1.map):  this.similarity(map100, c1.map100);
 		}
 		
@@ -462,8 +467,8 @@ public class TranscriptUtils {
 					}
 				}
 			}
-			coRefPositions.index = index;
-			String clusterID = this.all_clusters.matchCluster(coRefPositions, this.source_index, this.num_sources); // this also clears current cluster
+		//	coRefPositions.index = index;
+			String clusterID = this.all_clusters.matchCluster(coRefPositions,index, this.source_index, this.num_sources); // this also clears current cluster
 			this.readClusters.println(id+","+clusterID+","+index+","+source_index);
 		}
 
