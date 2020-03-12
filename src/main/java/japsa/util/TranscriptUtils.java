@@ -204,9 +204,9 @@ public class TranscriptUtils {
 		private SortedMap<Integer, Integer> map100 = new TreeMap<Integer, Integer>(); //coverage at low res (every 100bp)
 
 		public void add(int round) {
-			int round1 = (int) Math.floor(round/round2);
+			int round1 = (int) Math.floor((double)round/round2);
 			map.put(round, map.containsKey(round) ? map.get(round) + 1 : 1);
-			map100.put(round1, map.containsKey(round1) ? map.get(round1) + 1 : 1);
+			map100.put(round1, map100.containsKey(round1) ? map100.get(round1) + 1 : 1);
 		}
 
 		public String toString() {
@@ -282,7 +282,7 @@ public class TranscriptUtils {
 		public double similarity(CigarCluster c1,int index, boolean highRes) {
 			if(this.index !=index) return 0;
 			double sim =  highRes? this.similarity(map, c1.map):  this.similarity(map100, c1.map100);
-			System.err.println(highRes+" "+sim);
+			//System.err.println(highRes+" "+sim);
 			return sim;
 		}
 		
@@ -398,7 +398,7 @@ public class TranscriptUtils {
 			this.round = (double) round;
 			this.num_sources = num_sources;
 			this.coRefPositions = new CigarCluster("reuseable",0,num_sources);
-			 TranscriptUtils.round2 = 100.0/round;
+		 TranscriptUtils.round2 = 100.0/round;
 			this.genome = refSeq;
 			this.startThresh = startThresh; this.endThresh = endThresh;
 			this.source_index = 0;		
