@@ -104,7 +104,7 @@ public class TranscriptUtils {
 			scores.clear();
 			String clusterID="";
 			for (int i = 0; i < l.size(); i++) {	
-				double sc = l.get(i).similarity(c1,index,  false);
+				double sc = l.get(i).similarity(c1,index,  true);
 				
 				if (sc >= thresh) {
 					matching.add(i);
@@ -113,7 +113,7 @@ public class TranscriptUtils {
 			}
 			double best_sc =0;
 			int best_index=-1;
-			
+			System.err.println(matching.size());
 			for(int i=0; i<matching.size(); i++) {
 				double sc = l.get(matching.get(i)).similarity(c1, index,true);
 				if(sc>best_sc) {
