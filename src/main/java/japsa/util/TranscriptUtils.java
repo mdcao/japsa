@@ -8,7 +8,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -37,7 +36,7 @@ import pal.tree.NodeUtils;
 public class TranscriptUtils {
 
 	static String getString(int[] c) {
-		StringBuffer sb = new StringBuffer(c[0]);
+		StringBuffer sb = new StringBuffer(c[0]+"");
 		for(int i=1; i<c.length;i++) {
 			sb.append(",");sb.append(c[i]);
 		}
@@ -71,7 +70,8 @@ public class TranscriptUtils {
 			this.thresh = thresh;
 		}
 
-		DistanceMatrix getDistanceMatrix(int len, PrintWriter pw){
+		DistanceMatrix getDistanceMatrix( PrintWriter pw){
+			int len  = l.size();
 			double[][] res = new double[len][];
 			String[] labels = new String[len];
 			for(int i=0; i<len; i++) {
@@ -86,7 +86,10 @@ public class TranscriptUtils {
 					res[i][j] = dist;
 					res[j][i] = dist;
 				}
-				pw.print(labels[i]+","+cc.index+",");
+				
+			}
+			for(int i=0; i<len; i++) {
+				pw.print(labels[i]+","+l.get(i).index+",");
 				pw.println(getString(res[i]));
 			}
 		
@@ -103,22 +106,28 @@ public class TranscriptUtils {
 			matching.clear();
 			scores.clear();
 			String clusterID="";
+			double best_sc0=0;
 			for (int i = 0; i < l.size(); i++) {	
-				double sc = l.get(i).similarity(c1,index,  true);
+				double sc = l.get(i).similarity(c1,index,  false);
 				
 				if (sc >= thresh) {
 					matching.add(i);
 					scores.add(sc);
+					if(sc> best_sc0) best_sc0 = sc;
 				}
 			}
 			double best_sc =0;
 			int best_index=-1;
-			System.err.println(matching.size());
+			//System.err.println(matching.size());
+			//System.err.println(scores);
 			for(int i=0; i<matching.size(); i++) {
-				double sc = l.get(matching.get(i)).similarity(c1, index,true);
-				if(sc>best_sc) {
-					best_sc = sc;
-					best_index = matching.get(i);
+				if(scores.get(i) >= best_sc0 - 0.001){
+					double sc = l.get(matching.get(i)).similarity(c1, index,true);
+					//System.err.println(scores.get(i)+"\t"+sc);
+					if(sc>best_sc) {
+						best_sc = sc;
+						best_index = matching.get(i);
+					}
 				}
 			}
 			
@@ -126,16 +135,17 @@ public class TranscriptUtils {
 				CigarCluster clust = l.get(best_index);
 				clust.merge(c1);
 				clusterID = clust.id;
+			//	System.err.println("merged");
 			} else {
 				CigarCluster newc = new CigarCluster("ID"+ l.size(), index,num_sources);
 				newc.readCount[source_index]++;
 				newc.merge(c1);
 				clusterID = newc.id;
 				l.add(newc);
-				System.err.println("new cluster " + best_sc + " " + best_index);
-				System.err.println(l.size());
+				System.err.println("new cluster " + best_sc + " " + best_index+" "+newc.id+" "+index);
+			//	System.err.println(l.size());
 			}
-			c1.clear();
+			
 			return clusterID;
 		}
 
@@ -195,10 +205,11 @@ public class TranscriptUtils {
 
 		private SortedMap<Integer, Integer> map = new TreeMap<Integer, Integer>(); //coverate at high res
 		
-		public void clear() {
+		public void clear(int source_index) {
 			map.clear();
 			map100.clear();
 			Arrays.fill(readCount, 0);
+			readCount[source_index]=1;
 		}
 		
 		private SortedMap<Integer, Integer> map100 = new TreeMap<Integer, Integer>(); //coverage at low res (every 100bp)
@@ -305,16 +316,41 @@ public class TranscriptUtils {
 			return ((double) intersection) / (double) union;
 		}
 
+		static int merge(Map<Integer, Integer> target, Map<Integer, Integer> source){
+		//	int source_sum = sum(source);
+		//	int target_sum = sum(target);
+		//	int sum0 = source_sum+target_sum;
+			Iterator<Entry<Integer, Integer>> it = source.entrySet().iterator();
+		
+			while (it.hasNext()) {
+				Entry<Integer, Integer> entry = it.next();
+				Integer key = entry.getKey();
+				int curr = target.containsKey(key) ? target.get(key) : 0;
+				int newv = curr + entry.getValue();
+				target.put(key, newv);
+				
+			}
+		
+			return sum(target);
+		}
+		
+		static int sum(Map<Integer, Integer> source){
+			return source.values().stream() .reduce(0, Integer::sum);
+		}
+		
 		public void merge(CigarCluster c1) {
 			for(int i=0; i<this.readCount.length;i++) {
 				readCount[i]+=c1.readCount[i];
 			}
-			Iterator<Entry<Integer, Integer>> it = c1.map.entrySet().iterator();
-			while (it.hasNext()) {
-				Entry<Integer, Integer> entry = it.next();
-				Integer key = entry.getKey();
-				int curr = map.containsKey(key) ? map.get(key) : 0;
-				map.put(key, curr + entry.getValue());
+			int sum1 = merge(map, c1.map);
+			int sum2 = merge(map100,c1.map100);
+			if(sum1!=sum2){
+				int sum11 = sum(c1.map);
+				int sum12 = sum(c1.map100);
+				int sum21 = sum(map);
+				int sum22 = sum(map100);
+				int sumab = sum11 + sum12;
+				throw new RuntimeException("maps not concordant");
 			}
 		}
 	}
@@ -584,10 +620,10 @@ public class TranscriptUtils {
 					new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile6))));
 			PrintWriter distP =  new PrintWriter(
 					new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile7))));
-			DistanceMatrix dm = this.all_clusters.getDistanceMatrix(this.roundedPositions.length, distP);
+			DistanceMatrix dm = this.all_clusters.getDistanceMatrix( distP);
 			NeighborJoiningTree tree = new NeighborJoiningTree(dm);
 			//treeP.print(tree.toString());
-			NodeUtils.printNH(treeP, tree.getRoot(), true, false, 0, false);
+			NodeUtils.printNH(treeP, tree.getRoot(), true, false, 0, true);
 			treeP.close();
 			
 			
@@ -607,6 +643,10 @@ public class TranscriptUtils {
 			
 		}
 
+		public void newRead(int source_index2) {
+			this.coRefPositions.clear(source_index2);
+		}
+
 	}
 
 	/**
@@ -616,13 +656,14 @@ public class TranscriptUtils {
 	 * @param sam
 	 * @return
 	 */
-	public static void identity1(Sequence refSeq, Sequence readSeq, SAMRecord sam, IdentityProfile1 profile) {
+	public static void identity1(Sequence refSeq, Sequence readSeq, SAMRecord sam, IdentityProfile1 profile, int source_index) {
 
 
 		int readPos = 0;// start from 0
 		int refPos = sam.getAlignmentStart() - 1;// convert to 0-based index
 		//String id = sam.getHeader().getId();
 		String id = sam.getReadName();
+		profile.newRead(source_index);
 		for (final CigarElement e : sam.getCigar().getCigarElements()) {
 			final int length = e.getLength();
 

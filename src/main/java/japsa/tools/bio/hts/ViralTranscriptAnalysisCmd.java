@@ -33,6 +33,7 @@
 
 package japsa.tools.bio.hts;
 
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -77,10 +78,10 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 
 		addString("pattern", null, "Pattern of read name, used for filtering");
 		addInt("qual", 0, "Minimum quality required");
-		addInt("bin", 10, "Bin size for coverage");
+		addInt("bin", 1, "Bin size for coverage");
 		addInt("startThresh", 80, "Threshold for having 5'");
 		addInt("endThresh", 80, "Threshold for having 3'");
-		addDouble("overlapThresh", 0.9, "Threshold for overlapping clusters");
+		addDouble("overlapThresh", 0.95, "Threshold for overlapping clusters");
 		addBoolean("coexpression", false, "whether to calc coexperssion matrices (large memory for small bin size)");
 		addStdHelp();
 	}
@@ -134,7 +135,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 		}
 		
 		for (int ii = 0; ii < len; ii++) {
-			
+			int source_index = ii;
 			int currentIndex = 0;
 			Sequence chr = genomes.get(currentIndex);
 			
@@ -200,7 +201,7 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 					chr = genomes.get(currentIndex);
 				}
 
-				TranscriptUtils.identity1(chr, readSeq, sam, profiles.get(currentIndex));
+				TranscriptUtils.identity1(chr, readSeq, sam, profiles.get(currentIndex), source_index);
 
 				// log+=sam.getReadName() + "\t" + profile.readBase + "\t" + profile.refBase +
 				// "\t" + profile.baseIns + "\t" + profile.baseDel + "\t" + profile.mismatch+
