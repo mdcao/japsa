@@ -283,6 +283,7 @@ public class TranscriptUtils {
 			if(this.index !=index) return 0;
 			double sim =  highRes? this.similarity(map, c1.map):  this.similarity(map100, c1.map100);
 			System.err.println(highRes+" "+sim);
+			return sim;
 		}
 		
 		public double similarity(CigarCluster c1,boolean highRes) {
