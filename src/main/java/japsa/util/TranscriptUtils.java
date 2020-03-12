@@ -105,6 +105,7 @@ public class TranscriptUtils {
 			String clusterID="";
 			for (int i = 0; i < l.size(); i++) {	
 				double sc = l.get(i).similarity(c1,index,  false);
+				
 				if (sc >= thresh) {
 					matching.add(i);
 					scores.add(sc);
@@ -112,8 +113,7 @@ public class TranscriptUtils {
 			}
 			double best_sc =0;
 			int best_index=-1;
-			System.err.println(matching);
-			System.err.println(scores);
+			
 			for(int i=0; i<matching.size(); i++) {
 				double sc = l.get(matching.get(i)).similarity(c1, index,true);
 				if(sc>best_sc) {
@@ -280,8 +280,9 @@ public class TranscriptUtils {
 		
 		
 		public double similarity(CigarCluster c1,int index, boolean highRes) {
-			//if(this.index !=index) return 0;
-			return highRes? this.similarity(map, c1.map):  this.similarity(map100, c1.map100);
+			if(this.index !=index) return 0;
+			double sim =  highRes? this.similarity(map, c1.map):  this.similarity(map100, c1.map100);
+			System.err.println(highRes+" "+sim);
 		}
 		
 		public double similarity(CigarCluster c1,boolean highRes) {
