@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -42,6 +43,14 @@ public class TranscriptUtils {
 		}
 		return sb.toString();
 	}
+	static String getString(double[] c) {
+		String formatstr = "%5.3g";
+		StringBuffer sb = new StringBuffer(String.format(formatstr,c[0]).trim()+"");
+		for(int i=1; i<c.length;i++) {
+			sb.append(",");sb.append(String.format(formatstr, c[i]).trim());
+		}
+		return sb.toString();
+	}
 	 static String getString(String string, int num_sources2, boolean print_index) {
 		 StringBuffer sb = new StringBuffer(string);
 		 if(print_index)sb.append(0);
@@ -62,7 +71,7 @@ public class TranscriptUtils {
 			this.thresh = thresh;
 		}
 
-		DistanceMatrix getDistanceMatrix(int len){
+		DistanceMatrix getDistanceMatrix(int len, PrintWriter pw){
 			double[][] res = new double[len][];
 			String[] labels = new String[len];
 			for(int i=0; i<len; i++) {
@@ -77,7 +86,10 @@ public class TranscriptUtils {
 					res[i][j] = dist;
 					res[j][i] = dist;
 				}
+				pw.print(labels[i]+","+cc.index+",");
+				pw.println(getString(res[i]));
 			}
+		
 			IdGroup group = new  SimpleIdGroup(labels);
 			DistanceMatrix dm = new DistanceMatrix(res, group);
 			return dm;
@@ -373,7 +385,7 @@ public class TranscriptUtils {
 	}
 	
 	public static class IdentityProfile1 {
-		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5, outfile6;
+		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5, outfile6, outfile7;
 		
 		
 		
@@ -394,6 +406,7 @@ public class TranscriptUtils {
 			 outfile4 = new File(resDir,genome_index+ "exons.txt.gz");
 			 outfile5 = new File(resDir,genome_index+ "clusters.fa.gz");
 			 outfile6 = new File(resDir,genome_index+ "tree.txt.gz");
+			 outfile7 = new File(resDir,genome_index+ "dist.txt.gz");
 			 readClusters = new PrintWriter(
 						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3))));
 				this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
@@ -565,11 +578,16 @@ public class TranscriptUtils {
 		public void printTree() throws IOException{
 			PrintWriter treeP =  new PrintWriter(
 					new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile6))));
-			DistanceMatrix dm = this.all_clusters.getDistanceMatrix(this.roundedPositions.length);
+			PrintWriter distP =  new PrintWriter(
+					new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile7))));
+			DistanceMatrix dm = this.all_clusters.getDistanceMatrix(this.roundedPositions.length, distP);
 			NeighborJoiningTree tree = new NeighborJoiningTree(dm);
 			//treeP.print(tree.toString());
 			NodeUtils.printNH(treeP, tree.getRoot(), true, false, 0, false);
 			treeP.close();
+			
+			
+			distP.close();
 			
 		}
 
