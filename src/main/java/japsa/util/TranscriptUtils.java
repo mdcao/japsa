@@ -153,10 +153,12 @@ public class TranscriptUtils {
 			return clusterID;
 		}
 
-		public void getConsensus(Annotation annot, Sequence refseq,  PrintWriter[] exonP , SequenceOutputStream[] seqFasta, PrintWriter[] clusterW, int[] depth, int num_sources) throws IOException{
+		public void getConsensus(Annotation annot, Sequence refseq,  PrintWriter[] exonP ,
+				PrintWriter[] transcriptsP, SequenceOutputStream[] seqFasta, PrintWriter[] clusterW, int[] depth, int num_sources) throws IOException{
 			int[] first_last = new int[2];
 			for(int i=0; i<exonP.length; i++){
-				exonP[i].println("ID,index,start,end,"+getString("count", num_sources,true));
+				exonP[i].println("ID,index,start,end");
+				transcriptsP[i].println("ID,index,start,end,numPos,totLen,countTotal,"+getString("count", num_sources,true));
 			}
 			for(int i=0; i<l.size(); i++) {
 				CigarCluster cc = l.get(i);
@@ -167,6 +169,7 @@ public class TranscriptUtils {
 				StringBuffer subseq= new StringBuffer();
 				StringBuffer annotline = new StringBuffer();
 				int transcript_len =0;
+				transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+cc.numPos+","+cc.totLen+","+cc.readCountSum()+","+read_count);
 				for(int j=0; j<exons.length; j++) {
 					int start = exons[j][0];
 					int end = exons[j][1];
@@ -263,9 +266,12 @@ public class TranscriptUtils {
 			double thresh = (double) readCountSum()*threshPerc;
 			boolean in =false;
 			Arrays.fill(depth, 0);
+			numPos =0;
+			totLen =0;
 			for(int i=this.start; i<this.end; i++) {
 				depth[i] = getDepth(i);
 				if(depth[i]>0){
+					numPos++;
 					clusterW.println(i+","+depth[i]+","+this.id);
 				}
 			}
@@ -290,6 +296,7 @@ public class TranscriptUtils {
 			 exons = new int[end1.size()][];
 			for(int i=0; i<end1.size(); i++) {
 				exons[i] = new int[] {start1.get(i), end1.get(i)};
+				totLen += end1.get(i) - start1.get(i)+1;
 			}
 			return exons;
 		}
@@ -300,6 +307,8 @@ public class TranscriptUtils {
 		}
 
 		int[] readCount;
+		int numPos =-1;
+		int totLen = -1;
 		
 		
 		/** if its going to be less than thresh we return zero */
@@ -478,7 +487,7 @@ public class TranscriptUtils {
 	}
 	
 	public static class IdentityProfile1 {
-		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5, outfile6, outfile7;
+		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5, outfile6, outfile7, outfile8;
 		
 		
 		
@@ -500,6 +509,7 @@ public class TranscriptUtils {
 			 outfile5 = new File(resDir,genome_index+ "clusters.fa");
 			 outfile6 = new File(resDir,genome_index+ "tree.txt.gz");
 			 outfile7 = new File(resDir,genome_index+ "dist.txt.gz");
+			 outfile8 = new File(resDir,genome_index+ "transcripts.txt.gz");
 			 readClusters = new PrintWriter(
 						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3))));
 				this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
@@ -659,22 +669,24 @@ public class TranscriptUtils {
 		public void getConsensus(Annotation annot) throws IOException {
 				int num_types = this.nmes.length;
 				PrintWriter[] exonsP = new PrintWriter[num_types]; 
+				PrintWriter[] transcriptsP = new PrintWriter[num_types]; 
 				SequenceOutputStream[] seqFasta = new SequenceOutputStream[num_types];
 				PrintWriter[] clusterW = new PrintWriter[num_types];
 				for(int i=0; i<num_types; i++){
 				
 						exonsP[i] =new PrintWriter( new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile4+"."+nmes[i]+".gz"))));
 				
-				
 				seqFasta [i]=  new SequenceOutputStream(new GZIPOutputStream(new FileOutputStream(outfile5+"."+nmes[i]+".gz")));
+				transcriptsP [i]=  new PrintWriter( new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile8+"."+nmes[i]+".gz"))));
 				clusterW[i]= new PrintWriter(
 						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile2+"."+nmes[i]+".gz"))));
 				}
-				this.all_clusters.getConsensus(annot, this.genome, exonsP, seqFasta,clusterW, this.depth, this.num_sources);
+				this.all_clusters.getConsensus(annot, this.genome, exonsP, transcriptsP, seqFasta,clusterW, this.depth, this.num_sources);
 				for(int i=0; i<num_types; i++){
 				clusterW[i].close();
 				exonsP[i].close();
 				seqFasta[i].close();
+				transcriptsP[i].close();
 				}
 			
 			
