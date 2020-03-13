@@ -291,11 +291,25 @@ public class TranscriptUtils {
 			Arrays.fill(depth, 0);
 			numPos =0;
 			totLen =0;
+			boolean prev0 = start>1;
+			boolean printPrev = false;
 			for(int i=this.start; i<this.end; i++) {
 				depth[i] = getDepth(i);
 				if(depth[i]>0){
+					if(prev0 && !printPrev){
+						clusterW.println((i-1)+","+depth[i-1]+","+this.id);
+					}
 					numPos++;
 					clusterW.println(i+","+depth[i]+","+this.id);
+					prev0 = false;
+					printPrev = true;
+				}else if(!prev0){
+					clusterW.println(i+","+depth[i]+","+this.id);
+					printPrev = true;
+					prev0=true;
+				}else{
+					printPrev = false;
+					prev0 = true;
 				}
 			}
 			outer: for(int i=start; i<=end; i++) {
