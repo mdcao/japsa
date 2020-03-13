@@ -10,6 +10,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -25,7 +26,6 @@ import org.apache.commons.math3.linear.SparseRealMatrix;
 
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
-import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import pal.distance.DistanceMatrix;
@@ -82,13 +82,15 @@ public class TranscriptUtils {
 	
 	static String[] nmes = "5_3:5_no3:no5_3:no5_no3".split(":");
 	
+	
+	
 	public static class CigarClusters {
 		final double thresh;
 		
 		CigarClusters(double thresh){
 			this.thresh = thresh;
 		}
-
+		public 
 		DistanceMatrix getDistanceMatrix( PrintWriter pw){
 			int len  = l.size();
 			double[][] res = new double[len][];
@@ -142,7 +144,8 @@ public class TranscriptUtils {
 			//	System.err.println("merged");
 			} else {
 				CigarCluster newc = new CigarCluster(l.size()+"", index,num_sources);
-				newc.readCount[source_index]++;
+				newc.addReadCount(source_index);
+				
 				newc.merge(c1);
 				clusterID = newc.id;
 				l.add(newc);
@@ -158,10 +161,13 @@ public class TranscriptUtils {
 			int[] first_last = new int[2];
 			for(int i=0; i<exonP.length; i++){
 				exonP[i].println("ID,index,start,end");
-				transcriptsP[i].println("ID,index,start,end,numPos,totLen,countTotal,"+getString("count", num_sources,true));
+				transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true));
 			}
+			Collections.sort(l);
+			int startPos = 0;
 			for(int i=0; i<l.size(); i++) {
 				CigarCluster cc = l.get(i);
+				
 				int[][] exons = cc.getExons( 0.3,10, depth, clusterW[cc.index]);
 				String id = cc.id;
 				String read_count = getString(cc.readCount);
@@ -169,7 +175,9 @@ public class TranscriptUtils {
 				StringBuffer subseq= new StringBuffer();
 				StringBuffer annotline = new StringBuffer();
 				int transcript_len =0;
-				transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+cc.numPos+","+cc.totLen+","+cc.readCountSum()+","+read_count);
+				int endPos = startPos+cc.numPos;
+				transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+startPos+","+endPos+","+cc.totLen+","+cc.readCountSum+","+read_count);
+				startPos =endPos;
 				for(int j=0; j<exons.length; j++) {
 					int start = exons[j][0];
 					int end = exons[j][1];
@@ -186,9 +194,9 @@ public class TranscriptUtils {
 					//descline.append("|");descline.append(annot.getInfo(first_last[1]));
 					subseq.append(refseq.subSequence(start, end).toString());
 					
-					System.err.println(subseq.length());
-					System.err.println(subseq);
-					System.err.println("h");
+					//System.err.println(subseq.length());
+					//System.err.println(subseq);
+					//System.err.println("h");
 					transcript_len += len;
 					//seqline.append(subseq.toString());
 				}
@@ -205,7 +213,9 @@ public class TranscriptUtils {
 
 	}
 
-	public static class CigarCluster {
+	
+	
+	public static class CigarCluster  implements Comparable{
 		final private int index;
 		
 		final String id;
@@ -213,6 +223,18 @@ public class TranscriptUtils {
 		int start=0;
 		int end=0;
 		
+		@Override
+		public int compareTo(Object o) {
+			CigarCluster ic1 = (CigarCluster)o;
+			if(ic1.readCountSum==readCountSum) return 0;
+			else return ic1.readCountSum<readCountSum ? -1 : 1;
+		}
+		
+		public void addReadCount(int source_index) {
+			readCount[source_index]++;
+			this.readCountSum++;
+		}
+
 		public CigarCluster(String id, int index, int num_sources) {
 			this.id = id;
 			this.index = index;
@@ -226,6 +248,7 @@ public class TranscriptUtils {
 			map100.clear();
 			Arrays.fill(readCount, 0);
 			readCount[source_index]=1;
+			readCountSum=1;
 			start =0;
 			end=0;
 		}
@@ -263,7 +286,7 @@ public class TranscriptUtils {
 			if(exons!=null) return exons;
 			List<Integer> start1 = new ArrayList<Integer>();
 			List<Integer> end1 = new ArrayList<Integer>();
-			double thresh = (double) readCountSum()*threshPerc;
+			double thresh = (double) readCountSum*threshPerc;
 			boolean in =false;
 			Arrays.fill(depth, 0);
 			numPos =0;
@@ -300,13 +323,8 @@ public class TranscriptUtils {
 			}
 			return exons;
 		}
-		private int readCountSum() {
-			int sum=0;
-			for(int i=0; i<this.readCount.length; i++) sum = sum+readCount[i];
-			return sum;
-		}
-
-		int[] readCount;
+		
+		int[] readCount; int readCountSum;
 		int numPos =-1;
 		int totLen = -1;
 		
@@ -402,6 +420,7 @@ public class TranscriptUtils {
 			for(int i=0; i<this.readCount.length;i++) {
 				readCount[i]+=c1.readCount[i];
 			}
+			this.readCountSum+=c1.readCountSum;
 			int sum1 = merge(map, c1.map);
 			int sum2 = merge(map100,c1.map100);
 			if(sum1!=sum2){
@@ -509,7 +528,7 @@ public class TranscriptUtils {
 			 outfile5 = new File(resDir,genome_index+ "clusters.fa");
 			 outfile6 = new File(resDir,genome_index+ "tree.txt.gz");
 			 outfile7 = new File(resDir,genome_index+ "dist.txt.gz");
-			 outfile8 = new File(resDir,genome_index+ "transcripts.txt.gz");
+			 outfile8 = new File(resDir,genome_index+ "transcripts.txt");
 			 readClusters = new PrintWriter(
 						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3))));
 				this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
