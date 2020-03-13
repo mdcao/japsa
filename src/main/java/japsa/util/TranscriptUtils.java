@@ -35,7 +35,7 @@ import pal.tree.NeighborJoiningTree;
 import pal.tree.NodeUtils;
 
 public class TranscriptUtils {
-
+ static int[] printedLines =new int[] {0,0,0,0};
 	public static int overlap(int st1, int end1, int st2, int end2){
 		int minlen = Math.min(end1-st1, end2 - st2);
 		int overlap = Math.min(end1-st2, end2 - st1);
@@ -167,7 +167,7 @@ public class TranscriptUtils {
 			int startPos = 0;
 			for(int i=0; i<l.size(); i++) {
 				CigarCluster cc = l.get(i);
-				
+				startPos = printedLines[cc.index];
 				int[][] exons = cc.getExons( 0.3,10, depth, clusterW[cc.index]);
 				String id = cc.id;
 				String read_count = getString(cc.readCount);
@@ -175,9 +175,9 @@ public class TranscriptUtils {
 				StringBuffer subseq= new StringBuffer();
 				StringBuffer annotline = new StringBuffer();
 				int transcript_len =0;
-				int endPos = startPos+cc.numPos;
+				int endPos = printedLines[cc.index];
 				transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+startPos+","+endPos+","+cc.totLen+","+cc.readCountSum+","+read_count);
-				startPos =endPos;
+				
 				for(int j=0; j<exons.length; j++) {
 					int start = exons[j][0];
 					int end = exons[j][1];
@@ -297,14 +297,19 @@ public class TranscriptUtils {
 				depth[i] = getDepth(i);
 				if(depth[i]>0){
 					if(prev0 && !printPrev){
+						numPos++;
 						clusterW.println((i-1)+","+depth[i-1]+","+this.id);
+						printedLines[index]++;
 					}
 					numPos++;
 					clusterW.println(i+","+depth[i]+","+this.id);
+					printedLines[index]++;
 					prev0 = false;
 					printPrev = true;
 				}else if(!prev0){
+					numPos++;
 					clusterW.println(i+","+depth[i]+","+this.id);
+					printedLines[index]++;
 					printPrev = true;
 					prev0=true;
 				}else{
