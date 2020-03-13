@@ -27,8 +27,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              *
  ****************************************************************************/
 
-/*                           Revision History                                
- * 28/05/2014 - Minh Duc Cao: Created                                        
+/*                                                    
+
+ * 01/03/2020 - Lachlan Coin                                       
  ****************************************************************************/
 
 package japsa.tools.bio.hts;
