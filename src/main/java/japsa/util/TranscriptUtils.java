@@ -239,12 +239,19 @@ public class TranscriptUtils {
 			this.id = id;
 			this.index = index;
 			this.readCount = new int[num_sources];
+			this.maps = new SortedMap[num_sources];
+			for(int i=0; i<maps.length; i++){
+				maps[i] = new TreeMap<Integer, Integer>();
+			}
 		}
 
 		private SortedMap<Integer, Integer> map = new TreeMap<Integer, Integer>(); //coverate at high res
-		
+		final private SortedMap<Integer, Integer>[] maps;
 		public void clear(int source_index) {
 			map.clear();
+			for(int i=0; i<maps.length; i++){
+				maps[i].clear();
+			}
 			map100.clear();
 			Arrays.fill(readCount, 0);
 			readCount[source_index]=1;
@@ -255,12 +262,13 @@ public class TranscriptUtils {
 		
 		private SortedMap<Integer, Integer> map100 = new TreeMap<Integer, Integer>(); //coverage at low res (every 100bp)
 
-		public void add(int round) {
+		public void add(int round, int src_index) {
 			if(round<start) start =round;
 			else if(round>end) end = round;
 			int round1 = (int) Math.floor((double)round/round2);
 			map.put(round, map.containsKey(round) ? map.get(round) + 1 : 1);
 			map100.put(round1, map100.containsKey(round1) ? map100.get(round1) + 1 : 1);
+			maps[src_index].put(round, maps[src_index].containsKey(round) ? maps[src_index].get(round) + 1 : 1);
 		}
 
 		public String toString() {
@@ -280,6 +288,15 @@ public class TranscriptUtils {
 		int getDepth(Integer i) {
 			return this.map.containsKey(i) ?  map.get(i) :  0;
 		}
+		
+		String getDepthSt(Integer i) {
+			StringBuffer sb = new StringBuffer();
+			for(int src_index=0; src_index<maps.length; src_index++){
+				if(src_index>0)sb.append(",");
+				sb.append(this.maps[src_index].containsKey(i) ?  maps[src_index].get(i) :  0);
+			}
+			return sb.toString();
+		}
 		int[][] exons;
 	
 		public int[][] getExons( double threshPerc, int numsteps, int[] depth, PrintWriter clusterW) {
@@ -298,17 +315,17 @@ public class TranscriptUtils {
 				if(depth[i]>0){
 					if(prev0 && !printPrev){
 						numPos++;
-						clusterW.println((i-1)+","+depth[i-1]+","+this.id);
+						clusterW.println((i-1)+","+this.id+","+getDepthSt(i-1));
 						printedLines[index]++;
 					}
 					numPos++;
-					clusterW.println(i+","+depth[i]+","+this.id);
+					clusterW.println(i+","+this.id+","+getDepthSt(i));
 					printedLines[index]++;
 					prev0 = false;
 					printPrev = true;
 				}else if(!prev0){
 					numPos++;
-					clusterW.println(i+","+depth[i]+","+this.id);
+					clusterW.println(i+","+this.id+","+getDepthSt(i));
 					printedLines[index]++;
 					printPrev = true;
 					prev0=true;
@@ -442,6 +459,9 @@ public class TranscriptUtils {
 			this.readCountSum+=c1.readCountSum;
 			int sum1 = merge(map, c1.map);
 			int sum2 = merge(map100,c1.map100);
+			for(int i=0; i<maps.length; i++){
+				merge(maps[i], c1.maps[i]);
+			}
 			if(sum1!=sum2){
 				throw new RuntimeException("maps not concordant");
 			}
@@ -550,7 +570,7 @@ public class TranscriptUtils {
 			 outfile8 = new File(resDir,genome_index+ "transcripts.txt");
 			 readClusters = new PrintWriter(
 						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3))));
-				this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
+				//this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
 			readClusters.println("readID,clusterId,type,source");
 			
 			readClipped = 0;
@@ -627,7 +647,7 @@ public class TranscriptUtils {
 		}
 
 		public void addRefPositions(int position) {
-			coRefPositions.add(round(position));
+			coRefPositions.add(round(position), this.source_index);
 		}
 
 		public SparseRealMatrix[] codepth;
