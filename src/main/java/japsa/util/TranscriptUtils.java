@@ -11,6 +11,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.TreeMap;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
+import org.apache.commons.math3.linear.OpenMapRealVector;
 import org.apache.commons.math3.linear.SparseRealMatrix;
 
 import htsjdk.samtools.CigarElement;
@@ -35,6 +37,27 @@ import pal.tree.NeighborJoiningTree;
 import pal.tree.NodeUtils;
 
 public class TranscriptUtils {
+	static class SparseVector{
+		SortedMap<Integer, Integer> m = new TreeMap<Integer, Integer>();
+
+		public void addToEntry(Integer position, int i) {
+			Integer val = m.get(position);
+			m.put(position, val==null ? i : val + i);
+		}
+
+		public List<Integer> keys() {
+			List<Integer> l= new ArrayList<Integer>(this.m.keySet());
+			Collections.sort(l);
+			return l;
+		}
+
+		public Integer get(Integer val) {
+			Integer res =  this.m.get(val);
+			if(res==null) return 0;
+			else return res;
+		}
+		
+	}
  static int[] printedLines =new int[] {0,0,0,0};
 	public static int overlap(int st1, int end1, int st2, int end2){
 		int minlen = Math.min(end1-st1, end2 - st2);
@@ -78,13 +101,16 @@ public class TranscriptUtils {
 			String res = sb.toString();
 			return res;
 	}
-	static double round2 = 100;
+//	static double round2 = 100;
 	
 	static String[] nmes = "5_3:5_no3:no5_3:no5_no3".split(":");
 	
 	
 	
 	public static class CigarClusters {
+		
+		
+		
 		final double thresh;
 		
 		CigarClusters(double thresh){
@@ -218,6 +244,9 @@ public class TranscriptUtils {
 	public static class CigarCluster  implements Comparable{
 		final private int index;
 		
+		static int round2 = 100;
+		
+		
 		final String id;
 
 		int start=0;
@@ -262,13 +291,13 @@ public class TranscriptUtils {
 		
 		private SortedMap<Integer, Integer> map100 = new TreeMap<Integer, Integer>(); //coverage at low res (every 100bp)
 
-		public void add(int round, int src_index) {
-			if(round<start) start =round;
-			else if(round>end) end = round;
-			int round1 = (int) Math.floor((double)round/round2);
-			map.put(round, map.containsKey(round) ? map.get(round) + 1 : 1);
+		public void add(int pos, int src_index) {
+			if(pos<start) start =pos;
+			else if(pos>end) end = pos;
+			int round1 = (int) Math.floor((double)pos/round2);
+			map.put(pos, map.containsKey(pos) ? map.get(pos) + 1 : 1);
 			map100.put(round1, map100.containsKey(round1) ? map100.get(round1) + 1 : 1);
-			maps[src_index].put(round, maps[src_index].containsKey(round) ? maps[src_index].get(round) + 1 : 1);
+			maps[src_index].put(pos, maps[src_index].containsKey(pos) ? maps[src_index].get(pos) + 1 : 1);
 		}
 
 		public String toString() {
@@ -545,7 +574,7 @@ public class TranscriptUtils {
 	}
 	
 	public static class IdentityProfile1 {
-		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5, outfile6, outfile7, outfile8;
+		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5, outfile6, outfile7, outfile8, outfile9;
 		
 		
 		
@@ -554,7 +583,7 @@ public class TranscriptUtils {
 			this.round = (double) round;
 			this.num_sources = num_sources;
 			this.coRefPositions = new CigarCluster("reuseable",0,num_sources);
-		 TranscriptUtils.round2 = 100.0/round;
+	//	 TranscriptUtils.round2 = 100.0/round;
 			this.genome = refSeq;
 			this.startThresh = startThresh; this.endThresh = endThresh;
 			this.source_index = 0;		
@@ -568,6 +597,8 @@ public class TranscriptUtils {
 			 outfile6 = new File(resDir,genome_index+ "tree.txt.gz");
 			 outfile7 = new File(resDir,genome_index+ "dist.txt.gz");
 			 outfile8 = new File(resDir,genome_index+ "transcripts.txt");
+			 outfile9 = new File(resDir,genome_index+ "breakpoints.txt");
+
 			 readClusters = new PrintWriter(
 						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3))));
 				//this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
@@ -597,13 +628,18 @@ public class TranscriptUtils {
 				roundedPos.add(round(i));
 			}
 			roundedPositions = roundedPos.toArray(new Integer[0]);
-			this.depth = new int[roundedPos.size()];
-			/*
-			 * for(int i=0; i<roundedPositions.length; i++){ roundedPositions[i] =
-			 * 1+i*(int)round; }
-			 */
+			//this.depth = new int[roundedPos.size()];
+		
 			codepth = new SparseRealMatrix[nmes.length];
 			all_clusters =new CigarClusters(overlapThresh);
+			this.breakpoints = new SparseRealMatrix[this.num_sources];
+			this.breakSt = new SparseVector[this.num_sources];
+			this.breakEnd = new SparseVector[this.num_sources];
+			for(int i=0; i<breakpoints.length; i++){
+				this.breakSt[i] = new SparseVector();
+				this.breakEnd[i] = new SparseVector();
+				breakpoints[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
+			}
 			if(this.calculateCoExpression) {
 				for (int i = 0; i < this.codepth.length; i++) {
 					codepth[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
@@ -645,16 +681,24 @@ public class TranscriptUtils {
 			String clusterID = this.all_clusters.matchCluster(coRefPositions,index, this.source_index, this.num_sources); // this also clears current cluster
 			this.readClusters.println(id+","+clusterID+","+index+","+source_index);
 		}
-
+		int prev_position =0;
 		public void addRefPositions(int position) {
-			coRefPositions.add(round(position), this.source_index);
+			coRefPositions.add(position, this.source_index);
+			if(position-prev_position>100){
+				this.breakpoints[this.source_index].addToEntry(round(prev_position), round(position), 1);
+				this.breakSt[this.source_index].addToEntry(round(prev_position), 1);
+				this.breakEnd[this.source_index].addToEntry(round(position), 1);
+			}
+			this.prev_position = position;
 		}
 
 		public SparseRealMatrix[] codepth;
 		private final CigarCluster coRefPositions;
 		private CigarClusters all_clusters;
+		final public SparseRealMatrix[] breakpoints;
+		final public SparseVector[] breakSt, breakEnd;
 		private Integer[] roundedPositions;// , corefSum;
-		private final int[] depth; // convenience matrix for depth
+		private int[] depth; // convenience matrix for depth
 		public int[] match, mismatch, refClipped, baseDel, baseIns;
 		public int numIns, numDel, readClipped, refBase, readBase;
 
@@ -693,7 +737,48 @@ public class TranscriptUtils {
 				pw.close();
 		}*/
 
-		
+		private void printBreakPoints(File outfile1)  throws IOException {
+			// TODO Auto-generated method stub
+			for(int i=0; i<this.breakpoints.length; i++){
+			File outfile1_ = new File(outfile1.getParentFile(),
+					outfile1.getName() + "." + i + ".gz");
+			printMatrix(this.breakpoints[i],this.breakSt[i], this.breakEnd[i],  outfile1_);
+			}
+		}
+		 void printMatrix(SparseRealMatrix cod, SparseVector breakSt2, SparseVector breakEnd2, File outfile1_) throws IOException{
+			
+			PrintWriter pw = new PrintWriter(
+					new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1_))));
+			int len =cod.getRowDimension();
+			StringBuffer secondLine = new StringBuffer();
+			List<Integer> rows  = breakSt2.keys();
+			List<Integer> cols =  breakEnd2.keys();
+			for(Iterator<Integer> it = cols.iterator(); it.hasNext();){
+				pw.print(",");
+				Integer val = it.next();
+				pw.print((int)Math.floor(roundedPositions[val]*round+1));
+				secondLine.append(",");
+				secondLine.append(breakEnd2.get(val));
+			}
+			pw.println();
+			pw.println(secondLine.toString());
+			//Set<Integer> cols = breakEnd2
+			for (Iterator<Integer> it =rows.iterator(); it.hasNext();) {
+				Integer row = it.next(); // nonZeroRows.get(i);
+				pw.print((int)Math.floor(roundedPositions[row] * round + 1));
+				pw.print(",");
+				pw.print(breakSt2.get(row));
+				for(Iterator<Integer> it1 = cols.iterator(); it1.hasNext();){
+					Integer col = it1.next();// nonZeroRows.get(j);
+					int val =  (int) cod.getEntry(row, col);// : 0;
+				// (int) this.codepth[index].getEntry(col, row);
+					pw.print(",");
+					pw.print(val);
+				}
+				pw.println();
+			}
+			pw.close();
+		}
 
 		public void printCoRef(File outfile1) throws IOException {
 			if(calculateCoExpression) {
@@ -702,23 +787,7 @@ public class TranscriptUtils {
 				if(cod==null) continue;
 				File outfile1_ = new File(outfile1.getParentFile(),
 						outfile1.getName() + "." +  nmes[index] + ".gz");
-				PrintWriter pw = new PrintWriter(
-						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1_))));
-				int len = this.codepth[index].getRowDimension();
-
-				for (int i = 0; i < len; i++) {
-					int row = i; // nonZeroRows.get(i);
-					pw.print(roundedPositions[row] * round + 1);
-					for (int j = 0; j < len; j++) {
-						int col = j;// nonZeroRows.get(j);
-						int val = col >= row ? (int) cod.getEntry(row, col) : 0;
-						// (int) this.codepth[index].getEntry(col, row);
-						pw.print(",");
-						pw.print(val);
-					}
-					pw.println();
-				}
-				pw.close();
+				printMatrix(cod, null, null, outfile1_);
 			}
 			}
 
@@ -726,6 +795,7 @@ public class TranscriptUtils {
 		
 		public void getConsensus(Annotation annot) throws IOException {
 				int num_types = this.nmes.length;
+				this.depth = new int[this.genome.length()];
 				PrintWriter[] exonsP = new PrintWriter[num_types]; 
 				PrintWriter[] transcriptsP = new PrintWriter[num_types]; 
 				SequenceOutputStream[] seqFasta = new SequenceOutputStream[num_types];
@@ -774,10 +844,13 @@ public class TranscriptUtils {
 			pr1.print(pw, genome);
 			pw.close();
 			pr1.printCoRef(outfile1);
+			pr1.printBreakPoints(outfile9);
 		//	pr1.printClusters(outfile2);
 			System.out.println("========================= TOTAL ============================");
 			
 		}
+
+		
 
 		public void newRead(int source_index2) {
 			this.coRefPositions.clear(source_index2);
