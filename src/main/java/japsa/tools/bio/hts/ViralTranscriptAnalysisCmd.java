@@ -36,7 +36,6 @@ package japsa.tools.bio.hts;
 
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -51,7 +50,6 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.TranscriptUtils;
-import japsa.util.TranscriptUtils.Annotation;
 import japsa.util.TranscriptUtils.IdentityProfile1;
 import japsa.util.deploy.Deployable;
 
@@ -214,10 +212,10 @@ public class ViralTranscriptAnalysisCmd extends CommandLine {
 			samReader.close();
 			
 		}
-		Annotation annot = new Annotation(new File(annot_file));
+	//	Annotation annot = new Annotation(new File(annot_file));
 		for(int i=0; i<profiles.size(); i++) {
 			profiles.get(i).finalise();
-			profiles.get(i).getConsensus(annot);
+			profiles.get(i).getConsensus();
 			profiles.get(i).printTree();
 		}
 		
