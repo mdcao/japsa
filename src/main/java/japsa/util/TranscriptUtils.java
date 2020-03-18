@@ -40,12 +40,12 @@ public class TranscriptUtils {
 	static class SparseVector{
 		private SortedMap<Integer, Integer> m = new TreeMap<Integer, Integer>();
 		int valsum=0;
-		double valsumByKey=0;
+		//double valsumByKey=0;
 		
 		public void addToEntry(Integer position, int i) {
 			Integer val = m.get(position);
 			valsum+=i;
-			valsumByKey+=position.doubleValue()* (double) i;
+			//valsumByKey+=position.doubleValue()* (double) i;
 			m.put(position, val==null ? i : val + i);
 		}
 		public String toString(){
@@ -107,10 +107,10 @@ public class TranscriptUtils {
 			
 				return this.valsum;
 			}
-		public double avg() {
+		/*public double avg() {
 			// TODO Auto-generated method stub
 			return this.valsumByKey/(double) this.valsum;
-		}
+		}*/
 		
 	}
  static int[] printedLines =new int[] {0,0,0,0};
@@ -242,7 +242,8 @@ public class TranscriptUtils {
 			int[] first_last = new int[2];
 			for(int i=0; i<exonP.length; i++){
 				exonP[i].println("ID,index,start,end");
-				transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true));
+				transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true)
+					+","+getString("depth", num_sources, true)+","+getString("errors", num_sources, true));
 			}
 			Collections.sort(l);
 			int startPos = 0;
@@ -257,7 +258,8 @@ public class TranscriptUtils {
 				//StringBuffer annotline = new StringBuffer();
 				int transcript_len =0;
 				int endPos = printedLines[cc.index];
-				transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+startPos+","+endPos+","+cc.totLen+","+cc.readCountSum+","+read_count);
+				transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+startPos+","+endPos+","+cc.totLen+","+cc.readCountSum+","+read_count
+						+","+cc.getTotDepthSt()+","+cc.getTotErrorSt());
 				
 				for(int j=0; j<exons.length; j++) {
 					int start = exons[j][0];
@@ -405,11 +407,27 @@ public class TranscriptUtils {
 			}
 			return sb.toString();
 		}
+		String getTotDepthSt() {
+			StringBuffer sb = new StringBuffer();
+			for(int src_index=0; src_index<maps.length; src_index++){
+				if(src_index>0)sb.append(",");
+				sb.append(this.maps[src_index].valsum);
+			}
+			return sb.toString();
+		}
 		String getErrorSt(Integer i) {
 			StringBuffer sb = new StringBuffer();
 			for(int src_index=0; src_index<errors.length; src_index++){
 				if(src_index>0)sb.append(",");
 				sb.append(this.errors[src_index].get(i));
+			}
+			return sb.toString();
+		}
+		String getTotErrorSt() {
+			StringBuffer sb = new StringBuffer();
+			for(int src_index=0; src_index<errors.length; src_index++){
+				if(src_index>0)sb.append(",");
+				sb.append(this.errors[src_index].valsum);
 			}
 			return sb.toString();
 		}
