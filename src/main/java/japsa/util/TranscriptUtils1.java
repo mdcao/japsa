@@ -272,7 +272,10 @@ public class TranscriptUtils1 {
 			//	transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true));
 				transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true)
 				+","+getString("depth", num_sources, true)+","+getString("errors", num_sources, true));
+				clusterW[i].println("pos,type,"+getString("depth", num_sources, true)+","+getString("errors", num_sources, true));
+
 			}
+			
 			Collections.sort(l);
 			int startPos = 0;
 			for(int i=0; i<l.size(); i++) {
@@ -697,6 +700,7 @@ public class TranscriptUtils1 {
 				//this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
 			readClusters.println("readID,clusterId,type,source");
 			
+			/*
 			readClipped = 0;
 			numDel = 0;
 			numIns = 0;
@@ -711,7 +715,7 @@ public class TranscriptUtils1 {
 			Arrays.fill(baseDel, 0);
 			Arrays.fill(baseIns, 0);
 			Arrays.fill(refClipped, 0);
-
+			 */
 			refBase = 0;
 			readBase = 0;
 			// the number of bases from ref and read
@@ -793,8 +797,9 @@ public class TranscriptUtils1 {
 		final public SparseVector[] breakSt, breakEnd;
 		private Integer[] roundedPositions;// , corefSum;
 		private int[] depth; // convenience matrix for depth
-		public int[] match, mismatch, refClipped, baseDel, baseIns;
-		public int numIns, numDel, readClipped, refBase, readBase;
+		//public int[] match, mismatch, refClipped, baseDel, baseIns;
+		//public int numIns, numDel, readClipped,
+		public int refBase, readBase;
 
 		private final PrintWriter readClusters;
 		private final Sequence genome;
@@ -804,14 +809,14 @@ public class TranscriptUtils1 {
 			this.source_index = i;
 		}
 		
-		public void print(PrintWriter pw, Sequence seq) {
+		/*public void print(PrintWriter pw, Sequence seq) {
 			pw.println("pos,base,match,mismatch,refClipped,baseDel,baseIns");
 			for (int i = 0; i < match.length; i++) {
 				pw.println((i + 1) + "," + seq.charAt(i) + "," + match[i] + "," + mismatch[i] + "," + refClipped[i]
 						+ "," + baseDel[i] + "," + baseIns[i]);
 			}
 			pw.flush();
-		}
+		}*/
 
 		/*public void printClusters(File outfile1) throws IOException {
 			
@@ -934,7 +939,7 @@ public class TranscriptUtils1 {
 			this.readClusters.close();
 			IdentityProfile1 pr1 = this;
 			PrintWriter pw = new PrintWriter(new FileWriter(outfile));
-			pr1.print(pw, genome);
+		//	pr1.print(pw, genome);
 			pw.close();
 			pr1.printCoRef(outfile1);
 			pr1.printBreakPoints(outfile9);
@@ -972,23 +977,23 @@ public class TranscriptUtils1 {
 			switch (e.getOperator()) {
 			case H:
 				// nothing todo
-				profile.readClipped += length;
+			//	profile.readClipped += length;
 				break; // ignore hard clips
 			case P:
-				profile.readClipped += length;
+			//	profile.readClipped += length;
 				// pad is a kind of hard clipped ??
 				break; // ignore pads
 			case S:
 				// advance on the reference
-				profile.readClipped += length;
+				//profile.readClipped += length;
 				readPos += length;
 				break; // soft clip read bases
 			case N:
 				// System.err.println(length);
 				refPos += length;
-				for (int i = 0; i < length && refPos + i < refSeq.length(); i++) {
+				/*for (int i = 0; i < length && refPos + i < refSeq.length(); i++) {
 					profile.refClipped[refPos + i] += 1;
-				}
+				}*/
 				// profile.refClipped += length;
 				break; // reference skip
 
@@ -996,28 +1001,28 @@ public class TranscriptUtils1 {
 				refPos += length;
 				profile.refBase += length;
 				for (int i = 0; i < length && refPos + i < refSeq.length(); i++) {
-					profile.baseDel[refPos + i] += 1;
+				//	profile.baseDel[refPos + i] += 1;
 					profile.addRefPositions(refPos + i, false);
 				}
-				profile.numDel++;
+				//profile.numDel++;
 				break;
 
 			case I:
 				readPos += length;
 				profile.readBase += length;
 
-				profile.baseIns[refPos] += length;
-				profile.numIns++;
+			//	profile.baseIns[refPos] += length;
+			//	profile.numIns++;
 				break;
 			case M:
 				for (int i = 0; i < length && refPos + i < refSeq.length(); i++) {
 					
 					if (refSeq.getBase(refPos + i) == readSeq.getBase(readPos + i)){
-						profile.match[refPos + i]++;
+				//		profile.match[refPos + i]++;
 						profile.addRefPositions(refPos + i, true);
 					}
 					else{
-						profile.mismatch[refPos + i]++;
+					//	profile.mismatch[refPos + i]++;
 						profile.addRefPositions(refPos + i, false);
 					}
 				}
@@ -1036,7 +1041,7 @@ public class TranscriptUtils1 {
 				}
 				profile.readBase += length;
 				profile.refBase += length;
-				profile.match[refPos] += length;
+				//profile.match[refPos] += length;
 				break;
 
 			case X:
@@ -1049,7 +1054,7 @@ public class TranscriptUtils1 {
 					profile.addRefPositions(refPos+i, false);
 				}
 				//profile.addRefPositions(refPos);
-				profile.mismatch[refPos] += length;
+			//	profile.mismatch[refPos] += length;
 				break;
 			default:
 				throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
