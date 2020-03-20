@@ -269,7 +269,9 @@ public class TranscriptUtils1 {
 			int[] first_last = new int[2];
 			for(int i=0; i<exonP.length; i++){
 				exonP[i].println("ID,index,start,end");
-				transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true));
+			//	transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true));
+				transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true)
+				+","+getString("depth", num_sources, true)+","+getString("errors", num_sources, true));
 			}
 			Collections.sort(l);
 			int startPos = 0;
