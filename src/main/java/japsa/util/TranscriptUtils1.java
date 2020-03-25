@@ -14,21 +14,23 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.zip.GZIPOutputStream;
 
+import org.apache.commons.math3.Field;
+import org.apache.commons.math3.FieldElement;
+import org.apache.commons.math3.exception.MathArithmeticException;
+import org.apache.commons.math3.exception.NullArgumentException;
 import org.apache.commons.math3.linear.OpenMapRealMatrix;
+import org.apache.commons.math3.linear.SparseFieldMatrix;
 import org.apache.commons.math3.linear.SparseRealMatrix;
 
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
-import japsa.util.TranscriptUtils.SparseVector;
 import pal.distance.DistanceMatrix;
 import pal.misc.IdGroup;
 import pal.misc.SimpleIdGroup;
@@ -36,6 +38,86 @@ import pal.tree.NeighborJoiningTree;
 import pal.tree.NodeUtils;
 
 public class TranscriptUtils1 {
+	
+	public static class IntegerField implements FieldElement<Integer>{
+		Integer x;
+		IntegerField(int x) {
+			this.x = x;
+		}
+		public Integer getVal(){
+			return x;
+		}
+		@Override
+		public Integer add(Integer a) throws NullArgumentException {
+			
+			return  x+a;
+		}
+
+		@Override
+		public Integer subtract(Integer a) throws NullArgumentException {
+			return x - a;
+		}
+
+		@Override
+		public Integer negate() {
+			return -x;
+		}
+
+		@Override
+		public Integer multiply(int n) {
+			return x*n;
+		}
+
+		@Override
+		public Integer multiply(Integer a) throws NullArgumentException {
+			return x*a;
+		}
+
+		@Override
+		public Integer divide(Integer a) throws NullArgumentException, MathArithmeticException {
+			return null;
+		}
+
+		@Override
+		public Integer reciprocal() throws MathArithmeticException {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Field<Integer> getField() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		
+	}
+	public static class IField implements Field<IntegerField>{
+		
+			IntegerField zero = new IntegerField(0);
+			IntegerField one = new IntegerField(1);
+			@Override
+			public IntegerField getZero() {
+				// TODO Auto-generated method stub
+				return zero;
+			}
+
+			@Override
+			public IntegerField getOne() {
+				// TODO Auto-generated method stub
+				return one;
+			}
+
+			@Override
+			public Class getRuntimeClass() {
+				// TODO Auto-generated method stub
+				return IntegerField.class;
+			}
+
+			
+			
+		
+	}
 	
 	static int round(int pos, double round) {
 		int res = (int) Math.floor((double) pos / round);
@@ -671,11 +753,23 @@ public class TranscriptUtils1 {
 	
 	public static class IdentityProfile1 {
 		final File outfile, outfile1, outfile2, outfile3, outfile4, outfile5, outfile6, outfile7, outfile8, outfile9;
+		//OpenMapRealMatrix
+		SparseFieldMatrix sm;
 		
 		
 		
-		public IdentityProfile1(Sequence refSeq, File resDir, int num_sources, int genome_index, int round, boolean calculateCoExpression, double overlapThresh, int startThresh, int endThresh) throws IOException {
+		
+		public IdentityProfile1(Sequence refSeq, File resDir, List<Integer[]> positions, int num_sources, int genome_index, int round, boolean calculateCoExpression, double overlapThresh, int startThresh, int endThresh) throws IOException {
 			//File readClusterFile = new File(outdir, "readclusters.txt.gz");
+			if(positions.size()>0){
+				int rowlen = refSeq.length();
+				sm = new SparseFieldMatrix(new IField(), rowlen, rowlen);
+			for(int i=0; i<positions.size(); i++){
+				Integer[] pos = positions.get(i);
+				sm.setEntry(pos[0], pos[1],  new IntegerField(pos[2]));
+			}
+			}
+			
 			this.round = (double) round;
 			this.num_sources = num_sources;
 			this.coRefPositions = new CigarCluster("reuseable",0,num_sources);
@@ -698,7 +792,7 @@ public class TranscriptUtils1 {
 			 readClusters = new PrintWriter(
 						new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile3))));
 				//this.readClusters.println("readID,clusterID,index,source_index");//+clusterID+","+index+","+source_index);
-			readClusters.println("readID,clusterId,type,source");
+			readClusters.println("readID,clusterId,type,source,break_cluster");
 			
 			/*
 			readClipped = 0;
@@ -775,14 +869,20 @@ public class TranscriptUtils1 {
 			String clusterID;
 			if(cluster_reads) clusterID = this.all_clusters.matchCluster(coRefPositions,index, this.source_index, this.num_sources); // this also clears current cluster
 			else clusterID = "NA";
-			this.readClusters.println(id+","+clusterID+","+index+","+source_index);
+			this.readClusters.println(id+","+clusterID+","+index+","+source_index+","+break_point_cluster);
 		}
 		int prev_position =0;
+		int break_point_cluster = -1;
 		public void addRefPositions(int position, boolean match) {
 			coRefPositions.add(position, this.source_index, match);
+			break_point_cluster = -1;
 			if(match){
 				if(position-prev_position>100){
 					this.breakpoints[this.source_index].addToEntry(round(prev_position, round), round(position, round), 1);
+					if(this.sm!=null){
+						 break_point_cluster = ((IntegerField)this.sm.getEntry(prev_position, position)).getVal();
+						//System.err.println("h");
+					}
 					this.breakSt[this.source_index].addToEntry(round(prev_position, round), 1);
 					this.breakEnd[this.source_index].addToEntry(round(position, round), 1);
 				}
