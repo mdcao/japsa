@@ -157,9 +157,9 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 					genes_all_pw.println(gene+","+jj+","+gene_index);
 					genes.add(gene);
 				}
-				//if(Integer.parseInt(str[0])==jj){
+				if(Integer.parseInt(str[0])==jj){
 					pos.add(new Integer[] {Integer.parseInt(str[inds[1]])-1, Integer.parseInt(str[inds[2]])-1, gene_index});
-				//}
+				}
 			}
 			br.close();
 			//genes_all.add(genes);
