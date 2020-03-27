@@ -469,8 +469,7 @@ public boolean equals(Object o){
 		}
 
 		private SparseVector map = new SparseVector(); //coverate at high res
-		private SparseVector map100 = new SparseVector(); //coverage at low res (every 100bp)
-
+	
 		final private SparseVector[] maps, errors;
 		public void clear(int source_index) {
 			map.clear();
@@ -478,7 +477,6 @@ public boolean equals(Object o){
 				maps[i].clear();
 				errors[i].clear();
 			}
-			map100.clear();
 			Arrays.fill(readCount, 0);
 			readCount[source_index]=1;
 			readCountSum=1;
@@ -508,7 +506,7 @@ public boolean equals(Object o){
 			map.addToEntry(pos, 1);
 		
 			//int round1 = (int) Math.floor((double)pos/round2);
-			map100.addToEntry(round(pos,round2),1);
+		//	map100.addToEntry(round(pos,round2),1);
 		
 			maps[src_index].addToEntry(pos, 1);
 			
@@ -520,14 +518,14 @@ public boolean equals(Object o){
 		public String toString() {
 			return this.breaks.toString();
 		}
-
+/*
 		public Iterator<Integer> keys() {
 			return map100.keyIt();
 		}
-
-		public Iterator<Integer> tailKeys(int st) {
+*/
+		/*public Iterator<Integer> tailKeys(int st) {
 			return map100.tailKeys(st);
-		}
+		}*/
 
 		
 		
@@ -648,9 +646,9 @@ public boolean equals(Object o){
 		    	double union = (double) union(c1.start, c1.end, start, end, overlap) ;
 		    	if(overlap / union < thresh) return 0;
 		    }
-			double sim = map100.similarity(c1.map100);//this.similarity(map100, c1.map100);
-			if(sim<thresh ) return 0;
-			else sim = map.similarity( c1.map);
+		//	double sim = map100.similarity(c1.map100);//this.similarity(map100, c1.map100);
+			//if(sim<thresh ) return 0;
+			double sim = map.similarity( c1.map);
 			//System.err.println(highRes+" "+sim);
 			return sim;
 		}
@@ -683,9 +681,9 @@ public boolean equals(Object o){
 		    int union = union(c1.start, c1.end,start, end, overlap);
 		    double sim = (double) overlap/(double) union;
 	    	if(sim < 0.5) return 0;
-	    	double sim1 = map100.similarity(c1.map100);
-	    	if(sim1<0.5) return sim1;
-	    	else return  map.similarity( c1.map);  
+	    	//double sim1 = map100.similarity(c1.map100);
+	    	//if(sim1<0.5) return sim1;
+	    	 return  map.similarity( c1.map);  
 		}
 		
 		
@@ -701,14 +699,14 @@ public boolean equals(Object o){
 			}
 			this.readCountSum+=c1.readCountSum;
 			int sum1 = map.merge( c1.map);
-			int sum2 = map100.merge(c1.map100);
+		//	int sum2 = map100.merge(c1.map100);
 			for(int i=0; i<maps.length; i++){
 				maps[i].merge( c1.maps[i]);
 				errors[i].merge(c1.errors[i]);
 			}
-			if(sum1!=sum2){
-				throw new RuntimeException("maps not concordant");
-			}
+			//if(sum1!=sum2){
+				//throw new RuntimeException("maps not concordant");
+			//}
 		}
 	}
 
