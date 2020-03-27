@@ -142,6 +142,7 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 		for (int jj = 0; jj < genomes.size(); jj++) {
 			Sequence ref = genomes.get(jj);
 			List<Integer[]> pos = new ArrayList<Integer[]>();
+			if(positionsFile!=null){
 			BufferedReader br = new BufferedReader(new FileReader(new File(positionsFile)));
 			List<String> header =Arrays.asList( br.readLine().split(",")); //assuming chrom_index, start, end, gene_name
 			String st = "";
@@ -162,6 +163,7 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 				}
 			}
 			br.close();
+			}
 			//genes_all.add(genes);
 			profiles.add(new IdentityProfile1(ref, resDir, pos, len,jj, round, coexp, overlapThresh, startThresh, endThresh));
 
