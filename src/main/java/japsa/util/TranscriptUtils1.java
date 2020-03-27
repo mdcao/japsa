@@ -11,9 +11,11 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -282,17 +284,18 @@ public class TranscriptUtils1 {
 			this.thresh = thresh;
 		}
 		public DistanceMatrix getDistanceMatrix( PrintWriter pw){
-			int len  = l.size();
+			List<CigarCluster> l1 = new ArrayList<CigarCluster>(this.l.keySet());
+			int len  = l1.size();
 			double[][] res = new double[len][];
 			String[] labels = new String[len];
 			for(int i=0; i<len; i++) {
 				
 				res[i] = new double[len];
-				CigarCluster cc = l.get(i);
+				CigarCluster cc = l1.get(i);
 				labels[i] = cc.id;
 				res[i][i] =0;
 				for(int j=0; j<i; j++) {
-					CigarCluster cc_j = l.get(j);
+					CigarCluster cc_j = l1.get(j);
 					double dist = 1-cc.similarity(cc_j);
 					res[i][j] = dist;
 					res[j][i] = dist;
@@ -300,7 +303,7 @@ public class TranscriptUtils1 {
 				
 			}
 			for(int i=0; i<len; i++) {
-				pw.print(labels[i]+","+l.get(i).index+",");
+				pw.print(labels[i]+","+l1.get(i).index+",");
 				pw.println(getString(res[i]));
 			}
 		
@@ -308,7 +311,7 @@ public class TranscriptUtils1 {
 			DistanceMatrix dm = new DistanceMatrix(res, group);
 			return dm;
 		}
-		List<CigarCluster> l = new ArrayList<CigarCluster>();
+		Map<CigarCluster, CigarCluster> l = new HashMap<CigarCluster, CigarCluster>();
 
 	
 		
@@ -317,32 +320,21 @@ public class TranscriptUtils1 {
 			String clusterID="";
 			double best_sc0=0;
 			int best_index = -1;
-			for (int i = 0; i < l.size(); i++) {	
-				double sc = l.get(i).similarity(c1,index,   thresh);
-				
-					if(sc> best_sc0) {
-						best_sc0 = sc;
-						best_index = i;
-					}
-				
-			}
 			
-			if (best_sc0 >= thresh) {
-				CigarCluster clust = l.get(best_index);
-				clust.merge(c1);
-				clusterID = clust.id;
-			//	System.err.println("merged");
-			} else {
-				CigarCluster newc = new CigarCluster(l.size()+"", index,num_sources);
+			if(!l.containsKey(c1)){
+				CigarCluster newc = new CigarCluster(l.keySet().size()+"", index,num_sources);
+				newc.setBreaks(c1.breaks);
 				newc.addReadCount(source_index);
-				
 				newc.merge(c1);
 				clusterID = newc.id;
-				l.add(newc);
+				l.put(newc, newc);
 				System.err.println("new cluster " + best_sc0 + " " + best_index+" "+newc.id+" "+index);
-			//	System.err.println(l.size());
+
+			}else{
+				CigarCluster clust = l.get(c1);
+				clust.merge(c1);
+				clusterID = clust.id;
 			}
-			
 			return clusterID;
 		}
 
@@ -358,10 +350,10 @@ public class TranscriptUtils1 {
 
 			}
 			
-			Collections.sort(l);
+			//Collections.sort(l);
 			int startPos = 0;
-			for(int i=0; i<l.size(); i++) {
-				CigarCluster cc = l.get(i);
+			for(Iterator<CigarCluster> it = l.keySet().iterator(); it.hasNext();) {
+				CigarCluster cc = it.next();
 				startPos = printedLines[cc.index];
 				int[][] exons = cc.getExons( 0.3,10, depth, clusterW[cc.index]);
 				String id = cc.id;
@@ -411,7 +403,7 @@ public class TranscriptUtils1 {
 
 	
 	
-	public static class CigarCluster  implements Comparable{
+	public static class CigarCluster  {
 		final private int index;
 		
 		static int round2 = 100;
@@ -421,19 +413,40 @@ public class TranscriptUtils1 {
 
 		int start=0;
 		int end=0;
+		int prev_position =0;
+		int break_point_cluster = -1;		
+		boolean first = true;
 		
-		@Override
+		/*@Override
 		public int compareTo(Object o) {
 			CigarCluster ic1 = (CigarCluster)o;
 			if(ic1.readCountSum==readCountSum) return 0;
 			else return ic1.readCountSum<readCountSum ? -1 : 1;
-		}
+		}*/
 		
 		public void addReadCount(int source_index) {
 			readCount[source_index]++;
 			this.readCountSum++;
+			
 		}
+		@Override
+		public int hashCode(){
+			int hash = breaks.stream() .reduce(0, Integer::sum);
+			return hash;
+		}
+		@Override
+public boolean equals(Object o){
+			CigarCluster cc = (CigarCluster) o;
+		 return breaks.equals(cc.breaks);	
+		}
+		
+   	List<Integer> breaks = new ArrayList<Integer>() ;
+		double break_round = 10.0;
+		
+		public void setBreaks(List<Integer> breaks){
+			this.breaks.addAll(breaks);
 
+		}
 		public CigarCluster(String id, int index, int num_sources) {
 			this.id = id;
 			this.index = index;
@@ -447,6 +460,8 @@ public class TranscriptUtils1 {
 		}
 
 		private SparseVector map = new SparseVector(); //coverate at high res
+		private SparseVector map100 = new SparseVector(); //coverage at low res (every 100bp)
+
 		final private SparseVector[] maps, errors;
 		public void clear(int source_index) {
 			map.clear();
@@ -460,20 +475,33 @@ public class TranscriptUtils1 {
 			readCountSum=1;
 			start =0;
 			end=0;
+			this.prev_position = 0;
+			this.break_point_cluster = -1;
+			first = false;
+			this.breaks.clear();
 		}
-		
-		private SparseVector map100 = new SparseVector(); //coverage at low res (every 100bp)
+		static int break_thresh = 10;
 
 		public void add(int pos, int src_index, boolean match) {
-			if(pos<start) start =pos;
-			else if(pos>end) end = pos;
-			int round1 = (int) Math.floor((double)pos/round2);
+			if(first){
+				first = false; 
+				start = pos;
+				breaks.add(round(pos, break_round));
+			} else{
+				end = pos; 
+				if(match && (pos-prev_position>break_thresh)){
+					this.breaks.add(round(prev_position, break_round));
+					this.breaks.add(round(pos,break_round));
+				}
+			}
+			prev_position = pos;
+			
 			map.addToEntry(pos, 1);
-			//map.put(pos, map.containsKey(pos) ? map.get(pos) + 1 : 1);
-			map100.addToEntry(round1,1);
-		//	map100.put(round1, map100.containsKey(round1) ? map100.get(round1) + 1 : 1);
+		
+			//int round1 = (int) Math.floor((double)pos/round2);
+			map100.addToEntry(round(pos,round2),1);
+		
 			maps[src_index].addToEntry(pos, 1);
-			//maps[src_index].put(pos, maps[src_index].containsKey(pos) ? maps[src_index].get(pos) + 1 : 1);
 			
 			if(!match){
 				errors[src_index].addToEntry(pos, 1);
@@ -481,15 +509,15 @@ public class TranscriptUtils1 {
 		}
 
 		public String toString() {
-			return map.toString();
+			return this.breaks.toString();
 		}
 
 		public Iterator<Integer> keys() {
-			return map.keyIt();
+			return map100.keyIt();
 		}
 
 		public Iterator<Integer> tailKeys(int st) {
-			return map.tailKeys(st);
+			return map100.tailKeys(st);
 		}
 
 		
@@ -821,7 +849,6 @@ public class TranscriptUtils1 {
 			roundedPositions = roundedPos.toArray(new Integer[0]);
 			//this.depth = new int[roundedPos.size()];
 		
-			codepth = new SparseRealMatrix[nmes.length];
 			all_clusters =new CigarClusters(overlapThresh);
 			this.breakpoints = new SparseRealMatrix[this.num_sources];
 			this.breakSt = new SparseVector[this.num_sources];
@@ -831,11 +858,7 @@ public class TranscriptUtils1 {
 				this.breakEnd[i] = new SparseVector();
 				breakpoints[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
 			}
-			if(this.calculateCoExpression) {
-				for (int i = 0; i < this.codepth.length; i++) {
-					codepth[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
-				}
-			}
+			
 		}
 
 		
@@ -847,50 +870,52 @@ public class TranscriptUtils1 {
 
 		final String[] nmes =  "5_3:5_no3:no5_3:no5_no3".split(":");
 
+		//this after all postions in a read processed
 		public void processRefPositions(int startPos, int distToEnd, String id, boolean cluster_reads) {
+			List<Integer> breaks  = coRefPositions.breaks;
+			breaks.add(coRefPositions.end);
+			int maxg = 0;
+			int maxg_ind = -1;
+			for(int i=1; i<breaks.size()-1; i+=2){
+				int gap = breaks.get(i+1)-breaks.get(i);
+				if(gap>maxg){
+					maxg = gap;
+					maxg_ind = i;
+				}
+			}
+			
+			if(maxg>100){
+				Integer prev_position = breaks.get(maxg_ind);
+				Integer position = breaks.get(maxg_ind+1);
+				if(this.sm!=null){
+					 coRefPositions.break_point_cluster = ((IntegerField)this.sm.getEntry(prev_position, position)).getVal();
+					
+				}
+				this.breakpoints[this.source_index].addToEntry(prev_position, position, 1);
+				this.breakSt[this.source_index].addToEntry(prev_position, 1);
+				this.breakEnd[this.source_index].addToEntry(position,  1);
+			}
+			
 			int index = 0;
 			if (startPos < startThresh)
 				index = distToEnd < endThresh ? 0 : 1;
 			else
 				index = distToEnd < endThresh ? 2 : 3;
-			Iterator<Integer> it = coRefPositions.keys();
-			if(calculateCoExpression) {
-				while (it.hasNext()) {
-					Integer pos1 = it.next();
-					Iterator<Integer> it2 = coRefPositions.tailKeys(pos1);
-					while (it2.hasNext()) {
-						Integer pos2 = it2.next();
-						double value = codepth[index].getEntry(pos1, pos2);
-						this.codepth[index].setEntry(pos1, pos2, value + 1);
-					}
-				}
-			}
+		//	Iterator<Integer> it = coRefPositions.keys();
+			
 		//	coRefPositions.index = index;
 			String clusterID;
 			if(cluster_reads) clusterID = this.all_clusters.matchCluster(coRefPositions,index, this.source_index, this.num_sources); // this also clears current cluster
 			else clusterID = "NA";
-			this.readClusters.println(id+","+clusterID+","+index+","+source_index+","+break_point_cluster);
+			this.readClusters.println(id+","+clusterID+","+index+","+source_index+","+coRefPositions.break_point_cluster);
 		}
-		int prev_position =0;
-		int break_point_cluster = -1;
+		
 		public void addRefPositions(int position, boolean match) {
 			coRefPositions.add(position, this.source_index, match);
-			break_point_cluster = -1;
-			if(match){
-				if(position-prev_position>100){
-					this.breakpoints[this.source_index].addToEntry(round(prev_position, round), round(position, round), 1);
-					if(this.sm!=null){
-						 break_point_cluster = ((IntegerField)this.sm.getEntry(prev_position, position)).getVal();
-						//System.err.println("h");
-					}
-					this.breakSt[this.source_index].addToEntry(round(prev_position, round), 1);
-					this.breakEnd[this.source_index].addToEntry(round(position, round), 1);
-				}
-				this.prev_position = position;
-			}
+			
 		}
 
-		public SparseRealMatrix[] codepth;
+		
 		private final CigarCluster coRefPositions;
 		private CigarClusters all_clusters;
 		final public SparseRealMatrix[] breakpoints;
@@ -969,7 +994,6 @@ public class TranscriptUtils1 {
 				for(Iterator<Integer> it1 = cols.iterator(); it1.hasNext();){
 					Integer col = it1.next();// nonZeroRows.get(j);
 					int val =  (int) cod.getEntry(row, col);// : 0;
-				// (int) this.codepth[index].getEntry(col, row);
 					pw.print(",");
 					pw.print(val);
 				}
@@ -978,18 +1002,7 @@ public class TranscriptUtils1 {
 			pw.close();
 		}
 
-		public void printCoRef(File outfile1) throws IOException {
-			if(calculateCoExpression) {
-			for (int index = 0; index < this.codepth.length; index++) {
-				SparseRealMatrix cod = this.codepth[index];
-				if(cod==null) continue;
-				File outfile1_ = new File(outfile1.getParentFile(),
-						outfile1.getName() + "." +  nmes[index] + ".gz");
-				printMatrix(cod, null, null, outfile1_);
-			}
-			}
-
-		}
+		
 		
 		public void getConsensus(Annotation annot) throws IOException {
 				int num_types = this.nmes.length;
@@ -1041,7 +1054,7 @@ public class TranscriptUtils1 {
 			PrintWriter pw = new PrintWriter(new FileWriter(outfile));
 		//	pr1.print(pw, genome);
 			pw.close();
-			pr1.printCoRef(outfile1);
+		//	pr1.printCoRef(outfile1);
 			pr1.printBreakPoints(outfile9);
 		//	pr1.printClusters(outfile2);
 			System.out.println("========================= TOTAL ============================");
