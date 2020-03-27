@@ -441,7 +441,16 @@ public boolean equals(Object o){
 		}
 		
    	List<Integer> breaks = new ArrayList<Integer>() ;
-		double break_round = 10.0;
+  // 	List<Integer> breaks1;
+   	
+   	void roundBreaks(double round_){
+   		//breaks1 = new ArrayList<Integer>(breaks);
+   		for(int i =0; i<breaks.size(); i++){
+   			breaks.set(i,  round(breaks.get(i), round_));
+   		}
+   	}
+
+	
 		
 		public void setBreaks(List<Integer> breaks){
 			this.breaks.addAll(breaks);
@@ -486,12 +495,12 @@ public boolean equals(Object o){
 			if(first){
 				first = false; 
 				start = pos;
-				breaks.add(round(pos, break_round));
+				breaks.add(pos);
 			} else{
 				end = pos; 
 				if(match && (pos-prev_position>break_thresh)){
-					this.breaks.add(round(prev_position, break_round));
-					this.breaks.add(round(pos,break_round));
+					this.breaks.add(prev_position);
+					this.breaks.add(pos);
 				}
 			}
 			prev_position = pos;
@@ -871,9 +880,12 @@ public boolean equals(Object o){
 		final String[] nmes =  "5_3:5_no3:no5_3:no5_no3".split(":");
 
 		//this after all postions in a read processed
+		
+		static double break_round = 10.0;
 		public void processRefPositions(int startPos, int distToEnd, String id, boolean cluster_reads) {
 			List<Integer> breaks  = coRefPositions.breaks;
 			breaks.add(coRefPositions.end);
+			
 			int maxg = 0;
 			int maxg_ind = -1;
 			for(int i=1; i<breaks.size()-1; i+=2){
@@ -902,7 +914,7 @@ public boolean equals(Object o){
 			else
 				index = distToEnd < endThresh ? 2 : 3;
 		//	Iterator<Integer> it = coRefPositions.keys();
-			
+			coRefPositions.roundBreaks(break_round);
 		//	coRefPositions.index = index;
 			String clusterID;
 			if(cluster_reads) clusterID = this.all_clusters.matchCluster(coRefPositions,index, this.source_index, this.num_sources); // this also clears current cluster
