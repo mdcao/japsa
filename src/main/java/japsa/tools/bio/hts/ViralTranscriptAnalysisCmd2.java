@@ -56,7 +56,6 @@ import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.TranscriptUtils1;
 import japsa.util.TranscriptUtils1.Annotation;
-
 import japsa.util.TranscriptUtils1.IdentityProfile1;
 import japsa.util.deploy.Deployable;
 
@@ -127,6 +126,8 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 		String[] bamFiles_ = bamFiles.split(":");
 		
 		
+		
+		TranscriptUtils1.CigarHash.round = (double) round;
 		int len = bamFiles_.length;
 		// len = 1;
 		
@@ -165,7 +166,7 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 			br.close();
 			}
 			//genes_all.add(genes);
-			profiles.add(new IdentityProfile1(ref, resDir, pos, len,jj, round, coexp, overlapThresh, startThresh, endThresh));
+			profiles.add(new IdentityProfile1(ref, resDir, pos, len,jj,coexp, overlapThresh, startThresh, endThresh));
 
 		}
 		genes_all_pw.close();

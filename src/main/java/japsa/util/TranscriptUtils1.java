@@ -41,6 +41,8 @@ import pal.tree.NodeUtils;
 
 public class TranscriptUtils1 {
 	
+	static int break_thresh = 10;
+	
 	public static class IntegerField implements FieldElement<Integer>{
 		Integer x;
 		IntegerField(int x) {
@@ -284,18 +286,18 @@ public class TranscriptUtils1 {
 			this.thresh = thresh;
 		}
 		public DistanceMatrix getDistanceMatrix( PrintWriter pw){
-			List<CigarCluster> l1 = new ArrayList<CigarCluster>(this.l.keySet());
-			int len  = l1.size();
+			CigarCluster[] l1 = this.l.values().toArray(new CigarCluster[0]);
+			int len  = l1.length;
 			double[][] res = new double[len][];
 			String[] labels = new String[len];
 			for(int i=0; i<len; i++) {
 				
 				res[i] = new double[len];
-				CigarCluster cc = l1.get(i);
+				CigarCluster cc = l1[i];
 				labels[i] = cc.id;
 				res[i][i] =0;
 				for(int j=0; j<i; j++) {
-					CigarCluster cc_j = l1.get(j);
+					CigarCluster cc_j = l1[j];
 					double dist = 1-cc.similarity(cc_j);
 					res[i][j] = dist;
 					res[j][i] = dist;
@@ -303,7 +305,7 @@ public class TranscriptUtils1 {
 				
 			}
 			for(int i=0; i<len; i++) {
-				pw.print(labels[i]+","+l1.get(i).index+",");
+				pw.print(labels[i]+","+l1[i].index+",");
 				pw.println(getString(res[i]));
 			}
 		
@@ -311,15 +313,14 @@ public class TranscriptUtils1 {
 			DistanceMatrix dm = new DistanceMatrix(res, group);
 			return dm;
 		}
-		Map<CigarCluster, CigarCluster> l = new HashMap<CigarCluster, CigarCluster>();
+		Map<CigarHash, CigarCluster> l = new HashMap<CigarHash, CigarCluster>();
 
 	
 		
 		public String matchCluster(CigarCluster c1, int index, int source_index, int num_sources) {
 		
 			String clusterID="";
-			double best_sc0=0;
-			int best_index = -1;
+		
 			
 			if(!l.containsKey(c1)){
 				CigarCluster newc = new CigarCluster(l.keySet().size()+"", index,num_sources);
@@ -327,8 +328,8 @@ public class TranscriptUtils1 {
 				newc.addReadCount(source_index);
 				newc.merge(c1);
 				clusterID = newc.id;
-				l.put(newc, newc);
-				System.err.println("new cluster " + best_sc0 + " " + best_index+" "+newc.id+" "+index);
+				l.put(newc.breaks, newc);
+				System.err.println("new cluster " +" "+newc.id+" "+index);
 
 			}else{
 				CigarCluster clust = l.get(c1);
@@ -352,7 +353,7 @@ public class TranscriptUtils1 {
 			
 			//Collections.sort(l);
 			int startPos = 0;
-			for(Iterator<CigarCluster> it = l.keySet().iterator(); it.hasNext();) {
+			for(Iterator<CigarCluster> it = l.values().iterator(); it.hasNext();) {
 				CigarCluster cc = it.next();
 				startPos = printedLines[cc.index];
 				int[][] exons = cc.getExons( 0.3,10, depth, clusterW[cc.index]);
@@ -401,10 +402,32 @@ public class TranscriptUtils1 {
 
 	}
 
-	
+	public static class CigarHash extends ArrayList<Integer>{
+		public static double round = 100.0;
+		
+		
+		@Override
+		public int hashCode(){
+			int hash = this.stream() .reduce(0, Integer::sum);
+			return hash;
+		}
+		
+		void roundBreaks(){
+	   		for(int i =0; i<size(); i++){
+	   			set(i,  round(get(i), round));
+	   		}
+	   	}
+		/*@Override
+public boolean equals(Object o){
+			CigarHash cc = (CigarHash) o;
+		 return this.equals(cc.breaks);	
+		}
+	}*/
+	}
 	
 	public static class CigarCluster  {
 		final private int index;
+		
 		
 		static int round2 = 100;
 		
@@ -429,26 +452,12 @@ public class TranscriptUtils1 {
 			this.readCountSum++;
 			
 		}
-		@Override
-		public int hashCode(){
-			int hash = breaks.stream() .reduce(0, Integer::sum);
-			return hash;
-		}
-		@Override
-public boolean equals(Object o){
-			CigarCluster cc = (CigarCluster) o;
-		 return breaks.equals(cc.breaks);	
-		}
 		
-   	List<Integer> breaks = new ArrayList<Integer>() ;
-  // 	List<Integer> breaks1;
+		
+   	CigarHash breaks = new CigarHash() ;
+ 
    	
-   	void roundBreaks(double round_){
-   		//breaks1 = new ArrayList<Integer>(breaks);
-   		for(int i =0; i<breaks.size(); i++){
-   			breaks.set(i,  round(breaks.get(i), round_));
-   		}
-   	}
+   	
 
 	
 		
@@ -487,7 +496,7 @@ public boolean equals(Object o){
 			first = false;
 			this.breaks.clear();
 		}
-		static int break_thresh = 10;
+	
 
 		public void add(int pos, int src_index, boolean match) {
 			if(first){
@@ -794,7 +803,7 @@ public boolean equals(Object o){
 		
 		
 		
-		public IdentityProfile1(Sequence refSeq, File resDir, List<Integer[]> positions, int num_sources, int genome_index, int round, boolean calculateCoExpression, double overlapThresh, int startThresh, int endThresh) throws IOException {
+		public IdentityProfile1(Sequence refSeq, File resDir, List<Integer[]> positions, int num_sources, int genome_index,  boolean calculateCoExpression, double overlapThresh, int startThresh, int endThresh) throws IOException {
 			//File readClusterFile = new File(outdir, "readclusters.txt.gz");
 			if(positions.size()>0){
 				int rowlen = refSeq.length();
@@ -805,7 +814,7 @@ public boolean equals(Object o){
 			}
 			}
 			
-			this.round = (double) round;
+			//this.bin = (double) bin;
 			this.num_sources = num_sources;
 			this.coRefPositions = new CigarCluster("reuseable",0,num_sources);
 	//	 TranscriptUtils.round2 = 100.0/round;
@@ -849,11 +858,12 @@ public boolean equals(Object o){
 			readBase = 0;
 			// the number of bases from ref and read
 			// following should be made more efficient
-			Set<Integer> roundedPos = new HashSet<Integer>();
-			for (int i = 0; i < refSeq.length(); i++) {
-				roundedPos.add(round(i, round));
-			}
-			roundedPositions = roundedPos.toArray(new Integer[0]);
+			int seqlen = refSeq.length();
+			//Set<Integer> roundedPos = new HashSet<Integer>();
+			//for (int i = 0; i < refSeq.length(); i++) {
+			//	roundedPos.add(i);
+			//}
+		//	roundedPositions = roundedPos.toArray(new Integer[0]);
 			//this.depth = new int[roundedPos.size()];
 		
 			all_clusters =new CigarClusters(overlapThresh);
@@ -863,7 +873,7 @@ public boolean equals(Object o){
 			for(int i=0; i<breakpoints.length; i++){
 				this.breakSt[i] = new SparseVector();
 				this.breakEnd[i] = new SparseVector();
-				breakpoints[i] = new OpenMapRealMatrix(roundedPositions.length, roundedPositions.length);
+				breakpoints[i] = new OpenMapRealMatrix(seqlen, seqlen);
 			}
 			
 		}
@@ -872,7 +882,7 @@ public boolean equals(Object o){
 
 		final int startThresh, endThresh;
 		
-		final  double round ;
+		//final  double bin ;
 		private final boolean calculateCoExpression;
 
 		final String[] nmes =  "5_3:5_no3:no5_3:no5_no3".split(":");
@@ -912,7 +922,7 @@ public boolean equals(Object o){
 			else
 				index = distToEnd < endThresh ? 2 : 3;
 		//	Iterator<Integer> it = coRefPositions.keys();
-			coRefPositions.roundBreaks(break_round);
+			coRefPositions.breaks.roundBreaks();
 		//	coRefPositions.index = index;
 			String clusterID;
 			if(cluster_reads) clusterID = this.all_clusters.matchCluster(coRefPositions,index, this.source_index, this.num_sources); // this also clears current cluster
@@ -930,7 +940,7 @@ public boolean equals(Object o){
 		private CigarClusters all_clusters;
 		final public SparseRealMatrix[] breakpoints;
 		final public SparseVector[] breakSt, breakEnd;
-		private Integer[] roundedPositions;// , corefSum;
+		//private Integer[] roundedPositions;// , corefSum;
 		private int[] depth; // convenience matrix for depth
 		//public int[] match, mismatch, refClipped, baseDel, baseIns;
 		//public int numIns, numDel, readClipped,
@@ -982,14 +992,13 @@ public boolean equals(Object o){
 			
 			PrintWriter pw = new PrintWriter(
 					new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outfile1_))));
-			int len =cod.getRowDimension();
 			StringBuffer secondLine = new StringBuffer();
 			List<Integer> rows  = breakSt2.keys();
 			List<Integer> cols =  breakEnd2.keys();
 			for(Iterator<Integer> it = cols.iterator(); it.hasNext();){
 				pw.print(",");
 				Integer val = it.next();
-				pw.print((int)Math.floor(roundedPositions[val]*round+1));
+				pw.print(val);
 				secondLine.append(",");
 				secondLine.append(breakEnd2.get(val));
 			}
@@ -998,7 +1007,7 @@ public boolean equals(Object o){
 			//Set<Integer> cols = breakEnd2
 			for (Iterator<Integer> it =rows.iterator(); it.hasNext();) {
 				Integer row = it.next(); // nonZeroRows.get(i);
-				pw.print((int)Math.floor(roundedPositions[row] * round + 1));
+				pw.print(row);
 				pw.print(",");
 				pw.print(breakSt2.get(row));
 				for(Iterator<Integer> it1 = cols.iterator(); it1.hasNext();){
