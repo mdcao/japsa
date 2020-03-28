@@ -85,6 +85,8 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 		addString("pattern", null, "Pattern of read name, used for filtering");
 		addInt("qual", 0, "Minimum quality required");
 		addInt("bin", 1, "Bin size for coverage");
+		addInt("breakThresh", 10, "Thresh for break points to match clusters");
+
 		addInt("startThresh", 80, "Threshold for having 5'");
 		addInt("endThresh", 80, "Threshold for having 3'");
 		addDouble("overlapThresh", 0.95, "Threshold for overlapping clusters");
@@ -99,6 +101,7 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 		String reference = cmdLine.getStringVal("reference");
 		int qual = cmdLine.getIntVal("qual");
 		int bin = cmdLine.getIntVal("bin");
+		int breakThresh = cmdLine.getIntVal("breakThresh");
 		String pattern = cmdLine.getStringVal("pattern");
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String annotFile = cmdLine.getStringVal("annotation");
@@ -112,7 +115,7 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 		int startThresh = cmdLine.getIntVal("startThresh");
 		int endThresh = cmdLine.getIntVal("endThresh");
 		int maxReads = cmdLine.getIntVal("maxReads");
-		errorAnalysis(bamFile, reference, annotFile, positionsFile, resdir,pattern, qual, bin, coexp, overlapThresh, startThresh, endThresh,maxReads);
+		errorAnalysis(bamFile, reference, annotFile, positionsFile, resdir,pattern, qual, bin, breakThresh, coexp, overlapThresh, startThresh, endThresh,maxReads);
 
 		// paramEst(bamFile, reference, qual);
 	}
@@ -120,14 +123,15 @@ public class ViralTranscriptAnalysisCmd2 extends CommandLine {
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
 	 */
-	static void errorAnalysis(String bamFiles, String refFile, String annot_file, String positionsFile,  String resdir, String pattern, int qual, int round, final boolean coexp, double overlapThresh, int startThresh, int endThresh, int max_reads) throws IOException {
+	static void errorAnalysis(String bamFiles, String refFile, String annot_file, String positionsFile,  String resdir, String pattern, int qual, int round, int break_thresh, final boolean coexp, double overlapThresh, int startThresh, int endThresh, int max_reads) throws IOException {
 		boolean cluster_reads = true;
 		boolean calcTree = false;
 		String[] bamFiles_ = bamFiles.split(":");
 		
 		
 		
-		TranscriptUtils1.CigarHash.round = (double) round;
+		TranscriptUtils1.CigarHash.round = round;
+		TranscriptUtils1.break_thresh = break_thresh;
 		int len = bamFiles_.length;
 		// len = 1;
 		

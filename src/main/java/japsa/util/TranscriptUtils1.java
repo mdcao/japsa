@@ -41,7 +41,7 @@ import pal.tree.NodeUtils;
 
 public class TranscriptUtils1 {
 	
-	static int break_thresh = 10;
+	public static int break_thresh = 10;
 	
 	public static class IntegerField implements FieldElement<Integer>{
 		Integer x;
@@ -123,9 +123,9 @@ public class TranscriptUtils1 {
 		
 	}
 	
-	static int round(int pos, double round) {
-		int res = (int) Math.floor((double) pos / round);
-		return res;
+	static int round(int pos, int round) {
+		int res = (int) Math.floor((double) (pos+5) / (double) round);
+		return res*round;
 	}
 	
 	static class SparseVector{
@@ -185,13 +185,13 @@ public class TranscriptUtils1 {
 		public Iterator<Integer> tailKeys(Integer st) {
 			return m.tailMap(st).keySet().iterator();
 		}
-		int merge(SparseVector source){
+		void merge(SparseVector source){
 			for(Iterator<Integer> it = source.keyIt();it.hasNext();){
 				Integer key = it.next();
 				this.addToEntry(key, source.get(key));
 			}
 			
-				return this.valsum;
+				//return this.valsum;
 			}
 		
 		/*
@@ -322,17 +322,17 @@ public class TranscriptUtils1 {
 			String clusterID="";
 		
 			
-			if(!l.containsKey(c1)){
+			if(!l.containsKey(c1.breaks)){
 				CigarCluster newc = new CigarCluster(l.keySet().size()+"", index,num_sources);
 				newc.setBreaks(c1.breaks);
 				newc.addReadCount(source_index);
 				newc.merge(c1);
 				clusterID = newc.id;
 				l.put(newc.breaks, newc);
-				System.err.println("new cluster " +" "+newc.id+" "+index);
+				//System.err.println("new cluster " +" "+newc.id+" "+index);
 
 			}else{
-				CigarCluster clust = l.get(c1);
+				CigarCluster clust = l.get(c1.breaks);
 				clust.merge(c1);
 				clusterID = clust.id;
 			}
@@ -345,7 +345,7 @@ public class TranscriptUtils1 {
 			for(int i=0; i<exonP.length; i++){
 				exonP[i].println("ID,index,start,end");
 			//	transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true));
-				transcriptsP[i].println("ID,index,start,end,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true)
+				transcriptsP[i].println("ID,index,start,end,breaks,startPos,endPos,totLen,countTotal,"+getString("count", num_sources,true)
 				+","+getString("depth", num_sources, true)+","+getString("errors", num_sources, true));
 				clusterW[i].println("pos,type,"+getString("depth", num_sources, true)+","+getString("errors", num_sources, true));
 
@@ -365,7 +365,7 @@ public class TranscriptUtils1 {
 				int transcript_len =0;
 				int endPos = printedLines[cc.index];
 				//transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+startPos+","+endPos+","+cc.totLen+","+cc.readCountSum+","+read_count);
-				transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+startPos+","+endPos+","+cc.totLen+","+cc.readCountSum+","+read_count
+				transcriptsP[cc.index].println(cc.id+","+cc.index+","+cc.start+","+cc.end+","+cc.breaks.toString()+","+startPos+","+endPos+","+cc.totLen+","+cc.readCountSum+","+read_count
 						+","+cc.getTotDepthSt()+","+cc.getTotErrorSt());
 				for(int j=0; j<exons.length; j++) {
 					int start = exons[j][0];
@@ -403,8 +403,21 @@ public class TranscriptUtils1 {
 	}
 
 	public static class CigarHash extends ArrayList<Integer>{
-		public static double round = 100.0;
-		
+		public static int round = 100;
+		public String toString(){
+			StringBuffer sb = new StringBuffer();
+			sb.append(get(0));
+			for(int i=1; i<size(); i++){
+				sb.append(";");
+				sb.append(get(i));
+			}
+			return sb.toString();
+		}
+		@Override
+		public boolean add(Integer i){
+			if(this.contains(i)) throw new RuntimeException("error");
+			return (super.add(i));
+		}
 		
 		@Override
 		public int hashCode(){
@@ -576,7 +589,7 @@ public boolean equals(Object o){
 			return sb.toString();
 		}
 		int[][] exons;
-	
+		
 		public int[][] getExons( double threshPerc, int numsteps, int[] depth, PrintWriter clusterW) {
 			if(exons!=null) return exons;
 			List<Integer> start1 = new ArrayList<Integer>();
@@ -640,6 +653,8 @@ public boolean equals(Object o){
 			}
 			return exons;
 		}
+	
+		
 		
 		int[] readCount; int readCountSum;
 		int numPos =-1;
@@ -707,7 +722,9 @@ public boolean equals(Object o){
 				readCount[i]+=c1.readCount[i];
 			}
 			this.readCountSum+=c1.readCountSum;
-			int sum1 = map.merge( c1.map);
+			//System.err.println(this.breaks.toString()+"\t"+c1.index+" "+readCountSum);
+					
+			 map.merge( c1.map);
 		//	int sum2 = map100.merge(c1.map100);
 			for(int i=0; i<maps.length; i++){
 				maps[i].merge( c1.maps[i]);
