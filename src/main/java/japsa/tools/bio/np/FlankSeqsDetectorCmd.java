@@ -155,7 +155,7 @@ public class FlankSeqsDetectorCmd extends CommandLine{
 				continue;
 			}
 			
-			if (curSAMRecord.getReadUnmappedFlag() || curSAMRecord.getMappingQuality() < qual || curSAMRecord.isSecondaryAlignment()){		
+			if (curSAMRecord.getReadUnmappedFlag() || curSAMRecord.getMappingQuality() < qual || curSAMRecord.isSecondaryOrSupplementary()){		
 //				LOG.info("Ignore record! Unmapped, low-quality or secondary alignment from {}...", curSAMRecord.getReadName());
 				continue;		
 			}
