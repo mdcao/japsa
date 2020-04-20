@@ -171,7 +171,8 @@ public class BinningSequenceCmd extends CommandLine{
 		}else if(typer.toLowerCase().startsWith("k")) {
 			
 			while(line!=null){
-				String[] toks=line.split("\\s+");
+//				String[] toks=line.split("\\s+");
+				String[] toks=line.split("\t"); //separate by tab
 				if(!excludeSet.contains(toks[2])){
 					if(binMap.containsKey(toks[1])){
 						LOG.info("Read {} map to multiple species -> unknown!", toks[1]);
