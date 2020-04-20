@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -184,7 +185,7 @@ public class BinningSequenceCmd extends CommandLine{
 					LOG.info("Read {} bin to {}", toks[1], binMap.get(toks[1]));
 
 				}else
-					LOG.info("bin {} excluded due to criteria!",toks[2]);
+					LOG.info("Bin {} excluded due to criteria!",toks[2]);
 				
 				line=mapReader.readLine();
 			}
@@ -231,8 +232,17 @@ public class BinningSequenceCmd extends CommandLine{
 		}
 		
 		for(String bin:outBins){
-			String outFile=outputDir+File.separator+bin.replaceAll("[^a-zA-Z0-9\\.\\-]", "_")+extension;
-			bin2File.put(bin, new SequenceOutputStream(new FileOutputStream(outFile)));
+			String outFile=outputDir+File.separator+bin.trim().replaceAll("[^a-zA-Z0-9\\.\\-]", "_")+extension;
+			SequenceOutputStream out;
+			try {
+				out = new SequenceOutputStream(new FileOutputStream(outFile));
+			}catch(FileNotFoundException e){
+				LOG.info("Cannot create output file: {}", outFile);
+				continue;
+			}
+			if(out!=null)
+				bin2File.put(bin, out);
+
 		}
 		
 		Sequence seq = null;

@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory;
 #import japsadev.bio.phylo.CommonTree;
 import japsadev.bio.phylo.GetTaxonID;
 import japsadev.bio.phylo.NCBITree;
-import pal.tree.Node; */
+*/
+import pal.tree.Node;
 import pal.tree.Tree;
 
 /** commands for making CSS tree */
