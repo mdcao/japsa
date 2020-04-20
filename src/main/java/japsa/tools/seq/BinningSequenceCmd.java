@@ -163,6 +163,8 @@ public class BinningSequenceCmd extends CommandLine{
 							binMap.put(readID, "unknown");
 						}else
 							binMap.put(readID, curSpecies);
+						LOG.info("Read {} bin to {}", readID, binMap.get(readID));
+
 					}
 						
 				}else
@@ -175,10 +177,12 @@ public class BinningSequenceCmd extends CommandLine{
 				String[] toks=line.split("\t"); //separate by tab
 				if(!excludeSet.contains(toks[2])){
 					if(binMap.containsKey(toks[1])){
-						LOG.info("Read {} map to multiple species -> unknown!", toks[1]);
 						binMap.put(toks[1], "unknown");
 					}else
-						binMap.put(toks[1],toks[2]);					
+						binMap.put(toks[1],toks[2]);			
+
+					LOG.info("Read {} bin to {}", toks[1], binMap.get(toks[1]));
+
 				}else
 					LOG.info("bin {} excluded due to criteria!",toks[2]);
 				
@@ -227,7 +231,7 @@ public class BinningSequenceCmd extends CommandLine{
 		}
 		
 		for(String bin:outBins){
-			String outFile=outputDir+File.separator+bin+extension;
+			String outFile=outputDir+File.separator+bin.replaceAll("\\s+", "_")+extension;
 			bin2File.put(bin, new SequenceOutputStream(new FileOutputStream(outFile)));
 		}
 		
