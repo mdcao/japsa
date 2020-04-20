@@ -231,7 +231,7 @@ public class BinningSequenceCmd extends CommandLine{
 		}
 		
 		for(String bin:outBins){
-			String outFile=outputDir+File.separator+bin.replaceAll("\\s+", "_")+extension;
+			String outFile=outputDir+File.separator+bin.replaceAll("[^a-zA-Z0-9\\.\\-]", "_")+extension;
 			bin2File.put(bin, new SequenceOutputStream(new FileOutputStream(outFile)));
 		}
 		
