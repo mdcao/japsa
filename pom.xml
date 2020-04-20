@@ -26,6 +26,21 @@
     <version>4.8.1</version>
     <scope>test</scope>
 </dependency>
+<dependency>
+    <groupId>org.openjfx</groupId>
+    <artifactId>javafx-graphics</artifactId>
+    <version>15-ea+2</version>
+</dependency>
+<dependency>
+    <groupId>org.openjfx</groupId>
+    <artifactId>javafx-controls</artifactId>
+    <version>15-ea+2</version>
+</dependency>
+<dependency>
+    <groupId>org.openjfx</groupId>
+    <artifactId>javafx-swing</artifactId>
+    <version>15-ea+2</version>
+</dependency>
 		<dependency>
 		    <groupId>org.apache.commons</groupId>
 		    <artifactId>commons-math3</artifactId>
@@ -137,12 +152,13 @@
                   				</manifestEntries>
                			 		</transformer>				
               				</transformers>
-              				<finalName>japsa-1.9-3c</finalName>
+					<finalName>japsa-1.9.4</finalName>
               				<excludes>
               					<exclude>japsa/**</exclude>
               				</excludes>
               				<includes>
               					<include>japsa/tools/bio/np/RealtimeSpeciesTypingCmd</include>
+						<include>japsa/tools/bio/np/ViralTranscriptAnalysisCmd</include>
 						<include>japsa/bio/phylo/CSSProcessCommand</include>
               				</includes>
                         </configuration>
