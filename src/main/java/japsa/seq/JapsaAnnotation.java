@@ -723,7 +723,7 @@ public class JapsaAnnotation {
 			//line = line.trim();
 			if (line.startsWith("##sequence-region")){
 				JapsaAnnotation anno =  new JapsaAnnotation();
-				anno.setAnnotationID(line.split(" ")[1]);				
+				anno.setAnnotationID(line.split("\\s+")[1]);				
 				annoMap.put(anno.annotationID, anno);				
 				annoList.add(anno);
 				
