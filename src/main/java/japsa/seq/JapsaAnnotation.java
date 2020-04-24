@@ -34,8 +34,6 @@
 
 package japsa.seq;
 
-import japsa.util.MyBitSet;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -43,6 +41,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Set;
+
+import japsa.util.MyBitSet;
 
 
 
@@ -694,7 +695,6 @@ public class JapsaAnnotation {
 			//out.flush();			
 		}
 	}
-	
 
 	/**
 	 * Read annotation from a gff file and store in a hash table index by sequence ID
@@ -706,6 +706,20 @@ public class JapsaAnnotation {
 	 * @throws IOException
 	 */
 	public static ArrayList<JapsaAnnotation> readMGFF(InputStream in, int upStr, int downStr, String list) throws IOException{
+		return readMGFF(in, upStr, downStr, list, null);
+	}
+	
+
+	/**
+	 * Read annotation from a gff file and store in a hash table index by sequence ID
+	 * @param in
+	 * @param upStr
+	 * @param downStr
+	 * @param list: list of feature to read, ie "CDS,mRNA". "all" means every thing 
+	 * @return
+	 * @throws IOException
+	 */
+	public static ArrayList<JapsaAnnotation> readMGFF(InputStream in, int upStr, int downStr, String list, Set<String> chrs) throws IOException{
 		boolean notAll = !list.equals("all");
 		
 		
@@ -722,13 +736,17 @@ public class JapsaAnnotation {
 			line = reader.getCurrentLine();
 			//line = line.trim();
 			if (line.startsWith("##sequence-region")){
-				JapsaAnnotation anno =  new JapsaAnnotation();
-				anno.setAnnotationID(line.split("\\s+")[1]);				
-				annoMap.put(anno.annotationID, anno);				
-				annoList.add(anno);
+				
+				String annoid= line.split("\\s+")[1];
+				if(chrs==null || chrs.contains(annoid)){
+					JapsaAnnotation anno =  new JapsaAnnotation();
+					anno.setAnnotationID(annoid);				
+					annoMap.put(anno.annotationID, anno);				
+					annoList.add(anno);
 				
 				if (currentAnno == null)
 					currentAnno = anno;
+				}
 				continue;
 			}
 			if (line.startsWith("##FASTA")){
@@ -760,7 +778,8 @@ public class JapsaAnnotation {
 			if (currentAnno == null){
 				in.close();
 				reader.close();
-				throw new RuntimeException("Sequence region ID " + parent + " not found");
+				continue;
+//				throw new RuntimeException("Sequence region ID " + parent + " not found");
 			}			
 			
 			String ID = "";
