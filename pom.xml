@@ -158,7 +158,6 @@
               				</excludes>
               				<includes>
               					<include>japsa/tools/bio/np/RealtimeSpeciesTypingCmd</include>
-						<include>japsa/tools/bio/np/ViralTranscriptAnalysisCmd</include>
 						<include>japsa/bio/phylo/CSSProcessCommand</include>
               				</includes>
                         </configuration>
