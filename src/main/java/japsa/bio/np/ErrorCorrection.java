@@ -168,6 +168,8 @@ public class ErrorCorrection {
 				
 			}else if (msa.startsWith("spoa")){
 				cmd = new String[]{"spoa", faiFile};	
+			}else if (msa.startsWith("abpoa")){
+				cmd = new String[]{"abpoa", faiFile, "-o", faoFile};
 			}else if (msa.startsWith("muscle")){
 				cmd = new String[]{"muscle", "-in", faiFile, "-out", faoFile, "-maxiters", "5", "-quiet"};				
 			}else if (msa.startsWith("clustal")) {
@@ -249,8 +251,6 @@ public class ErrorCorrection {
 			int [] coef = new int[seqList.size()];			
 			for (int y = 0; y < seqList.size(); y++){
 				coef[y] = 1;
-				//if (seqList.get(y).getName().contains("twodi"))
-				//	coef[y] = 2;				
 			}
 
 			//TODO: combine error profiles?? 
@@ -307,6 +307,10 @@ public class ErrorCorrection {
 					return readPOAOutput(faoFile, readList.get(0).length());	
 				else if("spoa".equals(msa)){
 					return readSPOAOutput(faoFile, readList.get(0).length());
+				}else if("abpoa".equals(msa)) {
+					SequenceReader reader = SequenceReader.getReader(faoFile);
+					return reader.nextSequence(DNA.DNA());
+					
 				}
 				
 
