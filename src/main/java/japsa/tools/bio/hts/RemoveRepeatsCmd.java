@@ -11,7 +11,11 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -58,10 +62,13 @@ public class RemoveRepeatsCmd extends CommandLine {
 	static void removeRepeats(String repFile, String refFile) throws IOException{	
 		
 		ArrayList<Sequence> genomes = SequenceReader.readAll(refFile, Alphabet.DNA());
-
+		Map<String,Sequence> m = new HashMap<String, Sequence>();
+		for(int i=0; i<genomes.size(); i++){
+			m.put(genomes.get(i).getName(),genomes.get(i));
+		}
 		//get the first chrom
-		int currentIndex = 0;
-		Sequence chr = genomes.get(currentIndex);
+	//	int currentIndex = 0;
+		Sequence chr = null;
 		BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(repFile))));
 		List<String> header = Arrays.asList(br.readLine().split("\t"));
 		int chr_ind = header.indexOf("chrom");
@@ -69,26 +76,30 @@ public class RemoveRepeatsCmd extends CommandLine {
 		int end_ind = header.indexOf("end");
 		String st = "";
 		StringBuffer sb = new StringBuffer();
-		
 		PrintWriter indices = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream("conversion.txt.gz")))));
 		SequenceOutputStream output = new SequenceOutputStream((new FileOutputStream(new File("compressed.fa.gz" ))));
 		int seqlen=0;
 		int start =0;
 		int end =-1;
+		Set<String> done = new HashSet<String>();
 		while((st = br.readLine())!=null){
 			String[] str = st.split("\t");
 			//System.err.println(st);
 			String chrom = str[chr_ind];
-			while(!chr.getName().equals(chrom)){
-				 Sequence seq = new Sequence(Alphabet.DNA(),sb.toString(), chr.getName());
-				 seq.writeFasta(output);
-				currentIndex++;
-				chr = genomes.get(currentIndex);
+			if(chr==null || !chr.getName().equals(chrom)){
+				if(sb.length()>0){
+					Sequence seq = new Sequence(Alphabet.DNA(),sb.toString(), chr.getName());
+					seq.writeFasta(output);
+					sb.delete(0, sb.length());
+					
+				}
+				if(done.contains(chrom))throw new RuntimeException("already done "+chrom);
+				chr = m.remove(chrom);
+				System.err.println(chrom);
+				done.add(chrom);
 				seqlen=0;
-		
-				 start=0;
-				
-				 sb  = new StringBuffer();
+				start=0;
+			
 			}
 			end = Integer.parseInt(str[st_ind]); // end of the flanking
 			if(end-start > threshold){
