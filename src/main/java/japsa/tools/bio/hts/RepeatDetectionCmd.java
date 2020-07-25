@@ -33,11 +33,18 @@
 
 package japsa.tools.bio.hts;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
@@ -46,10 +53,12 @@ import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import japsa.seq.Alphabet;
+import japsa.seq.FastqSequence;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
@@ -65,6 +74,118 @@ import japsa.util.deploy.Deployable;
 	scriptName = "jsa.hts.repeatDetection",
 	scriptDesc = "Detecting repeats in long read sequencing data")
 public class RepeatDetectionCmd extends CommandLine{
+	static String src_tag = "SC";
+	static String pool_tag = "PT";
+	
+	
+	
+	
+	
+	private static final class CombinedIterator implements Iterator<SAMRecord> {
+		private final SAMRecordIterator[] samIters;
+		int current_sam_index =0;
+		int currentIndex =0; //relates to chromosome
+		private final SAMRecord[] currentVals;
+		private final boolean[] returned;
+		private final int[] cnts ;
+		int max;
+		Collection<String>[] readList ;
+		Set<Integer> chrs;
+		private CombinedIterator(SAMRecordIterator[] samIters, int max, Collection<String>[]readList, Set<Integer> chrs) {
+			this.samIters = samIters;
+			this.readList = readList;
+			currentVals = new SAMRecord[samIters.length];
+			returned = new boolean [samIters.length];
+			this.max = max;
+			cnts = new int[samIters.length];
+			this.chrs = chrs;
+		}
+
+		@Override
+		public boolean hasNext() {
+			for(int i=0; i<samIters.length; i++){
+				if(samIters[i].hasNext() && cnts[i]<max) return true;
+			}
+			return false;
+		}
+		int pool_ind=-1;
+		private SAMRecord next(int i){
+			SAMRecord sr;
+			if(currentVals[i]!=null && !returned[i]){
+				sr = currentVals[i];
+			}else{
+				if(cnts[i]<max){
+					
+					//sr  = samIters[i].next();
+				/*	while(!(
+							sr==null || 
+							(readList==null || readList.contains(sr.getReadName())) ||
+							(chrs==null || chrs.contains(sr.getReferenceIndex()))
+							)
+							)*/
+					inner: while(true)
+					{
+						sr  = samIters[i].next();
+						if(sr==null) break inner;
+						pool_ind =-1;
+						if(readList!=null){
+							inner1: for(int i2=0; i2<readList.length; i2++){
+								if(readList[i2].contains(sr.getReadName())){
+									pool_ind = i2;
+									break inner1;
+								}
+							}
+						}
+						if(readList!=null && pool_ind>=0) break inner;
+						if(readList==null &&  chrs!=null && chrs.contains(sr.getReferenceIndex())) break inner;
+						if(readList==null  && chrs==null) break inner;
+					}
+					if(sr!=null) {
+						sr.setAttribute(pool_tag, pool_ind);
+						sr.setAttribute(src_tag, i);
+					}
+					currentVals[i] = sr;
+					returned[i] = false; 
+				}else{
+					sr = null;
+				}
+			}
+			return sr;
+		}
+
+		@Override
+		public SAMRecord next() {
+			//int curr_index = current_sam_index;
+			SAMRecord sr = next(current_sam_index);
+			
+			if(sr==null || sr.getReferenceIndex()>currentIndex ){
+				int[] ref_inds = new int[samIters.length];
+				int min_ind =-1;
+				int minv = Integer.MAX_VALUE;
+				for(int i=0; i<samIters.length; i++){
+					SAMRecord sr_i = next(i);
+					if(sr_i!=null) {
+						ref_inds[i] = sr_i.getReferenceIndex(); //note this only advances if not returned;
+						if(ref_inds[i]<minv){
+							min_ind = i;
+							minv = ref_inds[i];
+						}
+					}
+				}
+				current_sam_index = min_ind;
+			}
+			
+			if(current_sam_index<0) return null;
+			sr = this.currentVals[current_sam_index];
+			if(sr!=null) this.currentIndex = sr.getReferenceIndex();
+			cnts[current_sam_index]++;
+			returned[current_sam_index] = true; 
+			return sr;
+			
+		}
+	}
+	
+	
 //	private static final Logger LOG = LoggerFactory.getLogger(HTSErrorAnalysisCmd.class);
 
 	 public static int insThresh = 200;
@@ -77,6 +198,8 @@ public class RepeatDetectionCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addString("bamFile", null,  "Name of bam file", true);
+		addString("bedFile", null,  "Name of bed file", true);
+		addString("readList", null,  "reads to include", false);
 		addString("reference", null, "Name of reference genome",true);
 		addString("pattern", null, "Pattern of read name, used for filtering");
 		addInt("qual", 0, "Minimum quality required");
@@ -95,11 +218,26 @@ public class RepeatDetectionCmd extends CommandLine{
 		int qual = cmdLine.getIntVal("qual");
 		String pattern = cmdLine.getStringVal("pattern");
 		String bamFile = cmdLine.getStringVal("bamFile");
-		File resDir = new File("./");
+		String bedFile = cmdLine.getStringVal("bedFile");
+		String readL= cmdLine.getStringVal("readList");
+		
+		File resDir = new File("./results");
+		resDir.mkdir();
 		RepeatDetectionCmd.insThresh = cmdLine.getIntVal("insThresh");
 		RepeatDetectionCmd.flankThresh = cmdLine.getIntVal("flankThresh");
+		String[] bamFiles_ = bamFile.split(":");
+		if(bamFile.equals("all") || bamFile.equals(".")){
+			bamFiles_ = (new File("./")).list(new FilenameFilter(){
 
-		errorAnalysis(bamFile, reference, pattern, qual, resDir);		
+				@Override
+				public boolean accept(File dir, String name) {
+					return name.endsWith(".bam");
+				}
+				
+			});
+		}
+		
+		errorAnalysis(bamFiles_, reference, pattern, qual, resDir,readL==null ? null : readL.split(":"));		
 
 
 		//paramEst(bamFile, reference, qual);
@@ -118,25 +256,51 @@ public class RepeatDetectionCmd extends CommandLine{
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
 	 */
-	static void errorAnalysis(String bamFile, String refFile, String pattern, int qual, File resDir) throws IOException{	
+	static void errorAnalysis(String[] bamFiles_, String refFile, String pattern, int qual, File resDir, String[] readList) throws IOException{	
 		FastqWriter fastq = factory.newWriter( new File(resDir,"insertion.fastq"));
 		FastqWriter fastq_flank = factory.newWriter( new File(resDir,"flank.fastq"));
 		FastqWriter fastq_none = factory.newWriter( new File(resDir,"no_insertion.fastq"));
 		List<Insertions> insertions = new ArrayList<Insertions>();
-	
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader = null;//SamReaderFactory.makeDefault().open(new File(bamFile));
-
-                if ("-".equals(bamFile))
-		    samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
-        	else
-                    samReader = SamReaderFactory.makeDefault().open(new File(bamFile));
-
-
-		SAMRecordIterator samIter = samReader.iterator();
 		//Read the reference genome
 		ArrayList<Sequence> genomes = SequenceReader.readAll(refFile, Alphabet.DNA());
 
+	Integer max_reads = Integer.MAX_VALUE;
+		Set<String>chrToInclude = null;
+		int len = bamFiles_.length;
+		final SAMRecordIterator[] samIters = new SAMRecordIterator[len];
+		SamReader[] samReaders = new SamReader[len];
+		for (int ii = 0; ii < len; ii++) {
+			int source_index = ii;
+			
+			String bamFile = bamFiles_[ii];
+			File bam = new File( bamFile);
+			SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+			if ("-".equals(bamFile))
+				samReaders[ii] = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
+			else
+				samReaders[ii] = SamReaderFactory.makeDefault().open(bam);
+
+			 samIters[ii] = samReaders[ii].iterator();
+			// Read the reference genome
+		}
+		Set<Integer> chrom_indices_to_include = null;
+		if(chrToInclude!=null){
+			chrom_indices_to_include= new HashSet<Integer>();
+			for(int i=0; i<genomes.size(); i++){
+				if(chrToInclude.contains(genomes.get(i).getName())) chrom_indices_to_include.add(i);
+			}
+		}
+		Collection[] reads = getReads(readList);
+		Iterator<SAMRecord> samIter;
+		if(reads==null && chrom_indices_to_include==null && samIters.length==1){
+			samIter = samIters[0];
+		}else{
+			samIter = 		new CombinedIterator(samIters, max_reads,reads, chrom_indices_to_include);
+		}
+		
+		
+		
+		
 		//get the first chrom
 		int currentIndex = 0;
 		Sequence chr = genomes.get(currentIndex);
@@ -203,6 +367,7 @@ public class RepeatDetectionCmd extends CommandLine{
 			
 			String desc = chr.getName()+","+sam.getAlignmentStart()+","+sam.getAlignmentEnd()+","+readSeq.length();
 			//sb.append(" ");
+		if(insertions.size()>0 || true ) 	System.err.println(readSeq.getName()+" "+desc+" "+(readSeq.length()-(sam.getAlignmentEnd()-sam.getAlignmentStart()))+"  "+ insertions.size());
 			String baseQ = sam.getBaseQualityString();
 			if(insertions.size()>0){
 				//Collections.sort(insertions);
@@ -253,7 +418,9 @@ public class RepeatDetectionCmd extends CommandLine{
 			//numReadsConsidered ++;
 			
 		}		
-		samReader.close();
+		for(int i=0; i<samReaders.length; i++){
+		samReaders[i].close();
+		}
 
 		System.out.println("========================= TOTAL ============================");
 
@@ -302,6 +469,24 @@ public class RepeatDetectionCmd extends CommandLine{
 		System.out.println("=============================================================");
 
 		//System.out.println(log);
+	}
+ static Collection[] getReads(String[] readList) throws IOException {
+	Collection[] reads = null;
+	if(readList!=null && readList.length>0){
+	reads = new Collection[readList.length];
+	 for(int i=0; i<reads.length; i++){
+		reads[i] = new HashSet<String>();
+		BufferedReader br = new BufferedReader(new FileReader(new File(readList[i])));
+		String st;
+		while((st = br.readLine())!=null){
+			String st_ = st.split("\\s+")[0];
+		//	System.err.println(st_);
+			reads[i].add(st_);
+		}
+		br.close();
+	 }
+	}
+	return reads;
 	}
 static class Insertions implements Comparable{
 	Integer readStart=0;
