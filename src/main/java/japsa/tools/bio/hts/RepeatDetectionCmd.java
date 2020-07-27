@@ -492,7 +492,7 @@ public class RepeatDetectionCmd extends CommandLine{
 				int source = (Integer) sam.getAttribute(RepeatDetectionCmd.src_tag);
 				if(fastq!=null){
 					String baseQ = sam.getBaseQualityString();
-					
+					readSeq.setName(readSeq.getName()+"."+source);
 					String desc = "";//chr.getName();//+","+sam.getAlignmentStart()+","+sam.getAlignmentEnd()+","+readSeq.length();
 					FastqRecord repeat = makeRecord(readSeq, baseQ, desc, "",0, sam.getReadLength(), sam.getAlignmentStart(), sam.getAlignmentEnd(),"");
 					fastq.write(repeat);
