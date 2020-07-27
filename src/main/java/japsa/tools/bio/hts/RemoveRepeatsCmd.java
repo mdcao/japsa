@@ -26,6 +26,8 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReaderFactory;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -106,16 +108,19 @@ public class RemoveRepeatsCmd extends CommandLine {
 		String reference = cmdLine.getStringVal("reference");		
 		String repFile = cmdLine.getStringVal("repeatsFile");
 		String resDir = cmdLine.getStringVal("resDir");
-		((new File(resDir))).mkdir();
+		File resD =(new File(resDir)); 
+		(resD).mkdir();
 		RemoveRepeatsCmd.nrep = cmdLine.getIntVal("nrep");
+		RemoveRepeatsCmd.mem = (Runtime.getRuntime().maxMemory()-1000000000)+"";
+		System.err.println(RemoveRepeatsCmd.mem);
 		Pattern p = Pattern.compile("N{"+nrep+",}");
 		//Pattern p1 = Pattern.compile("\\p{javaLowerCase}{"+nrep+",}");
 		List<String> chroms = Arrays.asList(cmdLine.getStringVal("chroms").split(":"));
 		System.err.println(chroms);
 		 RemoveRepeatsCmd.p = new Pattern[] {p};//,p1};
 		 ArrayList<Sequence> genomes = SequenceReader.readAll(reference, Alphabet.DNA());
-			String out = reference.replace(".fasta", "").replace(".fa", "").replace(".gz", "")+"."+nrep;
-			out = resDir+"/"+out;
+			String out = reference.replace(".fasta", "").replace(".fa", "").replace(".gz", "");
+			//out = resDir+"/"+out;
 		 for(int i=genomes.size()-1; i>=0; i--){
 			 String nme = genomes.get(i).getName();
 			 if(chroms!=null && chroms.indexOf(nme)<0 ){
@@ -128,7 +133,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 		// RemoveRepeatsCmd.headers="chrom:start:end:repeatUnit:period".split(":");//  unitNo  size    target  repeatUnit      #H:ID
 		 
 		System.err.println(genomes.size());
-		RemoveRepeatsCmd.Inner inner = new RemoveRepeatsCmd.Inner(genomes, new File(repFile), out);
+		RemoveRepeatsCmd.Inner inner = new RemoveRepeatsCmd.Inner(genomes, new File(repFile), out, resD);
 		 if(repFile==null){
 			 inner.removeN();
 		 }else{
@@ -138,12 +143,18 @@ public class RemoveRepeatsCmd extends CommandLine {
 		
 		//paramEst(bamFile, reference, qual);
 	}
+	static String mm2="/home/lachlan/github/minimap2/minimap2";
+	//static int mm2Threads = 2;
+	static String mem = "5g";
 	static class SeqWriter{
 		OutputStreamWriter os;
 		PrintWriter coord_pw = null;
-
-		public SeqWriter(String string) throws FileNotFoundException, IOException {
-			os = new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(new File( string))));
+		File outf;
+		final boolean mmi;
+		public SeqWriter(String string, boolean mmi) throws FileNotFoundException, IOException {
+			outf = new File( string);
+			this.mmi = mmi;
+			os = new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outf)));
 			// coord_pw = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(string+"coord.bed"))));
 
 		}
@@ -151,12 +162,26 @@ public class RemoveRepeatsCmd extends CommandLine {
 			os.write(st);os.write("\n");
 			if(coord_pw!=null) coord_pw.println(st);
 		}
-		public void close() throws IOException{
+		public void close() throws IOException, InterruptedException{
 			os.close();
 			if(coord_pw!=null) coord_pw.close();
+			//"$mm2 -I 8g -d $out $fa" 
+			if(mmi){
+			ProcessBuilder pb = new ProcessBuilder(mm2, 
+					"-I",
+					mem,
+					"-d",
+					outf.toString()+".mmi",
+					outf.toString()
+					);
+			//System.err.println(pb.toString());
+				Process p =  pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+				p.waitFor();
+			}
+			//return SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
 		}
 		public void write(Sequence chr, int start, int end) throws IOException{
-			this.write(chr, start, end, true, null);
+			this.write(chr, start, end, false, null); //not checking for Ns in repeat
 		}
 		public void write(Sequence chr, int start, int end, boolean check, String repeat_unit) throws IOException {
 			if(coord_pw!=null) coord_pw.println(chr.getName()+"\t"+start+"\t"+end);
@@ -174,7 +199,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 				Matcher m = p[0].matcher(st);
 				if(m.matches()){
 					System.err.println(start+"-"+end);
-					throw new RuntimeException("should not match");
+					throw new RuntimeException("should not match "+st);
 				}
 			}
 		
@@ -189,7 +214,7 @@ public class RemoveRepeatsCmd extends CommandLine {
   static class Inner{
 	
 	   //just remove the Ns
-	void removeN() throws IOException{
+	void removeN() throws IOException, InterruptedException{
 		for(int i=0; i<genomes.size(); i++){
 			Sequence seq = genomes.get(i);
 			System.err.println(seq.getName());
@@ -203,11 +228,15 @@ public class RemoveRepeatsCmd extends CommandLine {
 		output_repeats.close();
 	}
 	
-	public Inner(ArrayList<Sequence> genomes, File repFile, String out) throws FileNotFoundException, IOException {
+	public Inner(ArrayList<Sequence> genomes, File repFile, String out, File resDir) throws FileNotFoundException, IOException {
 		// TODO Auto-generated constructor stub
 		for(int i=0; i<genomes.size(); i++){
-			m.put(genomes.get(i).getName(),genomes.get(i));
+			String chr = genomes.get(i).getName();
+			m.put(chr,genomes.get(i));
+			this.chrom_index.put(chr, i);
 		}
+		this.resDir = resDir;
+		this.out = out;
 		this.genomes = genomes;
 		chroms = new HashSet<String>(m.keySet());
 		System.err.println(chroms);
@@ -219,30 +248,26 @@ public class RemoveRepeatsCmd extends CommandLine {
 		end_ind = header.indexOf(headers[2]);
 		unit_ind = header.indexOf(headers[3]);
 		period_ind = header.indexOf(headers[4]);
-		indices = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(out+".bed.gz")))));
-		String outf = out+".no_repeats.fa.gz";
-		String outf1 = out+".repeats.fa.gz";
-		 output =new SeqWriter(outf);
-		output_repeats = new SeqWriter(outf1);
-		System.err.println("output : ");
-		System.err.println(outf+"\n"+outf1);
-		print(header_out, indices); indices.println();
+		
 		out_st_r= new String[header_out.length];
 		 out_st = new String[header_out.length];
 		 Arrays.fill(out_st_r, "");
 	}
 	final Map<String,Sequence> m = new HashMap<String, Sequence>();
+	final Map<String, Integer> chrom_index = new HashMap<String, Integer>();
 	final ArrayList<Sequence> genomes;
 	final Set<String> chroms;
 	final BufferedReader br ;
+	final String out;
+	final File resDir; 
 	String[] header_out = "chrom:start:end:start1:end1:offset:repeatlen:ID:sequence".split(":");
 	final int chr_ind, st_ind, end_ind, unit_ind, period_ind;
-	final PrintWriter indices; 
-	final SeqWriter output, output_repeats;
+	 PrintWriter indices; 
+	 SeqWriter output, output_repeats;
 	String[] out_st_r , out_st;
 	TreeMap<Integer, Indel> allMatches = new TreeMap<Integer, Indel>();
 	
-	private void finishChrom(Sequence chr, int start, int end, int seqlen) throws IOException{
+	private void finishChrom(Sequence chr, int start, int end, int seqlen) throws IOException, InterruptedException{
 		System.err.print("finishing.."+chr.getName());
 		end = chr.length()+1;
 		start = processN(allMatches.headMap(end),chr, output,output_repeats, indices, out_st_r, start, seqlen);
@@ -250,10 +275,19 @@ public class RemoveRepeatsCmd extends CommandLine {
 				output.write(chr, start, end) ;
 			seqlen += (end-start);
 		}
+		indices.close();
+		output.close();
+		output_repeats.close();
+		
+		
 	}
 	
-	 void removeRepeats() throws IOException{	
-		Sequence chr = null;
+	
+	
+	
+	
+	 void removeRepeats() throws IOException, InterruptedException{	
+		 Sequence chr = null;
 		String st = "";
 		int seqlen=0;
 		int start =0;
@@ -264,12 +298,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 		outer: while((st = br.readLine())!=null){
 			String[] str = st.split("\t");
 			String chrom = str[chr_ind];
-			out_st[0] = chrom;
-			out_st[3] = str[st_ind];
-			out_st[4] = str[end_ind];
-			out_st[6] = period_ind<0 ? "NA" : str[period_ind];
-			out_st[7] = chrom+"_"+str[st_ind]+"_"+str[end_ind];
-			out_st[8] = unit_ind<0 ? "NA":  str[unit_ind];
+		
 			if(!chroms.contains(chrom)) {
 				continue outer;
 			}
@@ -278,6 +307,15 @@ public class RemoveRepeatsCmd extends CommandLine {
 					finishChrom(chr, start, end, seqlen);
 				}
 				if(done.contains(chrom))throw new RuntimeException("already done "+chrom);
+				int chromi = chrom_index.get(chrom);
+				indices = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(resDir.getAbsolutePath()+"/"+chromi+"."+out+".bed.gz")))));
+				String outf = resDir.getAbsolutePath()+"/"+chromi+"."+out+".no_repeats.fa.gz";
+				String outf1 = resDir.getAbsolutePath()+"/"+chromi+"."+out+".repeats.fa.gz";
+				output =new SeqWriter(outf, true);
+				output_repeats = new SeqWriter(outf1, false);
+				System.err.println("output : ");
+				System.err.println(outf+"\n"+outf1);
+				print(header_out, indices); indices.println();
 				System.err.println(chrom);
 				chr = m.remove(chrom);
 				output.writeln(">"+chrom);
@@ -298,25 +336,29 @@ public class RemoveRepeatsCmd extends CommandLine {
 				///if there is intervening NNN sequence we have to deal with that first
 				start = processN(preceding,chr, output,output_repeats, indices,out_st_r,  start, seqlen);
 			}
-			out_st[5] = ""+(start - seqlen);
+			
 			if(end-start > threshold){ //only write intervening flanking (ie between repeats) if it at least 100bp
 				if(chr!=null) output.write(chr, start, end);//.subSequence(start, end).toString()); output.write("\n");
 				seqlen += (end-start);
 			}
-				start = Math.max(Integer.parseInt(str[end_ind]), start) ; ///start of next flanking
-				
-				out_st[1]  = seqlen+"";
-				out_st[2] = seqlen+"";
-				
+			out_st[0] = chrom;
+			out_st[1]  = seqlen+"";
+			out_st[2] = seqlen+"";
+			out_st[3] = str[st_ind];
+			out_st[3] = end+"";
+			out_st[4] = str[end_ind];
+			out_st[6] = period_ind<0 ? "NA" : str[period_ind];
+			out_st[7] = chrom+"_"+str[st_ind]+"_"+str[end_ind];
+			out_st[8] = unit_ind<0 ? "NA":  str[unit_ind];
+			out_st[5] = ""+(start - seqlen);
+	
 			
 				print(out_st, indices); indices.println();
+				start = Math.max(Integer.parseInt(str[end_ind]), start) ; ///start of next flanking
 		}
 		if(chr!=null){
 			finishChrom(chr, start, end, seqlen);
 		}
-		indices.close();
-		output.close();
-		output_repeats.close();
 	}
 	
   }
