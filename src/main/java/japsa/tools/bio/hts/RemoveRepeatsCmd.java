@@ -50,6 +50,8 @@ public class RemoveRepeatsCmd extends CommandLine {
 		addString("reference", null, "Name of reference genome",true);
 		addString("chroms", "chr1:chr2:chr3:chr4:chr5:chr6:chr7:chr8:chr9:chr10:chr11:chr12:chr13:chr14:chr15:chr16:chr17:chr18:chr19:chr20:chr21:chr22:chrX:chrY:chrM", "chroms to retain",false);
 		addInt("nrep",50,"Length of Ns to remove", true);
+		addString("mm2_path", "/sw/minimap2/current/minimap2",  "minimap2 path", false);
+		addString("mm2_memory", (Runtime.getRuntime().maxMemory()-1000000000)+"",  "minimap2 memory", false);
 		addStdHelp();		
 	} 
 	static class Indel{
@@ -111,6 +113,9 @@ public class RemoveRepeatsCmd extends CommandLine {
 		(resD).mkdir();
 		RemoveRepeatsCmd.nrep = cmdLine.getIntVal("nrep");
 		RemoveRepeatsCmd.mem = (Runtime.getRuntime().maxMemory()-1000000000)+"";
+		
+		mm2	= cmdLine.getStringVal("mm2_path");
+		mem = cmdLine.getStringVal("mm2_mem");
 		System.err.println(RemoveRepeatsCmd.mem);
 		Pattern p = Pattern.compile("N{"+nrep+",}");
 		//Pattern p1 = Pattern.compile("\\p{javaLowerCase}{"+nrep+",}");
