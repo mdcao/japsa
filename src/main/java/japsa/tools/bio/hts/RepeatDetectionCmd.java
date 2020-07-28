@@ -152,7 +152,9 @@ public class RepeatDetectionCmd extends CommandLine{
 			int diff1 = key1==null ? Integer.MAX_VALUE : Math.abs(key1-refStart);
 			int diff2 = key2==null ? Integer.MAX_VALUE : Math.abs(key2-refStart);
 			if(Math.min(diff1, diff2) < 50){
-				return map.get(diff1 <=diff2 ? key1 : key2);
+				Integer v = diff1 <=diff2 ? key1 : key2;
+				System.err.println(refStart+" "+(v-refStart));
+				return map.get(v);
 			}else{
 //				System.err.println(Math.min(diff1, diff2));
 				return null;
@@ -321,7 +323,8 @@ public class RepeatDetectionCmd extends CommandLine{
 		mm2_mem = cmdLine.getStringVal("mm2_mem");
 		mm2_path = cmdLine.getStringVal("mm2_path");
 		bin = cmdLine.getIntVal("bin");
-		File resDir = new File(cmdLine.getStringVal("resDir"));
+		String resD = (cmdLine.getStringVal("resDir"));
+		File resDir = resD==null ? new File("./"+((new File(chromsDir))).getName()) : new File(resD);
 		resDir.mkdir();
 		RepeatDetectionCmd.insThresh = cmdLine.getIntVal("insThresh");
 		RepeatDetectionCmd.flankThresh = cmdLine.getIntVal("flankThresh");
@@ -461,10 +464,11 @@ public class RepeatDetectionCmd extends CommandLine{
 
 				//int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index
 				int refIndex = sam.getReferenceIndex();
-
+				String chrom = sam.getReferenceName();
 				//if move to another chrom, get that chrom
 				if (refIndex != currentIndex){
 					currentIndex = refIndex;
+					//sam.get
 					//chr = genomes.get(currentIndex);
 					if(fastq!=null){
 							fastq.close();
@@ -472,8 +476,8 @@ public class RepeatDetectionCmd extends CommandLine{
 						
 					}
 					String out = reference.replace(".fasta", "").replace(".fa", "").replace(".gz", "");
-					String outf = chromDir.getAbsolutePath()+"/"+currentIndex+"."+out+".no_repeats.fa.gz";
-					File bed = new File(chromDir.getAbsolutePath()+"/"+currentIndex+"."+out+".bed.gz");
+					String outf = chromDir.getAbsolutePath()+"/"+chrom+"."+out+".no_repeats.fa.gz";
+					File bed = new File(chromDir.getAbsolutePath()+"/"+chrom+"."+out+".bed.gz");
 					File mm2Index = new File(outf+".mmi");
 					File seqF = new File(outf);
 					if(seqF.exists()){

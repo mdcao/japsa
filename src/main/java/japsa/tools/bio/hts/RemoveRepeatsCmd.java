@@ -17,7 +17,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -26,11 +25,8 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReaderFactory;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
-import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -48,6 +44,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		addString("resDir", "./results",  "Results directory", false);
+		addString("excl", null,  "File with lines to exclude", false);
 		addString("repeatsFile", null,  "Name of repeats file", false);
 		addString("repeatsHeader", "chrom:chromStart:chromEnd:sequence:period",  "repeats header", false);
 		addString("reference", null, "Name of reference genome",true);
@@ -108,6 +105,8 @@ public class RemoveRepeatsCmd extends CommandLine {
 		String reference = cmdLine.getStringVal("reference");		
 		String repFile = cmdLine.getStringVal("repeatsFile");
 		String resDir = cmdLine.getStringVal("resDir");
+		String excl = cmdLine.getStringVal("excl");
+		File exclFile = excl==null ? null: new File (excl);
 		File resD =(new File(resDir)); 
 		(resD).mkdir();
 		RemoveRepeatsCmd.nrep = cmdLine.getIntVal("nrep");
@@ -133,7 +132,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 		// RemoveRepeatsCmd.headers="chrom:start:end:repeatUnit:period".split(":");//  unitNo  size    target  repeatUnit      #H:ID
 		 
 		System.err.println(genomes.size());
-		RemoveRepeatsCmd.Inner inner = new RemoveRepeatsCmd.Inner(genomes, new File(repFile), out, resD);
+		RemoveRepeatsCmd.Inner inner = new RemoveRepeatsCmd.Inner(genomes, repFile==null ? null : new File(repFile), out, resD, exclFile);
 		 if(repFile==null){
 			 inner.removeN();
 		 }else{
@@ -208,7 +207,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 
 		}
 	}
-	static int threshold = 100;
+	static int threshold = 20;
 	static String[] headers = "chrom:chromStart:chromEnd:sequence:period".split(":");
 //	#bin    chrom   chromStart      chromEnd        name    period  copyNum consensusSize   perMatch        perIndel        score   A       C       G       T       entropy s
   static class Inner{
@@ -228,7 +227,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 		output_repeats.close();
 	}
 	
-	public Inner(ArrayList<Sequence> genomes, File repFile, String out, File resDir) throws FileNotFoundException, IOException {
+	public Inner(ArrayList<Sequence> genomes, File repFile, String out, File resDir, File to_excl) throws FileNotFoundException, IOException {
 		// TODO Auto-generated constructor stub
 		for(int i=0; i<genomes.size(); i++){
 			String chr = genomes.get(i).getName();
@@ -236,19 +235,35 @@ public class RemoveRepeatsCmd extends CommandLine {
 			this.chrom_index.put(chr, i);
 		}
 		this.resDir = resDir;
+		if(to_excl!=null && to_excl.exists()){
+			BufferedReader br1= new BufferedReader(new InputStreamReader((new FileInputStream(to_excl))));
+			String st = "";
+			while((st = br1.readLine())!=null){
+				this.excl.add(st);
+			}
+			br1.close();
+		}
 		this.out = out;
 		this.genomes = genomes;
 		chroms = new HashSet<String>(m.keySet());
 		System.err.println(chroms);
-		br= new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(repFile))));
-		String[] header_st = br.readLine().split("\t");
-		List<String> header = Arrays.asList(header_st);
-		 chr_ind = header.indexOf(headers[0]);
-		 st_ind = header.indexOf(headers[1]);
-		end_ind = header.indexOf(headers[2]);
-		unit_ind = header.indexOf(headers[3]);
-		period_ind = header.indexOf(headers[4]);
-		
+		if(repFile!=null){
+			br= new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(repFile))));
+			String[] header_st = br.readLine().split("\t");
+			List<String> header = Arrays.asList(header_st);
+			 chr_ind = header.indexOf(headers[0]);
+			 st_ind = header.indexOf(headers[1]);
+			end_ind = header.indexOf(headers[2]);
+			unit_ind = header.indexOf(headers[3]);
+			period_ind = header.indexOf(headers[4]);
+		}else{
+			br=null;
+			chr_ind = -1;
+			st_ind = -1;
+			end_ind= -1;
+			unit_ind = -1;
+			period_ind = -1;
+		}
 		out_st_r= new String[header_out.length];
 		 out_st = new String[header_out.length];
 		 Arrays.fill(out_st_r, "");
@@ -284,7 +299,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 	
 	
 	
-	
+Set<String> excl = new HashSet<String>();
 	
 	 void removeRepeats() throws IOException, InterruptedException{	
 		 Sequence chr = null;
@@ -296,6 +311,10 @@ public class RemoveRepeatsCmd extends CommandLine {
 		Set<String> done = new HashSet<String>();
 		 // allMatches relates to NNNN sequence
 		outer: while((st = br.readLine())!=null){
+			if(excl.contains(st)) {
+				System.err.println("excluding "+st);
+				continue outer;
+			}
 			String[] str = st.split("\t");
 			String chrom = str[chr_ind];
 		
@@ -308,9 +327,9 @@ public class RemoveRepeatsCmd extends CommandLine {
 				}
 				if(done.contains(chrom))throw new RuntimeException("already done "+chrom);
 				int chromi = chrom_index.get(chrom);
-				indices = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(resDir.getAbsolutePath()+"/"+chromi+"."+out+".bed.gz")))));
-				String outf = resDir.getAbsolutePath()+"/"+chromi+"."+out+".no_repeats.fa.gz";
-				String outf1 = resDir.getAbsolutePath()+"/"+chromi+"."+out+".repeats.fa.gz";
+				indices = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(resDir.getAbsolutePath()+"/"+chrom+"."+out+".bed.gz")))));
+				String outf = resDir.getAbsolutePath()+"/"+chrom+"."+out+".no_repeats.fa.gz";
+				String outf1 = resDir.getAbsolutePath()+"/"+chrom+"."+out+".repeats.fa.gz";
 				output =new SeqWriter(outf, true);
 				output_repeats = new SeqWriter(outf1, false);
 				System.err.println("output : ");
@@ -328,9 +347,9 @@ public class RemoveRepeatsCmd extends CommandLine {
 				start=0;
 			}
 			if(chr!=null) output_repeats.write(chr, Integer.parseInt(str[st_ind]), Integer.parseInt(str[end_ind]), false, unit_ind<0 ? "NA" : str[unit_ind]);
-			end = Integer.parseInt(str[st_ind]); // end of the flanking region  (start of repeat)
 			period = Integer.parseInt(str[period_ind]); //include one period of the repeat in the flanking
-			end = end + period;
+
+			end = Integer.parseInt(str[st_ind]) + period; // end of the flanking region  (start of repeat + 1 repeat unit)
 			SortedMap<Integer, Indel> preceding = allMatches.headMap(end+1);
 			if(preceding.size()>0){
 				///if there is intervening NNN sequence we have to deal with that first
@@ -344,13 +363,13 @@ public class RemoveRepeatsCmd extends CommandLine {
 			out_st[0] = chrom;
 			out_st[1]  = seqlen+"";
 			out_st[2] = seqlen+"";
-			out_st[3] = str[st_ind];
+		//	out_st[3] = str[st_ind];
 			out_st[3] = end+"";
 			out_st[4] = str[end_ind];
-			out_st[6] = period_ind<0 ? "NA" : str[period_ind];
+			out_st[6] = period+"";
 			out_st[7] = chrom+"_"+str[st_ind]+"_"+str[end_ind];
 			out_st[8] = unit_ind<0 ? "NA":  str[unit_ind];
-			out_st[5] = ""+(start - seqlen);
+			out_st[5] = ""+(end - seqlen);
 	
 			
 				print(out_st, indices); indices.println();
