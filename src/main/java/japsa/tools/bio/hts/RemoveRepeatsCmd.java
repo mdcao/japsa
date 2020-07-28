@@ -216,15 +216,23 @@ public class RemoveRepeatsCmd extends CommandLine {
 	void removeN() throws IOException, InterruptedException{
 		for(int i=0; i<genomes.size(); i++){
 			Sequence seq = genomes.get(i);
+			String chrom = seq.getName();
+			String outf = resDir.getAbsolutePath()+"/"+chrom+"."+out+".no_repeats.fa.gz";
+			String outf1 = resDir.getAbsolutePath()+"/"+chrom+"."+out+".repeats.fa.gz";
+			indices = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(resDir.getAbsolutePath()+"/"+chrom+"."+out+".bed.gz")))));
+			output =new SeqWriter(outf, true);
+			output_repeats = new SeqWriter(outf1, false);
+		//	System.err.println(i);
 			System.err.println(seq.getName());
 			allMatches.clear();
 			findPatt(seq, allMatches);
 			output.writeln(">"+seq.getName());
 			 processN(allMatches,seq, output, output_repeats ,  indices,header_out,  0, 0);
+			 indices.close();
+				output.close();
+				output_repeats.close();
 		}
-		indices.close();
-		output.close();
-		output_repeats.close();
+		
 	}
 	
 	public Inner(ArrayList<Sequence> genomes, File repFile, String out, File resDir, File to_excl) throws FileNotFoundException, IOException {
@@ -327,9 +335,9 @@ Set<String> excl = new HashSet<String>();
 				}
 				if(done.contains(chrom))throw new RuntimeException("already done "+chrom);
 				int chromi = chrom_index.get(chrom);
-				indices = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(resDir.getAbsolutePath()+"/"+chrom+"."+out+".bed.gz")))));
 				String outf = resDir.getAbsolutePath()+"/"+chrom+"."+out+".no_repeats.fa.gz";
 				String outf1 = resDir.getAbsolutePath()+"/"+chrom+"."+out+".repeats.fa.gz";
+				indices = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(resDir.getAbsolutePath()+"/"+chrom+"."+out+".bed.gz")))));
 				output =new SeqWriter(outf, true);
 				output_repeats = new SeqWriter(outf1, false);
 				System.err.println("output : ");
