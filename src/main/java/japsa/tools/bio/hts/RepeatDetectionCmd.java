@@ -292,6 +292,7 @@ public class RepeatDetectionCmd extends CommandLine{
 		addString("reference", null, "Name of reference genome",true);
 		addString("pattern", null, "Pattern of read name, used for filtering");
 		addInt("qual", 0, "Minimum quality required");
+		addInt("flank_req", 20, "Minimum flank required on the read either side of the insertion");
 		addInt("bin", 1000, "For grouping of insertions");
 		addBoolean("stageOne", true, "first stage");
 		addInt("insThresh", 200, "Insertion threshold");
@@ -306,7 +307,7 @@ public class RepeatDetectionCmd extends CommandLine{
 	static String mm2_mem = "5g";
 	static String mm2Preset="map-ont";
 	static String mm2_path="/home/lachlan/github/minimap2/minimap2";
-
+static int flank_req;
 
 	public static void main(String [] args) throws IOException, InterruptedException{		 		
 		CommandLine cmdLine = new RepeatDetectionCmd();		
@@ -319,6 +320,7 @@ public class RepeatDetectionCmd extends CommandLine{
 		String chromsDir = cmdLine.getStringVal("chromsDir");
 		String readL= cmdLine.getStringVal("readList");
 		boolean stageOne= cmdLine.getBooleanVal("stageOne");
+		flank_req = cmdLine.getIntVal("flank_req");
 		mm2_threads = cmdLine.getIntVal("mm2_threads");
 		mm2_mem = cmdLine.getStringVal("mm2_mem");
 		mm2_path = cmdLine.getStringVal("mm2_path");
@@ -362,11 +364,12 @@ public class RepeatDetectionCmd extends CommandLine{
 		
 	}
 
-	static FastqRecord makeRecord(Sequence readSeq, String baseQ, String chr, String suffix,  int st_read, int end_read, int st_ref, int end_ref, String seq){
+	static FastqRecord makeRecord(Sequence readSeq, String baseQ, String chr, String suffix,  int st_read, int end_read, int st_ref, int end_ref, String seq, String extra){
 		int len = end_read - st_read;
 		
-		String lne1 =readSeq.getName()+suffix+" "+chr+" "+len+" "+st_read+","+end_read+" "+st_ref+","+end_ref;
+		String lne1 =readSeq.getName()+suffix+" "+chr+" "+len+" "+st_read+","+end_read+" "+st_ref+","+end_ref+" ";
 		if(seq.length()>0) lne1 = lne1+" "+seq;
+		if(extra.length()>0) lne1 = lne1+" "+extra;
 		return  new FastqRecord(
 				lne1,
 				new String(readSeq.subSequence(st_read, end_read).charSequence()),"",
@@ -498,7 +501,7 @@ public class RepeatDetectionCmd extends CommandLine{
 					String baseQ = sam.getBaseQualityString();
 					readSeq.setName(readSeq.getName()+"."+source);
 					String desc = "";//chr.getName();//+","+sam.getAlignmentStart()+","+sam.getAlignmentEnd()+","+readSeq.length();
-					FastqRecord repeat = makeRecord(readSeq, baseQ, desc, "",0, sam.getReadLength(), sam.getAlignmentStart(), sam.getAlignmentEnd(),"");
+					FastqRecord repeat = makeRecord(readSeq, baseQ, desc, "",0, sam.getReadLength(), sam.getAlignmentStart(), sam.getAlignmentEnd(),"","");
 					fastq.write(repeat);
 				}
 			}
@@ -666,7 +669,7 @@ static class FQWriter implements FastqWriter{
 			int st0 = sam.getAlignmentStart(); int end0 = sam.getAlignmentEnd(); 
 			int st1 = maps.getPos(st0); int end1 = maps.getPos(end0);
 
-			String desc = chr.getName()+","+st0+","+end0+","+(end0-st0)+" "+chr.getName()+","+st1+","+end1+","+(end1-st1)+" "+sam.getReadLength();
+			String desc = chr.getName()+","+st0+","+end0+","+(end0-st0)+" "+chr.getName()+","+st1+","+end1+","+(end1-st1)+" "+sam.getReadLength()+","+sam.getMappingQuality();
 			//sb.append(" ");
 		//	if(insertions!=null && 
 			//		insertions.size()>0  ) 	System.err.println(readSeq.getName()+" "+desc+" "+(readSeq.length()-(sam.getAlignmentEnd()-sam.getAlignmentStart()))+"  "+ insertions.size());
@@ -731,7 +734,7 @@ static class FQWriter implements FastqWriter{
 					if(readEnd-readStart > flankThresh){
 						
 						if(fastq_flank==null) fastq_flank = new FQWriter(nme,"flank.fastq", append);
-						FastqRecord left = makeRecord(readSeq,baseQ, desc,".F"+i , readStart, readEnd,maps.getPos(refStart), maps.getPos(refEnd),"");
+						FastqRecord left = makeRecord(readSeq,baseQ, desc,".F"+i , readStart, readEnd,maps.getPos(refStart), maps.getPos(refEnd),"","");
 						fastq_flank.write(left);
 					}
 					{
@@ -741,7 +744,7 @@ static class FQWriter implements FastqWriter{
 						String nrep = rep==null ? "NA": String.format("%5.3g", 1.0 + (double)ins.length/(double) rep.period).trim();
 						String period = rep==null ? "NA" : rep.period+"";
 								
-						FastqRecord repeat = makeRecord(readSeq, baseQ, desc+" "+period+" "+nrep, ".R"+i, ins.readStart, ins.readEnd, ins_pos,ins_pos+ins.length, seq);
+						FastqRecord repeat = makeRecord(readSeq, baseQ, desc+" "+period+" "+nrep, ".R"+i, ins.readStart, ins.readEnd, ins_pos,ins_pos+ins.length, seq, ins.left_flank+","+ins.right_flank);
 						FastqWriter fastq  = new FQWriter(nme,"insertion.fastq", append);
 						fastq.write(repeat); fastq.close();
 						refStart = ins.refStart;  //next refStart
@@ -755,7 +758,7 @@ static class FQWriter implements FastqWriter{
 					//Repeat rep = maps.find( insertions.get(i-1).refStart);
 				//	int overlaps=Math.min(rep.pos0-sam.getAlignmentStart(), sam.getAlignmentEnd()-rep.pos0);
 					if(fastq_flank==null) fastq_flank = new FQWriter(nme,"flank.fastq", append);
-					FastqRecord left = makeRecord(readSeq,baseQ, desc,".F"+i , readStart, readEnd, maps.getPos(refStart), maps.getPos(refEnd),"");
+					FastqRecord left = makeRecord(readSeq,baseQ, desc,".F"+i , readStart, readEnd, maps.getPos(refStart), maps.getPos(refEnd),"","");
 					fastq_flank.write(left);
 				}
 				if(fastq_flank!=null)fastq_flank.close();
@@ -862,16 +865,22 @@ static class Insertions implements Comparable{
 	Integer refStart =0;
 	Integer length =0;
 	Integer readEnd =0;
+	Integer left_flank =0;
+	Integer right_flank =0;
 	//String key;
-	Insertions(int refStart, int readStart, int length){
+	Insertions(int refStart, int readStart, int length, int left_flank, int right_flank){
 		this.readStart = readStart;
 		this.refStart = refStart;
 		this.length = length;
 		this.readEnd = readStart+length;
+		this.left_flank = 0;
+		this.right_flank =0;
 	//	int refEnd = refStart+length;
 		
 	}
 	
+	
+
 	public void merge(Insertions insertions) {
 		this.readStart = Math.min(insertions.readStart, readStart);
 		this.readEnd = Math.max(insertions.readEnd, readEnd);
@@ -890,7 +899,7 @@ static class Insertions implements Comparable{
 	}
 }
 
-
+static int flankReq=20;
 
 /**
 	 * Get the identity between a read sequence from a sam and a reference sequence
@@ -900,7 +909,7 @@ static class Insertions implements Comparable{
 	 */
 	public static IdentityProfile identity(Sequence refSeq, Sequence readSeq,  SAMRecord sam, List<Insertions> insertions){
 		IdentityProfile profile = new IdentityProfile();
-
+		int readLen = readSeq.length();
 		int readPos = 0;//start from 0					
 		int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index				
 
@@ -945,8 +954,8 @@ static class Insertions implements Comparable{
 				break; 	
 
 			case I :	    
-				if(length>insThresh){
-					insertions.add(new Insertions(refPos, readPos, length));
+				if(length>insThresh && readPos > flank_req && (readLen - (readPos+length))> flank_req){
+					insertions.add(new Insertions(refPos, readPos, length, readPos, readLen -(readPos+length)));
 				//	System.err.println(length);
 				}
 				readPos += length;

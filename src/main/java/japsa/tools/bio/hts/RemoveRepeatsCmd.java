@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -44,7 +46,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		addString("resDir", "./results",  "Results directory", false);
-		addString("excl", null,  "File with lines to exclude", false);
+		addString("targets", null,  "File with lines to exclude", false);
 		addString("repeatsFile", null,  "Name of repeats file", false);
 		addString("repeatsHeader", "chrom:chromStart:chromEnd:sequence:period",  "repeats header", false);
 		addString("reference", null, "Name of reference genome",true);
@@ -107,8 +109,8 @@ public class RemoveRepeatsCmd extends CommandLine {
 		String reference = cmdLine.getStringVal("reference");		
 		String repFile = cmdLine.getStringVal("repeatsFile");
 		String resDir = cmdLine.getStringVal("resDir");
-		String excl = cmdLine.getStringVal("excl");
-		File exclFile = excl==null ? null: new File (excl);
+		String targets = cmdLine.getStringVal("targets");
+		File targetsFile = targets==null ? null: new File (targets);
 		File resD =(new File(resDir)); 
 		(resD).mkdir();
 		RemoveRepeatsCmd.nrep = cmdLine.getIntVal("nrep");
@@ -137,7 +139,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 		// RemoveRepeatsCmd.headers="chrom:start:end:repeatUnit:period".split(":");//  unitNo  size    target  repeatUnit      #H:ID
 		 
 		System.err.println(genomes.size());
-		RemoveRepeatsCmd.Inner inner = new RemoveRepeatsCmd.Inner(genomes, repFile==null ? null : new File(repFile), out, resD, exclFile);
+		RemoveRepeatsCmd.Inner inner = new RemoveRepeatsCmd.Inner(genomes, repFile==null ? null : new File(repFile), out, resD, targetsFile);
 		 if(repFile==null){
 			 inner.removeN();
 		 }else{
@@ -248,14 +250,23 @@ public class RemoveRepeatsCmd extends CommandLine {
 			this.chrom_index.put(chr, i);
 		}
 		this.resDir = resDir;
-		if(to_excl!=null && to_excl.exists()){
+		/*if(to_excl!=null && to_excl.exists()){
 			BufferedReader br1= new BufferedReader(new InputStreamReader((new FileInputStream(to_excl))));
 			String st = "";
 			while((st = br1.readLine())!=null){
-				this.excl.add(st);
+				String[] str = st.split("\t");
+			SortedSet<Integer> s_st = 	this.target_st.get(str[0]);
+		//	SortedSet<Integer> s_end = 	this.target_end.get(str[0]);
+				if(s_st==null){
+					target_st.put(str[0], s_st = new TreeSet<Integer>());
+					target_end.put(str[0],s_end= new TreeSet<Integer>());
+				}
+				s_st.add(Integer.parseInt(str[1]));
+				s_end.add(Integer.parseInt(str[2]));
+				//this.excl.add(st);
 			}
 			br1.close();
-		}
+		}*/
 		this.out = out;
 		this.genomes = genomes;
 		chroms = new HashSet<String>(m.keySet());
@@ -312,8 +323,9 @@ public class RemoveRepeatsCmd extends CommandLine {
 	
 	
 	
-Set<String> excl = new HashSet<String>();
-	
+//Map<String, SortedSet<Integer>> target_st = new HashMap<String, SortedSet<Integer>>();
+//Map<String, SortedSet<Integer>> target_end = new HashMap<String, SortedSet<Integer>>();
+//	int side_thresh = 50;
 	 void removeRepeats() throws IOException, InterruptedException{	
 		 Sequence chr = null;
 		String st = "";
@@ -324,16 +336,25 @@ Set<String> excl = new HashSet<String>();
 		Set<String> done = new HashSet<String>();
 		 // allMatches relates to NNNN sequence
 		outer: while((st = br.readLine())!=null){
-			if(excl.contains(st)) {
-				System.err.println("excluding "+st);
-				continue outer;
-			}
+			
 			String[] str = st.split("\t");
 			String chrom = str[chr_ind];
-		
+			
 			if(!chroms.contains(chrom)) {
 				continue outer;
 			}
+			/*
+			SortedSet<Integer> s_st = target_st.get(chrom);
+			SortedSet<Integer> s_end = target_end.get(chrom);
+			int start_ = Integer.parseInt(str[st_ind]);
+			if(s_st!=null && !s_st.contains(start_)){ // dont exclude if start_ is in set
+				SortedSet<Integer>s_end1 =  s_end.tailSet(start_-side_thresh);
+				if(s_end1.size()>0){
+					if(s_st.last();
+				}
+			
+			}*/
+			
 			if(chr==null || !chr.getName().equals(chrom)){
 				if(chr!=null){
 					finishChrom(chr, start, end, seqlen);
