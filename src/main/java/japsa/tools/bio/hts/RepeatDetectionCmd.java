@@ -873,8 +873,8 @@ static class Insertions implements Comparable{
 		this.refStart = refStart;
 		this.length = length;
 		this.readEnd = readStart+length;
-		this.left_flank = 0;
-		this.right_flank =0;
+		this.left_flank = left_flank;
+		this.right_flank =right_flank;
 	//	int refEnd = refStart+length;
 		
 	}
