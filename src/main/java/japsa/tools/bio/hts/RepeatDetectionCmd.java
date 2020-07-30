@@ -797,7 +797,7 @@ static boolean writeNone = false;
 		//Done
 
 		//fastq.close();fastq_flank.close();
-		fastq_none.close();
+		if(fastq_none!=null) fastq_none.close();
 		System.out.println("Deletion " + totBaseDel + " " + totNumDel +" " + totBaseDel*1.0/totRefBase);
 		System.out.println("Insertion " + totBaseIns + " " + totNumIns+" " + totBaseIns*1.0/totRefBase);
 		System.out.println("MisMatch " + totMisMatch +" " + totMisMatch*1.0/totRefBase);
