@@ -280,13 +280,14 @@ public class RepeatDetectionCmd extends CommandLine{
 	 public static int insThreshKnown = 200;
 	 public static int insThreshUnknown = 500;
 	 public static int flankThresh = 200;
+	 public static boolean extractInsertion = false;
 	 static final FastqWriterFactory factory = new FastqWriterFactory();
 	public RepeatDetectionCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-
+		addBoolean("extractInsertion", false, "whether to include only insertion seq in fastq");
 		addString("bamFile", null,  "Name of bam file", true);
 		addString("resDir", null,  "results dir", false);
 		addString("chromsDir", null,  "Dir with compressed chroms", true);
@@ -334,6 +335,7 @@ static int flank_req;
 		RepeatDetectionCmd.insThreshUnknown = Integer.parseInt(insT[1]);
 		RepeatDetectionCmd.insThresh = Math.min(insThreshKnown, insThreshUnknown);
 		RepeatDetectionCmd.flankThresh = cmdLine.getIntVal("flankThresh");
+		RepeatDetectionCmd.extractInsertion = cmdLine.getBooleanVal("extract_insertion");
 	//	RepeatDetectionCmd.chromsDir = chromsDir;
 		String[] bamFiles_ = bamFile.split(":");
 		if(bamFile.equals("all") || bamFile.equals(".")){
@@ -746,8 +748,8 @@ static boolean writeNone = false;
 					}else{
 						Insertions nxt = insertions1.get(i+1);
 						Repeat nxt_rep = reps.get(i+1);
-						int nxt_st = nxt_rep==null ? nxt.readStart : nxt.readStart - nxt_rep.period;
-						double dist = Math.max(0,nxt_st - ins.readEnd);
+					//	int nxt_st = nxt_rep==null ? nxt.readStart : nxt.readStart - nxt_rep.period;
+						double dist = Math.max(0,nxt.readStart - ins.readEnd);
 						readEnd1 = readEnd1 + (int) Math.round(dist/2.0);
 					}
 					if(rep==null){
@@ -757,6 +759,10 @@ static boolean writeNone = false;
 					}else{
 						nme = prefix+"."+rep.label;
 						seq = rep.seq;
+					}
+					if(extractInsertion){
+						readStart = ins.readStart;
+						readEnd1 = ins.readEnd;
 					}
 						int ins_pos = maps.getPos(ins.refStart);
 					//	double len = ins.length;
