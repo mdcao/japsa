@@ -296,7 +296,7 @@ public class RepeatDetectionCmd extends CommandLine{
 		addInt("qual", 0, "Minimum quality required");
 		addInt("flank_req", 20, "Minimum flank required on the read either side of the insertion");
 		addInt("bin", 1000, "For grouping of insertions");
-		addBoolean("stageOne", true, "first stage");
+	//	addBoolean("stageOne", true, "first stage");
 		addString("insThresh", "200:200", "Insertion threshold known:Unknown");
 		addInt("flankThresh", 200, "Flank threshold");
 		addString("mm2_path", "/sw/minimap2/current/minimap2",  "minimap2 path", false);
@@ -321,7 +321,6 @@ static int flank_req;
 		String bamFile = cmdLine.getStringVal("bamFile");
 		String chromsDir = cmdLine.getStringVal("chromsDir");
 		String readL= cmdLine.getStringVal("readList");
-		boolean stageOne= cmdLine.getBooleanVal("stageOne");
 		flank_req = cmdLine.getIntVal("flank_req");
 		mm2_threads = cmdLine.getIntVal("mm2_threads");
 		mm2_mem = cmdLine.getStringVal("mm2_mem");
@@ -431,6 +430,7 @@ static int flank_req;
 	
 	 private static void processStageOne(Iterator<SAMRecord> samIter, int num_source, File resDir, File chromDir, String pattern, int qual, String reference) throws IOException {
 		 FastqW fastq  =null;
+		 if(!chromDir.exists()) throw new RuntimeException(chromDir.getAbsolutePath()+" does not exist");
 		 SamReader[] outr = new SamReader[num_source];
 		 int currentIndex = -1;
 			//Sequence chr = genomes.get(currentIndex);
@@ -439,6 +439,7 @@ static int flank_req;
 
 			while (samIter.hasNext()){
 				SAMRecord sam = samIter.next();
+			//	System.err.println(sam.getReferenceIndex()+" "+sam.getReferenceName());
 				if(sam==null) break;
 				if (pattern != null && (!sam.getReadName().contains(pattern)))
 					continue;
@@ -496,6 +497,7 @@ static int flank_req;
 							fastq  =new FastqW (resDir, currentIndex,"", mm2Index, genomes, maps);
 					
 					}else{
+						System.err.println("does not exist "+seqF.getAbsolutePath());
 						fastq = null;
 					}
 					
@@ -606,7 +608,7 @@ static boolean writeNone = false;
 	String prefix1 = insertionsDir1.getAbsolutePath()+"/"+chrom_index;
 	boolean append = true;
 	 	
-	 FastqWriter  fastq_none = new FQWriter(resDir.getAbsolutePath()+"/"+chrom_index,"no_insertion.fastq",append);
+	 FastqWriter  fastq_none = writeNone ? new FQWriter(resDir.getAbsolutePath()+"/"+chrom_index,"no_insertion.fastq",append) : null;
 
 		 List<Insertions>  insertions= new ArrayList<Insertions>();
 	 int currentIndex = 0;
@@ -762,7 +764,7 @@ static boolean writeNone = false;
 						String period = rep==null ? "NA" : rep.period+"";
 						int repStart = ins.readStart - readStart;
 						int repEnd = ins.readEnd - readStart;
-						int diff = ins.refStart - rep.pos0;
+						String diff = rep==null ? "NA" : ""+(ins.refStart - rep.pos0);
 						FastqRecord repeat =  makeRecord(readSeq, baseQ,".R"+i, readStart, readEnd1,
 								repStart+"-"+repEnd+" "+ins.length+" "+ins_pos+" "+diff+" "+" "+period+" "+nrep+" "+seq+" "+ins.left_flank+","+ins.right_flank);
 						FastqWriter fastq  = new FQWriter(nme,"insertion.fastq", append);
