@@ -335,7 +335,7 @@ static int flank_req;
 		RepeatDetectionCmd.insThreshUnknown = Integer.parseInt(insT[1]);
 		RepeatDetectionCmd.insThresh = Math.min(insThreshKnown, insThreshUnknown);
 		RepeatDetectionCmd.flankThresh = cmdLine.getIntVal("flankThresh");
-		RepeatDetectionCmd.extractInsertion = cmdLine.getBooleanVal("extract_insertion");
+		RepeatDetectionCmd.extractInsertion = cmdLine.getBooleanVal("extractInsertion");
 	//	RepeatDetectionCmd.chromsDir = chromsDir;
 		String[] bamFiles_ = bamFile.split(":");
 		if(bamFile.equals("all") || bamFile.equals(".")){
@@ -761,8 +761,8 @@ static boolean writeNone = false;
 						seq = rep.seq;
 					}
 					if(extractInsertion){
-						readStart = ins.readStart;
-						readEnd1 = ins.readEnd;
+						readStart = Math.max(readStart,ins.readStart-10);
+						readEnd1 = Math.min(readEnd1, ins.readEnd+10);
 					}
 						int ins_pos = maps.getPos(ins.refStart);
 					//	double len = ins.length;
