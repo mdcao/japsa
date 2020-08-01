@@ -762,8 +762,13 @@ static boolean writeNone = false;
 						seq = rep.seq;
 					}
 					if(extractInsertion){
-						readStart = Math.max(readStart,ins.readStart-10);
-						readEnd1 = Math.min(readEnd1, ins.readEnd+10);
+						if(rep==null){
+							readStart = Math.max(readStart,ins.readStart-10);
+							readEnd1 = Math.min(readEnd1, ins.readEnd+10);
+						}else{ // include one repeat width either way
+							readStart = Math.max(readStart,ins.readStart-rep.period);
+							readEnd1 = Math.min(readEnd1, ins.readEnd+rep.period);
+						}
 					}
 						int ins_pos = maps.getPos(ins.refStart);
 					//	double len = ins.length;
