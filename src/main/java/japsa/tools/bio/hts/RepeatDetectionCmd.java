@@ -575,7 +575,7 @@ static class FQWriter implements FastqWriter{
 	public FQWriter(String prefix, String suffix, boolean append) {
 		try{
 		writer = new PrintStream(new FileOutputStream(prefix+"."+suffix, append));
-		   writer.println();
+		 
 		}catch(Exception exc){
 			exc.printStackTrace();
 			
@@ -586,6 +586,7 @@ static class FQWriter implements FastqWriter{
 
 	@Override
 	public void close() {
+		writer.println();
 		writer.close();
 		
 	}
