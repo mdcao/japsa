@@ -772,13 +772,15 @@ static boolean writeNone = false;
 					}
 						int ins_pos = maps.getPos(ins.refStart);
 					//	double len = ins.length;
-						String nrep = rep==null ? "NA": String.format("%5.3g", 1.0 + (double)ins.length/(double) rep.period).trim();
+						double nrep_ = rep==null ? Double.NaN : 1.0 + (double)ins.length/(double) rep.period;
+						String nrep = rep==null ? "NA": String.format("%5.3g", nrep_).trim();
+						String ratio = rep==null ? "NA": String.format("%5.3g", nrep_/(double) rep.nrep).trim();
 						String period = rep==null ? "NA" : rep.period+"";
 						int repStart = ins.readStart - readStart;
 						int repEnd = ins.readEnd - readStart;
 						String diff = rep==null ? "NA" : ""+(ins.refStart - rep.pos0);
 						FastqRecord repeat =  makeRecord(readSeq, baseQ,".R"+i, readStart, readEnd1,
-								repStart+"-"+repEnd+" "+ins.length+" "+ins_pos+" "+diff+" "+" "+period+" "+nrep+" "+seq+" "+ins.left_flank+","+ins.right_flank);
+								repStart+"-"+repEnd+" "+ins.length+" "+ins_pos+" "+diff+" "+" "+period+" "+nrep+" "+ratio+" "+seq+" "+ins.left_flank+","+ins.right_flank+ ","+sam.getMappingQuality());
 						FastqWriter fastq  = new FQWriter(nme,"insertion.fastq", append);
 						fastq.write(repeat); fastq.close();
 						readStart =readEnd1; //next readStart
