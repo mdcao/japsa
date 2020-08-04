@@ -571,7 +571,6 @@ static int flank_req;
 					//	"--for-only",
 						"-I",
 						mm2_mem,
-						
 //						"-K",
 //						"200M",
 						mm2Index.toString(),
