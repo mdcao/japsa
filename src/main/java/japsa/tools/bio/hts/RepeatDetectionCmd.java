@@ -65,6 +65,7 @@ import htsjdk.samtools.fastq.FastqEncoder;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
+import htsjdk.samtools.util.SequenceUtil;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
@@ -369,16 +370,27 @@ static int flank_req;
 		}
 		
 	}
-
-	static FastqRecord makeRecord(Sequence readSeq, String baseQ,  String suffix,  int st_read, int end_read, String desc){
-		int len = end_read - st_read;
-		
-		String lne1 =readSeq.getName()+suffix+" "+st_read+"-"+end_read+" "+desc;
+/** null value of negStrand indicates do not look at strand - keep same as original */
+	static FastqRecord makeRecord(Sequence readSeq, String baseQ, byte[] quals,  String suffix,  int st_read, int end_read, String desc, boolean negStrand){
 	
+		String sequence = new String(readSeq.subSequence(st_read, end_read).charSequence());
+		String baseQL = baseQ.substring(st_read, end_read);
+		String avgQ="";
+		
+			String	ch=negStrand ?  "_rev" : "";
+			 double sum =0;
+				for(int i=st_read; i<end_read; i++){
+					sum+=quals[i];
+				}
+				double length = end_read-st_read;
+				avgQ = " "+String.format("%5.3g", sum/length).trim();
+			
+		
 		return  new FastqRecord(
-				lne1,
-				new String(readSeq.subSequence(st_read, end_read).charSequence()),"",
-				baseQ.substring(st_read, end_read)
+				readSeq.getName()+ch+suffix+" "+st_read+"-"+end_read+" "+desc+avgQ,
+				negStrand ? SequenceUtil.reverseComplement(sequence): sequence,
+				"",
+				negStrand ?(new StringBuilder(baseQL)).reverse().toString(): baseQL
 				);
 	}
 
@@ -418,6 +430,7 @@ static int flank_req;
 				samReaders[ii] = SamReaderFactory.makeDefault().open(bam);
 		}
 		CombinedIterator samIter = getCombined(samReaders, getReads(readList), max_reads);
+		
 			processStageOne(samIter, samIters.length, resDir, chromsDir, pattern, qual, refFile.getName());
 			samIter.close();
 		//for(int i=0; i<samReaders.length; i++){
@@ -508,8 +521,14 @@ static int flank_req;
 				if(fastq!=null){
 					String baseQ = sam.getBaseQualityString();
 					readSeq.setName(readSeq.getName()+"."+source);
-					String desc = "";//chr.getName();//+","+sam.getAlignmentStart()+","+sam.getAlignmentEnd()+","+readSeq.length();
-					FastqRecord repeat = makeRecord(readSeq, baseQ,  "",0, sam.getReadLength(), desc);
+				//	String strand = sam.getReadNegativeStrandFlag() ? "-" : "+";
+			//		String desc = "";//chr.getName();//+","+sam.getAlignmentStart()+","+sam.getAlignmentEnd()+","+readSeq.length();
+					
+					FastqRecord repeat =  new FastqRecord(readSeq.getName(),	readSeq.toString(),	"",baseQ);
+													
+													
+														
+						//	makeRecord(readSeq, baseQ,  sam.getBaseQualities(), "",0, sam.getReadLength(), "", sam.getReadNegativeStrandFlag());
 					fastq.write(repeat);
 				}
 			}
@@ -549,15 +568,18 @@ static int flank_req;
 						"" + mm2_threads,
 						"-ax",
 						mm2Preset,
+					//	"--for-only",
 						"-I",
 						mm2_mem,
+						
 //						"-K",
 //						"200M",
 						mm2Index.toString(),
 						inFile.toString()
+					
 						);
 				
-				Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+				Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
 				SamReader reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
 				processStageTwo(genomes, chrom_index, reader.iterator(), resDir,  null, 0, maps);
 				reader.close();
@@ -634,7 +656,7 @@ static boolean writeNone = false;
 		//String log = "###Read_name\tRead_length\tReference_length\tInsertions\tDeletions\tMismatches\n";
 		outer1: while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
-
+			boolean negStrand = sam.getReadNegativeStrandFlag();
 			if (pattern != null && (!sam.getReadName().contains(pattern)))
 				continue;
 
@@ -779,8 +801,11 @@ static boolean writeNone = false;
 						int repStart = ins.readStart - readStart;
 						int repEnd = ins.readEnd - readStart;
 						String diff = rep==null ? "NA" : ""+(ins.refStart - rep.pos0);
-						FastqRecord repeat =  makeRecord(readSeq, baseQ,".R"+i, readStart, readEnd1,
-								repStart+"-"+repEnd+" "+ins.length+" "+ins_pos+" "+diff+" "+" "+period+" "+nrep+" "+ratio+" "+seq+" "+ins.left_flank+","+ins.right_flank+ ","+sam.getMappingQuality());
+						//System.err.println(sam.getReadNegativeStrandFlag());
+						FastqRecord repeat =  makeRecord(readSeq, baseQ, sam.getBaseQualities(),".R"+i, readStart, readEnd1,
+								repStart+"-"+repEnd+" "+ins.length+" "+ins_pos+" "+diff+" "+" "+period
+								+" "+nrep+" "+ratio+" "+seq+" "+ins.left_flank+","+ins.right_flank+ ","+sam.getMappingQuality(),
+								sam.getReadNegativeStrandFlag());
 						FastqWriter fastq  = new FQWriter(nme,"insertion.fastq", append);
 						fastq.write(repeat); fastq.close();
 						readStart =readEnd1; //next readStart
