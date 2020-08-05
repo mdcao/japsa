@@ -154,7 +154,7 @@ public class RepeatDetectionCmd extends CommandLine{
 			int diff2 = key2==null ? Integer.MAX_VALUE : Math.abs(key2-refStart);
 			if(Math.min(diff1, diff2) < 50){
 				Integer v = diff1 <=diff2 ? key1 : key2;
-				System.err.println(refStart+" "+(v-refStart));
+			//	System.err.println(refStart+" "+(v-refStart));
 				return map.get(v);
 			}else{
 //				System.err.println(Math.min(diff1, diff2));
@@ -293,11 +293,14 @@ public class RepeatDetectionCmd extends CommandLine{
 		addString("resDir", null,  "results dir", false);
 		addString("chromsDir", null,  "Dir with compressed chroms", true);
 		addString("readList", null,  "reads to include", false);
+		addString("chromIndices", null,  "chrom indices to include", false);
 		addString("reference", null, "Name of reference genome",true);
 		addString("pattern", null, "Pattern of read name, used for filtering");
 		addInt("qual", 0, "Minimum quality required");
 		addInt("flank_req", 20, "Minimum flank required on the read either side of the insertion");
 		addInt("bin", 1000, "For grouping of insertions");
+		addString("chroms", "chr1:chr2:chr3:chr4:chr5:chr6:chr7:chr8:chr9:chr10:chr11:chr12:chr13:chr14:chr15:chr16:chr17:chr18:chr19:chr20:chr21:chr22:chrX:chrY:chrM", "chroms to retain",false);
+
 	//	addBoolean("stageOne", true, "first stage");
 		addString("insThresh", "200:200", "Insertion threshold known:Unknown");
 		addInt("flankThresh", 200, "Flank threshold");
@@ -337,7 +340,16 @@ static int flank_req;
 		RepeatDetectionCmd.insThresh = Math.min(insThreshKnown, insThreshUnknown);
 		RepeatDetectionCmd.flankThresh = cmdLine.getIntVal("flankThresh");
 		RepeatDetectionCmd.extractInsertion = cmdLine.getBooleanVal("extractInsertion");
+		Set<Integer > chromIndices = null;
+		if(cmdLine.getStringVal("chromIndices")!=null){
+			chromIndices = new HashSet<Integer>();
+			String[] chri = cmdLine.getStringVal("chromIndices").split(":");
+			for(int i=0; i<chri.length; i++){
+				chromIndices.add(Integer.parseInt(chri[i]));
+			}
+		}
 	//	RepeatDetectionCmd.chromsDir = chromsDir;
+		
 		String[] bamFiles_ = bamFile.split(":");
 		if(bamFile.equals("all") || bamFile.equals(".")){
 			bamFiles_ = (new File("./")).list(new FilenameFilter(){
@@ -352,8 +364,8 @@ static int flank_req;
 		File insertionsDir = new File(resDir,"insertions");
 		File insertionsDir1 = new File(resDir,"insertionsNoOverlap");
 		delete(insertionsDir); delete(insertionsDir1);
-		
-		analysis(bamFiles_, new File(reference), pattern, qual, resDir,new File(chromsDir), readL==null ? null : readL.split(":"));		
+	
+		analysis(bamFiles_, new File(reference), pattern, chromIndices, qual, resDir,new File(chromsDir), readL==null ? null : readL.split(":"));		
 
 
 		//paramEst(bamFile, reference, qual);
@@ -394,8 +406,8 @@ static int flank_req;
 				);
 	}
 
-	static CombinedIterator getCombined(SamReader[] samReaders, Collection[] reads, int max_reads){
-		Set<Integer> chrom_indices_to_include = null;
+	static CombinedIterator getCombined(SamReader[] samReaders, Collection[] reads, int max_reads,Set<Integer> chrom_indices_to_include){
+		
 		int len = samReaders.length;
 		SAMRecordIterator[] samIters = new SAMRecordIterator[len];
 		for (int ii = 0; ii < len; ii++) {
@@ -412,7 +424,8 @@ static int flank_req;
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
 	 */
-	static void analysis(String[] bamFiles_, File refFile, String pattern, int qual, File resDir, File chromsDir, String[] readList) throws IOException{	
+	static void analysis(String[] bamFiles_, File refFile, String pattern,
+			Set<Integer> chrom_indices_to_include , int qual, File resDir, File chromsDir, String[] readList) throws IOException{	
 		Integer max_reads = Integer.MAX_VALUE;
 		Set<String>chrToInclude = null;
 		int len = bamFiles_.length;
@@ -429,7 +442,9 @@ static int flank_req;
 			else
 				samReaders[ii] = SamReaderFactory.makeDefault().open(bam);
 		}
-		CombinedIterator samIter = getCombined(samReaders, getReads(readList), max_reads);
+		
+		
+		CombinedIterator samIter = getCombined(samReaders, getReads(readList), max_reads, chrom_indices_to_include);
 		
 			processStageOne(samIter, samIters.length, resDir, chromsDir, pattern, qual, refFile.getName());
 			samIter.close();
