@@ -46,12 +46,16 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.zip.GZIPInputStream;
 
 import htsjdk.samtools.CigarElement;
@@ -87,16 +91,21 @@ public class RepeatDetectionCmd extends CommandLine{
 	
 	static class Repeat{
 		int st; int end; String label; String seq; int period; float nrep;
-		
+		public boolean equals(Object obj){
+			return pos0 ==((Repeat)obj).pos0;
+		}
+		public int hashCode(){
+			return pos0;
+		}
 		int pos0; // position in compressed reference
-		Repeat(String[] str){
+		Repeat(String[] str, int key){
 			this.st =Integer.parseInt(str[3]);
 			this.end = Integer.parseInt(str[4]);
 			this.label = str[7];
 			this.seq = str[8];
 			this.period = Integer.parseInt(str[6]);
 			this.nrep =1.0f +((float)end - (float) st)/(float) period;
-		this.pos0 = Integer.parseInt(str[2]);
+		this.pos0 = key;
 		}
 		Repeat(){
 			st = -1;
@@ -127,9 +136,10 @@ public class RepeatDetectionCmd extends CommandLine{
 			 String st = "";
 			 while((st = br.readLine())!=null){
 				 String[] str = st.split("\t");
-				 Repeat rep = new Repeat( str);
-				// if(first) this.chr = str[0];
 				 Integer key = Integer.parseInt(str[2]);
+
+				 Repeat rep = new Repeat( str, key);
+				// if(first) this.chr = str[0];
 				 map.put(key, rep);//Integer.parseInt(str[4]));
 			 }
 			 br.close();
@@ -142,22 +152,22 @@ public class RepeatDetectionCmd extends CommandLine{
 			Repeat rep = map.get(lastKey);
 			return rep.end + (pos-lastKey);
 		 }
-		public Repeat find(Integer refStart) {
+		public Repeat find(Insertions ins) {
 			// TODO Auto-generated method stub
-			if(map.containsKey(refStart)) return map.get(refStart);
-			SortedMap <Integer, Repeat>hm  =  map.tailMap(refStart);
+			if(map.containsKey(ins.refStart)) return map.get(ins.refStart);
+			SortedMap <Integer, Repeat>hm  =  map.tailMap(ins.refStart);
 			Integer key1 = hm.size()==0 ? null : hm.firstKey();
-			SortedMap <Integer, Repeat>hm1  =  map.headMap(refStart);
+			SortedMap <Integer, Repeat>hm1  =  map.headMap(ins.refStart);
 			Integer key2 = hm1.size()==0 ? null : hm1.lastKey();
-			
-			int diff1 = key1==null ? Integer.MAX_VALUE : Math.abs(key1-refStart);
-			int diff2 = key2==null ? Integer.MAX_VALUE : Math.abs(key2-refStart);
-			if(Math.min(diff1, diff2) < 50){
-				Integer v = diff1 <=diff2 ? key1 : key2;
-			//	System.err.println(refStart+" "+(v-refStart));
+		//	ins.overlap(key1);
+			int diff1 = ins.overlap(key1);
+			int diff2 = ins.overlap(key2);
+			if(Math.max(diff1, diff2) >=-50){
+				Integer v = diff1 >=diff2 ? key1 : key2;
+				//System.err.println(ins.refStart+" "+(v-ins.refStart));
 				return map.get(v);
 			}else{
-//				System.err.println(Math.min(diff1, diff2));
+				System.err.println("not found "+ins.refStart+" "+diff1+','+diff2);
 				return null;
 			}
 		}
@@ -175,8 +185,8 @@ public class RepeatDetectionCmd extends CommandLine{
 		private final int[] cnts ;
 		int max;
 		Collection<String>[] readList ;
-		Set<Integer> chrs;
-		private CombinedIterator(SAMRecordIterator[] samIters, int max, Collection<String>[]readList, Set<Integer> chrs) {
+		Map<Integer, int[]> chrs;
+		private CombinedIterator(SAMRecordIterator[] samIters, int max, Collection<String>[]readList, Map<Integer, int[]> chrs) {
 			this.samIters = samIters;
 			this.readList = readList;
 			currentVals = new SAMRecord[samIters.length];
@@ -226,7 +236,7 @@ public class RepeatDetectionCmd extends CommandLine{
 							}
 						}
 						if(readList!=null && pool_ind>=0) break inner;
-						if(readList==null &&  chrs!=null && chrs.contains(sr.getReferenceIndex())) break inner;
+						if(readList==null &&  chrs!=null && contains(chrs,sr)) break inner;
 						if(readList==null  && chrs==null) break inner;
 					}
 					if(sr!=null) {
@@ -242,6 +252,14 @@ public class RepeatDetectionCmd extends CommandLine{
 			return sr;
 		}
 
+		private boolean contains(Map<Integer, int[]> chrs2, SAMRecord sr) {
+			int[] obj = chrs2.get(sr.getReferenceIndex());
+			if(obj==null) return false;
+			else{
+				if(sr.getAlignmentStart()>=obj[0] && sr.getAlignmentEnd() <=obj[1]) return true;
+				else return false;
+			}
+		}
 		@Override
 		public SAMRecord next() {
 			//int curr_index = current_sam_index;
@@ -340,12 +358,18 @@ static int flank_req;
 		RepeatDetectionCmd.insThresh = Math.min(insThreshKnown, insThreshUnknown);
 		RepeatDetectionCmd.flankThresh = cmdLine.getIntVal("flankThresh");
 		RepeatDetectionCmd.extractInsertion = cmdLine.getBooleanVal("extractInsertion");
-		Set<Integer > chromIndices = null;
+		Map<Integer, int[] > chromIndices = null;
 		if(cmdLine.getStringVal("chromIndices")!=null){
-			chromIndices = new HashSet<Integer>();
+			chromIndices = new HashMap<Integer, int[]>();
 			String[] chri = cmdLine.getStringVal("chromIndices").split(":");
 			for(int i=0; i<chri.length; i++){
-				chromIndices.add(Integer.parseInt(chri[i]));
+				String[] str = chri[i].split(",");
+				int[] vals ;
+				if(str.length==1) vals = new int[] {0,Integer.MAX_VALUE};
+				else{
+					vals = new int[] {Integer.parseInt(str[1]), Integer.parseInt(str[2])};
+				}
+				chromIndices.put(Integer.parseInt(str[0]), vals);
 			}
 		}
 	//	RepeatDetectionCmd.chromsDir = chromsDir;
@@ -406,7 +430,7 @@ static int flank_req;
 				);
 	}
 
-	static CombinedIterator getCombined(SamReader[] samReaders, Collection[] reads, int max_reads,Set<Integer> chrom_indices_to_include){
+	static CombinedIterator getCombined(SamReader[] samReaders, Collection[] reads, int max_reads,Map<Integer, int[]> chrom_indices_to_include){
 		
 		int len = samReaders.length;
 		SAMRecordIterator[] samIters = new SAMRecordIterator[len];
@@ -425,9 +449,9 @@ static int flank_req;
 	 * Error analysis of a bam file. Assume it has been sorted
 	 */
 	static void analysis(String[] bamFiles_, File refFile, String pattern,
-			Set<Integer> chrom_indices_to_include , int qual, File resDir, File chromsDir, String[] readList) throws IOException{	
+			Map<Integer, int[]> chrom_indices_to_include , int qual, File resDir, File chromsDir, String[] readList) throws IOException{	
 		Integer max_reads = Integer.MAX_VALUE;
-		Set<String>chrToInclude = null;
+	//	Set<String>chrToInclude = null;
 		int len = bamFiles_.length;
 			final SAMRecordIterator[] samIters = new SAMRecordIterator[len];
 		SamReader[] samReaders = new SamReader[len];
@@ -557,7 +581,7 @@ static int flank_req;
 
 			
 		}
-	
+	static ExecutorService executor = Executors.newFixedThreadPool(1);
 	 static class FastqW{
 			final FastqWriter fq;
 			final  File inFile; 
@@ -570,6 +594,7 @@ static int flank_req;
 			public FastqW(File resDir, int currentIndex, String prefix,  File mm2Index, ArrayList<Sequence > genomes, Maps maps) throws FileNotFoundException, IOException {
 				this.inFile = 	new File(resDir,currentIndex+prefix+".fastq");
 				fq = factory.newWriter( inFile);
+			//	fq = new FQWriter(new FileOutputStream(inFile));
 				this.genomes = genomes;
 				this.maps = maps;
 				this.resDir = resDir;
@@ -589,14 +614,29 @@ static int flank_req;
 //						"-K",
 //						"200M",
 						mm2Index.toString(),
-						inFile.toString()
+						"-"
 					
 						);
-				
-				Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
-				SamReader reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
-				processStageTwo(genomes, chrom_index, reader.iterator(), resDir,  null, 0, maps);
-				reader.close();
+				Runnable run = new Runnable(){
+
+					@Override
+					public void run() {
+						try{
+						Process mm2Process  = pb.redirectInput(ProcessBuilder.Redirect.from(inFile)).redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
+						//	Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
+						//	OutputStream os = mm2Process.getOutputStream();
+							SamReader reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
+							processStageTwo(genomes, chrom_index, reader.iterator(), resDir,  null, 0, maps);
+							reader.close();
+						}catch(IOException exc){
+							exc.printStackTrace();
+						}
+						
+					}
+					
+				};
+//				executor.execute(run);
+				run.run();
 			}
 			
 			public void write(FastqRecord repeat) {
@@ -620,6 +660,10 @@ static class FQWriter implements FastqWriter{
 		
 	}
 
+	public FQWriter(FileOutputStream os) {
+		writer = new PrintStream(os);
+	}
+
 	@Override
 	public void close() {
 		writer.println();
@@ -634,7 +678,7 @@ static class FQWriter implements FastqWriter{
 	}
 	
 }
-static boolean writeNone = false;
+static boolean writeNone =true;
 
  private static void processStageTwo(ArrayList<Sequence> genomes, int chrom_index, Iterator<SAMRecord> samIter, File resDir, String pattern, int qual, Maps maps) {
 	File insertionsDir = new File(resDir, "insertions");
@@ -664,13 +708,15 @@ static boolean writeNone = false;
 
 		long totReadBase = 0, totRefBase = 0;
 		int  numReads = 0;
-
+		//int noInsertion=0;
+		//int hasInsertion=0;
 		int numNotAligned = 0;
+		Map<Integer, Integer> num_insertions = new HashMap<Integer, Integer>();
 
 		//String log = "###Read_name\tRead_length\tReference_length\tInsertions\tDeletions\tMismatches\n";
 		outer1: while (samIter.hasNext()){
 			SAMRecord sam = samIter.next();
-			boolean negStrand = sam.getReadNegativeStrandFlag();
+			//boolean negStrand = sam.getReadNegativeStrandFlag();
 			if (pattern != null && (!sam.getReadName().contains(pattern)))
 				continue;
 
@@ -712,6 +758,13 @@ static boolean writeNone = false;
 			
 			if(insertions !=null) insertions.clear();
 			japsa.util.HTSUtilities.IdentityProfile profile = identity(chr, readSeq, sam, insertions);
+			if(insertions.size()>1){
+				for(int i=insertions.size()-1; i>=1; i--){
+					if(insertions.get(i-1).merge(insertions.get(i),-20)){
+						insertions.remove(i);
+					}
+				}
+			}
 			int st0 = sam.getAlignmentStart(); int end0 = sam.getAlignmentEnd(); 
 			int st1 = maps.getPos(st0); int end1 = maps.getPos(end0);
 
@@ -720,59 +773,40 @@ static boolean writeNone = false;
 		//	if(insertions!=null && 
 			//		insertions.size()>0  ) 	System.err.println(readSeq.getName()+" "+desc+" "+(readSeq.length()-(sam.getAlignmentEnd()-sam.getAlignmentStart()))+"  "+ insertions.size());
 			String baseQ = sam.getBaseQualityString();
-			if(insertions.size()>0){
-				
 				//FastqWriter  fastq_flank = null;
 				int cnt=0;
 				List<Repeat> reps = new ArrayList<Repeat>();
 				List<Insertions> insertions1 = new ArrayList<Insertions>();
+				
 				int cnt_match=0;
 				for(int i=0; i<insertions.size();i++){
 					Insertions ins = insertions.get(i);
-					 Repeat rep = maps.find(ins.refStart);
-					 if(rep!=null) cnt_match++;
-					 int ind = rep==null ? -1 : reps.indexOf(rep);
-					 if(ind>=0){
-						insertions1.get(ind).merge(insertions.get(i)); 
-					 }else{
+					 Repeat rep = maps.find(ins);
+					 if(rep==null && ins.length >=insThreshUnknown){
 						 insertions1.add(insertions.get(i));
-						 reps.add(rep);
+						 reps.add(null);
+					 }else if(rep!=null && ins.length >=insThreshKnown){
+						 cnt_match++;
+						 int ind =  reps.indexOf(rep);
+						 if(ind>=0){
+							if(ins.overlap(rep.pos0)>  insertions1.get(ind).overlap(rep.pos0)) insertions1.set(ind, ins);
+						 }else{
+							 insertions1.add(ins);
+							 reps.add(rep);
+						 }
 					 }
-					 
 				}
-				if(cnt_match==0){ // no  matching, all unknown
-					insertions1.clear();
-					reps.clear();
-					insertions1.add(insertions.get(0));
-					reps.add(null);
-					for(int i=1; i<insertions.size();i++){
-						Insertions ins = insertions.get(i);
-						Insertions last = insertions1.get(insertions1.size()-1);
-						if(ins.readStart - last.readEnd < 20){
-							last.merge(ins);
-						}else{
-							insertions1.add(ins);
-							reps.add(null);
-						}
-					}
-				}
-				//filter
-				outer: for(int i=insertions1.size()-1;i>=0;i--){
-					Insertions ins = insertions1.get(i);
-					if(reps.get(i)==null && ins.length < insThreshUnknown){
-						insertions1.remove(i);
-					}
-					if(reps.get(i)!=null && ins.length < insThreshKnown){
-						insertions1.remove(i);
-					}
-				}
+			//	putIfAbsent(insertions1.size(), 0);
+				num_insertions.put(insertions1.size(), num_insertions.getOrDefault(insertions1.size(), 0)+1);
+				
 				if(insertions1.size()==0){
+					System.err.println(readSeq.getName());
 					if(writeNone){
+						
 						fastq_none.write(new FastqRecord(readSeq.getName()+ " "+desc, new String(readSeq.charSequence()), "", baseQ));
 					}
 					continue outer1;
 				}
-				
 				Repeat rep; String nme = null;String seq = null;
 				int readStart =0;
 				outer: for(int i=0; i<insertions1.size();i++){
@@ -785,12 +819,10 @@ static boolean writeNone = false;
 					}else{
 						Insertions nxt = insertions1.get(i+1);
 						Repeat nxt_rep = reps.get(i+1);
-					//	int nxt_st = nxt_rep==null ? nxt.readStart : nxt.readStart - nxt_rep.period;
 						double dist = Math.max(0,nxt.readStart - ins.readEnd);
 						readEnd1 = readEnd1 + (int) Math.round(dist/2.0);
 					}
 					if(rep==null){
-						if(ins.length < insThreshUnknown) continue outer;
 						nme = prefix1 + "."+round(ins.refStart);
 						seq="";
 					}else{
@@ -816,19 +848,15 @@ static boolean writeNone = false;
 						int repEnd = ins.readEnd - readStart;
 						String diff = rep==null ? "NA" : ""+(ins.refStart - rep.pos0);
 						//System.err.println(sam.getReadNegativeStrandFlag());
+						//System.err.println(readSeq.getName()+" "+nme);
 						FastqRecord repeat =  makeRecord(readSeq, baseQ, sam.getBaseQualities(),".R"+i, readStart, readEnd1,
-								repStart+"-"+repEnd+" "+ins.length+" "+ins_pos+" "+diff+" "+" "+period
+								repStart+"-"+repEnd+" "+ins.length+" "+ins_pos+" "+diff+" "+period
 								+" "+nrep+" "+ratio+" "+seq+" "+ins.left_flank+","+ins.right_flank+ ","+sam.getMappingQuality(),
 								sam.getReadNegativeStrandFlag());
-						FastqWriter fastq  = new FQWriter(nme,"insertion.fastq", append);
+						FastqWriter fastq  = new FQWriter(nme,"ins.fastq", append);
 						fastq.write(repeat); fastq.close();
 						readStart =readEnd1; //next readStart
 				}
-			}else{
-				if(writeNone){
-					fastq_none.write(new FastqRecord(readSeq.getName()+ " "+desc, new String(readSeq.charSequence()), "", baseQ));
-				}
-			}
 
 			totBaseIns  += profile.baseIns;
 			totBaseDel  += profile.baseDel;
@@ -845,7 +873,7 @@ static boolean writeNone = false;
 		}		
 		
 	//	samIter.close();
-		System.out.println("========================= TOTAL ============================");
+		System.out.println("========================= TOTAL "+chr.getName()+" ============================");
 
 		//Done
 
@@ -880,11 +908,13 @@ static boolean writeNone = false;
 
 		System.out.printf("Probs %f %f %f %f %f %f\n",probCopy, probChange, probIns, probDel, probIE, probDE);		
 
-		System.out.println("========================= SUMMARY============================");
+		System.out.println("========================= SUMMARY "+chr.getName()+"============================");
 
 		System.out.printf("Total reads      :  %d\n", numReads);
 		System.out.printf("Unaligned reads  :  %d\n", numNotAligned);
+		System.out.println("Reads with insertion  "+ num_insertions);
 
+		
 		System.out.printf("Deletion rate    : %.4f\n",totBaseDel*1.0/totRefBase);
 		System.out.printf("Insertion rate   : %.4f\n",totBaseIns*1.0/totRefBase);
 		System.out.printf("Mismatch rate    : %.4f\n",totMisMatch*1.0/totRefBase);
@@ -924,6 +954,8 @@ static Collection[] getReads(String[] readList) throws IOException {
 static class Insertions implements Comparable{
 	Integer readStart=0;
 	Integer refStart =0;
+	Integer refEnd =0;
+	
 	Integer length =0;
 	Integer readEnd =0;
 	Integer left_flank =0;
@@ -932,6 +964,7 @@ static class Insertions implements Comparable{
 	Insertions(int refStart, int readStart, int length, int left_flank, int right_flank){
 		this.readStart = readStart;
 		this.refStart = refStart;
+		this.refEnd = refStart; //need endd so we can merge adjacent insertions
 		this.length = length;
 		this.readEnd = readStart+length;
 		this.left_flank = left_flank;
@@ -940,13 +973,22 @@ static class Insertions implements Comparable{
 		
 	}
 	
-	
-
-	public void merge(Insertions insertions) {
+	public int  overlap(Integer pos0){
+		if(pos0==null) return Integer.MIN_VALUE;
+		else return Math.min(refEnd-pos0, pos0-refStart );
+	}
+	public boolean merge(Insertions insertions, int threshold) {
+		double overlap = Math.min(insertions.readEnd - readStart, readEnd  - insertions.readStart);
+		if(overlap > threshold){
 		this.readStart = Math.min(insertions.readStart, readStart);
 		this.readEnd = Math.max(insertions.readEnd, readEnd);
 		this.length = readEnd -readStart;
 		this.refStart = Math.min(refStart, insertions.refStart);
+		this.refEnd = Math.max(refEnd, insertions.refEnd);
+		return true;
+		}else{
+			return false;
+		}
 	}
 
 	
@@ -1015,7 +1057,7 @@ static int flankReq=20;
 				break; 	
 
 			case I :	    
-				if(length>insThresh && readPos > flank_req && (readLen - (readPos+length))> flank_req){
+				if(length>insThresh ){
 					insertions.add(new Insertions(refPos, readPos, length, readPos, readLen -(readPos+length)));
 				//	System.err.println(length);
 				}
