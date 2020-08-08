@@ -51,7 +51,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
@@ -73,6 +72,7 @@ import htsjdk.samtools.util.SequenceUtil;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
+import japsa.tools.seq.SequenceUtils;
 import japsa.util.CommandLine;
 import japsa.util.HTSUtilities.IdentityProfile;
 import japsa.util.deploy.Deployable;
@@ -86,8 +86,7 @@ import japsa.util.deploy.Deployable;
 	scriptName = "jsa.hts.repeatDetection",
 	scriptDesc = "Detecting repeats in long read sequencing data")
 public class RepeatDetectionCmd extends CommandLine{
-	static String src_tag = "SC";
-	static String pool_tag = "PT";
+	
 	
 	static class Repeat{
 		int st; int end; String label; String seq; int period; float nrep;
@@ -176,121 +175,7 @@ public class RepeatDetectionCmd extends CommandLine{
 	
 	
 	
-	private static final class CombinedIterator implements Iterator<SAMRecord> {
-		private final SAMRecordIterator[] samIters;
-		int current_sam_index =0;
-		int currentIndex =0; //relates to chromosome
-		private final SAMRecord[] currentVals;
-		private final boolean[] returned;
-		private final int[] cnts ;
-		int max;
-		Collection<String>[] readList ;
-		Map<Integer, int[]> chrs;
-		private CombinedIterator(SAMRecordIterator[] samIters, int max, Collection<String>[]readList, Map<Integer, int[]> chrs) {
-			this.samIters = samIters;
-			this.readList = readList;
-			currentVals = new SAMRecord[samIters.length];
-			returned = new boolean [samIters.length];
-			this.max = max;
-			cnts = new int[samIters.length];
-			this.chrs = chrs;
-		}
-		public void close(){
-			for(int i=0; i<samIters.length; i++){
-				samIters[i].close();
-			}
-		}
-		@Override
-		public boolean hasNext() {
-			for(int i=0; i<samIters.length; i++){
-				if(samIters[i].hasNext() && cnts[i]<max) return true;
-			}
-			return false;
-		}
-		int pool_ind=-1;
-		private SAMRecord next(int i){
-			SAMRecord sr;
-			if(currentVals[i]!=null && !returned[i]){
-				sr = currentVals[i];
-			}else{
-				if(cnts[i]<max){
-					
-					//sr  = samIters[i].next();
-				/*	while(!(
-							sr==null || 
-							(readList==null || readList.contains(sr.getReadName())) ||
-							(chrs==null || chrs.contains(sr.getReferenceIndex()))
-							)
-							)*/
-					inner: while(true)
-					{
-						sr  = samIters[i].next();
-						if(sr==null) break inner;
-						pool_ind =-1;
-						if(readList!=null){
-							inner1: for(int i2=0; i2<readList.length; i2++){
-								if(readList[i2].contains(sr.getReadName())){
-									pool_ind = i2;
-									break inner1;
-								}
-							}
-						}
-						if(readList!=null && pool_ind>=0) break inner;
-						if(readList==null &&  chrs!=null && contains(chrs,sr)) break inner;
-						if(readList==null  && chrs==null) break inner;
-					}
-					if(sr!=null) {
-						sr.setAttribute(pool_tag, pool_ind);
-						sr.setAttribute(src_tag, i);
-					}
-					currentVals[i] = sr;
-					returned[i] = false; 
-				}else{
-					sr = null;
-				}
-			}
-			return sr;
-		}
-
-		private boolean contains(Map<Integer, int[]> chrs2, SAMRecord sr) {
-			int[] obj = chrs2.get(sr.getReferenceIndex());
-			if(obj==null) return false;
-			else{
-				if(sr.getAlignmentStart()>=obj[0] && sr.getAlignmentEnd() <=obj[1]) return true;
-				else return false;
-			}
-		}
-		@Override
-		public SAMRecord next() {
-			//int curr_index = current_sam_index;
-			SAMRecord sr = next(current_sam_index);
-			
-			if(sr==null || sr.getReferenceIndex()>currentIndex ){
-				int[] ref_inds = new int[samIters.length];
-				int min_ind =-1;
-				int minv = Integer.MAX_VALUE;
-				for(int i=0; i<samIters.length; i++){
-					SAMRecord sr_i = next(i);
-					if(sr_i!=null) {
-						ref_inds[i] = sr_i.getReferenceIndex(); //note this only advances if not returned;
-						if(ref_inds[i]<minv){
-							min_ind = i;
-							minv = ref_inds[i];
-						}
-					}
-				}
-				current_sam_index = min_ind;
-			}
-			
-			if(current_sam_index<0) return null;
-			sr = this.currentVals[current_sam_index];
-			if(sr!=null) this.currentIndex = sr.getReferenceIndex();
-			cnts[current_sam_index]++;
-			returned[current_sam_index] = true; 
-			return sr;
-			
-		}
-	}
+	
 	
 	
 //	private static final Logger LOG = LoggerFactory.getLogger(HTSErrorAnalysisCmd.class);
@@ -307,7 +192,8 @@ public class RepeatDetectionCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		addBoolean("extractInsertion", false, "whether to include only insertion seq in fastq");
-		addString("bamFile", null,  "Name of bam file", true);
+		addString("bamFile", null,  "Name of bam file", false);
+		addString("fastq", null,  "Name of fastq file", false);
 		addString("resDir", null,  "results dir", false);
 		addString("chromsDir", null,  "Dir with compressed chroms", true);
 		addString("readList", null,  "reads to include", false);
@@ -317,7 +203,7 @@ public class RepeatDetectionCmd extends CommandLine{
 		addInt("qual", 0, "Minimum quality required");
 		addInt("flank_req", 20, "Minimum flank required on the read either side of the insertion");
 		addInt("bin", 1000, "For grouping of insertions");
-		addString("chroms", "chr1:chr2:chr3:chr4:chr5:chr6:chr7:chr8:chr9:chr10:chr11:chr12:chr13:chr14:chr15:chr16:chr17:chr18:chr19:chr20:chr21:chr22:chrX:chrY:chrM", "chroms to retain",false);
+		addString("chroms", null, "chrom indices to include",false);
 
 	//	addBoolean("stageOne", true, "first stage");
 		addString("insThresh", "200:200", "Insertion threshold known:Unknown");
@@ -358,20 +244,7 @@ static int flank_req;
 		RepeatDetectionCmd.insThresh = Math.min(insThreshKnown, insThreshUnknown);
 		RepeatDetectionCmd.flankThresh = cmdLine.getIntVal("flankThresh");
 		RepeatDetectionCmd.extractInsertion = cmdLine.getBooleanVal("extractInsertion");
-		Map<Integer, int[] > chromIndices = null;
-		if(cmdLine.getStringVal("chromIndices")!=null){
-			chromIndices = new HashMap<Integer, int[]>();
-			String[] chri = cmdLine.getStringVal("chromIndices").split(":");
-			for(int i=0; i<chri.length; i++){
-				String[] str = chri[i].split(",");
-				int[] vals ;
-				if(str.length==1) vals = new int[] {0,Integer.MAX_VALUE};
-				else{
-					vals = new int[] {Integer.parseInt(str[1]), Integer.parseInt(str[2])};
-				}
-				chromIndices.put(Integer.parseInt(str[0]), vals);
-			}
-		}
+		
 	//	RepeatDetectionCmd.chromsDir = chromsDir;
 		
 		String[] bamFiles_ = bamFile.split(":");
@@ -389,7 +262,7 @@ static int flank_req;
 		File insertionsDir1 = new File(resDir,"insertionsNoOverlap");
 		delete(insertionsDir); delete(insertionsDir1);
 	
-		analysis(bamFiles_, new File(reference), pattern, chromIndices, qual, resDir,new File(chromsDir), readL==null ? null : readL.split(":"));		
+		analysis(bamFiles_, new File(reference), pattern, cmdLine.getStringVal("chromIndices"), qual, resDir,new File(chromsDir), readL==null ? null : readL.split(":"));		
 
 
 		//paramEst(bamFile, reference, qual);
@@ -430,30 +303,17 @@ static int flank_req;
 				);
 	}
 
-	static CombinedIterator getCombined(SamReader[] samReaders, Collection[] reads, int max_reads,Map<Integer, int[]> chrom_indices_to_include){
-		
-		int len = samReaders.length;
-		SAMRecordIterator[] samIters = new SAMRecordIterator[len];
-		for (int ii = 0; ii < len; ii++) {
-			samIters[ii] = samReaders[ii].iterator();
-		}
-		//if(reads==null && chrom_indices_to_include==null && samReaders.length==1){
-		//	samIter = samIters[0];
-	//	}else{
-			return 		new CombinedIterator(samIters, max_reads,reads, chrom_indices_to_include);
-		//}
-		
-	}
+	
 
 	/**
 	 * Error analysis of a bam file. Assume it has been sorted
 	 */
-	static void analysis(String[] bamFiles_, File refFile, String pattern,
-			Map<Integer, int[]> chrom_indices_to_include , int qual, File resDir, File chromsDir, String[] readList) throws IOException{	
+	static void analysis(String[] bamFiles_, File refFile, String pattern, String chroms, 
+			int qual, File resDir, File chromsDir, String[] readList) throws IOException{	
 		Integer max_reads = Integer.MAX_VALUE;
 	//	Set<String>chrToInclude = null;
 		int len = bamFiles_.length;
-			final SAMRecordIterator[] samIters = new SAMRecordIterator[len];
+			final Iterator<SAMRecord>[] samIters = new Iterator[len];
 		SamReader[] samReaders = new SamReader[len];
 		for (int ii = 0; ii < len; ii++) {
 			int source_index = ii;
@@ -465,13 +325,16 @@ static int flank_req;
 				samReaders[ii] = SamReaderFactory.makeDefault().open(SamInputResource.of(System.in));
 			else
 				samReaders[ii] = SamReaderFactory.makeDefault().open(bam);
+			samIters[ii] = samReaders[ii].iterator();
 		}
 		
 		
-		CombinedIterator samIter = getCombined(samReaders, getReads(readList), max_reads, chrom_indices_to_include);
+		Iterator<SAMRecord>  samIter = SequenceUtils.getCombined(samIters, getReads(readList), max_reads, chroms);
 		
 			processStageOne(samIter, samIters.length, resDir, chromsDir, pattern, qual, refFile.getName());
-			samIter.close();
+		for(int i=0; i<samReaders.length; i++){
+			samReaders[i].close();
+		}
 		//for(int i=0; i<samReaders.length; i++){
 		//	samReaders[i].close();
 		//	}
@@ -540,7 +403,7 @@ static int flank_req;
 					String out = reference.replace(".fasta", "").replace(".fa", "").replace(".gz", "");
 					String outf = chromDir.getAbsolutePath()+"/"+chrom+"."+out+".no_repeats.fa.gz";
 					File bed = new File(chromDir.getAbsolutePath()+"/"+chrom+"."+out+".bed.gz");
-					File mm2Index = new File(outf+".mmi");
+					String  mm2Index =outf+".mmi";
 					File seqF = new File(outf);
 					if(seqF.exists()){
 						ArrayList<Sequence> genomes = SequenceReader.readAll(outf, Alphabet.DNA());
@@ -556,7 +419,7 @@ static int flank_req;
 					}
 					
 				}
-				int source = (Integer) sam.getAttribute(RepeatDetectionCmd.src_tag);
+				int source = (Integer) sam.getAttribute(SequenceUtils.src_tag);
 				if(fastq!=null){
 					String baseQ = sam.getBaseQualityString();
 					readSeq.setName(readSeq.getName()+"."+source);
@@ -581,17 +444,19 @@ static int flank_req;
 
 			
 		}
+	 
+	 
 	static ExecutorService executor = Executors.newFixedThreadPool(1);
 	 static class FastqW{
 			final FastqWriter fq;
 			final  File inFile; 
-			final File mm2Index;
+			final String  mm2Index;
 			final File resDir;
 			final ArrayList<Sequence > genomes;
 			final int chrom_index;
 			
 			final Maps maps;
-			public FastqW(File resDir, int currentIndex, String prefix,  File mm2Index, ArrayList<Sequence > genomes, Maps maps) throws FileNotFoundException, IOException {
+			public FastqW(File resDir, int currentIndex, String prefix, String mm2Index, ArrayList<Sequence > genomes, Maps maps) throws FileNotFoundException, IOException {
 				this.inFile = 	new File(resDir,currentIndex+prefix+".fastq");
 				fq = factory.newWriter( inFile);
 			//	fq = new FQWriter(new FileOutputStream(inFile));
@@ -603,35 +468,14 @@ static int flank_req;
 			}
 			public void close() throws IOException{
 				fq.close();
-				ProcessBuilder pb = new ProcessBuilder(mm2_path, 
-						"-t",
-						"" + mm2_threads,
-						"-ax",
-						mm2Preset,
-					//	"--for-only",
-						"-I",
-						mm2_mem,
-//						"-K",
-//						"200M",
-						mm2Index.toString(),
-						"-"
-					
-						);
+				
+				Iterator<SAMRecord> reader = SequenceUtils.getSAMIteratorFromFastq(inFile, mm2Index, mm2_path, mm2_threads, mm2Preset,  mm2_mem);
+				
 				Runnable run = new Runnable(){
 
 					@Override
 					public void run() {
-						try{
-						Process mm2Process  = pb.redirectInput(ProcessBuilder.Redirect.from(inFile)).redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
-						//	Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
-						//	OutputStream os = mm2Process.getOutputStream();
-							SamReader reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
-							processStageTwo(genomes, chrom_index, reader.iterator(), resDir,  null, 0, maps);
-							reader.close();
-						}catch(IOException exc){
-							exc.printStackTrace();
-						}
-						
+							processStageTwo(genomes, chrom_index, reader, resDir,  null, 0, maps);
 					}
 					
 				};

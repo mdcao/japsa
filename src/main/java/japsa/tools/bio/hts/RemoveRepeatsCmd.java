@@ -19,9 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -30,6 +28,7 @@ import java.util.zip.GZIPOutputStream;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
+import japsa.tools.seq.SequenceUtils;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 /**
@@ -173,16 +172,7 @@ public class RemoveRepeatsCmd extends CommandLine {
 			if(coord_pw!=null) coord_pw.close();
 			//"$mm2 -I 8g -d $out $fa" 
 			if(mmi){
-			ProcessBuilder pb = new ProcessBuilder(mm2, 
-					"-I",
-					mem,
-					"-d",
-					outf.toString()+".mmi",
-					outf.toString()
-					);
-			//System.err.println(pb.toString());
-				Process p =  pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
-				p.waitFor();
+				SequenceUtils.minimapIndex(outf,mm2,mem, true);
 			}
 			//return SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
 		}
