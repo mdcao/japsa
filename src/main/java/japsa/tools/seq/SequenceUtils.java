@@ -46,8 +46,8 @@ import htsjdk.samtools.SamReaderFactory;
 public class SequenceUtils {
 	
 	public static Iterator<SAMRecord> getSAMIteratorFromFastq(File inFile, String mm2Index, String mm2_path, 
-			int mm2_threads, String mm2Preset, String mm2_mem) throws IOException{
-		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem );
+			int mm2_threads, String mm2Preset, String mm2_mem, String mm2_splicing) throws IOException{
+		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , mm2_splicing);
 	}
 	
 	
@@ -55,12 +55,29 @@ public class SequenceUtils {
 		// ProcessBuilder pb;
 		 SamReader reader;
 		 SAMRecordIterator iterator;
-		public FastqToSAMRecord(File inFile, String mm2Index, String mm2_path, int mm2_threads, String mm2Preset, String mm2_mem) throws IOException{
-			ProcessBuilder pb = new ProcessBuilder(mm2_path, 
+		public FastqToSAMRecord(File inFile, String mm2Index, String mm2_path, int mm2_threads, String mm2Preset, String mm2_mem, String splicing) throws IOException{
+			ProcessBuilder pb;
+			
+			if(splicing==null) pb = new ProcessBuilder(mm2_path, 
 					"-t",
 					"" + mm2_threads,
 					"-ax",
 					mm2Preset,
+				//	"--for-only",
+					"-I",
+					mm2_mem,
+//					"-K",
+//					"200M",
+					mm2Index,
+					"-"
+				
+					);
+			else pb = new ProcessBuilder(mm2_path, 
+					"-t",
+					"" + mm2_threads,
+					"-ax",
+					mm2Preset,
+					splicing,
 				//	"--for-only",
 					"-I",
 					mm2_mem,
