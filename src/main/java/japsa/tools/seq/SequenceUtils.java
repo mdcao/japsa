@@ -112,7 +112,14 @@ public class SequenceUtils {
 
 		@Override
 		public SAMRecord next() {
-			
+			if(!iterator.hasNext()){
+				try{
+				reader.close();
+				}catch(IOException exc){
+					exc.printStackTrace();
+				}
+				return null;
+			}
 			return iterator.next();
 		}
 		 
