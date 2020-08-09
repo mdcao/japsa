@@ -50,6 +50,11 @@ public class SequenceUtils {
 		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , mm2_splicing);
 	}
 	
+	public static Iterator<SAMRecord> getSAMIteratorFromFastq(File inFile, String mm2Index, String mm2_path, 
+			int mm2_threads, String mm2Preset, String mm2_mem) throws IOException{
+		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , null);
+	}
+	
 	
 	private static class FastqToSAMRecord implements Iterator<SAMRecord> {
 		// ProcessBuilder pb;
