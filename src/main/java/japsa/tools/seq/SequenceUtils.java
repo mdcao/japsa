@@ -87,6 +87,7 @@ public class SequenceUtils {
 					"-"
 				
 					);
+			
 			Process mm2Process  = pb.redirectInput(ProcessBuilder.Redirect.from(inFile)).redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
 			//	Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
 			//	OutputStream os = mm2Process.getOutputStream();
