@@ -139,7 +139,10 @@ public class SequenceUtils {
 			ref = samRecord.getReferenceIndex();
 			pos = samRecord.getAlignmentStart();
 			ind = i;
-			samRecord.setAttribute(SequenceUtils.src_tag,i);
+			
+		}
+		public String toString(){
+			return ref+","+pos+","+ind;
 		}
 
 		@Override
@@ -147,6 +150,7 @@ public class SequenceUtils {
 			SamR o1 = (SamR)o;
 			int res = Integer.compare(ref, o1.ref);
 			if(res==0) res = Integer.compare(pos, o1.pos);
+			if(res==0) res = Integer.compare(ind, o1.ind);
 			return res;
 		}
 		
@@ -155,34 +159,49 @@ public class SequenceUtils {
 	public static class CombinedIterator implements Iterator<SAMRecord> {
 		private final Iterator<SAMRecord>[] samIters;
 		private final SAMRecord[] currentVals; 
-		private final SortedSet<SamR> samR = new TreeSet<SamR>();
+		private final TreeSet<SamR> samR = new TreeSet<SamR>();
 		
 		final int len;
+		int nullcount=0;
 		public  CombinedIterator(Iterator<SAMRecord>[] samIters) {
 			this.samIters = samIters;
 			len = samIters.length; 
 			currentVals = new SAMRecord[samIters.length];
 			for(int i=0; i<len; i++){
 				if(samIters[i].hasNext()){
-					currentVals[i] =   samIters[i].next();
-					samR.add(new SamR(currentVals[i],i));
+					SAMRecord sr =   samIters[i].next();
+					sr.setAttribute(SequenceUtils.src_tag,i);
+					samR.add(new SamR(sr,i));
+					currentVals[i] = sr;
+					
 				}
 			}
+			System.err.println("h");
 		}
 		
 		@Override
 		public boolean hasNext() {
-			return samR.size()>0;
+			return nullcount<len;
+//			return samR.size()>0;
 		}
+		
 
 		@Override
 		public SAMRecord next() {
 			SamR  first = samR.first(); //next element
 			samR.remove(first);
-			SAMRecord sr = currentVals[first.ind];
-			if(samIters[first.ind].hasNext()){
+			int i = first.ind;
+			SAMRecord sr = currentVals[i];
+			sr.setAttribute(SequenceUtils.src_tag,i);
+			if(samIters[i].hasNext()){
 				//replace element removed if possible
-				samR.add(new SamR(samIters[first.ind].next(),first.ind));
+				currentVals[i] = samIters[i].next();
+				samR.add(new SamR(currentVals[i],i));
+			}else{
+				System.err.println("iterator"+i+" exhausted "+sr.getReferenceName()+" "+sr.getAlignmentStart());
+				nullcount++;
+				System.err.println(nullcount+" of "+len+" finished");
+				currentVals[i] = null;
 			}
 			return sr;
 		}
@@ -195,7 +214,7 @@ public class SequenceUtils {
 	//chroms is string e.g 0:1:2  or 0,0,2400000:1,0,240000
 public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders){
 		int len = samReaders.length;
-		if(samReaders.length==1 && false){
+		if(samReaders.length==1  && false){
 			return samReaders[0];
 		}else{
 			return 		new CombinedIterator(samReaders);
