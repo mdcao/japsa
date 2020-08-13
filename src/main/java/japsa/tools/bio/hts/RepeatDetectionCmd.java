@@ -329,7 +329,7 @@ static int flank_req;
 		}
 		
 		
-		Iterator<SAMRecord>  samIter = SequenceUtils.getCombined(samIters, getReads(readList), max_reads, chroms);
+		Iterator<SAMRecord>  samIter = SequenceUtils.getCombined(samIters, getReads(readList), max_reads, chroms, true);
 		
 			processStageOne(samIter, samIters.length, resDir, chromsDir, pattern, qual, refFile.getName());
 		for(int i=0; i<samReaders.length; i++){

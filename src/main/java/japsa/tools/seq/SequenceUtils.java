@@ -163,9 +163,11 @@ public class SequenceUtils {
 		
 		final int len;
 		int nullcount=0;
-		public  CombinedIterator(Iterator<SAMRecord>[] samIters) {
+		final boolean sorted;
+		public  CombinedIterator(Iterator<SAMRecord>[] samIters, boolean sorted) {
 			this.samIters = samIters;
 			len = samIters.length; 
+			this.sorted = sorted;
 			currentVals = new SAMRecord[samIters.length];
 			for(int i=0; i<len; i++){
 				if(samIters[i].hasNext()){
@@ -185,10 +187,15 @@ public class SequenceUtils {
 //			return samR.size()>0;
 		}
 		
-
+		SamR previous = null;
 		@Override
 		public SAMRecord next() {
 			SamR  first = samR.first(); //next element
+			if(sorted && previous!=null && previous.compareTo(first)>0){
+				System.err.println(previous);
+				System.err.println(first);
+				throw new  RuntimeException("not sorted");
+			}
 			samR.remove(first);
 			int i = first.ind;
 			SAMRecord sr = currentVals[i];
@@ -196,13 +203,18 @@ public class SequenceUtils {
 			if(samIters[i].hasNext()){
 				//replace element removed if possible
 				currentVals[i] = samIters[i].next();
-				samR.add(new SamR(currentVals[i],i));
+				while(currentVals[i]!=null && currentVals[i].getReadUnmappedFlag()){
+					currentVals[i] = samIters[i].hasNext() ? samIters[i].next() : null;
+				}
+				if(currentVals[i]!=null) samR.add(new SamR(currentVals[i],i));
+				else nullcount++;
 			}else{
 				System.err.println("iterator"+i+" exhausted "+sr.getReferenceName()+" "+sr.getAlignmentStart());
 				nullcount++;
 				System.err.println(nullcount+" of "+len+" finished");
 				currentVals[i] = null;
 			}
+			previous = first; 
 			return sr;
 		}
 		
@@ -212,12 +224,12 @@ public class SequenceUtils {
 	
 	
 	//chroms is string e.g 0:1:2  or 0,0,2400000:1,0,240000
-public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders){
+public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders, boolean sorted){
 		int len = samReaders.length;
 		if(samReaders.length==1  && false){
 			return samReaders[0];
 		}else{
-			return 		new CombinedIterator(samReaders);
+			return 		new CombinedIterator(samReaders, sorted);
 		}
 		
 	}
@@ -243,7 +255,7 @@ public static String minimapIndex(File refFile, String mm2, String mem, boolean 
 }
 
 public static Iterator<SAMRecord> getCombined(Iterator<SAMRecord>[] samIters, Collection[] reads, Integer max_reads,
-		String chrToInclude) {
+		String chrToInclude, boolean sorted) {
 	final Map<Integer, int[]> chrom_indices_to_include = new HashMap<Integer, int[]>();
 	final Set<String> reads_all = new HashSet<String>();
 	for(int i=0; i<reads.length; i++){
@@ -265,7 +277,7 @@ public static Iterator<SAMRecord> getCombined(Iterator<SAMRecord>[] samIters, Co
 		}
 	}
 //	if(chrom_indices_to_include.size()==0) chrom_indices_to_include=null;
-	final Iterator<SAMRecord>  sr = getCombined(samIters);
+	final Iterator<SAMRecord>  sr = getCombined(samIters, sorted);
 	return new Iterator<SAMRecord>(){
 
 		@Override
