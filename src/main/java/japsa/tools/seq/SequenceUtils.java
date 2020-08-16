@@ -183,8 +183,8 @@ public class SequenceUtils {
 		
 		@Override
 		public boolean hasNext() {
-			return nullcount<len;
-//			return samR.size()>0;
+	//		return nullcount<len;
+			return samR.size()>0;
 		}
 		
 		SamR previous = null;
