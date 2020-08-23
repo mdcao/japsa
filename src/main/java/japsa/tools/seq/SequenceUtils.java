@@ -235,10 +235,15 @@ public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders,
 	}
 
 public static String minimapIndex(File refFile, String mm2, String mem, boolean overwrite) throws IOException, InterruptedException {
-	File indexFile = new File(refFile.getAbsolutePath()+".mmi");
+	String infile = refFile.getAbsolutePath();
+	File indexFile = new File(infile+".mmi");
+	File indexFile1 =  new File(infile.replaceAll(".fasta","").replaceAll(".fa", "")+".mmi");
 	if(indexFile.exists() && !overwrite){
 		System.out.println("minimap index exists");
-		
+		return indexFile.getAbsolutePath();
+	}else if(indexFile1.exists()){
+		System.out.println("minimap index exists");
+		return indexFile1.getAbsolutePath();
 	}else{
 		ProcessBuilder pb = new ProcessBuilder(mm2, 
 				"-I",
