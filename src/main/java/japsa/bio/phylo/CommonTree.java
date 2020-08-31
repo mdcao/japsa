@@ -25,7 +25,34 @@ public abstract class CommonTree {
 	 * @see japsadev.bio.phylo.CommonTree#print(java.io.File)
 	 */
 
-	public  void print(File out) throws IOException{
+	
+	public void print(Node node, PrintStream pw){
+		 Identifier id  = node.getIdentifier();
+		 String nme =id.getName();
+		//if(nme.indexOf("unclassified ssRNA")>=0){
+		//	System.err.println("h");
+		//}
+		 Integer level = ((Integer)id.getAttribute("level")).intValue();
+		 String hex = ((String)id.getAttribute("css"));		
+		 String alias = ((String)id.getAttribute("alias"));	
+		 String alias1 = ((String)id.getAttribute("alias1"));	
+		 String prefix = ((String)id.getAttribute("prefix"));	
+		Integer taxon = ((Integer)id.getAttribute("taxon"));	
+		 double height = node.getNodeHeight();
+		 pw.print(prefix+nme);
+		 if(hex!=null) pw.print("\tcss="+hex);
+		 if(alias!=null) pw.print("\talias="+alias);
+		 if(alias1!=null) pw.print("\talias1="+alias1);
+		 if(taxon!=null) pw.print("\ttaxon="+taxon);
+		 if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
+
+		 pw.println();
+	}
+	
+	public void print(File out) throws IOException{
+		print(out, "------------------------------------\n", null);
+	}
+	 public  void print(File out, String sep, String header) throws IOException{
 		   PrintStream pw ;
 		   if(out.getName().endsWith(".gz")){
 			  pw = new PrintStream(new GZIPOutputStream(new FileOutputStream(out)));
@@ -34,39 +61,22 @@ public abstract class CommonTree {
 		   }
 		//   PrintWriter pw = new PrintWriter(new FileWriter(out));
 		 
+		   pw.println(header);
 		   for(int i=0; i<this.roots.size(); i++){
 			   System.err.println(roots.get(i).getIdentifier().getName());
 			 Iterator<Node> n = NodeUtils.preOrderIterator(roots.get(i));  
 			
 			inner: while(n.hasNext()){
 				 Node node = n.next();
-				 
-				 Identifier id  = node.getIdentifier();
-				 String nme =id.getName();
-				//if(nme.indexOf("unclassified ssRNA")>=0){
-				//	System.err.println("h");
-				//}
-				 Integer level = ((Integer)id.getAttribute("level")).intValue();
-				 String hex = ((String)id.getAttribute("css"));		
-				 String alias = ((String)id.getAttribute("alias"));	
-				 String alias1 = ((String)id.getAttribute("alias1"));	
-				 String prefix = ((String)id.getAttribute("prefix"));	
-				Integer taxon = ((Integer)id.getAttribute("taxon"));	
-				 double height = node.getNodeHeight();
-				 pw.print(prefix+nme);
-				 if(hex!=null) pw.print("\tcss="+hex);
-				 if(alias!=null) pw.print("\talias="+alias);
-				 if(alias1!=null) pw.print("\talias1="+alias1);
-				 if(taxon!=null) pw.print("\ttaxon="+taxon);
-				 if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
-
-				 pw.println();
+				 print(node, pw);
+				
 			 }
-			 pw.println("------------------------------------");
+			 pw.print(sep);
 		   }
 		   
 		   pw.close();
 	   }   
+	
 	abstract public Node getNode(String specName);
 	List<Node> roots = new ArrayList<Node>();
 	

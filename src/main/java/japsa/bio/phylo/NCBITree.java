@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import pal.misc.Identifier;
 import pal.tree.Node;
+import pal.tree.NodeUtils;
 import pal.tree.SimpleNode;
 import pal.tree.SimpleTree;
 import pal.tree.Tree;
@@ -33,34 +34,13 @@ public  class NCBITree extends CommonTree {
 	  private static final Logger LOG = LoggerFactory.getLogger(NCBITree.class);
 	
 
- //Identifier attributes are css for hex value 
- //private static String default_source="src/test/resources/commontree.txt.css.gz";
- 
+
 
 	 GetTaxonID gid = null;
-	 
 	
-	 
-	
-	 
-	/* private Node getNode(String in) {
-		return this.getNode(this.getSlug1(in));
-	}*/
-
 	
 
 	
-	 
-	/* private void putSlug1(String str, TreePos tp){
-		String slug = Slug1.toSlug1(str);
-		if(slugToPos.containsKey(slug)){
-			System.err.println("already had "+str+ "->"+slugToPos.get(slug)+"\n"+tp);
-		}
-		this.slugToPos.put(slug, tp);
-	 }
-	 private TreePos getSlug1(String str){
-		return  this.slugToPos.get(Slug1.toSlug1(str));
-	 }*/
 	 
 	 public Integer getTaxa(String sciname){
 		 return gid.getTaxa(sciname);
@@ -101,7 +81,6 @@ public Node getNode(Integer taxa) {
 		}
 		else{
 			n = this.slugToNode1.get(taxa);//getNode( taxa);
-			
 			this.createFromSpeciesFile(str,alias1,  n, lineno, bl);
 			//System.err.println(n.getIdentifier().getName());
 		}
@@ -163,7 +142,7 @@ private Node getNode(TreePos tp) {
 	private static final Pattern plusminus = Pattern.compile("[\\+|-][a-zA-Z\\[\\']");
 	private static final Pattern plusminus1 = Pattern.compile("\\+-[1-9]");
 	
-	 private int getLevel(String line){
+	 int getLevel(String line){
 		/*int a = nextLine.indexOf('-')+1;
 		int b = nextLine.indexOf('+')+1;
 		return Math.max(a, b);*/
@@ -267,11 +246,17 @@ private Node getNode(TreePos tp) {
 		if(!contains) {
 			slugToNode1.put(taxon, n);
 		}
+		else{
+			System.err.println("already contains "+taxon);
+		}
 	 }else{
 		 String name = n.getIdentifier().getName();
 		 boolean   contains = slugToNode.containsKey(name);
 			if(!contains) {
 				slugToNode.put(name, n);
+			}
+			else{
+				System.err.println("already contains "+name);
 			}
 	 }
    }
@@ -296,13 +281,13 @@ private Node getNode(TreePos tp) {
  }
 PrintWriter err;
 
-	
+	final boolean kraken;
 	
 
-private Node make(String line_, int  level, Node parent){
+private Node make(String line_, int  level, Node parent, int index){
 	  
 	   String[] lines = line_.split("\t");
-	   String line = lines[0];
+	   String line = lines[index];
 	   String name = line;
 	   err.println(name);err.flush();
 	   String prefix = "";
@@ -320,10 +305,18 @@ private Node make(String line_, int  level, Node parent){
 		   name = name.substring(pm_ind+2);
 		  
 	   }
-	   Node n = new SimpleNode(name, 0.1);
+	   Node n = new SimpleNode(name.trim(), 0.1);
 	   n.getIdentifier().setAttribute("level",level);
 	   n.getIdentifier().setAttribute("prefix",prefix);
 	   Integer taxonvalue = null;
+	   if(kraken && !line.equals("unclassified")){
+		   int taxon =Integer.parseInt(lines[index-1]); 
+		   this.name2Taxa.put(name, taxon);
+		   this.taxa2Node.put(taxon, n);
+		   n.getIdentifier().setAttribute("taxon",taxon);
+		  // Integer[] l1 = new Integer[] {Integer.parseInt(lines[1]), Integer.parseInt(lines[2])};
+		   n.getIdentifier().setAttribute(NCBITree.count_tag,Integer.parseInt(lines[1]));
+	   }else{
 	  for(int i=1; i<lines.length; i++){
 		   String[] v = lines[i].split("=");
 		  Object value = v[1];
@@ -331,8 +324,10 @@ private Node make(String line_, int  level, Node parent){
 			   taxonvalue = Integer.parseInt((String) value);
 			   value = taxonvalue;
 			   this.name2Taxa.put(name, taxonvalue);
+			   this.taxa2Node.put(taxonvalue, n);
 		   }
 		   n.getIdentifier().setAttribute(v[0],value);
+	   }
 	   }
 	  if(name.equals("unclassified")){
 		  n.getIdentifier().setAttribute("taxon", -1);
@@ -340,7 +335,9 @@ private Node make(String line_, int  level, Node parent){
 	  }
 	  
 	   putSlug1(n);
-	   if(parent!=null) parent.addChild(n);
+	   if(parent!=null){
+		   parent.addChild(n);
+	   }
 	   return n;
    }
 	
@@ -356,6 +353,8 @@ public NCBITree(File file, File taxonid, File taxdump) throws IOException {
 
 public NCBITree(GetTaxonID gid) throws IOException {	
 	this.gid = gid;
+	this.index=0;
+	kraken =false;
 	this.useTaxaAsSlug = true;
 	BufferedReader br;
 		
@@ -426,9 +425,17 @@ public NCBITree(GetTaxonID gid) throws IOException {
 	//}
 }
 Map<String, Integer> name2Taxa= new HashMap<String, Integer>();
+Map<Integer, Node> taxa2Node= new HashMap<Integer, Node>();
 
-public NCBITree(File file, boolean useTaxaAsAsslug) throws IOException {
+final int index;
+
+
+
+
+public NCBITree(File file, boolean useTaxaAsAsslug, boolean kraken) throws IOException {
 //	this(f, null);
+	index = kraken ? 5 : 0;
+	this.kraken = kraken;
 	    this.useTaxaAsSlug = useTaxaAsAsslug;
 		err= new PrintWriter(new FileWriter(new File("error.txt")));
 		BufferedReader br;
@@ -441,7 +448,7 @@ public NCBITree(File file, boolean useTaxaAsAsslug) throws IOException {
 		String nextLine = br.readLine();
 		String[] nextLines = nextLine.split("\t");
 		if(!nextLine.startsWith("unclassified")){
-			unclassified = make("unclassified", 0, null);
+			unclassified = make("unclassified", 0, null,0);
 			unclassified.getIdentifier().setAttribute("css", "#595959aa");
 			roots.add(unclassified);
 		}
@@ -454,34 +461,31 @@ public NCBITree(File file, boolean useTaxaAsAsslug) throws IOException {
 		Node root;
 		int parentlevel;
 		
-		root= make(nextLine, 0, null);
+		root= make(nextLine, 0, null, index);
 		if(root.getIdentifier().getName().equals("unclassified")) unclassified = root;
 		roots.add(root);
 		parent = root;
 		parentlevel =0;
 		inner: while((nextLine = br.readLine())!=null){
 			nextLines = nextLine.split("\t");
-			// if(nextLine.indexOf("Sclerophthora macrospora virus A")>=0){
-			//	   System.err.println("h");
-			 //  }
 			if(nextLine.startsWith("--")){
 				nextLine=br.readLine();
 				nextLines = nextLine==null ? null : nextLine.split("\t");
 				continue outer;
 			}
 			
-			int level = getLevel(nextLines[0]);
+			int level = getLevel(nextLines[index]);
 			//System.err.println(level+"->"+nextLine);
 			while(level<=parentlevel){
 				if(parent==root) {
-					Node n = make(nextLine, 2, unclassified);
+					Node n = make(nextLine, 2, unclassified, index);
 					System.err.println("excluding  " +nextLine);
 					continue inner;
 				}
 				parent = parent.getParent();
 				parentlevel = ((Integer) parent.getIdentifier().getAttribute("level")).intValue();
 			}
-			Node n = make(nextLine, level, parent);
+			Node n = make(nextLine, level, parent, index);
 		
 			
 			//System.err.println(n+ "--->  "+parent);
@@ -494,22 +498,96 @@ public NCBITree(File file, boolean useTaxaAsAsslug) throws IOException {
 	   if(err!=null){
 		   err.close();
 	   }
+		for(int i=1; i<roots.size(); i++){
+			Node root = roots.get(i);
+			if(root.getIdentifier().getName().equals("unclassified")){
+				throw new RuntimeException("unclassified should be first entry, if it exists");
+			}
+		}
+		if(!kraken)makeTrees();
+	}
+		
+static String count_tag = "count";
+//static String count_below_tag = "count_below";
 
+//n is from the new tree. new_parent is from existing tree and will become the new parent
+public void merge(Node n, int pos){
+	Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
+	Node node = this.taxa2Node.get(taxon);
+	System.err.println(n.getIdentifier());
+	if(node!=null){
+		System.err.println("already has "+n.getIdentifier());
+		int[] v = (int[])node.getIdentifier().getAttribute(count_tag);
+		int[] v1 = (int[])n.getIdentifier().getAttribute(count_tag);
+		for(int i=0; i<v.length; i++){
+			v[i] +=v1[i];
+		}
+	}else{
+//		Node parent = n.getParent();
+	//	System.err.println("p "+parent.getIdentifier());
+		Node new_parent = taxa2Node.get(n.getParent().getIdentifier().getAttribute("taxon"));
+	//	System.err.println("add "+new_parent.getIdentifier()+" "+n.getIdentifier());
+
+		new_parent.addChild(n);
+		this.taxa2Node.put(taxon,n);
+	}
+	for(int i=0; i<n.getChildCount(); i++){
+		merge(n.getChild(i),pos);
+	}
 	
+/*	Node n1;
+	Integer[] l = (Integer[]) n.getIdentifier().getAttribute(count_tag);
+	System.err.println(n.getIdentifier().getName()+" "+n.getIdentifier().getAttribute("taxon"));
+	if(l.length>2){
+		throw new RuntimeException("!!");
+	}
+	Integer[] lnew = new Integer[2*pos+2];
+	Arrays.fill(lnew, 0);
+	if(!this.taxa2Node.containsKey(taxon)){
+		n1 = n;
+		//checks if this node in tree, and if not adds it with new parent
+		taxa2Node.put(taxon,n);
+		
+		n.setParent(new_parent);
+		new_parent.addChild(n);
+		System.arraycopy(l, 0, lnew, pos*2, l.length);
+		n1.getIdentifier().setAttribute(count_tag, lnew);
 		
 	
-	for(int i=1; i<roots.size(); i++){
-		Node root = roots.get(i);
-		if(root.getIdentifier().getName().equals("unclassified")){
-			throw new RuntimeException("unclassified should be first entry, if it exists");
+	}else{
+//		n1 = taxa2Node.get(taxon);
+	//	Integer[] l1 = (Integer[] )n1.getIdentifier().getAttribute(count_tag);
+		//System.arraycopy(l1, 0, lnew, 0, l1.length);
+	}*/
+	
+}
+
+public void merge(NCBITree tree1, int pos){
+	this.name2Taxa.putAll(tree1.name2Taxa);
+	for(int i=0; i<tree1.roots.size(); i++){
+		Node root  = tree1.roots.get(i);
+		String nme = root.getIdentifier().getName();
+		Node mtch = null;
+		for(int ij=0; ij<roots.size(); ij++){
+			if(roots.get(ij).getIdentifier().getName().equals(nme)){
+				mtch = roots.get(ij);
+			}
+		}
+		
+		if(mtch==null){
+			roots.add(mtch); // add new root
+		}else if(root.getChildCount()>0){
+			merge(root, pos);
 		}
 	}
-		makeTrees();
-	}
-		
+}
 	
 	
 	
+	public NCBITree(File treein, boolean b) throws IOException{
+		this(treein, b, false);
+}
+
 	public void makeTrees(){
 		System.err.println("making trees");
 		this.tree = new Tree[roots.size()];
@@ -519,8 +597,8 @@ public NCBITree(File file, boolean useTaxaAsAsslug) throws IOException {
 			Node root = roots.get(i);
 			while(root.getChildCount()==1) root = root.getChild(0);
 			tree[i] = new SimpleTree(root);
-			int cnt =tree[i].getInternalNodeCount();
 			int cnt1 =tree[i].getExternalNodeCount();
+			//System.err.println(cnt+" "+cnt1);
 		}
 	}
 
