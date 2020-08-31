@@ -19,44 +19,7 @@ public  class KrakenTree extends NCBITree {
 
 
 	
-	public static void main(String[] args){
-		try {
-			FileFilter filter = new FileFilter(){
-
-				@Override
-				public boolean accept(File pathname) {
-					return pathname.getName().endsWith("outreport");
-				}
-				
-			};
-			File[] f = (new File(".")).listFiles(filter);
-			StringBuffer header = new StringBuffer();
-			for(int i=0; i<f.length; i++){
-				header.append(f[i].getName()+"\t");
-			}
-			header.append("name\ttaxon");
-			KrakenTree[] kt = new KrakenTree[f.length];
-			for(int i=0; i<kt.length; i++){
-				kt[i] = new KrakenTree(f[i]);
-				kt[i].modAll(i, kt.length);
-				kt[i].print(new File(i+".combined.txt"),"",
-						header.toString()
-						);
-
-			}
-			
-			NCBITree combined = kt[0];
-			for(int j=1; j<kt.length; j++){
-				combined.merge(kt[j], j);
-			}
-			combined.print(new File("combined.txt"),"", header.toString());
-		///	combined.makeTrees();
-			System.err.println(combined);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+	
 	void modAll(int i, int len) {
 		for(int k=0; k<roots.size(); k++){
 			Node root = roots.get(k);
