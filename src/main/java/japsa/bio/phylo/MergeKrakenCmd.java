@@ -4,9 +4,10 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 
-import japsa.tools.bio.hts.RepeatDetectionCmd;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+import pal.tree.Node;
+import pal.tree.NodeUtils;
 
 /**
  * @author lachlancoin
@@ -42,11 +43,7 @@ public class MergeKrakenCmd extends CommandLine{
 				
 			};
 			File[] f = (new File(".")).listFiles(filter);
-			StringBuffer header = new StringBuffer();
-			for(int i=0; i<f.length; i++){
-				header.append(f[i].getName()+"\t");
-			}
-			header.append("name\ttaxon");
+		
 			KrakenTree[] kt = new KrakenTree[f.length];
 			for(int i=0; i<kt.length; i++){
 				kt[i] = new KrakenTree(f[i]);
@@ -61,8 +58,30 @@ public class MergeKrakenCmd extends CommandLine{
 			for(int j=1; j<kt.length; j++){
 				combined.merge(kt[j], j);
 			}
+			//Node root = combined.roots.get(1);
+		//	Node n = NodeUtils.postorderSuccessor(root);
+			//Node a = combined.taxa2Node.get("1812935");
+			//Node b = combined.taxa2Node.get("2027919");
+		//	System.err.println(a.getParent().getIdentifier());
+		//	System.err.println(b.getParent().getIdentifier());
+/*
+			while(n!=root){
+				System.err.println(n.getIdentifier().getAttribute("taxon"));
+				n = NodeUtils.postorderSuccessor(n);
+			}
+*/			
+		//NodeUtils.preOrderIterator(combined.roots.get(1));
+		
+			//combined.makeTrees();
+			StringBuffer header = new StringBuffer();
+			for(int i=0; i<f.length; i++){
+				header.append(f[i].getName()+"\t");
+			}
+			header.append("name\ttaxon\tlevel\tcolor\ttaxon1\ttaxon2\ttaxon3");
+			combined.makeTrees();
+
 			combined.print(new File(outfile),"", header.toString());
-		///	combined.makeTrees();
+			
 			//System.err.println(combined);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

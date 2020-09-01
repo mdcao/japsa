@@ -41,6 +41,17 @@ public  class KrakenTree extends NCBITree {
 		super(file, true, true);
 		// TODO Auto-generated constructor stub
 	}
+	
+	public String get(Node n, int target_level, String attr){
+		 Integer level = ((Integer)n.getIdentifier().getAttribute("level")).intValue();
+			 while(level>target_level){
+				 n  = n.getParent();
+				 level = ((Integer)n.getIdentifier().getAttribute("level")).intValue();
+			 }
+			 if(level==target_level) return n.getIdentifier().getAttribute(attr).toString();
+			 else return "NA";
+	}
+	
 	@Override
 	public void print(Node node, PrintStream pw){
 		 Identifier id  = node.getIdentifier();
@@ -61,11 +72,13 @@ public  class KrakenTree extends NCBITree {
 		 String prefix = ((String)id.getAttribute("prefix"));	
 		Integer taxon = ((Integer)id.getAttribute("taxon"));	
 		 //double height = node.getNodeHeight();
-		 pw.print(prefix+nme);
 	//	 if(hex!=null) pw.print("\tcss="+hex);
 		// if(alias!=null) pw.print("\talias="+alias);
 		// if(alias1!=null) pw.print("\talias1="+alias1);
-		 if(taxon!=null) pw.print("\t"+taxon);
+		 pw.print(nme+"\t"+taxon+"\t"+level+"\t"+hex);
+		 for(int i=1; i<=5; i+=2){
+			  pw.print("\t"+get(node, i,"taxon")); 
+		 }
 		 //if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
 
 		 pw.println();

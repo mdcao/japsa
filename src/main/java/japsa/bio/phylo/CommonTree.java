@@ -52,6 +52,9 @@ public abstract class CommonTree {
 	public void print(File out) throws IOException{
 		print(out, "------------------------------------\n", null);
 	}
+	
+	
+	
 	 public  void print(File out, String sep, String header) throws IOException{
 		   PrintStream pw ;
 		   if(out.getName().endsWith(".gz")){

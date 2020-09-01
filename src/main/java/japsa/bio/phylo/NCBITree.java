@@ -312,7 +312,7 @@ private Node make(String line_, int  level, Node parent, int index){
 	   if(kraken && !line.equals("unclassified")){
 		   int taxon =Integer.parseInt(lines[index-1]); 
 		   this.name2Taxa.put(name, taxon);
-		   this.taxa2Node.put(taxon, n);
+		 //  this.taxa2Node.put(taxon, n);
 		   n.getIdentifier().setAttribute("taxon",taxon);
 		  // Integer[] l1 = new Integer[] {Integer.parseInt(lines[1]), Integer.parseInt(lines[2])};
 		   n.getIdentifier().setAttribute(NCBITree.count_tag,Integer.parseInt(lines[1]));
@@ -324,7 +324,7 @@ private Node make(String line_, int  level, Node parent, int index){
 			   taxonvalue = Integer.parseInt((String) value);
 			   value = taxonvalue;
 			   this.name2Taxa.put(name, taxonvalue);
-			   this.taxa2Node.put(taxonvalue, n);
+			//   this.taxa2Node.put(taxonvalue, n);
 		   }
 		   n.getIdentifier().setAttribute(v[0],value);
 	   }
@@ -425,7 +425,6 @@ public NCBITree(GetTaxonID gid) throws IOException {
 	//}
 }
 Map<String, Integer> name2Taxa= new HashMap<String, Integer>();
-Map<Integer, Node> taxa2Node= new HashMap<Integer, Node>();
 
 final int index;
 
@@ -512,8 +511,9 @@ static String count_tag = "count";
 
 //n is from the new tree. new_parent is from existing tree and will become the new parent
 public void merge(Node n, int pos){
-	Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
-	Node node = this.taxa2Node.get(taxon);
+	final Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
+	Node node = this.slugToNode1.get(taxon);
+
 	System.err.println(n.getIdentifier());
 	if(node!=null){
 		System.err.println("already has "+n.getIdentifier());
@@ -523,42 +523,19 @@ public void merge(Node n, int pos){
 			v[i] +=v1[i];
 		}
 	}else{
-//		Node parent = n.getParent();
-	//	System.err.println("p "+parent.getIdentifier());
-		Node new_parent = taxa2Node.get(n.getParent().getIdentifier().getAttribute("taxon"));
-	//	System.err.println("add "+new_parent.getIdentifier()+" "+n.getIdentifier());
-
-		new_parent.addChild(n);
-		this.taxa2Node.put(taxon,n);
+		Node new_parent = this.slugToNode1.get(n.getParent().getIdentifier().getAttribute("taxon"));
+		boolean contains = false;
+		for(int i=0; i<new_parent.getChildCount(); i++){
+			if(new_parent.getChild(i).equals(n)){
+				contains =true;
+			}
+		}
+		if(!contains) new_parent.addChild(n);
+		this.slugToNode1.put(taxon,n);
 	}
 	for(int i=0; i<n.getChildCount(); i++){
 		merge(n.getChild(i),pos);
 	}
-	
-/*	Node n1;
-	Integer[] l = (Integer[]) n.getIdentifier().getAttribute(count_tag);
-	System.err.println(n.getIdentifier().getName()+" "+n.getIdentifier().getAttribute("taxon"));
-	if(l.length>2){
-		throw new RuntimeException("!!");
-	}
-	Integer[] lnew = new Integer[2*pos+2];
-	Arrays.fill(lnew, 0);
-	if(!this.taxa2Node.containsKey(taxon)){
-		n1 = n;
-		//checks if this node in tree, and if not adds it with new parent
-		taxa2Node.put(taxon,n);
-		
-		n.setParent(new_parent);
-		new_parent.addChild(n);
-		System.arraycopy(l, 0, lnew, pos*2, l.length);
-		n1.getIdentifier().setAttribute(count_tag, lnew);
-		
-	
-	}else{
-//		n1 = taxa2Node.get(taxon);
-	//	Integer[] l1 = (Integer[] )n1.getIdentifier().getAttribute(count_tag);
-		//System.arraycopy(l1, 0, lnew, 0, l1.length);
-	}*/
 	
 }
 
@@ -600,6 +577,7 @@ public void merge(NCBITree tree1, int pos){
 			int cnt1 =tree[i].getExternalNodeCount();
 			//System.err.println(cnt+" "+cnt1);
 		}
+		CSSProcessCommand.color(tree);
 	}
 
 

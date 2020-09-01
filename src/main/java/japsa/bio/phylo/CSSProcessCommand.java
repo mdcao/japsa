@@ -151,6 +151,28 @@ public class CSSProcessCommand {
 		return trees;
 	}
 	
+	public static  void color(Tree[] trees){
+		try{
+			for(int i=0; i<trees.length; i++){
+				Tree tree = trees[i];
+		ColorTree ct = new ColorTree(tree);
+		ct.color();
+		if(tree.getExternalNodeCount()>1){
+		Node actualroot = tree.getRoot();
+		Node root = ct.tree.getRoot();
+		Object css = root.getIdentifier().getAttribute("css");
+		while(root!=actualroot){
+			System.err.println("coloring down");
+			actualroot.getIdentifier().setAttribute("css", css);
+			actualroot = actualroot.getChild(0);
+		}
+			}
+			}
+		}catch(Exception exc){
+			exc.printStackTrace();
+		}
+	}
+	
 	public static CommonTree addCSSToTree( File treein, File treeout){
 		CommonTree trees = null;
 		try{ 
