@@ -3,11 +3,12 @@ package japsa.bio.phylo;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
-import pal.tree.Node;
-import pal.tree.NodeUtils;
 
 /**
  * @author lachlancoin
@@ -23,8 +24,8 @@ public class MergeKrakenCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		addString("output", "combined.txt", "output file", false);
-		addString("input", ".outreport", "input pattern", false);
-
+		addString("pattern", ".outreport", "input pattern", false);
+		addString("dirs", ".", "input directories", false);
 		addStdHelp();
 	}
 	
@@ -32,21 +33,27 @@ public class MergeKrakenCmd extends CommandLine{
 		CommandLine cmdLine = new MergeKrakenCmd();		
 		args = cmdLine.stdParseLine(args);	
 		String outfile = cmdLine.getStringVal("output");
-		String outreport = cmdLine.getStringVal("input");
+		String regex= cmdLine.getStringVal("pattern");
+		String[] dirs = cmdLine.getStringVal("dirs").split(":");
+
 		try {
 			FileFilter filter = new FileFilter(){
 
 				@Override
 				public boolean accept(File pathname) {
-					return pathname.getName().endsWith(outreport);
+//					return Pattern.matches(regex, pathname.getName());
+					return pathname.getName().endsWith(regex);
 				}
 				
 			};
-			File[] f = (new File(".")).listFiles(filter);
+			List<File>f = new ArrayList<File>();
+			for(int i=0; i<dirs.length; i++){
+				f.addAll(Arrays.asList((new File(dirs[i])).listFiles(filter)));
+			}
 		
-			KrakenTree[] kt = new KrakenTree[f.length];
+			KrakenTree[] kt = new KrakenTree[f.size()];
 			for(int i=0; i<kt.length; i++){
-				kt[i] = new KrakenTree(f[i]);
+				kt[i] = new KrakenTree(f.get(i));
 				kt[i].modAll(i, kt.length);
 			//	kt[i].print(new File(i+".combined.txt"),"",
 				//		header.toString()
@@ -74,8 +81,9 @@ public class MergeKrakenCmd extends CommandLine{
 		
 			//combined.makeTrees();
 			StringBuffer header = new StringBuffer();
-			for(int i=0; i<f.length; i++){
-				header.append(f[i].getName()+"\t");
+			for(int i=0; i<f.size(); i++){
+				File fi = f.get(i);
+				header.append(fi.getParentFile().getName()+"_"+fi.getName()+"\t");
 			}
 			header.append("name\ttaxon\tlevel\tcolor\ttaxon1\ttaxon2\ttaxon3");
 			combined.makeTrees();
