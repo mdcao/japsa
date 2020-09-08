@@ -85,7 +85,7 @@ public class MergeKrakenCmd extends CommandLine{
 				File fi = f.get(i);
 				header.append(fi.getParentFile().getName()+"_"+fi.getName()+"\t");
 			}
-			header.append("name\ttaxon\tlevel\tcolor\ttaxon1\ttaxon2\ttaxon3");
+			header.append("name\ttaxon\tlevel\tcolor\theight\ttaxon1\ttaxon2\ttaxon3");
 			combined.makeTrees();
 
 			combined.print(new File(outfile),"", header.toString());

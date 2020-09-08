@@ -52,6 +52,8 @@ public  class KrakenTree extends NCBITree {
 			 else return "NA";
 	}
 	
+	
+	static double bl = 0.04;
 	@Override
 	public void print(Node node, PrintStream pw){
 		 Identifier id  = node.getIdentifier();
@@ -65,7 +67,9 @@ public  class KrakenTree extends NCBITree {
 		//if(nme.indexOf("unclassified ssRNA")>=0){
 		//	System.err.println("h");
 		//}
-		 Integer level = ((Integer)id.getAttribute("level")).intValue();
+		 Integer level = (int) Math.round((((Integer)id.getAttribute("level")).doubleValue()+1.0)/2.0);
+		 
+		String height = String.format("%5.3g", NodeUtils.getMinimumPathLengthLengthToLeaf(node)/bl).trim();
 		 String hex = ((String)id.getAttribute("css"));		
 		 String alias = ((String)id.getAttribute("alias"));	
 		 String alias1 = ((String)id.getAttribute("alias1"));	
@@ -75,7 +79,7 @@ public  class KrakenTree extends NCBITree {
 	//	 if(hex!=null) pw.print("\tcss="+hex);
 		// if(alias!=null) pw.print("\talias="+alias);
 		// if(alias1!=null) pw.print("\talias1="+alias1);
-		 pw.print(nme+"\t"+taxon+"\t"+level+"\t"+hex);
+		 pw.print(nme+"\t"+taxon+"\t"+level+"\t"+hex+"\t"+height);
 		 for(int i=1; i<=5; i+=2){
 			  pw.print("\t"+get(node, i,"taxon")); 
 		 }
