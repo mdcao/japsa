@@ -316,6 +316,8 @@ private Node make(String line_, int  level, Node parent, int index){
 		   n.getIdentifier().setAttribute("taxon",taxon);
 		  // Integer[] l1 = new Integer[] {Integer.parseInt(lines[1]), Integer.parseInt(lines[2])};
 		   n.getIdentifier().setAttribute(NCBITree.count_tag,Integer.parseInt(lines[1]));
+		   n.getIdentifier().setAttribute(NCBITree.count_tag1,Integer.parseInt(lines[2]));
+
 	   }else{
 	  for(int i=1; i<lines.length; i++){
 		   String[] v = lines[i].split("=");
@@ -507,6 +509,7 @@ public NCBITree(File file, boolean useTaxaAsAsslug, boolean kraken) throws IOExc
 	}
 		
 static String count_tag = "count";
+static String count_tag1 = "count1";
 //static String count_below_tag = "count_below";
 
 //n is from the new tree. new_parent is from existing tree and will become the new parent
@@ -517,10 +520,22 @@ public void merge(Node n, int pos){
 	System.err.println(n.getIdentifier());
 	if(node!=null){
 		System.err.println("already has "+n.getIdentifier());
-		int[] v = (int[])node.getIdentifier().getAttribute(count_tag);
-		int[] v1 = (int[])n.getIdentifier().getAttribute(count_tag);
-		for(int i=0; i<v.length; i++){
-			v[i] +=v1[i];
+		//this is adding in new samples
+		{
+			String count_tag2 = NCBITree.count_tag;
+			int[] v = (int[])node.getIdentifier().getAttribute(count_tag2);
+			int[] v1 = (int[])n.getIdentifier().getAttribute(count_tag2);
+			for(int i=0; i<v.length; i++){
+				v[i] +=v1[i];
+			}
+		}
+		{
+			String count_tag2 = NCBITree.count_tag1;
+			int[] v = (int[])node.getIdentifier().getAttribute(count_tag2);
+			int[] v1 = (int[])n.getIdentifier().getAttribute(count_tag2);
+			for(int i=0; i<v.length; i++){
+				v[i] +=v1[i];
+			}
 		}
 	}else{
 		Node new_parent = this.slugToNode1.get(n.getParent().getIdentifier().getAttribute("taxon"));

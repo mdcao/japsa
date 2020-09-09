@@ -23,7 +23,9 @@ public class MergeKrakenCmd extends CommandLine{
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		addString("output", "combined.txt", "output file", false);
+		addString("output0", "all.txt", "output file for sum of all depths below", false);
+		addString("output1", "all1.txt", "output file for node specific", false);
+
 		addString("pattern", ".outreport", "input pattern", false);
 		addString("dirs", ".", "input directories", false);
 		addStdHelp();
@@ -33,6 +35,7 @@ public class MergeKrakenCmd extends CommandLine{
 		CommandLine cmdLine = new MergeKrakenCmd();		
 		args = cmdLine.stdParseLine(args);	
 		String outfile = cmdLine.getStringVal("output");
+		String outfile1 = cmdLine.getStringVal("output1");
 		String regex= cmdLine.getStringVal("pattern");
 		String[] dirs = cmdLine.getStringVal("dirs").split(":");
 
@@ -85,11 +88,11 @@ public class MergeKrakenCmd extends CommandLine{
 				File fi = f.get(i);
 				header.append(fi.getParentFile().getName()+"_"+fi.getName()+"\t");
 			}
-			header.append("name\ttaxon\tlevel\tcolor\theight\ttaxon1\ttaxon2\ttaxon3");
+			header.append("name\ttaxon\tlevel\tcolor\theight\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
 			combined.makeTrees();
+			combined.print(new File(outfile),"", header.toString(), NCBITree.count_tag);
+			combined.print(new File(outfile1),"", header.toString(), NCBITree.count_tag1);
 
-			combined.print(new File(outfile),"", header.toString());
-			
 			//System.err.println(combined);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

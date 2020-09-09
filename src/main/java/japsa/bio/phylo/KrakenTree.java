@@ -21,17 +21,22 @@ public  class KrakenTree extends NCBITree {
 	
 	
 	void modAll(int i, int len) {
+		String[] tags = new String[] {count_tag, count_tag1};
 		for(int k=0; k<roots.size(); k++){
 			Node root = roots.get(k);
 			//if(root.getChildCount()>0){
 				Iterator<Node> it = NodeUtils.preOrderIterator(root);
 				while(it.hasNext()){
 					Identifier id = it.next().getIdentifier();
-					Integer cnt = (Integer) id.getAttribute(count_tag);
-					if(cnt==null) cnt=0;
-					int[] v = new int[len];
-					v[i] = cnt;
-					id.setAttribute(count_tag, v);
+					for(int j=0; j<tags.length; j++)
+					{
+						String count_tag2 = tags[j];
+						Integer cnt = (Integer) id.getAttribute(count_tag2);
+						if(cnt==null) cnt=0;
+						int[] v = new int[len];
+						v[i] = cnt;
+						id.setAttribute(count_tag2, v);
+					}
 				}
 			//}
 		}
@@ -55,10 +60,10 @@ public  class KrakenTree extends NCBITree {
 	
 	static double bl = 0.04;
 	@Override
-	public void print(Node node, PrintStream pw){
+	public void print(Node node, PrintStream pw, String count_tag){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
-		 int[] counts = (int[]) id.getAttribute(NCBITree.count_tag);
+		 int[] counts = (int[]) id.getAttribute(count_tag);
 		 if(counts!=null){
 			 for(int i=0; i<counts.length; i++){
 				 pw.print(counts[i]+"\t");
@@ -68,7 +73,7 @@ public  class KrakenTree extends NCBITree {
 		//	System.err.println("h");
 		//}
 		 Integer level = (int) Math.round((((Integer)id.getAttribute("level")).doubleValue()+1.0)/2.0);
-		 
+		 if(node.isRoot()) level =0;
 		String height = String.format("%5.3g", NodeUtils.getMinimumPathLengthLengthToLeaf(node)/bl).trim();
 		 String hex = ((String)id.getAttribute("css"));		
 		 String alias = ((String)id.getAttribute("alias"));	
@@ -80,7 +85,7 @@ public  class KrakenTree extends NCBITree {
 		// if(alias!=null) pw.print("\talias="+alias);
 		// if(alias1!=null) pw.print("\talias1="+alias1);
 		 pw.print(nme+"\t"+taxon+"\t"+level+"\t"+hex+"\t"+height);
-		 for(int i=1; i<=5; i+=2){
+		 for(int i=1; i<=9; i+=2){
 			  pw.print("\t"+get(node, i,"taxon")); 
 		 }
 		 //if(true) pw.print("\theight="+String.format("%5.3g", height).trim());

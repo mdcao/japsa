@@ -26,7 +26,7 @@ public abstract class CommonTree {
 	 */
 
 	
-	public void print(Node node, PrintStream pw){
+	public void print(Node node, PrintStream pw, String count_tag){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
 		//if(nme.indexOf("unclassified ssRNA")>=0){
@@ -50,12 +50,12 @@ public abstract class CommonTree {
 	}
 	
 	public void print(File out) throws IOException{
-		print(out, "------------------------------------\n", null);
+		print(out, "------------------------------------\n", null, NCBITree.count_tag);
 	}
 	
 	
 	
-	 public  void print(File out, String sep, String header) throws IOException{
+	 public  void print(File out, String sep, String header, String count_tag) throws IOException{
 		   PrintStream pw ;
 		   if(out.getName().endsWith(".gz")){
 			  pw = new PrintStream(new GZIPOutputStream(new FileOutputStream(out)));
@@ -71,7 +71,7 @@ public abstract class CommonTree {
 			
 			inner: while(n.hasNext()){
 				 Node node = n.next();
-				 print(node, pw);
+				 print(node, pw, count_tag);
 				
 			 }
 			 pw.print(sep);
