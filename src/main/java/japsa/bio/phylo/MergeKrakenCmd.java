@@ -25,7 +25,7 @@ public class MergeKrakenCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 		addString("output0", "all.txt", "output file for sum of all depths below", false);
 		addString("output1", "all1.txt", "output file for node specific", false);
-
+		addBoolean("trim",true,"whether to trim the species name");
 		addString("pattern", ".outreport", "input pattern", false);
 		addString("dirs", ".", "input directories", false);
 		addStdHelp();
@@ -38,7 +38,7 @@ public class MergeKrakenCmd extends CommandLine{
 		String outfile1 = cmdLine.getStringVal("output1");
 		String regex= cmdLine.getStringVal("pattern");
 		String[] dirs = cmdLine.getStringVal("dirs").split(":");
-
+NCBITree.trim = cmdLine.getBooleanVal("trim");
 		try {
 			FileFilter filter = new FileFilter(){
 

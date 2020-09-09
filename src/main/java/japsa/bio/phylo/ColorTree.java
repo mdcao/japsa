@@ -76,8 +76,6 @@ static double maxlight = 85;
  }
  void color() throws Exception{
 	 if(tree!=null){
-		 
-	 
 		 double[] startend_ = this.startend;
 		 double[][] X = distances;
 		 System.err.println(X.length);

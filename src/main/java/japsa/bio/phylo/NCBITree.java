@@ -283,6 +283,7 @@ PrintWriter err;
 
 	final boolean kraken;
 	
+	static boolean trim = true;
 
 private Node make(String line_, int  level, Node parent, int index){
 	  
@@ -305,7 +306,7 @@ private Node make(String line_, int  level, Node parent, int index){
 		   name = name.substring(pm_ind+2);
 		  
 	   }
-	   Node n = new SimpleNode(name.trim(), 0.1);
+	   Node n = new SimpleNode(trim ? name.trim() : prefix+name, 0.1);
 	   n.getIdentifier().setAttribute("level",level);
 	   n.getIdentifier().setAttribute("prefix",prefix);
 	   Integer taxonvalue = null;
