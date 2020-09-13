@@ -1,14 +1,12 @@
 package japsa.bio.phylo;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Stack;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPOutputStream;
 
 import pal.misc.Identifier;
 import pal.tree.Node;
@@ -51,6 +49,7 @@ public  class KrakenTree extends NCBITree {
 		 Integer level = ((Integer)n.getIdentifier().getAttribute("level")).intValue();
 			 while(level>target_level){
 				 n  = n.getParent();
+				 if(n==null) return "NA";
 				 level = ((Integer)n.getIdentifier().getAttribute("level")).intValue();
 			 }
 			 if(level==target_level) return n.getIdentifier().getAttribute(attr).toString();
@@ -64,14 +63,6 @@ public  class KrakenTree extends NCBITree {
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
 		 int[] counts = (int[]) id.getAttribute(count_tag);
-		 if(counts!=null){
-			 for(int i=0; i<counts.length; i++){
-				 pw.print(counts[i]+"\t");
-			 }
-		 }
-		//if(nme.indexOf("unclassified ssRNA")>=0){
-		//	System.err.println("h");
-		//}
 		 Integer level = (int) Math.round((((Integer)id.getAttribute("level")).doubleValue()+1.0)/2.0);
 		 if(node.isRoot()) level =0;
 		String height = String.format("%5.3g", NodeUtils.getMinimumPathLengthLengthToLeaf(node)/bl).trim();
@@ -79,14 +70,46 @@ public  class KrakenTree extends NCBITree {
 		 String alias = ((String)id.getAttribute("alias"));	
 		 String alias1 = ((String)id.getAttribute("alias1"));	
 		 String prefix = ((String)id.getAttribute("prefix"));	
-		Integer taxon = ((Integer)id.getAttribute("taxon"));	
+		Integer taxon = ((Integer)id.getAttribute("taxon"));
+		double[] cssvals = (double[])id.getAttribute("cssvals");
+		String[] cssvals1 = new String[cssvals.length];
+		for(int i=0; i<cssvals.length; i++) cssvals1[i] = String.format("%5.3g",cssvals[i]).trim();
+		StringBuffer sb = new StringBuffer();
+		StringBuffer sb1 = new StringBuffer();
+		Stack<String> l = new Stack<String>();
+		Stack<String> l1 = new Stack<String>();
+		if(!node.isRoot()){
+			Node parent = node.getParent();
+			while(!parent.isRoot()){
+				l.push(parent.getIdentifier().getName());
+				l1.push(parent.getIdentifier().getAttribute("taxon")+"");
+				//l.push(p)
+				//sb.append("->"+parent.getIdentifier().getName());
+				parent = parent.getParent();
+			}
+			while(l.size()>0){
+				sb.append(l.pop());
+				sb1.append(l1.pop());
+				if(l.size()>0){
+					sb.append("->");
+					sb1.append(",");
+				}
+			}
+		}
+		
 		 //double height = node.getNodeHeight();
 	//	 if(hex!=null) pw.print("\tcss="+hex);
 		// if(alias!=null) pw.print("\talias="+alias);
 		// if(alias1!=null) pw.print("\talias1="+alias1);
-		 pw.print(nme+"\t"+taxon+"\t"+level+"\t"+hex+"\t"+height);
-		 for(int i=1; i<=9; i+=2){
-			  pw.print("\t"+get(node, i,"taxon")); 
+		//root    css=#000000ff   taxon=1 height=1.24
+		//			header.append("name\tcolor\ttaxon\theight\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
+		//header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
+
+		 pw.print(nme+"\t"+hex+"\t"+taxon+"\t"+height+"\t"+level+"\t"+Arrays.asList(cssvals1)+"\t"+sb.toString()+"\t"+sb1.toString());
+		 if(counts!=null){
+			 for(int i=0; i<counts.length; i++){
+				 pw.print("\t"+counts[i]);
+			 }
 		 }
 		 //if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
 

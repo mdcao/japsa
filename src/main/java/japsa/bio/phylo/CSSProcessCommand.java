@@ -155,7 +155,7 @@ public class CSSProcessCommand {
 		try{
 			for(int i=0; i<trees.length; i++){
 				Tree tree = trees[i];
-		ColorTree ct = new ColorTree(tree);
+		ColorTree ct = new ColorTree(tree, true);
 		ct.color();
 		if(tree.getExternalNodeCount()>1){
 		Node actualroot = tree.getRoot();
@@ -172,6 +172,28 @@ public class CSSProcessCommand {
 			exc.printStackTrace();
 		}
 	}
+	public static  void colorEachLevel(Tree[] trees){
+		try{
+			for(int i=0; i<trees.length; i++){
+				Tree tree = trees[i];
+		ColorTree ct = new ColorTree(tree, false);
+		ct.colorEachLevel();
+			}
+		}catch(Exception exc){
+			exc.printStackTrace();
+		}
+	}
+	public static  void colorRecursive(Tree[] trees, boolean even){
+		try{
+			for(int i=0; i<trees.length; i++){
+				Tree tree = trees[i];
+		ColorTree ct = new ColorTree(tree, false);
+		ct.colorRecurisvely(even);
+			}
+		}catch(Exception exc){
+			exc.printStackTrace();
+		}
+	}
 	
 	public static CommonTree addCSSToTree( File treein, File treeout){
 		CommonTree trees = null;
@@ -183,7 +205,7 @@ public class CSSProcessCommand {
 			for(int i=0; i<tree.length; i++){
 				if(tree[i].getExternalNodeCount()>10){
 					
-					ColorTree ct = new ColorTree(tree[i]);
+					ColorTree ct = new ColorTree(tree[i], true);
 					ct.color();
 					Node actualroot = trees.roots.get(i);
 					Node root = ct.tree.getRoot();
@@ -210,7 +232,7 @@ public class CSSProcessCommand {
 		 Tree[] tree = trees.getTrees();
 			for(int i=0; i<tree.length; i++){
 				if(tree[i].getExternalNodeCount()>10){
-					ColorTree ct = new ColorTree(tree[i]);
+					ColorTree ct = new ColorTree(tree[i], true);
 					ct.color();
 				}
 			}

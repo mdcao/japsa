@@ -1,20 +1,25 @@
 package japsa.bio.phylo;
 
 import java.awt.Color;
-import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import mdsj.MDSJ;
 import pal.misc.Identifier;
@@ -34,22 +39,57 @@ public class ColorTree {
 	Node[]  identifiers;
 	
 	
-	double[] startend ; // this partitions the hue space
+	//double[] startend ; // this partitions the hue space
 static double maxlight = 85;
 
 
 
 
  static double rand =0;
+ static Node[]  getInternalNodes(Node[] nodes){
+	 Node anc = NodeUtils.getFirstCommonAncestor(nodes);
+	 Set<Node> n = new HashSet<Node>();
+	 for(int i=0; i<nodes.length; i++){
+		 findAncs(anc, nodes[i], n);
+	 }
+	 return n.toArray(new Node[0]);
+ }
+ static double[][] getDist(Node[] nodes){
+	 int cnt  = nodes.length;
+	 double[][] X = new double[cnt][cnt];
+	 for(int i=1; i<cnt; i++){
+		 for(int j=0; j<i; j++){
+			 double d = getDist(nodes[i], nodes[j]);
+			 X[i][j] = d;
+			 X[j][i] = d;
+		 }
+	 }
+	 return X;
+ }
+ private static void findAncs(Node anc, Node n1, Set<Node>s){
+		 while(n1!=anc){
+			 n1 = n1.getParent();
+			 s.add(n1);
+		 }
+	 }
+ private static double getDistToAnc(Node anc, Node n1){
+	double  cnt=0;
+	 while(n1!=anc){
+		 cnt+=n1.getBranchLength();
+		 n1 = n1.getParent();
+	 }
+	 return cnt;
+ }
  
- 
- static double[][]getMatrix(Tree tree){
-	
+ private static double getDist(Node nodeOne, Node nodeTwo) {
+	Node anc = NodeUtils.getFirstCommonAncestor(nodeOne, nodeTwo);
+	return getDistToAnc(anc, nodeOne) + getDistToAnc(anc, nodeTwo);
+}
+
+static double[][]getMatrix(Tree tree){
 	 int cnt = tree.getExternalNodeCount();
-		// int cnt1 = cnt;
-		 double[] 	idist = new double[tree.getInternalNodeCount()];
-		
-		double epsilon = 0;
+	 double[] 	idist = new double[tree.getInternalNodeCount()];
+	double epsilon = 0;
 			boolean countEdges = false;
 			
 			double[][] X  = new double[cnt][cnt];
@@ -76,11 +116,25 @@ static double maxlight = 85;
  }
  void color() throws Exception{
 	 if(tree!=null){
-		 double[] startend_ = this.startend;
+		 int cnt = tree.getExternalNodeCount();
+			System.err.println("read tree with "+cnt + tree.getRoot().getIdentifier().getName());
+		this.identifiers = new Node[tree.getExternalNodeCount()];
+		for(int i=0; i<identifiers.length; i++){
+			identifiers[i] = tree.getExternalNode(i);
+		}
+		 if(cnt>1){
+				distances =  getMatrix(tree);
+				internal  = NodeUtils.getInternalNodes(tree.getRoot(), true);
+			
+			
+			}
+		// double[] startend_ = this.startend;
 		 double[][] X = distances;
 		 System.err.println(X.length);
 		 System.err.println(identifiers.length);
-	 	 color(X);
+		 String outf = "distances.txt";
+	 	 color(X, identifiers, outf, null);
+	 	 this.colorInternal();
 	 }
  }
  
@@ -89,16 +143,99 @@ static double maxlight = 85;
  
 // static double[] lightnessByDepth = new double[] {80,70,60,50,40,30,20,10,5,4,3,2,1}; 
  
-public  void color(double[][] X) throws Exception {
+public static void print(double[][] X, Node[] identifiers, String outf) throws IOException{
+	PrintWriter distpw= new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outf))));
+	distpw.print("\t");
+	 for(int i=0; i<X.length; i++){
+		   distpw.print(identifiers[i].getIdentifier().getName()+"\t");
+	 }
+	 distpw.println();
+   for(int i=0; i<X.length; i++){
+	   distpw.print(identifiers[i].getIdentifier().getName()+"\t");
+	   for(int j=0; j<X.length; j++){
+		   distpw.print(String.format("%5.3g", X[i][j]).trim()+"\t");
+	   }
+	   distpw.println();
+   }
+	distpw.close();
+}
+//
 
+public static void color(Node[] identifiers, String outf, double lightness) throws IOException{
+	double[][] X = getDist(identifiers);
+	color(X, identifiers, outf, lightness);
+}
+
+Map<Integer, List<Node>> levelToNode = new TreeMap<Integer, List<Node>>();
+
+public void setLevels(){
+	levelToNode.clear();
+	setLevel(this.tree.getRoot(), 0);
+}
+public void setLevel(Node node, Integer level){
+	List<Node> l = levelToNode.get(level);
+	if(l==null){
+		levelToNode.put(level, l = new ArrayList<Node>());
+	}
+	l.add(node);
+	node.getIdentifier().setAttribute("level", level);
+	for(int i=0; i<node.getChildCount(); i++){
+		setLevel(node.getChild(i), level+1);
+	}
+}
+
+public void colorEachLevel() throws Exception{
+	setLevels();
+	for(Iterator<Integer> it = levelToNode.keySet().iterator(); it.hasNext(); ){
+		int nxti = it.next();
+		Node[]  nxt = levelToNode.get(nxti).toArray(new Node[0]);
+
+		if(nxt.length==1){
+			setHSL(nxt[0],1,1,0);
+		}else{
+			ColorTree.color(nxt, null, 56);
+		}
+	}
+}
+public void colorRecurisvely(boolean even){
+	tree.getRoot().getIdentifier().setAttribute("range", new double[] {0,0.9});
+	int max_depth = NodeUtils.getMaxNodeDepth(tree.getRoot());
+	color(tree.getRoot(),0, max_depth, even);
+}
+
+public static void color(Node node, int depth,int max_depth,  boolean even){
+	
+	double[] ranget = (double[]) node.getIdentifier().getAttribute("range");
+//	double mid = (min + max)/2.0;
+	if(depth==0){
+		setHSL(node,1,1,0);
+	}else{
+		setHSL(node, (ranget[0]+ranget[1])/2.0, 0.5  + ((double)depth/(double) max_depth) * 0.5, 0.56);
+	}
+	int cc = node.getChildCount();
+	double min = ranget[0];
+	double step = (ranget[1] - ranget[0])/(double)cc;
+	double parlen = NodeUtils.getExternalNodes(node).length;
+	for(int i=0; i<cc; i++){
+		Node child = node.getChild(i);
+		if(!even){
+		 step = ((double) NodeUtils.getExternalNodes(child).length)/ parlen;
+		}
+		double max = min+step;
+		child.getIdentifier().setAttribute("range", new double[] {min,max});
+		color(node.getChild(i), depth+1,max_depth,  even);
+		min = max;
+	}
+}
+
+public  static void color(double[][] X, Node[] identifiers, String outf, Double light) throws IOException {
+	if(outf!=null){
+		print(X, identifiers, outf);
+	}
+	Node root = NodeUtils.getFirstCommonAncestor(identifiers);
+	double maxheight = root.getNodeHeight();
 	int cnt=X.length;    // number of data objects
 	double[][] U=MDSJ.classicalScaling(X); // apply MDS
-
-
-	//double maxnorm = 0;
-	//double minnorm =1e5;
-	//double maxtheta = 0;
-	//double mintheta = 1e5;
 	double[] norms = new double[cnt];
 	double[] thetas = new double[cnt];
 	SortedSet<Double> norms_set = new TreeSet<Double>();
@@ -107,40 +244,58 @@ public  void color(double[][] X) throws Exception {
 	for(int i=0; i<cnt; i++){
 		//double r = eig1[i];//U.get(i, 0);
 		//double g = eig2[i];//U.get(i, 1);
-		double r = U[0][i];
-		double g = U[1][i];
+		double x = U[0][i];
+		double y = U[1][i];
+		double norm = Math.sqrt(Math.pow(x, 2)+ Math.pow(y, 2));
+		double theta = - 1.0* Math.atan2(y, x)/Math.PI;
+		System.err.println(identifiers[i].getIdentifier().getName()+":"+x+","+y+"->"+norm+","+theta);
 		//double b = U.get(i, 2);
 	//	norms[i] = Math.sqrt(Math.pow(r, 2) + Math.pow(g, 2)) + Math.random()*1e-5;;
 	//	thetas[i] = (Math.atan2(g, r) ) + Math.random()*1e-5;
-		norms[i] = r + Math.random()*1e-5;;
-		thetas[i] = g+ Math.random()*1e-5;
+		norms[i] = norm +  Math.random()*1e-5;;
+		thetas[i] =theta +  Math.random()*1e-5;
 		norms_set.add(norms[i]);
 		thetas_set.add(thetas[i]);
 	}
+	System.err.println(thetas_set);
 	Map<String, double[]> colors1 = new HashMap<String, double[]>();
 	double normsize = norms_set.size();
 	double thetasize = thetas_set.size();
-	PrintWriter range = new PrintWriter(new FileWriter(new File("range.txt")));
-	double maxheight = tree.getRoot().getNodeHeight();
+	//PrintWriter range = new PrintWriter(new FileWriter(new File("range.txt")));
 	System.err.println("max depth "+maxheight);
-
+	double theta_min = 0;
+	double theta_max = 0.9;
 	for(int i=0; i<cnt; i++){
 		
-		double h = ((double)norms_set.headSet(norms[i]).size())/normsize;
-		double t = ((double)thetas_set.headSet(thetas[i]).size())/thetasize;
-		 t = t*0.6  + 0.4;  //to make sure >0.4 saturation
-		 double height =this.identifiers[i].getNodeHeight();
-		 double lightness = 85*(1- height/maxheight);
-		 String hexvalue = getHex(h * 360,t * 100,lightness,1.0);
-		 identifiers[i].getIdentifier().setAttribute("css", hexvalue);
+		double norm = ((double)norms_set.headSet(norms[i]).size())/normsize;
+		double t =((double)thetas_set.headSet(thetas[i]).size())/(thetasize-1);
+		t = t*(theta_max-theta_min) + theta_min;
+		// norm = norm*0.6  + 0.4;  //to make sure >0.4 saturation
+		 double height =identifiers[i].getNodeHeight();
 		 identifiers[i].getIdentifier().setAttribute("height", height);
+
+		 double lightness = light==null ? 85*(1- height/maxheight) : light;
+		 norm = 0.98;
+		 setHSL(identifiers[i], t, norm, lightness);
 		 
-		 identifiers[i].getIdentifier().setAttribute("cssvals", new double[] {h,t, height});
 	}
 	System.err.println("max depth " +maxheight);
 	int sze1 = colors1.size();
 	System.err.println(sze1);
 	
+}
+
+
+
+private static void setHSL(Node node, double h, double s, double lightness) {
+	String hexvalue = getHex(h * 360,s * 100,lightness*100,1.0);
+	 node.getIdentifier().setAttribute("css", hexvalue);
+	 
+	 node.getIdentifier().setAttribute("cssvals", new double[] {h,s, lightness});
+	
+}
+public void colorInternal(){
+	double maxheight = tree.getRoot().getNodeHeight();
 	//NodeUtils.postorderSuccessor(tree.getExternalNode(0));
 	for(int i=internal.length-1; i>=0;  i--){
 		Node n = internal[i];
@@ -162,13 +317,14 @@ public  void color(double[][] X) throws Exception {
 		 double height =n.getNodeHeight();
 		 d[2] = height;
 		 double lightness = 85*(1- height/maxheight);
-		String hexvalue = getHex(d[0] * 360,d[1] * 100,lightness,1.0);
-		id.setAttribute("css", hexvalue);
+		 setHSL(identifiers[i], d[0] * 360, d[1]*100, lightness);
+		//String hexvalue = getHex(, * 100,lightness,1.0);
+		//id.setAttribute("css", hexvalue);
 		id.setAttribute("height", height);
 
 			id.setAttribute("cssvals", d);
 	}
-	range.close();
+	//range.close();
 }
 
 
@@ -181,38 +337,20 @@ public  void color(double[][] X) throws Exception {
 
  
 Node[] internal = new Node[0];
-ClockTree tree; 
+Tree tree; 
 
 
 
-ColorTree(Tree tree_in) throws Exception{
-		//colors.put("grch38",	"#ffffff00");  // transparent for human
-		//slug = true;
-	//setBL(tree.getRoot(), 100, 0.5);
+ColorTree(Tree tree_in, boolean clock) throws Exception{
+//	setBL(tree_in.getRoot(), 1000, 0.1);
 	tree_in.getRoot().getIdentifier().setAttribute("css" ,	"#000000ff");   // for homo sapiens
 	if(tree_in.getExternalNodeCount()==1){
 				tree_in.getExternalNode(0).getIdentifier().setAttribute("css" ,	"#00000000");   // for homo sapiens
 	}else{
-		this.tree = new ClockTree(tree_in) ;
-	/*	Node root = tree.getRoot();
-		double h1 = root.getNodeHeight();
-		double[] h = new double[root.getChildCount()];
-		for(int i=0; i<h.length; i++){
-			h[i] = root.getChild(i).getNodeHeight();
-		}*/
-		int cnt = tree_in.getExternalNodeCount();
-		System.err.println("read tree with "+cnt + tree_in.getRoot().getIdentifier().getName());
-	this.identifiers = new Node[tree_in.getExternalNodeCount()];
-	for(int i=0; i<identifiers.length; i++){
-		identifiers[i] = tree_in.getExternalNode(i);
-	}
-	this.startend= (new double[] {0,1});
-	if(cnt>1){
-		distances =  getMatrix(tree_in);
-		internal  = NodeUtils.getInternalNodes(tree_in.getRoot(), true);
+		this.tree = clock ?  new ClockTree(tree_in) : tree_in ;
+		
+	//this.startend= (new double[] {0,1});
 	
-	
-	}
 	}
 	
 }
@@ -232,7 +370,7 @@ private static void setBL(Node root, double d, double frac) {
 	int cnt = root.getChildCount();
 	for(int i=0; i<cnt; i++){
 		double dist = d*frac;
-		dist = dist*(1+ Math.random()*rand);
+	//	dist = dist*(1+ Math.random()*rand);
 		setBL(root.getChild(i), dist, frac);
 	}
 	}

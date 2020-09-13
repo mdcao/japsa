@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -23,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import pal.misc.Identifier;
 import pal.tree.Node;
-import pal.tree.NodeUtils;
 import pal.tree.SimpleNode;
 import pal.tree.SimpleTree;
 import pal.tree.Tree;
@@ -283,7 +283,7 @@ PrintWriter err;
 
 	final boolean kraken;
 	
-	static boolean trim = true;
+	static boolean trim = false;
 
 private Node make(String line_, int  level, Node parent, int index){
 	  
@@ -511,7 +511,64 @@ public NCBITree(File file, boolean useTaxaAsAsslug, boolean kraken) throws IOExc
 		
 static String count_tag = "count";
 static String count_tag1 = "count1";
+
+
+
+
+public static double thresh=0.0001;
 //static String count_below_tag = "count_below";
+public void trim(double thresh_perc){
+	int total =0;
+	for(int i=roots.size()-1;i>=0; i--){
+		int[] cnts = (int[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
+		for(int j=0; j<cnts.length; j++) total+=cnts[j];
+	}
+	int thresh = (int) Math.round(thresh_perc*total);
+	for(int i=roots.size()-1;i>=0; i--){
+		if(trimNode(roots.get(i), thresh)){
+			roots.remove(i);
+		}
+	}
+}
+public void removeDupl(){
+	for(int i=roots.size()-1;i>=0; i--){
+		removeDupl(roots.get(i));
+	}
+}
+public void removeDupl(Node node){
+	String nme = node.getIdentifier().getName().trim();
+	while(node.getChildCount()>0 && node.getChild(0).getIdentifier().getName().trim().equals(nme) && 
+			node.getChild(0).getChildCount()>0){
+		Node child = node.getChild(0);
+		node.removeChild(0);
+		for(int j=child.getChildCount()-1; j>=0; j--){
+			node.addChild(child.removeChild(j));
+		}
+	}
+	for(int j=node.getChildCount()-1;j>=0; j--){
+		removeDupl(node.getChild(j));
+	}
+}
+public boolean  trimNode(Node node, int thresh){
+	String count_tag2 = NCBITree.count_tag;
+	int[] v = (int[])node.getIdentifier().getAttribute(count_tag2);
+	int sum =0; 
+	for(int i=0; i<v.length; i++){
+		sum +=v[i];
+	}
+	if(sum<thresh){
+		System.err.println("removing "+node.getIdentifier().getName()+" "+sum);
+		return true;
+	}
+	else{
+		for(int j=node.getChildCount()-1;j>=0; j--){
+			if(trimNode(node.getChild(j), thresh)){
+				node.removeChild(j);
+			}
+		}
+	}
+	return false;
+}
 
 //n is from the new tree. new_parent is from existing tree and will become the new parent
 public void merge(Node n, int pos){
@@ -520,7 +577,7 @@ public void merge(Node n, int pos){
 
 	System.err.println(n.getIdentifier());
 	if(node!=null){
-		System.err.println("already has "+n.getIdentifier());
+		//System.err.println("already has "+n.getIdentifier());
 		//this is adding in new samples
 		{
 			String count_tag2 = NCBITree.count_tag;
@@ -588,12 +645,13 @@ public void merge(NCBITree tree1, int pos){
 	//	System.err.println(this.slugToNode.size());
 		for(int i=0; i<tree.length; i++){
 			Node root = roots.get(i);
+			if(root.getParent()!=null) throw new RuntimeException("!!");
 			while(root.getChildCount()==1) root = root.getChild(0);
 			tree[i] = new SimpleTree(root);
 			int cnt1 =tree[i].getExternalNodeCount();
 			//System.err.println(cnt+" "+cnt1);
 		}
-		CSSProcessCommand.color(tree);
+		
 	}
 
 
@@ -616,6 +674,31 @@ public void merge(NCBITree tree1, int pos){
 	@Override
 	public Tree[] getTrees() {
 		return this.tree;
+	}
+
+	public void split() {
+		int len = roots.size();
+		List<Node> roots1 = new ArrayList<Node>();
+		for(int i=0;i<len; i++){
+			Node n = roots.get(i);
+			if(n.getChildCount()>0){
+				for(int j=n.getChildCount()-1;j>=0; j-- ){
+					roots1.add(n.removeChild(j));
+				}
+			}
+		}
+		this.roots = roots1;
+		
+	}
+
+	public void removeSingleNodes(Collection<Integer>target) {
+		int len = roots.size();
+		for(int i=len-1; i>=0; i--){
+			if(roots.get(i).getChildCount()==0 || !target.contains(roots.get(i).getIdentifier().getAttribute("taxon"))){
+				roots.remove(i);
+			}
+		}
+		
 	}
 	
 	
