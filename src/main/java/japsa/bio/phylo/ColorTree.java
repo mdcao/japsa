@@ -7,6 +7,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -198,32 +199,80 @@ public void colorEachLevel() throws Exception{
 	}
 }
 public void colorRecurisvely(boolean even){
-	tree.getRoot().getIdentifier().setAttribute("range", new double[] {0,0.9});
+	Node root = tree.getRoot();
+	setHSL(root,1,1,0);
 	int max_depth = NodeUtils.getMaxNodeDepth(tree.getRoot());
-	color(tree.getRoot(),0, max_depth, even);
+	
+	Node[] child = new Node[root.getChildCount()];
+	
+	for(int i=0; i<child.length; i++){
+		child[i]  = root.getChild(i);
+		child[i].getIdentifier().setAttribute("leaves", NodeUtils.getExternalNodes(child[i]).length);
+	}
+	Arrays.sort(child, new Comparator<Node>(){
+
+		@Override
+		public int compare(Node o1, Node o2) {
+			return -1*Integer.compare((Integer)o1.getIdentifier().getAttribute("leaves"),(Integer) o2.getIdentifier().getAttribute("leaves"));
+		}
+		
+	});
+	
+	double[] light_range = new double[] {0.0,1.0};
+	double light_min = 0.0;
+	double light_max ;
+	double step = (light_range[1] - light_range[0])/ (double) child.length;
+	List<Integer> order = new ArrayList<Integer>();
+	double[] light = new double[child.length];
+	for(int i=0; i<child.length; i++){
+		light_max = light_min + step;
+		
+		light[i]  = (light_min + light_max)/2.0;
+		light_min= light_max;
+	}
+	int mid1 =(int) Math.floor((double) child.length/2.0);
+	int mid2 = mid1+1;
+	//int off = child.length % 2-1;
+	for(int i=0;i<child.length ;i++){
+		child[i].getIdentifier().setAttribute("range", new double[] {0.0,0.95});
+		if(i%2==0 && mid1>=0 || mid2==child.length){
+			color(child[i],0, max_depth, light[mid1], even);
+			mid1--;
+		}else{
+			color(child[i],0, max_depth, light[mid2], even);
+			mid2++;
+		}
+	}
 }
 
-public static void color(Node node, int depth,int max_depth,  boolean even){
+public static void color(Node node, int depth,int max_depth, double  lightness,  boolean even){
 	
 	double[] ranget = (double[]) node.getIdentifier().getAttribute("range");
 //	double mid = (min + max)/2.0;
 	if(depth==0){
 		setHSL(node,1,1,0);
 	}else{
-		setHSL(node, (ranget[0]+ranget[1])/2.0, 0.5  + ((double)depth/(double) max_depth) * 0.5, 0.56);
+		setHSL(node, (ranget[0]+ranget[1])/2.0, 0.5  + ((double)depth/(double) max_depth) * 0.5, lightness);
 	}
 	int cc = node.getChildCount();
 	double min = ranget[0];
 	double step = (ranget[1] - ranget[0])/(double)cc;
-	double parlen = NodeUtils.getExternalNodes(node).length;
+	//double parlen = NodeUtils.getExternalNodes(node).length;
+	int sum=0;
+	int[] leaves = new int[cc];
+	for(int i=0; i<cc; i++){
+		leaves[i] = NodeUtils.getLeafCount(node.getChild(i));
+		sum+=leaves[i];
+	}
+	
 	for(int i=0; i<cc; i++){
 		Node child = node.getChild(i);
 		if(!even){
-		 step = ((double) NodeUtils.getExternalNodes(child).length)/ parlen;
+		 step = ((double)leaves[i])/(double) sum * (ranget[1] - ranget[0]);
 		}
 		double max = min+step;
 		child.getIdentifier().setAttribute("range", new double[] {min,max});
-		color(node.getChild(i), depth+1,max_depth,  even);
+		color(node.getChild(i), depth+1,max_depth,  lightness, even);
 		min = max;
 	}
 }

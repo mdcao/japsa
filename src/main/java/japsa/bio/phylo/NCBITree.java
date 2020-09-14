@@ -222,7 +222,7 @@ private Node getNode(TreePos tp) {
 
    
    /** moved all slug operations to GetTaxonID */
-   final boolean useslug =false;
+   final boolean useslug =true;
 	final static int short_slug_length = 3;
 	static String slug_sep = "";//"_";
    private String slug(String name, boolean shortslug){
@@ -238,9 +238,12 @@ private Node getNode(TreePos tp) {
 	 Map<String, Node> slugToNode = new HashMap<String, Node>();
      Map<Integer, Node> slugToNode1 = new HashMap<Integer, Node>();
  
+     public Node getSlug(String st){
+    	 return slugToNode.get(slug(st, false));
+     }
  public void putSlug1( Node n){
 	
-	 if(useTaxaAsSlug){
+	// if(useTaxaAsSlug){
 	  Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
 	  boolean   contains = slugToNode1.containsKey(taxon);
 		if(!contains) {
@@ -249,16 +252,16 @@ private Node getNode(TreePos tp) {
 		else{
 			System.err.println("already contains "+taxon);
 		}
-	 }else{
-		 String name = n.getIdentifier().getName();
-		 boolean   contains = slugToNode.containsKey(name);
+	// }else{
+		 String name = slug(n.getIdentifier().getName(), false);
+		    contains = slugToNode.containsKey(name);
 			if(!contains) {
 				slugToNode.put(name, n);
 			}
 			else{
 				System.err.println("already contains "+name);
 			}
-	 }
+	 //}
    }
    
  private Node make( Integer taxon, Node child){
@@ -605,6 +608,7 @@ public void merge(Node n, int pos){
 		}
 		if(!contains) new_parent.addChild(n);
 		this.slugToNode1.put(taxon,n);
+		this.slugToNode.put(this.slug(n.getIdentifier().getName(), false), n);
 	}
 	for(int i=0; i<n.getChildCount(); i++){
 		merge(n.getChild(i),pos);

@@ -1,14 +1,18 @@
 package japsa.bio.phylo;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
+import pal.tree.Node;
 
 /**
  * @author lachlancoin
@@ -27,6 +31,7 @@ public class MergeKrakenCmd extends CommandLine{
 		addString("output1", "sep.css", "output file for node specific", false);
 		addBoolean("trim",false,"whether to trim the species name");
 		addString("pattern", ".outreport", "input pattern", false);
+		addString("extra", null, "extra_input", false);
 		addString("dirs", ".", "input directories", false);
 		addDouble("thresh", 0, "threshold", false);
 
@@ -42,6 +47,7 @@ public class MergeKrakenCmd extends CommandLine{
 		String[] dirs = cmdLine.getStringVal("dirs").split(":");
 NCBITree.trim = cmdLine.getBooleanVal("trim");
 NCBITree.thresh = cmdLine.getDoubleVal("thresh");
+String[] extra = cmdLine.getStringVal("extra").split(":");
 
 		try {
 			FileFilter filter = new FileFilter(){
@@ -61,17 +67,49 @@ NCBITree.thresh = cmdLine.getDoubleVal("thresh");
 			KrakenTree[] kt = new KrakenTree[f.size()];
 			for(int i=0; i<kt.length; i++){
 				kt[i] = new KrakenTree(f.get(i));
-				kt[i].modAll(i, kt.length);
+				kt[i].modAll(i, kt.length+ extra.length);
 			//	kt[i].print(new File(i+".combined.txt"),"",
 				//		header.toString()
 					//	);
 
 			}
 			
+			
 			NCBITree combined = kt[0];
 			for(int j=1; j<kt.length; j++){
 				combined.merge(kt[j], j);
 			}
+			int len = kt.length;
+			for(int i=0; i<extra.length; i++){
+				BufferedReader br = new BufferedReader(new FileReader(extra[i]));
+				String str = "";
+				while(( str = br.readLine())!=null){
+					String[] st = str.split(",");
+					int len1 = st.length-1;
+					Double  val = Double.parseDouble(st[len1]);
+					int val1 = (int) Math.round(val*1e6);
+					Node n = combined.getSlug(st[len1-1]);
+					if(n==null){
+						System.err.println("did not find "+st[len1-1]);
+					}else{
+						System.err.println("found "+n.getIdentifier());
+
+					}
+					//System.err.println("found "+n.getIdentifier());
+					
+					int[] cnts = ((int[]) n.getIdentifier().getAttribute(NCBITree.count_tag));
+					int[] cnts1 = ((int[]) n.getIdentifier().getAttribute(NCBITree.count_tag1));
+					cnts[len+i] = val1;
+					cnts1[len+i] = val1;
+					while(!n.isRoot()){//add counts up the tree for cumulative
+						n = n.getParent();
+						int[] cnts_ = ((int[]) n.getIdentifier().getAttribute(NCBITree.count_tag));
+						cnts_[len+i] = val1;
+					}
+				}
+				
+			}
+		
 			combined.trim(NCBITree.thresh);
 			combined.removeDupl();
 			combined.split(); combined.split();
@@ -87,6 +125,10 @@ NCBITree.thresh = cmdLine.getDoubleVal("thresh");
 				File fi = f.get(i);
 				header.append("\t");
 				header.append(fi.getParentFile().getName()+"_"+fi.getName());
+			}
+			for(int i=0; i<extra.length; i++){
+				File extraf = new File(extra[i]);
+				header.append("\t");header.append(extraf.getName());
 			}
 			combined.makeTrees();
 			for(int i=0; i<combined.tree.length; i++){
