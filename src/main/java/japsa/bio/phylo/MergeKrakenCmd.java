@@ -80,6 +80,7 @@ String[] extra = cmdLine.getStringVal("extra").split(":");
 				combined.merge(kt[j], j);
 			}
 			int len = kt.length;
+			
 			for(int i=0; i<extra.length; i++){
 				BufferedReader br = new BufferedReader(new FileReader(extra[i]));
 				String str = "";
@@ -97,14 +98,15 @@ String[] extra = cmdLine.getStringVal("extra").split(":");
 					}
 					//System.err.println("found "+n.getIdentifier());
 					
-					int[] cnts = ((int[]) n.getIdentifier().getAttribute(NCBITree.count_tag));
+				
 					int[] cnts1 = ((int[]) n.getIdentifier().getAttribute(NCBITree.count_tag1));
-					cnts[len+i] = val1;
 					cnts1[len+i] = val1;
-					while(!n.isRoot()){//add counts up the tree for cumulative
-						n = n.getParent();
+					
+					while(n!=null){//add counts up the tree for cumulative
 						int[] cnts_ = ((int[]) n.getIdentifier().getAttribute(NCBITree.count_tag));
-						cnts_[len+i] = val1;
+						cnts_[len+i] = cnts_[len+i] + val1;
+						n = n.getParent();
+						
 					}
 				}
 				
@@ -119,12 +121,13 @@ String[] extra = cmdLine.getStringVal("extra").split(":");
 			System.err.println(combined.roots.size());
 
 			StringBuffer header = new StringBuffer();
-			
+			File currDir = new File(".");
 			header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon_parents");
 			for(int i=0; i<f.size(); i++){
 				File fi = f.get(i);
 				header.append("\t");
-				header.append(fi.getParentFile().getName()+"_"+fi.getName());
+				String prefix = fi.getParentFile().equals(currDir) ? "": fi.getParentFile().getName()+"/";
+				header.append(prefix+fi.getName());
 			}
 			for(int i=0; i<extra.length; i++){
 				File extraf = new File(extra[i]);
