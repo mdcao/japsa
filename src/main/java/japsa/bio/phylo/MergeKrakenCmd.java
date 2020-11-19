@@ -4,10 +4,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import japsa.util.CommandLine;
@@ -33,6 +34,7 @@ public class MergeKrakenCmd extends CommandLine{
 		addString("pattern", ".outreport", "input pattern", false);
 		addString("extra", null, "extra_input", false);
 		addString("dirs", ".", "input directories", false);
+		addString("todo",null, "path to file with list of input files",false);
 		addDouble("thresh", 0, "threshold", false);
 
 		addStdHelp();
@@ -44,12 +46,32 @@ public class MergeKrakenCmd extends CommandLine{
 		String outfile = cmdLine.getStringVal("output");
 		String outfile1 = cmdLine.getStringVal("output1");
 		String regex= cmdLine.getStringVal("pattern");
-		String[] dirs = cmdLine.getStringVal("dirs").split(":");
-NCBITree.trim = cmdLine.getBooleanVal("trim");
-NCBITree.thresh = cmdLine.getDoubleVal("thresh");
-String[] extra = cmdLine.getStringVal("extra").split(":");
-
+		String todo = cmdLine.getStringVal("todo");
+		NCBITree.trim = cmdLine.getBooleanVal("trim");
+		NCBITree.thresh = cmdLine.getDoubleVal("thresh");
+		String ext = cmdLine.getStringVal("extra");
+		
+		String[] extra = ext!=null ? ext.split(":") : new String[0];
+		List<File>f = new ArrayList<File>();
 		try {
+		if(todo!=null){
+			try{
+			BufferedReader br = new BufferedReader(new FileReader(todo));
+			String st = "";
+			while((st = br.readLine())!=null){
+				File f1 = new File(st);
+				if(!f1.exists()) throw new RuntimeException(st+ " does not exist");
+				f.add(f1);
+			}
+			}catch(IOException exc){
+				exc.printStackTrace();
+			}
+		}else{
+		String[] dirs = cmdLine.getStringVal("dirs").split(":");
+		
+
+
+		
 			FileFilter filter = new FileFilter(){
 
 				@Override
@@ -59,11 +81,11 @@ String[] extra = cmdLine.getStringVal("extra").split(":");
 				}
 				
 			};
-			List<File>f = new ArrayList<File>();
+			
 			for(int i=0; i<dirs.length; i++){
 				f.addAll(Arrays.asList((new File(dirs[i])).listFiles(filter)));
 			}
-		
+		}
 			KrakenTree[] kt = new KrakenTree[f.size()];
 			for(int i=0; i<kt.length; i++){
 				kt[i] = new KrakenTree(f.get(i));
@@ -123,12 +145,17 @@ String[] extra = cmdLine.getStringVal("extra").split(":");
 			StringBuffer header = new StringBuffer();
 			File currDir = new File(".");
 			header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon_parents");
+			PrintWriter designF = new PrintWriter(new FileWriter(new File("design.csv")));
+			designF.println("Name,Grp1");
 			for(int i=0; i<f.size(); i++){
 				File fi = f.get(i);
 				header.append("\t");
 				String prefix = fi.getParentFile().equals(currDir) ? "": fi.getParentFile().getName()+"/";
-				header.append(prefix+fi.getName());
+				String nmei = prefix+fi.getName();
+				designF.println(nmei+","+(i+1));
+				header.append(nmei);
 			}
+			designF.close();
 			for(int i=0; i<extra.length; i++){
 				File extraf = new File(extra[i]);
 				header.append("\t");header.append(extraf.getName());
