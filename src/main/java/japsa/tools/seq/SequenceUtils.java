@@ -49,6 +49,10 @@ import htsjdk.samtools.SamReaderFactory;
 
 public class SequenceUtils {
 	
+	
+	
+	
+	
 	public static Iterator<SAMRecord> getSAMIteratorFromFastq(File inFile, String mm2Index, String mm2_path, 
 			int mm2_threads, String mm2Preset, String mm2_mem, String mm2_splicing) throws IOException{
 		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , mm2_splicing);
@@ -59,15 +63,23 @@ public class SequenceUtils {
 		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , null);
 	}
 	
+	public static int mm2_threads=4;
+	public static String mm2_path="minimap2";
+	public static String mm2_mem = 1000000000;
+	public static String mm2Preset="splice";
+	public static String mm2_splicing="-un";
 	
 	private static class FastqToSAMRecord implements Iterator<SAMRecord> {
 		// ProcessBuilder pb;
 		 SamReader reader;
-		 SAMRecordIterator iterator;
-		public FastqToSAMRecord(File inFile, String mm2Index, String mm2_path, int mm2_threads, String mm2Preset, String mm2_mem, String splicing) throws IOException{
+		SAMRecordIterator iterator;
+		final String mm2Index;
+		
+		final File inFile;
+		private void init(){
 			ProcessBuilder pb;
 			
-			if(splicing==null) pb = new ProcessBuilder(mm2_path, 
+			if(mm2_splicing==null) pb = new ProcessBuilder(mm2_path, 
 					"-t",
 					"" + mm2_threads,
 					"-ax",
@@ -86,7 +98,7 @@ public class SequenceUtils {
 					"" + mm2_threads,
 					"-ax",
 					mm2Preset,
-					splicing,
+					mm2_splicing,
 				//	"--for-only",
 					"-I",
 					mm2_mem,
@@ -102,10 +114,16 @@ public class SequenceUtils {
 			//	OutputStream os = mm2Process.getOutputStream();
 				reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
 				iterator = reader.iterator();
+		}
+		public FastqToSAMRecord(File inFile, String mm2Index,  String splicing) throws IOException{
+			this.mm2Index = mm2Index;
+			this.splicing = splicing;
+			this.inFile = inFile;
 		 }
 		@Override
 		public boolean hasNext() {
-			boolean res = iterator.hasNext();
+			// if its null it has not been initialised
+			boolean res = iterator==null || iterator.hasNext();
 			try{
 			if(!res) reader.close();
 			}catch(IOException exc){
@@ -116,6 +134,7 @@ public class SequenceUtils {
 
 		@Override
 		public SAMRecord next() {
+			if(iterator==null) init();
 			if(!iterator.hasNext()){
 				try{
 				reader.close();
@@ -234,7 +253,14 @@ public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders,
 		
 	}
 
-public static String minimapIndex(File refFile, String mm2, String mem, boolean overwrite) throws IOException, InterruptedException {
+	
+	
+	
+	
+	
+public static String minimapIndex(File refFile,   boolean overwrite) throws IOException, InterruptedException {
+	final String mm2 = mm2_path;
+	final String mem = mm2_mem;
 	String infile = refFile.getAbsolutePath();
 	File indexFile = new File(infile+".mmi");
 	File indexFile1 =  new File(infile.replaceAll(".fasta","").replaceAll(".fa", "")+".mmi");
