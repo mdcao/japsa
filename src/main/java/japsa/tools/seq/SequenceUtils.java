@@ -30,16 +30,24 @@
 
 package japsa.tools.seq;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -53,21 +61,21 @@ public class SequenceUtils {
 	
 	
 	
-	public static Iterator<SAMRecord> getSAMIteratorFromFastq(File inFile, String mm2Index, String mm2_path, 
+	/*public static Iterator<SAMRecord> getSAMIteratorFromFastq(File inFile, String mm2Index, String mm2_path, 
 			int mm2_threads, String mm2Preset, String mm2_mem, String mm2_splicing) throws IOException{
 		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , mm2_splicing);
-	}
+	}*/
 	
-	public static Iterator<SAMRecord> getSAMIteratorFromFastq(File inFile, String mm2Index, String mm2_path, 
-			int mm2_threads, String mm2Preset, String mm2_mem) throws IOException{
-		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , null);
+	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String url, String mm2Index, int maxReads) throws IOException{
+		return new FastqToSAMRecord(url, mm2Index,maxReads);
 	}
 	
 	public static int mm2_threads=4;
 	public static String mm2_path="minimap2";
-	public static String mm2_mem = 1000000000;
+	public static String mm2_mem = "1000000000";
 	public static String mm2Preset="splice";
 	public static String mm2_splicing="-un";
+	
 	
 	private static class FastqToSAMRecord implements Iterator<SAMRecord> {
 		// ProcessBuilder pb;
@@ -76,7 +84,8 @@ public class SequenceUtils {
 		final String mm2Index;
 		
 		final File inFile;
-		private void init(){
+		final boolean deleteFile;
+		private void init() throws IOException{
 			ProcessBuilder pb;
 			
 			if(mm2_splicing==null) pb = new ProcessBuilder(mm2_path, 
@@ -115,17 +124,58 @@ public class SequenceUtils {
 				reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
 				iterator = reader.iterator();
 		}
-		public FastqToSAMRecord(File inFile, String mm2Index,  String splicing) throws IOException{
+	//	static int id = 
+		public FastqToSAMRecord(String input, String mm2Index, int maxReads) throws IOException{
+			int max_per_file = maxReads==Integer.MAX_VALUE ? maxReads : maxReads *4;
+			if(max_per_file <0) max_per_file = Integer.MAX_VALUE;
+			if(input.startsWith("ftp://")){
+				URL url = new URL (input);
+				URLConnection urlc = url.openConnection();
+				BufferedReader br;
+				if(url.getPath().endsWith(".gz")){
+					br = new BufferedReader(new InputStreamReader(new GZIPInputStream(urlc.getInputStream())));
+
+				}else{
+					br = new BufferedReader(new InputStreamReader(urlc.getInputStream()));
+				}
+				this.inFile = new File("./tmp_file_"+System. currentTimeMillis()+".gz");
+				deleteFile=true;
+				//inFile.deleteOnExit();
+				PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(inFile))));
+				String st = "";
+				
+				for(int i=0; (st = br.readLine())!=null && i<max_per_file; i++){
+					pw.println(st);
+				}
+				pw.close();
+				br.close();
+				
+			}else{
+				if(input.startsWith("file:/")){
+					URL url = new URL (input);
+					inFile = new File(url.getPath());
+				}else{
+					this.inFile = new File(input);
+				}
+				deleteFile = false;
+			}
 			this.mm2Index = mm2Index;
-			this.splicing = splicing;
-			this.inFile = inFile;
 		 }
+		
+		
+		
 		@Override
 		public boolean hasNext() {
 			// if its null it has not been initialised
 			boolean res = iterator==null || iterator.hasNext();
 			try{
-			if(!res) reader.close();
+			if(!res) {
+				if(deleteFile){
+					inFile.delete();
+				}
+				reader.close();
+			}
+			
 			}catch(IOException exc){
 				exc.printStackTrace();
 			}
@@ -134,16 +184,26 @@ public class SequenceUtils {
 
 		@Override
 		public SAMRecord next() {
-			if(iterator==null) init();
+			if(iterator==null) try{
+				init();
+			}catch(IOException exc){
+				exc.printStackTrace();
+			}
 			if(!iterator.hasNext()){
+				if(deleteFile){
+					inFile.delete();
+				}
 				try{
 				reader.close();
+				
 				}catch(IOException exc){
 					exc.printStackTrace();
 				}
+				
 				return null;
 			}
-			return iterator.next();
+			SAMRecord nxt =  iterator.next();
+			return nxt;
 		}
 		 
 	 }
@@ -174,6 +234,32 @@ public class SequenceUtils {
 		}
 		
 	}
+	 
+	 public static class SequentialIterator implements Iterator<SAMRecord> {
+		 private final Iterator<SAMRecord>[] samIters;
+		 final int len;
+		 int curr=0;
+		 public  SequentialIterator(Iterator<SAMRecord>[] samIters) {
+				this.samIters = samIters;
+				len = samIters.length; 
+			}
+		@Override
+		public boolean hasNext() {
+			return curr<samIters.length-1 || samIters[curr].hasNext();
+		}
+
+		@Override
+		public SAMRecord next() {
+			if(!samIters[curr].hasNext()){
+				curr = curr+1;
+				if(curr>=samIters.length) return null;
+			}
+			SAMRecord sr = samIters[curr].next();
+			if(sr!=null) sr.setAttribute(SequenceUtils.src_tag,curr);
+			return sr;
+		}
+		 
+	 }
 	
 	public static class CombinedIterator implements Iterator<SAMRecord> {
 		private final Iterator<SAMRecord>[] samIters;
@@ -243,8 +329,9 @@ public class SequenceUtils {
 	
 	
 	//chroms is string e.g 0:1:2  or 0,0,2400000:1,0,240000
-public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders, boolean sorted){
+public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders, boolean sorted, boolean sequential){
 		int len = samReaders.length;
+		if(sequential) return new SequentialIterator(samReaders);
 		if(samReaders.length==1  && false){
 			return samReaders[0];
 		}else{
@@ -286,7 +373,7 @@ public static String minimapIndex(File refFile,   boolean overwrite) throws IOEx
 }
 
 public static Iterator<SAMRecord> getCombined(Iterator<SAMRecord>[] samIters, Collection[] reads, Integer max_reads,
-		String chrToInclude, boolean sorted) {
+		String chrToInclude, boolean sorted , boolean sequential) {
 	final Map<Integer, int[]> chrom_indices_to_include = new HashMap<Integer, int[]>();
 	final Set<String> reads_all = new HashSet<String>();
 	for(int i=0; i<reads.length; i++){
@@ -308,7 +395,7 @@ public static Iterator<SAMRecord> getCombined(Iterator<SAMRecord>[] samIters, Co
 		}
 	}
 //	if(chrom_indices_to_include.size()==0) chrom_indices_to_include=null;
-	final Iterator<SAMRecord>  sr = getCombined(samIters, sorted);
+	final Iterator<SAMRecord>  sr = getCombined(samIters, sorted, sequential);
 	return new Iterator<SAMRecord>(){
 
 		@Override
