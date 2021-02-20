@@ -2,13 +2,14 @@ package japsa.bio.phylo;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import japsa.util.CommandLine;
@@ -52,7 +53,7 @@ public class MergeKrakenCmd extends CommandLine{
 		String ext = cmdLine.getStringVal("extra");
 		
 		String[] extra = ext!=null ? ext.split(":") : new String[0];
-		List<File>f = new ArrayList<File>();
+		List<String>f = new ArrayList<String>();
 		try {
 		if(todo!=null){
 			try{
@@ -61,7 +62,7 @@ public class MergeKrakenCmd extends CommandLine{
 			while((st = br.readLine())!=null){
 				File f1 = new File(st);
 				if(!f1.exists()) throw new RuntimeException(st+ " does not exist");
-				f.add(f1);
+				f.add(st);
 			}
 			}catch(IOException exc){
 				exc.printStackTrace();
@@ -72,23 +73,25 @@ public class MergeKrakenCmd extends CommandLine{
 
 
 		
-			FileFilter filter = new FileFilter(){
+			FilenameFilter filter = new FilenameFilter(){
 
 				@Override
-				public boolean accept(File pathname) {
+				public boolean accept(File fir, String pathname) {
 //					return Pattern.matches(regex, pathname.getName());
-					return pathname.getName().endsWith(regex);
+					return pathname.endsWith(regex);
 				}
+
 				
 			};
 			
 			for(int i=0; i<dirs.length; i++){
-				f.addAll(Arrays.asList((new File(dirs[i])).listFiles(filter)));
+				f.addAll(Arrays.asList((new File(dirs[i])).list(filter)));
 			}
 		}
+		Collections.sort(f);
 			KrakenTree[] kt = new KrakenTree[f.size()];
 			for(int i=0; i<kt.length; i++){
-				kt[i] = new KrakenTree(f.get(i));
+				kt[i] = new KrakenTree(new File(f.get(i)));
 				kt[i].modAll(i, kt.length+ extra.length);
 			//	kt[i].print(new File(i+".combined.txt"),"",
 				//		header.toString()
@@ -138,7 +141,7 @@ public class MergeKrakenCmd extends CommandLine{
 			combined.removeDupl();
 			combined.split(); combined.split();
 			
-			combined.removeSingleNodes(Arrays.asList(new Integer[] {2}));
+			combined.removeSingleNodes(); //Arrays.asList(new Integer[] {2}));
 		//	combined.roots;
 			System.err.println(combined.roots.size());
 
@@ -146,14 +149,25 @@ public class MergeKrakenCmd extends CommandLine{
 			File currDir = new File(".");
 			header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon_parents");
 			PrintWriter designF = new PrintWriter(new FileWriter(new File("design.csv")));
-			designF.println("Name,Grp1");
+			designF.println("Name,Grp1,Grp2");
+		
 			for(int i=0; i<f.size(); i++){
-				File fi = f.get(i);
+				String nmei = f.get(i);
 				header.append("\t");
-				String prefix = fi.getParentFile().equals(currDir) ? "": fi.getParentFile().getName()+"/";
-				String nmei = prefix+fi.getName();
-				designF.println(nmei+","+(i+1));
-				header.append(nmei);
+				
+			//	String	nmei = fi.getName();
+				String grp = "all";
+				String[] split = nmei.split("/"); 
+			//	if(fi.getParentFile()!=null){
+					//String prefix = fi.getParentFile().equals(currDir) ? "": fi.getParentFile().getName()+"/";
+				grp = split[0];
+				for(int ik=1; ik<split.length-1; ik++){
+					grp  =grp+"/"+split[ik];
+				}
+					//nmei = nmei+fi.getName();
+				//}
+				designF.println(split[split.length-1]+","+(i+1)+","+grp);
+				header.append(split[split.length-1]);
 			}
 			designF.close();
 			for(int i=0; i<extra.length; i++){

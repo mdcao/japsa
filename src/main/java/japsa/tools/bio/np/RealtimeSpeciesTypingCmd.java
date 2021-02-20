@@ -34,9 +34,19 @@
  ****************************************************************************/
 package japsa.tools.bio.np;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 import japsa.bio.np.RealtimeSpeciesTyping;
+import japsa.tools.seq.SequenceUtils;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
@@ -58,8 +68,18 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		setDesc(annotation.scriptDesc());
 
 		addString("output", "output.dat",  "Output file, - for standard output");		
-		addString("bamFile", null,  "The bam file",true);		
+		addString("bamFile", null,  "The bam file",false);	
+		addString("fastqFile", null, "Fastq file", false);
+		addString("reference", null, "Reference db if fastq is presented", false);
 		addString("indexFile", null,  "indexFile ",true);
+		addString("mm2Preset", null,  "mm2Preset ",false);
+		addString("mm2_path", "/sw/minimap2/current/minimap2",  "minimap2 path", false);
+		
+		//addString("mm2Preset", "splice",  "preset for minimap2", false);
+	//	addBoolean("writeBed", false, "whether to write bed",false);
+		//addString("mm2Preset", "map-ont",  "preset for minimap2", false);
+		addString("mm2_memory", (Runtime.getRuntime().maxMemory()-1000000000)+"",  "minimap2 memory", false);
+		addInt("mm2_threads", 4, "threads for mm2", false);
 		
 		addDouble("qual", 1,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");
@@ -87,7 +107,18 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		/**********************************************************************/
 
 		String output    = cmdLine.getStringVal("output");
-		String bamFile   = cmdLine.getStringVal("bamFile");			
+		String bamFile   = cmdLine.getStringVal("bamFile");		
+		String fastqFile = cmdLine.getStringVal("fastqFile");
+		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
+		
+		int mm2_threads = cmdLine.getIntVal("mm2_threads");
+		SequenceUtils.mm2_mem = cmdLine.getStringVal("mm2_mem");
+		SequenceUtils.mm2_path = cmdLine.getStringVal("mm2_path");
+		SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
+		SequenceUtils.mm2_splicing = null;//
+		//SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
+		String reference = cmdLine.getStringVal("reference");
+		
 		String indexFile = cmdLine.getStringVal("indexFile");
 		String filter = cmdLine.getStringVal("filter");
 
@@ -104,7 +135,26 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		paTyping.setMinQual(qual);
 		paTyping.setTwoOnly(twoOnly);	
 		paTyping.setFilter(filter);
-		paTyping.typing(bamFile, number, time);		
+		Iterator<SAMRecord> samIter = null;
+		SamReader samReader= null;
+		if(bamFile!=null){
+		InputStream bamInputStream;
+
+		if ("-".equals(bamFile))
+			bamInputStream = System.in;
+		else
+			bamInputStream = new FileInputStream(bamFile);
+			SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+			samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
+			samIter= samReader.iterator();
+		}else{
+			String mm2_index = SequenceUtils.minimapIndex(new File(reference),  false);
+			samIter = SequenceUtils.getSAMIteratorFromFastq(fastqFile, mm2_index, Integer.MAX_VALUE);
+		}
+		paTyping.typing(samIter, number, time);
+		if(samReader!=null) samReader.close();
+		
+		//paTyping.typing(bamFile, number, time);		
 	}
 }
 

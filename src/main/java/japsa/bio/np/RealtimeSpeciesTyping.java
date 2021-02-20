@@ -83,6 +83,12 @@ public class RealtimeSpeciesTyping {
 	public static boolean OUTSEQ=false;
 	HashMap<String, ArrayList<String>> species2ReadList = new HashMap<String, ArrayList<String>>();
 
+	/** this class represents the coverage of each species */
+	static class Coverage{
+		String species;
+		ArrayList<String> readList = new ArrayList<String>();
+	}
+	
 	public RealtimeSpeciesTyping(String indexFile, String outputFile) throws IOException{
 		LOG.debug("string string");
 		this.indexBufferedReader = SequenceReader.openFile(indexFile);
@@ -193,7 +199,7 @@ public class RealtimeSpeciesTyping {
 		typing(bamInputStream, readNumber, timeNumber);
 	}
 
-	/**
+	/**\
 	 * @param filter the species keywords list (separated by comma) to excluded
 	 */
 	public void setFilter(String filter) {
@@ -207,19 +213,21 @@ public class RealtimeSpeciesTyping {
 		
 	}
 	public void typing(InputStream bamInputStream, int readNumber, int timeNumber) throws IOException, InterruptedException{
-		//if (readNumber <= 0)
-		//	readNumber = 1;			
-
-		typer.setReadPeriod(readNumber);
-		typer.setTimePeriod(timeNumber * 1000);
-
-		LOG.info("Species typing ready at " + new Date());
-
-		String readName = "", refName = "";
-
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
 		SAMRecordIterator samIter = samReader.iterator();
+		typing(samIter, readNumber, timeNumber);
+		samReader.close();
+	}
+	public void typing(Iterator<SAMRecord> samIter, int readNumber, int timeNumber) throws IOException, InterruptedException{
+		//if (readNumber <= 0)
+		//	readNumber = 1;			
+		typer.setReadPeriod(readNumber);
+		typer.setTimePeriod(timeNumber * 1000);
+		LOG.info("Species typing ready at " + new Date());
+		String readName = "", refName = "";
+
+		
 
 		Thread thread = new Thread(typer);
 		LOG.info("starting RealtimeSpeciesTyper thread");
@@ -229,6 +237,8 @@ public class RealtimeSpeciesTyping {
 		while (samIter.hasNext()){
 //			try{
 			SAMRecord sam = samIter.next();
+		//	System.err.println(sam.getReadName());
+			System.err.println(sam.getReferenceName());
 			//LOG.info("sam read name = "+sam.getReadName());
 			//if (firstReadTime <=0)
 			//	firstReadTime = System.currentTimeMillis();
@@ -293,8 +303,8 @@ public class RealtimeSpeciesTyping {
 		//typer.simpleAnalysisCurrent();
 
 		typer.stopWaiting();//Tell typer to stop
-		samIter.close();
-		samReader.close();
+		//samIter.close();
+		
 	}	
 
 	public static class RealtimeSpeciesTyper extends RealtimeAnalysis {

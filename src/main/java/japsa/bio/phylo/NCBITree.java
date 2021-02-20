@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import pal.misc.Identifier;
 import pal.tree.Node;
+import pal.tree.NodeUtils;
 import pal.tree.SimpleNode;
 import pal.tree.SimpleTree;
 import pal.tree.Tree;
@@ -451,6 +452,12 @@ public NCBITree(File file, boolean useTaxaAsAsslug, boolean kraken) throws IOExc
 			br = new BufferedReader(new FileReader(file));
 		}
 		String nextLine = br.readLine();
+		if(nextLine.indexOf("unclassified")>=0){
+			nextLine = br.readLine();
+		}
+		while(nextLine.startsWith(" ")) { // should use regex here
+			nextLine = nextLine.substring(1);
+		}
 		String[] nextLines = nextLine.split("\t");
 		if(!nextLine.startsWith("unclassified")){
 			unclassified = make("unclassified", 0, null,0);
@@ -681,24 +688,36 @@ public void merge(NCBITree tree1, int pos){
 	}
 
 	public void split() {
+		List<String> mtch = Arrays.asList(new String[] {slug("unclassified", false), slug("root",false),  slug("cellular organisms",false),slug("bacteria", false)});
 		int len = roots.size();
 		List<Node> roots1 = new ArrayList<Node>();
 		for(int i=0;i<len; i++){
+			
 			Node n = roots.get(i);
+			String nme  = slug(n.getIdentifier().getName().trim(),false);
+			System.err.println(nme+" "+mtch.contains(nme));
+			if(mtch.contains(nme)){
 			if(n.getChildCount()>0){
 				for(int j=n.getChildCount()-1;j>=0; j-- ){
 					roots1.add(n.removeChild(j));
 				}
+			}
+			}else{
+				roots1.add(n);
 			}
 		}
 		this.roots = roots1;
 		
 	}
 
-	public void removeSingleNodes(Collection<Integer>target) {
+	public void removeSingleNodes() {
 		int len = roots.size();
 		for(int i=len-1; i>=0; i--){
-			if(roots.get(i).getChildCount()==0 || !target.contains(roots.get(i).getIdentifier().getAttribute("taxon"))){
+			int cnt = roots.get(i).getChildCount();
+			int cnt1 = NodeUtils.getExternalNodes(roots.get(i)).length;
+			System.err.println(roots.get(i).getIdentifier()+" "+cnt);
+			if(cnt==0 || cnt1==1) { //|| !target.contains(roots.get(i).getIdentifier().getAttribute("taxon"))){
+				System.err.println("removing "+roots.get(i).getIdentifier());
 				roots.remove(i);
 			}
 		}

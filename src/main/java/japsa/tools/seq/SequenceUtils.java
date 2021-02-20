@@ -32,9 +32,11 @@ package japsa.tools.seq;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.URL;
@@ -47,7 +49,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
@@ -58,13 +59,68 @@ import htsjdk.samtools.SamReaderFactory;
 public class SequenceUtils {
 	
 	
-	
+	public static class PipeConnector implements Runnable {
+		  private BufferedReader  _process1Output = null;
+		  private PrintWriter _process2Input  = null;
+		  private int max;
+		  /**
+		   * Initialize the PipeConnector
+		   *
+		   * @param  process1Output  The output stream from the first process (read as an InputStream)
+		   * @param  process2Input   The input stream to the second process (written as an OutputStream)
+		   */
+		  public PipeConnector (BufferedReader process1Output, OutputStream process2Input, int max) {
+		    _process1Output = process1Output;
+		    _process2Input  = new PrintWriter(new OutputStreamWriter(process2Input));
+		    this.max = max;
+		  }
+		 
+		  /**
+		   * Perform the copy operation in a separate thread
+		   */
+		  public void run () {
+		    String value;
+		 
+		   for(int i =0; i<max; i++) {
+		      try {
+		        value = _process1Output.readLine();
+		        if (value == null) break;  // end of input stream
+		        _process2Input.println(value);
+		        _process2Input.flush();
+		      }
+		      catch (IOException error) {
+		        break;
+		      }
+		    }
+		 System.err.println("finished");
+		    try {
+		      _process1Output.close();
+		    }
+		    catch (IOException error) {}
+		  
+		      _process2Input.close();
+		  }
+		}
 	
 	
 	/*public static Iterator<SAMRecord> getSAMIteratorFromFastq(File inFile, String mm2Index, String mm2_path, 
 			int mm2_threads, String mm2Preset, String mm2_mem, String mm2_splicing) throws IOException{
 		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , mm2_splicing);
 	}*/
+	
+public static void main(String[] args){
+	try{
+		String refFile = "/home/lachlan/github/npTranscript/data/SARS-Cov2/VIC01/wuhan_coronavirus_australia.fasta.gz";
+		mm2_path="/home/lachlan/github/minimap2/minimap2";
+		String mm2_index = SequenceUtils.minimapIndex(new File(refFile),  false);
+		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq("ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz", mm2_index, 100);
+		while(sm.hasNext()){
+			System.err.println(sm.next().getAlignmentStart());
+		}
+	}catch(Exception exc){
+		exc.printStackTrace();
+	}
+	}
 	
 	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String url, String mm2Index, int maxReads) throws IOException{
 		return new FastqToSAMRecord(url, mm2Index,maxReads);
@@ -77,18 +133,39 @@ public class SequenceUtils {
 	public static String mm2_splicing="-un";
 	
 	
+	
+	
 	private static class FastqToSAMRecord implements Iterator<SAMRecord> {
 		// ProcessBuilder pb;
 		 SamReader reader;
 		SAMRecordIterator iterator;
 		final String mm2Index;
 		
-		final File inFile;
-		final boolean deleteFile;
+		final String input;
+		int max_per_file;
+	//	final boolean deleteFile;
 		private void init() throws IOException{
 			ProcessBuilder pb;
 			
-			if(mm2_splicing==null) pb = new ProcessBuilder(mm2_path, 
+			if(mm2_splicing==null) {
+				if(mm2Preset==null){
+					pb = new ProcessBuilder(mm2_path, 
+							"-t",
+							"" + mm2_threads,
+							"-a",
+							
+						//	"--for-only",
+							"-I",
+							mm2_mem,
+//							"-K",
+//							"200M",
+							mm2Index,
+							"-"
+						
+							);
+				}else{
+				pb = new ProcessBuilder(mm2_path, 
+			
 					"-t",
 					"" + mm2_threads,
 					"-ax",
@@ -102,6 +179,8 @@ public class SequenceUtils {
 					"-"
 				
 					);
+				}
+			}
 			else pb = new ProcessBuilder(mm2_path, 
 					"-t",
 					"" + mm2_threads,
@@ -117,49 +196,58 @@ public class SequenceUtils {
 					"-"
 				
 					);
+			System.err.println(input);
 			
-			Process mm2Process  = pb.redirectInput(ProcessBuilder.Redirect.from(inFile)).redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
+			//	BufferedReader br;
+				InputStream	is ;
+				if(inputFile==null){
+					URL  url = new URL(input);
+					URLConnection urlc = url.openConnection();
+				is= input.endsWith(".gz")  ? new GZIPInputStream(urlc.getInputStream()) : urlc.getInputStream();
+				}else{
+					is= input.endsWith(".gz")  ? new GZIPInputStream(new FileInputStream(inputFile)) : new FileInputStream(inputFile);
+
+				}
+				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
+			PipeConnector pc = new PipeConnector(new BufferedReader(new InputStreamReader(is)), mm2Process.getOutputStream(), max_per_file);
+			//pc.run();
+			Thread th = new Thread(pc);
+			th.start();
 			//	Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
 			//	OutputStream os = mm2Process.getOutputStream();
 				reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
 				iterator = reader.iterator();
+				//pc.run();
+				
 		}
 	//	static int id = 
+		 File inputFile = null;
 		public FastqToSAMRecord(String input, String mm2Index, int maxReads) throws IOException{
-			int max_per_file = maxReads==Integer.MAX_VALUE ? maxReads : maxReads *4;
-			if(max_per_file <0) max_per_file = Integer.MAX_VALUE;
-			if(input.startsWith("ftp://")){
-				URL url = new URL (input);
-				URLConnection urlc = url.openConnection();
-				BufferedReader br;
-				if(url.getPath().endsWith(".gz")){
-					br = new BufferedReader(new InputStreamReader(new GZIPInputStream(urlc.getInputStream())));
-
-				}else{
-					br = new BufferedReader(new InputStreamReader(urlc.getInputStream()));
-				}
-				this.inFile = new File("./tmp_file_"+System. currentTimeMillis()+".gz");
-				deleteFile=true;
-				//inFile.deleteOnExit();
-				PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(inFile))));
-				String st = "";
-				
-				for(int i=0; (st = br.readLine())!=null && i<max_per_file; i++){
-					pw.println(st);
-				}
-				pw.close();
-				br.close();
-				
-			}else{
-				if(input.startsWith("file:/")){
-					URL url = new URL (input);
-					inFile = new File(url.getPath());
-				}else{
-					this.inFile = new File(input);
-				}
-				deleteFile = false;
-			}
 			this.mm2Index = mm2Index;
+
+			 max_per_file = maxReads==Integer.MAX_VALUE ? maxReads : maxReads *4;
+			if(max_per_file <0) max_per_file = Integer.MAX_VALUE;
+		
+			if(input.startsWith("ftp://")  || input.startsWith("file:/")){
+				 this.input = input;
+			}else{
+				inputFile = new File(input);
+			     this.input = "file:/"+(inputFile).getAbsolutePath();	
+			}
+			
+//				
+				//br = new BufferedReader(is);
+				//this.inFile = new File("./tmp_file_"+System. currentTimeMillis()+".gz");
+				//deleteFile=true;
+				//inFile.deleteOnExit();
+			///	PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(inFile))));
+			//	String st = "";
+//				for(int i=0; (st = br.readLine())!=null && i<max_per_file; i++){
+	//				pw.println(st);
+		//		}
+			//	pw.close();
+				//br.close();
+				
 		 }
 		
 		
@@ -170,9 +258,6 @@ public class SequenceUtils {
 			boolean res = iterator==null || iterator.hasNext();
 			try{
 			if(!res) {
-				if(deleteFile){
-					inFile.delete();
-				}
 				reader.close();
 			}
 			
@@ -190,9 +275,6 @@ public class SequenceUtils {
 				exc.printStackTrace();
 			}
 			if(!iterator.hasNext()){
-				if(deleteFile){
-					inFile.delete();
-				}
 				try{
 				reader.close();
 				

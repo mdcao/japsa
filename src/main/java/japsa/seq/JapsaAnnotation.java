@@ -765,7 +765,8 @@ public class JapsaAnnotation {
 				continue;
 
 			String type = toks[2];
-			if (notAll && !list.contains(type))
+			boolean contains = list.contains(type);
+			if (notAll && !contains)
 				continue;
 
 			int start = Integer.parseInt(toks[3]);
