@@ -18,28 +18,7 @@ public  class KrakenTree extends NCBITree {
 
 	
 	
-	void modAll(int i, int len) {
-		String[] tags = new String[] {count_tag, count_tag1};
-		for(int k=0; k<roots.size(); k++){
-			Node root = roots.get(k);
-			//if(root.getChildCount()>0){
-				Iterator<Node> it = NodeUtils.preOrderIterator(root);
-				while(it.hasNext()){
-					Identifier id = it.next().getIdentifier();
-					for(int j=0; j<tags.length; j++)
-					{
-						String count_tag2 = tags[j];
-						Integer cnt = (Integer) id.getAttribute(count_tag2);
-						if(cnt==null) cnt=0;
-						int[] v = new int[len];
-						v[i] = cnt;
-						id.setAttribute(count_tag2, v);
-					}
-				}
-			//}
-		}
-		
-	}
+	
 	public KrakenTree(File file) throws IOException {
 		super(file, true, true);
 		// TODO Auto-generated constructor stub
@@ -59,10 +38,10 @@ public  class KrakenTree extends NCBITree {
 	
 	static double bl = 0.04;
 	@Override
-	public void print(Node node, PrintStream pw, String count_tag){
+	public void print(Node node, PrintStream pw, String[] count_tag, String[] format){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
-		 int[] counts = (int[]) id.getAttribute(count_tag);
+		// Integer[] counts = (Integer[]) id.getAttribute(count_tag);
 		 Integer level = (int) Math.round((((Integer)id.getAttribute("level")).doubleValue()+1.0)/2.0);
 		 if(node.isRoot()) level =0;
 		String height = String.format("%5.3g", NodeUtils.getMinimumPathLengthLengthToLeaf(node)/bl).trim();
@@ -106,9 +85,9 @@ public  class KrakenTree extends NCBITree {
 		//header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
 
 		 pw.print(nme+"\t"+hex+"\t"+taxon+"\t"+height+"\t"+level+"\t"+Arrays.asList(cssvals1)+"\t"+sb.toString()+"\t"+sb1.toString());
-		 if(counts!=null){
-			 for(int i=0; i<counts.length; i++){
-				 pw.print("\t"+counts[i]);
+		 if(count_tag!=null){
+			 for(int i=0; i<count_tag.length; i++){
+				 pw.print(String.format(format[i],  id.getAttribute(count_tag[i])).replaceAll("\\s+",""));
 			 }
 		 }
 		 //if(true) pw.print("\theight="+String.format("%5.3g", height).trim());

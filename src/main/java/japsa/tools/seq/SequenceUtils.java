@@ -33,6 +33,8 @@ package japsa.tools.seq;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -46,20 +48,58 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
+import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.util.SequenceUtil;
+import japsa.bio.np.RealtimeSpeciesTyping;
+import japsa.bio.phylo.NCBITree;
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
+import pal.tree.Node;
 
 public class SequenceUtils {
 	
+	public static void flip(SAMRecord sam, boolean switchFlag) {
+		String sa = sam.getReadString();
+		byte[]phredQs = sam.getBaseQualities();
+		byte[] bases = sam.getReadBases();
+		reverseArray(phredQs);
+		reverseArray(bases);
+		sam.setReadBases(bases);
+		sam.setBaseQualities(phredQs);
+		sa = SequenceUtil.reverseComplement(sa);
+		sam.setReadString(sa);
+		if(switchFlag){
+			sam.setReadNegativeStrandFlag(!sam.getReadNegativeStrandFlag());
+		}
+	}
+	public static void reverseArray(byte[] intArray) {
+		 int size = intArray.length;
+	        int i, k;
+	        byte temp; 
+	        for (i = 0; i < size / 2; i++) { 
+	            temp = intArray[i]; 
+	            intArray[i] = intArray[size - i - 1]; 
+	            intArray[size - i - 1] = temp; 
+	        } 
+	 } 
 	
+	/** This processes input fastq */
 	public static class PipeConnector implements Runnable {
+		 final Collection<String> readsToInclude;
+		
 		  private BufferedReader  _process1Output = null;
 		  private PrintWriter _process2Input  = null;
 		  private int max;
@@ -69,8 +109,9 @@ public class SequenceUtils {
 		   * @param  process1Output  The output stream from the first process (read as an InputStream)
 		   * @param  process2Input   The input stream to the second process (written as an OutputStream)
 		   */
-		  public PipeConnector (BufferedReader process1Output, OutputStream process2Input, int max) {
+		  public PipeConnector (BufferedReader process1Output, OutputStream process2Input, int max, Collection<String> readsToInclude) {
 		    _process1Output = process1Output;
+		    this.readsToInclude = readsToInclude;
 		    _process2Input  = new PrintWriter(new OutputStreamWriter(process2Input));
 		    this.max = max;
 		  }
@@ -79,20 +120,33 @@ public class SequenceUtils {
 		   * Perform the copy operation in a separate thread
 		   */
 		  public void run () {
-		    String value;
-		 
+		    String value0, value1,value2, value3; //fastq lines
+		   boolean process = true;
 		   for(int i =0; i<max; i++) {
 		      try {
-		        value = _process1Output.readLine();
-		        if (value == null) break;  // end of input stream
-		        _process2Input.println(value);
-		        _process2Input.flush();
+		        value0 = _process1Output.readLine();
+		        if (value0 == null) break;  // end of input stream
+		        value1 = _process1Output.readLine();
+		        value2 = _process1Output.readLine();
+		        value3 = _process1Output.readLine();
+		        if(readsToInclude==null){
+		        	process=true;
+		        }else{
+		        	String readname = value0.split("\\s+")[0].substring(1);
+			        process = readsToInclude.remove(readname);
+		        }
+		        if(process){
+		        	_process2Input.println(value0); _process2Input.println(value1); _process2Input.println(value2); _process2Input.println(value3);
+		        	_process2Input.flush();
+		        }
+		        if(readsToInclude!=null && readsToInclude.size()==0) break; // no more reads to include
 		      }
 		      catch (IOException error) {
 		        break;
 		      }
 		    }
-		 System.err.println("finished");
+		   
+		System.err.println("finished piping input data");
 		    try {
 		      _process1Output.close();
 		    }
@@ -103,17 +157,13 @@ public class SequenceUtils {
 		}
 	
 	
-	/*public static Iterator<SAMRecord> getSAMIteratorFromFastq(File inFile, String mm2Index, String mm2_path, 
-			int mm2_threads, String mm2Preset, String mm2_mem, String mm2_splicing) throws IOException{
-		return new FastqToSAMRecord(inFile, mm2Index, mm2_path,mm2_threads, mm2Preset, mm2_mem , mm2_splicing);
-	}*/
 	
 public static void main(String[] args){
 	try{
 		String refFile = "/home/lachlan/github/npTranscript/data/SARS-Cov2/VIC01/wuhan_coronavirus_australia.fasta.gz";
 		mm2_path="/home/lachlan/github/minimap2/minimap2";
-		String mm2_index = SequenceUtils.minimapIndex(new File(refFile),  false);
-		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq("ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz", mm2_index, 100);
+		String mm2_index = SequenceUtils.minimapIndex(new File(refFile),  false, true);
+		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq("ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz", mm2_index, 100, null);
 		while(sm.hasNext()){
 			System.err.println(sm.next().getAlignmentStart());
 		}
@@ -122,8 +172,8 @@ public static void main(String[] args){
 	}
 	}
 	
-	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String url, String mm2Index, int maxReads) throws IOException{
-		return new FastqToSAMRecord(url, mm2Index,maxReads);
+	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String url, String mm2Index, int maxReads, Collection<String>readsToInclude) throws IOException{
+		return new FastqToSAMRecord(url, mm2Index,maxReads, readsToInclude);
 	}
 	
 	public static int mm2_threads=4;
@@ -131,7 +181,7 @@ public static void main(String[] args){
 	public static String mm2_mem = "1000000000";
 	public static String mm2Preset="splice";
 	public static String mm2_splicing="-un";
-	
+	public static boolean secondary =true;
 	
 	
 	
@@ -143,17 +193,19 @@ public static void main(String[] args){
 		
 		final String input;
 		int max_per_file;
+		final Collection<String> readsToInclude;
 	//	final boolean deleteFile;
 		private void init() throws IOException{
 			ProcessBuilder pb;
 			
 			if(mm2_splicing==null) {
 				if(mm2Preset==null){
+					if(!secondary){
 					pb = new ProcessBuilder(mm2_path, 
 							"-t",
 							"" + mm2_threads,
-							"-a",
-							
+							//"-a",
+							"--secondary=no",
 						//	"--for-only",
 							"-I",
 							mm2_mem,
@@ -163,6 +215,18 @@ public static void main(String[] args){
 							"-"
 						
 							);
+					}else{
+						pb = new ProcessBuilder(mm2_path, 
+								"-t",
+								"" + mm2_threads,
+								"-I",
+								mm2_mem,
+//								"-K",
+//								"200M",
+								mm2Index,
+								"-"
+								);
+					}
 				}else{
 				pb = new ProcessBuilder(mm2_path, 
 			
@@ -209,7 +273,7 @@ public static void main(String[] args){
 
 				}
 				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
-			PipeConnector pc = new PipeConnector(new BufferedReader(new InputStreamReader(is)), mm2Process.getOutputStream(), max_per_file);
+			PipeConnector pc = new PipeConnector(new BufferedReader(new InputStreamReader(is)), mm2Process.getOutputStream(), max_per_file, readsToInclude);
 			//pc.run();
 			Thread th = new Thread(pc);
 			th.start();
@@ -222,10 +286,13 @@ public static void main(String[] args){
 		}
 	//	static int id = 
 		 File inputFile = null;
-		public FastqToSAMRecord(String input, String mm2Index, int maxReads) throws IOException{
+		 
+		
+		 
+		public FastqToSAMRecord(String input, String mm2Index, int maxReads,Collection<String>readsToInclude) throws IOException{
 			this.mm2Index = mm2Index;
-
-			 max_per_file = maxReads==Integer.MAX_VALUE ? maxReads : maxReads *4;
+			this.readsToInclude = readsToInclude;
+			 max_per_file = maxReads;
 			if(max_per_file <0) max_per_file = Integer.MAX_VALUE;
 		
 			if(input.startsWith("ftp://")  || input.startsWith("file:/")){
@@ -234,20 +301,6 @@ public static void main(String[] args){
 				inputFile = new File(input);
 			     this.input = "file:/"+(inputFile).getAbsolutePath();	
 			}
-			
-//				
-				//br = new BufferedReader(is);
-				//this.inFile = new File("./tmp_file_"+System. currentTimeMillis()+".gz");
-				//deleteFile=true;
-				//inFile.deleteOnExit();
-			///	PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(inFile))));
-			//	String st = "";
-//				for(int i=0; (st = br.readLine())!=null && i<max_per_file; i++){
-	//				pw.println(st);
-		//		}
-			//	pw.close();
-				//br.close();
-				
 		 }
 		
 		
@@ -284,8 +337,15 @@ public static void main(String[] args){
 				
 				return null;
 			}
-			SAMRecord nxt =  iterator.next();
-			return nxt;
+			SAMRecord nxt = null;
+			try{
+			 nxt =  iterator.next();
+			// System.err.println("h");
+			}catch(SAMFormatException exc){
+				exc.printStackTrace();
+			//	System.exit(0);;
+			}
+			 return nxt;
 		}
 		 
 	 }
@@ -427,7 +487,7 @@ public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders,
 	
 	
 	
-public static String minimapIndex(File refFile,   boolean overwrite) throws IOException, InterruptedException {
+public static String minimapIndex(File refFile,   boolean overwrite, boolean saveSeqs) throws IOException, InterruptedException {
 	final String mm2 = mm2_path;
 	final String mem = mm2_mem;
 	String infile = refFile.getAbsolutePath();
@@ -440,15 +500,28 @@ public static String minimapIndex(File refFile,   boolean overwrite) throws IOEx
 		System.out.println("minimap index exists");
 		return indexFile1.getAbsolutePath();
 	}else{
-		ProcessBuilder pb = new ProcessBuilder(mm2, 
+		System.err.println("making index "+saveSeqs+" "+mem);
+		ProcessBuilder pb ;
+		if(saveSeqs){
+			pb= new ProcessBuilder(mm2, 
+					"-I",
+					mem,
+					"-d",
+					indexFile.toString(),
+					refFile.toString()
+					);
+		}else{
+		pb = new ProcessBuilder(mm2, 
+				"--idx-no-seq",
 				"-I",
 				mem,
 				"-d",
 				indexFile.toString(),
 				refFile.toString()
 				);
+		}
 		//System.err.println(pb.toString());
-			Process p =  pb.redirectError(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+			Process p =  pb.redirectError(ProcessBuilder.Redirect.to(new File("err_index.txt"))).start();
 			p.waitFor();
 	}
 	return indexFile.getAbsolutePath();
@@ -501,5 +574,70 @@ public static Iterator<SAMRecord> getCombined(Iterator<SAMRecord>[] samIters, Co
 		}
 		
 	};
+}
+//currently not using the tree, but in future, will use it to select entire clades if requried.
+public static String mkdb(String refFile, String treef, String speciesIndex,Collection<String>  targetSpecies, 
+		String refFile_out, String indexFile_out) {
+	
+	Map<String, String> seq2Species = new HashMap<String, String>();
+	//String[] str = refFile.lastIndexOf('.');
+	
+	int printed=0;
+	try{
+	RealtimeSpeciesTyping.readSpeciesIndex(speciesIndex, seq2Species);
+	NCBITree tree = new NCBITree(new File(treef), false);
+	SequenceReader reader = SequenceReader.getReader(refFile);
+	Alphabet alphabet = Alphabet.DNA();
+	SequenceOutputStream sos = new SequenceOutputStream(new GZIPOutputStream(new FileOutputStream(refFile_out)));
+	Set	<Node> targets = new HashSet<Node>();
+	Iterator<String> it = targetSpecies.iterator();
+	while(it.hasNext()){
+		String nme = it.next();
+		Node n = tree.getNode(nme);
+		if(n!=null) targets.add(n);
+	}
+	
+	while (true){
+		Sequence genome = reader.nextSequence(alphabet);
+		if (genome == null)break;
+		String nme = seq2Species.get(genome.getName());
+	//	System.err.println(nme);
+		if(targetSpecies.contains(nme)){
+			//seq2Species1.put(genome.getNa, value)
+			genome.writeFasta(sos);
+			printed++;
+		}else{
+			seq2Species.remove(genome.getName());
+			if(false){
+				Node node = tree.getNode(nme);
+				Node parent = node;
+				inner: while(parent!=null){
+					if(targets.contains(node)){
+						genome.writeFasta(sos);
+						printed++;
+						break inner;
+					}
+			}
+			}
+		}
+//		Integer sze = genome.length();
+		//pw.println(nme+","+sze);
+		//node.getIdentifier().setAttribute("length",sze);
+	}
+	sos.close();
+	PrintWriter pw = new PrintWriter(new FileWriter(indexFile_out));
+	Iterator<Entry<String, String>> it1 = seq2Species.entrySet().iterator();
+	while(it1.hasNext()){
+		Entry<String, String> ent = it1.next();
+		pw.println(ent.getValue()+">"+ent.getKey());
+	}
+	pw.close();
+	
+	
+	}catch(Exception exc){
+		exc.printStackTrace();
+	}
+	if(printed==0) throw new RuntimeException("none extracted");
+	return refFile_out;
 }
 }

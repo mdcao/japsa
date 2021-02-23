@@ -361,4 +361,6 @@ public abstract class SequenceReader implements Closeable{
 		return seqs;
 	}
 	
+	
+	
 }

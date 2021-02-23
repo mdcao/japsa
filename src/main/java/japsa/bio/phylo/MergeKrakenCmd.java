@@ -180,8 +180,8 @@ public class MergeKrakenCmd extends CommandLine{
 			//	CSSProcessCommand.colorEachLevel(combined.tree);
 				CSSProcessCommand.colorRecursive(combined.tree, true);
 			}
-			combined.print(new File(outfile),"", header.toString(), NCBITree.count_tag);
-			combined.print(new File(outfile1),"", header.toString(), NCBITree.count_tag1);
+			combined.print(new File(outfile),"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%d"}, false);
+			combined.print(new File(outfile1),"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%d"}, false);
 
 			//System.err.println(combined);
 		} catch (IOException e) {

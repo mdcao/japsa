@@ -16,7 +16,8 @@ public class Slug{
 		return toSlug(input, k, "_");
 	}
 	public static String toSlug(String input, String replace) {
-	 input = input.replaceAll(", complete sequence", "");
+	 input = input.replaceAll(", complete sequence", "").replaceAll("-","");
+	 
 	  Matcher matcher = WHITESPACE.matcher(input);
 	 String nowhitespace = WHITESPACE.matcher(input).replaceAll(replace);
 	  String normalized = Normalizer.normalize(nowhitespace, Form.NFD);

@@ -25,8 +25,26 @@ public abstract class CommonTree {
 	 * @see japsadev.bio.phylo.CommonTree#print(java.io.File)
 	 */
 
-	
-	public void print(Node node, PrintStream pw, String count_tag){
+	public void printKraken(Node node, PrintStream pw, int total){
+		 Identifier id  = node.getIdentifier();
+		 String nme =id.getName().replaceAll("\\+-","");
+		 Integer level = ((Integer)id.getAttribute("level")).intValue();
+		 String hex = ((String)id.getAttribute("css"));		
+		 String alias = ((String)id.getAttribute("alias"));	
+		 String alias1 = ((String)id.getAttribute("alias1"));	
+		 String prefix = ((String)id.getAttribute("prefix"));	
+		 Integer taxon = ((Integer)id.getAttribute("taxon"));	
+		 double height = node.getNodeHeight();
+		 Integer[] nt = (Integer[] ) id.getAttribute(NCBITree.count_tag);
+		 Integer[] nt1 = (Integer[] ) id.getAttribute(NCBITree.count_tag1);
+		 String perc = String.format("%5.3g", 100*(double)nt[0]/ (double) total).trim();
+		 if(taxon==null){
+			 taxon=0; nme="root";
+		 }
+		 pw.print(perc+"\t"+nt[0]+"\t"+nt1[0]+"\t"+level+"\t"+taxon+"\t"+nme);
+		 pw.println();
+	}
+	public void print(Node node, PrintStream pw, String[] attributes, String[] format){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
 		//if(nme.indexOf("unclassified ssRNA")>=0){
@@ -45,18 +63,29 @@ public abstract class CommonTree {
 		 if(alias1!=null) pw.print("\talias1="+alias1);
 		 if(taxon!=null) pw.print("\ttaxon="+taxon);
 		 if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
-
+        if(attributes!=null){
+        	for(int i=0; i<attributes.length; i++){
+        		//System.err.println(format[i]);
+        		Integer[] nt = (Integer[] ) id.getAttribute(attributes[i]);
+        		//System.err.println(Arrays);
+        		String fmt =String.format(format[i],  nt[0]);//id.getAttribute(attributes[i])); 
+        		pw.print("\t"+fmt.replaceAll("\\s+",""));
+        	}
+        }
 		 pw.println();
 	}
-	
 	public void print(File out) throws IOException{
-		print(out, "------------------------------------\n", null, NCBITree.count_tag);
+		this.print(out, null, null, false);
+	}
+	public void print(File out, String[] attributes, String[] format, boolean krkn) throws IOException{
+		print(out, "------------------------------------\n", null, attributes, format, krkn);
 	}
 	
 	
 	
-	 public  void print(File out, String sep, String header, String count_tag) throws IOException{
+	 public  void print(File out, String sep, String header, String[] count_tag, String[] format, boolean kraken_style) throws IOException{
 		   PrintStream pw ;
+		   
 		   if(out.getName().endsWith(".gz")){
 			  pw = new PrintStream(new GZIPOutputStream(new FileOutputStream(out)));
 		   }else{
@@ -64,14 +93,20 @@ public abstract class CommonTree {
 		   }
 		//   PrintWriter pw = new PrintWriter(new FileWriter(out));
 		 
-		   pw.println(header);
+		   if(!kraken_style) pw.println(header);
+		   int total =0;
+			for(int i=roots.size()-1;i>=0; i--){
+				Integer[] cnts = (Integer[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
+				for(int j=0; j<cnts.length; j++) total+=cnts[j];
+			}
 		   for(int i=0; i<this.roots.size(); i++){
 			   System.err.println(roots.get(i).getIdentifier().getName());
 			 Iterator<Node> n = NodeUtils.preOrderIterator(roots.get(i));  
 			
 			inner: while(n.hasNext()){
 				 Node node = n.next();
-				 print(node, pw, count_tag);
+				 if(kraken_style) printKraken(node, pw, total);
+				 else print(node, pw, count_tag, format);
 				
 			 }
 			 pw.print(sep);

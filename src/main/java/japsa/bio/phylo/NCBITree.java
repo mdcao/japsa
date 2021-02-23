@@ -3,10 +3,12 @@ package japsa.bio.phylo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,10 +20,15 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceReader;
+import japsa.tools.seq.SequenceUtils;
 import pal.misc.Identifier;
 import pal.tree.Node;
 import pal.tree.NodeUtils;
@@ -39,8 +46,51 @@ public  class NCBITree extends CommonTree {
 
 	 GetTaxonID gid = null;
 	
-	
-
+	 // this modifies the arrays on the count tags, but will set counts to zero if no count information 
+	 public void modAll(int i, int len) {
+			String[] tags = new String[] {count_tag, count_tag1};
+			for(int k=0; k<roots.size(); k++){
+				Node root = roots.get(k);
+				//if(root.getChildCount()>0){
+					Iterator<Node> it = NodeUtils.preOrderIterator(root);
+					while(it.hasNext()){
+						Identifier id = it.next().getIdentifier();
+						for(int j=0; j<tags.length; j++)
+						{
+							String count_tag2 = tags[j];
+							Integer cnt = (Integer) id.getAttribute(count_tag2);
+							if(cnt==null) cnt=0;
+							Integer[] v = new Integer[len];
+							v[i] = cnt;
+							id.setAttribute(count_tag2, v);
+						}
+					}
+				//}
+			}
+			
+		}
+	 public void zeroCounts(int i, int len) {
+			String[] tags = new String[] {count_tag, count_tag1};
+			for(int k=0; k<roots.size(); k++){
+				Node root = roots.get(k);
+				//if(root.getChildCount()>0){
+					Iterator<Node> it = NodeUtils.preOrderIterator(root);
+					while(it.hasNext()){
+						Identifier id = it.next().getIdentifier();
+						for(int j=0; j<tags.length; j++)
+						{
+							String count_tag2 = tags[j];
+							//Integer cnt = (Integer) id.getAttribute(count_tag2);
+							//if(cnt==null) cnt=0;
+							Integer[] v = new Integer[len];
+							v[i] = 0;
+							id.setAttribute(count_tag2, v);
+						}
+					}
+				//}
+			}
+			
+		}
 	
 	 
 	 public Integer getTaxa(String sciname){
@@ -51,7 +101,9 @@ public  class NCBITree extends CommonTree {
 		 if(useTaxaAsSlug){
 			return  slugToNode1.get(getTaxa(sciName));
 		 }else{
-			 return slugToNode.get(sciName);
+			 
+			 String slugn = this.slug(sciName,false);
+			 return slugToNode.get(slugn);
 		 }
 	 }
 public Node getNode(Integer taxa) {
@@ -250,9 +302,9 @@ private Node getNode(TreePos tp) {
 		if(!contains) {
 			slugToNode1.put(taxon, n);
 		}
-		else{
-			System.err.println("already contains "+taxon);
-		}
+	//	else{
+		//	System.err.println("already contains "+taxon);
+	//	}
 	// }else{
 		 String name = slug(n.getIdentifier().getName(), false);
 		    contains = slugToNode.containsKey(name);
@@ -260,7 +312,7 @@ private Node getNode(TreePos tp) {
 				slugToNode.put(name, n);
 			}
 			else{
-				System.err.println("already contains "+name);
+				//System.err.println("already contains "+name);
 			}
 	 //}
    }
@@ -519,8 +571,8 @@ public NCBITree(File file, boolean useTaxaAsAsslug, boolean kraken) throws IOExc
 		if(!kraken)makeTrees();
 	}
 		
-static String count_tag = "count";
-static String count_tag1 = "count1";
+public static String count_tag = "count";
+public  static String count_tag1 = "count1";
 
 
 
@@ -530,10 +582,10 @@ public static double thresh=0.0001;
 public void trim(double thresh_perc){
 	int total =0;
 	for(int i=roots.size()-1;i>=0; i--){
-		int[] cnts = (int[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
+		Integer[] cnts = (Integer[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
 		for(int j=0; j<cnts.length; j++) total+=cnts[j];
 	}
-	int thresh = (int) Math.round(thresh_perc*total);
+	int thresh = Math.max(1, (int) Math.round(thresh_perc*total));
 	for(int i=roots.size()-1;i>=0; i--){
 		if(trimNode(roots.get(i), thresh)){
 			roots.remove(i);
@@ -561,7 +613,7 @@ public void removeDupl(Node node){
 }
 public boolean  trimNode(Node node, int thresh){
 	String count_tag2 = NCBITree.count_tag;
-	int[] v = (int[])node.getIdentifier().getAttribute(count_tag2);
+	Integer[] v = (Integer[])node.getIdentifier().getAttribute(count_tag2);
 	int sum =0; 
 	for(int i=0; i<v.length; i++){
 		sum +=v[i];
@@ -591,16 +643,16 @@ public void merge(Node n, int pos){
 		//this is adding in new samples
 		{
 			String count_tag2 = NCBITree.count_tag;
-			int[] v = (int[])node.getIdentifier().getAttribute(count_tag2);
-			int[] v1 = (int[])n.getIdentifier().getAttribute(count_tag2);
+			Integer[] v = (Integer[])node.getIdentifier().getAttribute(count_tag2);
+			Integer[] v1 = (Integer[])n.getIdentifier().getAttribute(count_tag2);
 			for(int i=0; i<v.length; i++){
 				v[i] +=v1[i];
 			}
 		}
 		{
 			String count_tag2 = NCBITree.count_tag1;
-			int[] v = (int[])node.getIdentifier().getAttribute(count_tag2);
-			int[] v1 = (int[])n.getIdentifier().getAttribute(count_tag2);
+			Integer[] v = (Integer[])node.getIdentifier().getAttribute(count_tag2);
+			Integer[] v1 = (Integer[])n.getIdentifier().getAttribute(count_tag2);
 			for(int i=0; i<v.length; i++){
 				v[i] +=v1[i];
 			}
@@ -642,7 +694,6 @@ public void merge(NCBITree tree1, int pos){
 		}
 	}
 }
-	
 	
 	
 	public NCBITree(File treein, boolean b) throws IOException{
@@ -722,6 +773,36 @@ public void merge(NCBITree tree1, int pos){
 			}
 		}
 		
+	}
+	public void annotateWithGenomeLength(String refFile, HashMap<String, String> seq2Species)  throws NumberFormatException, IOException{
+		File lenF = new File(refFile.replaceAll(".gz", "")+".len.txt.gz");
+		if(lenF.exists()){
+			BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(lenF))));
+			String st = "";
+			while((st = br.readLine())!=null){
+				String[] str = st.split(",");
+				Node node = this.getNode(str[0]);
+				node.getIdentifier().setAttribute("length",Integer.parseInt(str[1]));
+			}
+			br.close();
+		}else{
+			LOG.info("calculating genome lengths...");
+			PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(lenF))));
+				SequenceReader reader = SequenceReader.getReader(refFile);
+				Alphabet alphabet = Alphabet.DNA();
+				while (true){
+					Sequence genome = reader.nextSequence(alphabet);
+			
+					if (genome == null)break;
+					String nme = seq2Species.get(genome.getName());
+					Integer sze = genome.length();
+					pw.println(nme+","+sze);
+					Node node = this.getNode(nme);
+					node.getIdentifier().setAttribute("length",sze);
+				}
+			pw.close();
+			LOG.info("..done");
+		}
 	}
 	
 	

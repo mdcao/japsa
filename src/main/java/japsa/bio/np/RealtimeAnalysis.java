@@ -52,7 +52,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 
 	private int readPeriod = 0;//Min number of reads before a new analysis
 	private int timePeriod = 0;//Min number of miliseconds before a new analysis	
-	private int powerNap = 1000;//sleep time in miliseconds (1 second by default)
+	private int powerNap = 10000;//sleep time in miliseconds (1 second by default)
 
 	protected RealtimeAnalysis(){
 	}
@@ -63,7 +63,6 @@ public abstract class RealtimeAnalysis implements Runnable {
 	protected Long startTime;
 	protected Integer lastReadNumber = 0;
 	protected String timeNow;
-
 	public void stopWaiting(){	
 		LOG.info("All reads received at " + new Date());
 		waiting = false;
@@ -114,6 +113,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 		lastReadNumber =  getCurrentRead();
 		timeNow = new Date(lastTime).toString();
 		analysis();
+		this.writeFinalResults();
 		LOG.info("RUNTIME\t" + timeNow  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		//.. and close it
 		close();
@@ -122,6 +122,9 @@ public abstract class RealtimeAnalysis implements Runnable {
 
 	abstract protected void close();
 	abstract protected void analysis();
+	protected void writeFinalResults(){
+		
+	}
 	abstract protected int getCurrentRead();	
 
 	/**
