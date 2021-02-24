@@ -112,7 +112,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 		lastTime = System.currentTimeMillis();
 		lastReadNumber =  getCurrentRead();
 		timeNow = new Date(lastTime).toString();
-		analysis();
+		this.lastAnalysis();
 		this.writeFinalResults();
 		LOG.info("RUNTIME\t" + timeNow  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		//.. and close it
@@ -122,6 +122,10 @@ public abstract class RealtimeAnalysis implements Runnable {
 
 	abstract protected void close();
 	abstract protected void analysis();
+	protected void lastAnalysis(){
+		this.analysis();
+	}
+	
 	protected void writeFinalResults(){
 		
 	}

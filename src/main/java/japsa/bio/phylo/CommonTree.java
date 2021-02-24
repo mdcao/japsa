@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
+import japsa.bio.np.RealtimeSpeciesTyping;
 import pal.misc.Identifier;
 import pal.tree.Node;
 import pal.tree.NodeUtils;
@@ -41,7 +42,9 @@ public abstract class CommonTree {
 		 if(taxon==null){
 			 taxon=0; nme="root";
 		 }
-		 pw.print(perc+"\t"+nt[0]+"\t"+nt1[0]+"\t"+level+"\t"+taxon+"\t"+nme);
+		 Double coverage = (Double) id.getAttribute(RealtimeSpeciesTyping.fraction_covered);
+		 if(coverage==null) coverage =Double.NaN;
+		 pw.print(perc+"\t"+nt[0]+"\t"+nt1[0]+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+coverage);
 		 pw.println();
 	}
 	public void print(Node node, PrintStream pw, String[] attributes, String[] format){
@@ -109,7 +112,7 @@ public abstract class CommonTree {
 				 else print(node, pw, count_tag, format);
 				
 			 }
-			 pw.print(sep);
+			// pw.print(sep);
 		   }
 		   
 		   pw.close();

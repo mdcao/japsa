@@ -774,31 +774,51 @@ public void merge(NCBITree tree1, int pos){
 		}
 		
 	}
-	public void annotateWithGenomeLength(String refFile, HashMap<String, String> seq2Species)  throws NumberFormatException, IOException{
-		File lenF = new File(refFile.replaceAll(".gz", "")+".len.txt.gz");
+	public void annotateWithGenomeLength(File refFile, 
+			HashMap<String, String> seq2Species, HashMap<String, Integer> seqToLen)  throws NumberFormatException, IOException{
+	  if(!refFile.exists()){
+		  LOG.warn(refFile+" does not exist");
+		  return;
+	  }
+		File lenF = new File(refFile.getParentFile(),refFile.getName().replaceAll(".gz", "")+".len.txt.gz");
 		if(lenF.exists()){
 			BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(lenF))));
 			String st = "";
 			while((st = br.readLine())!=null){
-				String[] str = st.split(",");
+				String[] str = st.split("\t");
+				seqToLen.put(str[0],Integer.parseInt(str[1]));
 				Node node = this.getNode(str[0]);
+				if(node!=null){
 				node.getIdentifier().setAttribute("length",Integer.parseInt(str[1]));
+				}
 			}
 			br.close();
 		}else{
 			LOG.info("calculating genome lengths...");
-			PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(lenF))));
-				SequenceReader reader = SequenceReader.getReader(refFile);
+			
+				SequenceReader reader = SequenceReader.getReader(refFile.getAbsolutePath());
 				Alphabet alphabet = Alphabet.DNA();
 				while (true){
 					Sequence genome = reader.nextSequence(alphabet);
 			
 					if (genome == null)break;
-					String nme = seq2Species.get(genome.getName());
+					//String nme = seq2Species.get(genome.getName());
 					Integer sze = genome.length();
-					pw.println(nme+","+sze);
-					Node node = this.getNode(nme);
-					node.getIdentifier().setAttribute("length",sze);
+					
+					//Node node = this.getNode(nme);
+					//int sze1 = speciesToLen.containsKey(nme) ? speciesToLen.get(nme) : 0;
+					seqToLen.put(genome.getName(), sze);
+					//if(node==null){
+					//	System.err.println("warning node is null" +nme);
+					//}else{
+					//	node.getIdentifier().setAttribute("length",sze);
+				//	}
+				}
+				PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(lenF))));
+				for(Iterator<String > it = seqToLen.keySet().iterator(); it.hasNext();){
+					String txt = it.next();
+					Integer val = seqToLen.get(txt);
+					pw.println(txt+"\t"+val+"\t"+seq2Species.get(txt));
 				}
 			pw.close();
 			LOG.info("..done");

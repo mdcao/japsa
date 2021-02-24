@@ -73,6 +73,7 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.tools.seq.CachedFastqWriter;
 import japsa.util.DoubleArray;
+import pal.misc.Identifier;
 import pal.tree.Node;
 
 /**
@@ -80,12 +81,17 @@ import pal.tree.Node;
  *
  */
 public class RealtimeSpeciesTyping {
+	public static String bases_covered = "bases_covered";
+	public static String fraction_covered="fraction_covered";
+	
+	
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTyping.class);
 	
 	public static boolean JSON = false;
 	public static double ALPHA=0.05;
 	public static int MIN_READS_COUNT=0;
-
+	public static boolean writeSep = false;
+	public static boolean writeUnmapped = false;
 	private RealtimeSpeciesTyper typer;
 	private OutputStream outputStream;
 	//private BufferedReader indexBufferedReader;
@@ -95,14 +101,15 @@ public class RealtimeSpeciesTyping {
 	 */
 	private double minQual = 1;
 	private boolean twoDOnly = false;
-	final CachedFastqWriter fqw_unmapped,fqw_filtered;
+	CachedFastqWriter fqw_unmapped = null;
+	CachedFastqWriter fqw_filtered = null;
 	final public String unmapped_reads;
 	String indexFile;
 	Integer currentReadCount = 0;
 	Integer currentReadAligned = 0;
 	Long currentBaseCount = 0L;
 	 File fastqdir, outdir;
-	 String referenceFile;
+	File referenceFile;
 
 	//seq ID to species name (from index ref file)
 	HashMap<String, String> seq2Species = new HashMap<String, String>();
@@ -150,10 +157,10 @@ public class RealtimeSpeciesTyping {
 	 *  */
 	class Coverage{
 		
-		Coverage(String species, File outdir, Node node){
+		Coverage(String species, File outdir, Node node, boolean writeSep){
 			this.species = species;
 			this.node = node;
-			this.fqw =new CachedFastqWriter(outdir, species);
+			if(writeSep) this.fqw =new CachedFastqWriter(outdir, species);
 			//
 		}
 		
@@ -161,12 +168,16 @@ public class RealtimeSpeciesTyping {
 		String species;
 	//	int len;
 		Interval[] newi = new Interval[3];
-		ArrayList<String> readList = new ArrayList<String>();
+		SortedMap<Integer, Integer> mapq = new TreeMap<Integer, Integer>();
+		SortedMap<Integer, Integer> mapLen = new TreeMap<Integer, Integer>();
+
 		int readCount=0; int baseCount=0;
 		// we keep the intervals non nested
-		SortedMap<Integer, Interval> coverage = new TreeMap<Integer, Interval>(); //based on start
+		List<SortedMap<Integer,Interval>> coverages = new ArrayList<SortedMap<Integer, Interval>>();
+		List<String> contig_names = new ArrayList<String>();
+		//SortedMap<Integer, Interval> coverage = new TreeMap<Integer, Interval>(); //based on start
 		
-		CachedFastqWriter fqw;
+		CachedFastqWriter fqw= null;
 		boolean lock = false;
 		
 		public void updateNodeAndParents(){
@@ -184,9 +195,33 @@ public class RealtimeSpeciesTyping {
 				}
 			}
 		}
+		public void medianQ(double[] percentiles, double[] vals, SortedMap<Integer, Integer>map){
+			double cumul0=0;
+			double cumul1 =0;
+			double total = map.values().stream().mapToInt(Integer::intValue).sum();
+			 int mapq0=0;
+			Iterator<Integer> it = map.keySet().iterator();
+			while(it.hasNext()){
+				Integer key = it.next();
+				Integer cnt = map.get(key);
+				int mapq1= key;
+				cumul1 = cumul0+cnt;
+				double perc0 = cumul0/total;
+				double perc = cumul1/total;
+				for(int j=0; j<percentiles.length; j++){
+					if(percentiles[j] >= perc0  && percentiles[j] <=perc){
+						vals[j]  = interpolate(mapq0, mapq1, perc0, perc, percentiles[j]);
+					}
+				}
+				mapq0 = mapq1;
+				cumul0 = cumul1;
+			}
+		}
 		
-		public  synchronized  SortedMap<Integer, Double>  medianReadCoverage(double[] percentiles, double[] vals){
-			int len = (Integer) node.getIdentifier().getAttribute("length");
+		public  synchronized  Double[]  medianReadCoverage(double[] percentiles, double[] vals, int index){
+			SortedMap<Integer, Interval> coverage = this.coverages.get(index);
+			int non_zero_bases=0;
+			Integer len = species2Len.get(this.contig_names.get(index));// node==null ? null : (Integer) node.getIdentifier().getAttribute("length");
 			while(lock){
 				try{
 					LOG.debug("waiting on lock 1");
@@ -205,7 +240,7 @@ public class RealtimeSpeciesTyping {
 				zeroBases+=gap;
 				prev = nxt.end;
 			}
-			if(len> prev) zeroBases+=len -prev;
+			if(len!=null && len> prev) zeroBases+=len -prev;
 			else len = prev;
 			List<Interval> l = new ArrayList<Interval> ();
 			l.addAll(coverage.values());
@@ -214,22 +249,22 @@ public class RealtimeSpeciesTyping {
 			
 			
 			double cumul = zeroBases;
-		    SortedMap<Integer, Double> covs = new TreeMap<Integer, Double>();
-			if(covs!=null) covs.put(0, (double) zeroBases);
+		  //  SortedMap<Integer, Double> covs = new TreeMap<Integer, Double>();
+		//(covs!=null) covs.put(0, (double) zeroBases);
 			for(int j=0; j<percentiles.length; j++){
 				if(percentiles[j] <=(double) zeroBases/(double) len){
 					vals[j]  =0; // more zero bases than the percentile
 				}
 			}
-			double cov0 =0;
+			int cov0 =0;
 			double cumul0 = cumul;;
 			
 			for(int i=0; i<l.size(); i++){
 				Interval li = l.get(i);
 				int cov = li.coverage;
-
+				non_zero_bases +=li.bases();
 				cumul = cumul0 +li.bases(); //percentage of bases
-				if(covs!=null) covs.put(cov, cumul);
+			//	if(covs!=null) covs.put(cov, cumul);
 				double perc0 = cumul0 / (double) len;
 				double perc = cumul / (double) len;
 				//System.err.println(perc0+","+perc);
@@ -241,13 +276,19 @@ public class RealtimeSpeciesTyping {
 				cov0 = cov;
 				cumul0 = cumul;
 			}
-			return covs;
+			if(node!=null){
+				Identifier id = this.node.getIdentifier();
+				id.setAttribute(bases_covered, non_zero_bases);
+				id.setAttribute(fraction_covered, (double) non_zero_bases/(double)len);
+			}
+			return new Double[] {(double)non_zero_bases, (double) non_zero_bases/(double)len, (double) len};
 		//	System.err.println("h");
 		}
 		
-		private double interpolate(double cov0, int cov, double perc0, double perc, double d) {
+		
+		private double interpolate(int cov0, int cov, double perc0, double perc, double d) {
 			// TODO Auto-generated method stub
-			return cov0 + ((d-perc0)/ (perc-perc0)) * (cov-cov0);
+			return (double) cov0 + ((d-perc0)/ (perc-perc0)) * ((double)cov-(double) cov0);
 		}
 
 		
@@ -288,9 +329,10 @@ public class RealtimeSpeciesTyping {
 		public void addRead(SAMRecord sam){
 			try{
 				//if(node==null) node = tree.getNode(species);
-				
+			if(fqw!=null){	
 				sam.setReadName(sam.getReadName()+" "+species+" "+sam.getAlignmentStart()+" "+sam.getAlignmentEnd());
-			fqw.write(sam);
+				fqw.write(sam);
+			}
 			if(sam.getReadString().equals("*")){
 				int st = sam.getAlignmentStart();
 				int end = sam.getAlignmentEnd();
@@ -308,13 +350,19 @@ public class RealtimeSpeciesTyping {
 			}catch(IOException exc){
 				exc.printStackTrace();
 			}
-			this.addInterval(sam.getAlignmentStart(), sam.getAlignmentEnd());
+			this.addInterval(sam.getReferenceName(),sam.getAlignmentStart(), sam.getAlignmentEnd());
 			//System.err.println(this.species);
-			this.readList.add(sam.getReadName());
+			int q = sam.getMappingQuality();
+			int readLength = (int) Math.round((double) sam.getReadLength()/10.0) * 10;
+			Integer cnt = mapq.get(q);
+			Integer cnt1 = mapLen.get(readLength);
+			this.mapq.put(q, cnt==null ? 1 : cnt+1);
+			this.mapLen.put(readLength, cnt1==null ? 1: cnt1+1);
 			this.baseCount = this.baseCount+ sam.getAlignmentEnd() - sam.getAlignmentStart();
 			this.readCount++;
 		}
-		Interval firstOverlap(Interval i, int start_pos){
+		Interval firstOverlap(Interval i, int start_pos, int index){
+			SortedMap<Integer, Interval> coverage = this.coverages.get(index);
 			for(Iterator<Interval> it = coverage.tailMap(start_pos).values().iterator(); it.hasNext();){
 				Interval nxt = it.next();
 				if(i.overlap(nxt)>0) return nxt;
@@ -322,10 +370,18 @@ public class RealtimeSpeciesTyping {
 			return null;
 		}
 		public String toString(){
-			return this.species+":"+coverage.values().toString();
+			return this.species+"_"+coverages;//+":"+coverages..values().toString();
 		}
 		//we assuming existing segments non overlapping
-		public void addInterval(int start, int end){
+		public void addInterval(String refname, int start, int end){
+			int index = this.contig_names.indexOf(refname);
+			if(index<0){
+				index = contig_names.size();
+				contig_names.add(refname);
+				this.coverages.add(new TreeMap<Integer, Interval>());
+			}
+			SortedMap<Integer, Interval> coverage = this.coverages.get(index);
+
 			while(lock){
 				try{
 					LOG.debug("waiting on lock");
@@ -344,7 +400,7 @@ public class RealtimeSpeciesTyping {
 			int start_pos =0;
 			while(extra_right.size()>0){ // extra left should all be non overlapping segments as we starting search from left
 				Interval i_new = extra_right.pop();
-				Interval i_existing = firstOverlap(i_new, start_pos);
+				Interval i_existing = firstOverlap(i_new, start_pos, index);
 				if(i_existing!=null){
 					split(i_new, i_existing, toadd, extra_left, extra_right);
 					start_pos = i_existing.end+1; 
@@ -363,7 +419,7 @@ public class RealtimeSpeciesTyping {
 			
 		}
 		public void close(){
-			this.fqw.close();
+			if(fqw!=null) this.fqw.close();
 		}
 		public double readCount() {
 			
@@ -376,14 +432,16 @@ public class RealtimeSpeciesTyping {
 		this.indexFile = indexFile;
 		this.fastqdir= new File(outdir,"fastqs"); fastqdir.mkdir();
 		this.unmapped_reads = (new File(outdir, "unmapped")).getAbsolutePath();
+		if(writeUnmapped){
 		this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped");
-		this.fqw_filtered = new CachedFastqWriter(outdir, "filtered");
+		}
+		this.fqw_filtered = null;//new CachedFastqWriter(outdir, "filtered");
 
 	}
 	NCBITree tree;
 	
 	//* referenceFile is to get the length map */
-	public RealtimeSpeciesTyping(String indexFile, String treeFile, String outputFile, File outdir, String referenceFile) throws IOException{
+	public RealtimeSpeciesTyping(String indexFile, String treeFile, String outputFile, File outdir, File referenceFile) throws IOException{
 		this(outdir, indexFile);
 		this.referenceFile = referenceFile;
 		tree = new NCBITree(new File(treeFile), false);
@@ -469,6 +527,8 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 				
 	}//while
 }
+
+HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
 	private void preTyping() throws IOException{
 		readSpeciesIndex(indexFile, this.seq2Species);
 		Iterator<String> it = seq2Species.values().iterator();
@@ -477,10 +537,13 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 			if (species2ReadList.get(sp) == null){
 //				LOG.info("add species: "+sp);
 				Node n =tree==null ? null : tree.getNode(sp);
-				species2ReadList.put(sp,new Coverage(sp, fastqdir,n));
+				if(n==null){
+					LOG.warn("node is null "+sp);
+				}
+				species2ReadList.put(sp,new Coverage(sp, fastqdir,n, writeSep));
 			}	
 		}
-		tree.annotateWithGenomeLength(referenceFile, seq2Species);
+		tree.annotateWithGenomeLength(referenceFile, seq2Species, species2Len);
 		//indexBufferedReader.close();
 	
 		LOG.info(seq2Species.size() + "   " + species2ReadList.size());
@@ -577,14 +640,14 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 			
 			if (sam.getReadUnmappedFlag()){
 				LOG.debug("failed unmapped check");
-				this.fqw_unmapped.write(sam);
+				if(fqw_unmapped!=null) this.fqw_unmapped.write(sam);
 				continue;			
 			}
 
 			if (sam.getMappingQuality() < this.minQual) {
 				LOG.debug("failed minQual check");
 				if(!sam.isSecondaryOrSupplementary()){
-					this.fqw_unmapped.write(sam);
+					if(fqw_unmapped!=null) this.fqw_unmapped.write(sam);
 				}
 				continue;
 			}
@@ -601,7 +664,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 			
 				if(!sam.isSecondaryOrSupplementary()){
 					skipList.add(readName);
-					this.fqw_filtered.write(sam);
+					if(fqw_filtered!=null) this.fqw_filtered.write(sam);
 				}
 				continue;
 			}
@@ -623,7 +686,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 			if (readList == null){
 				throw new RuntimeException(" Can't find record with species " + species + " line " + currentReadCount );
 			}
-			if(readList.readList.size()==0 || !readList.readList.contains(readName))
+			//if(readList.readList.size()==0 || !readList.readList.contains(readName))
 				synchronized(this) {
 					currentReadAligned ++;	
 					/*if(tree!=null){
@@ -640,7 +703,8 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 
 		//final run
 		//typer.simpleAnalysisCurrent();
-		this.fqw_filtered.close();this.fqw_unmapped.close();
+		if(fqw_filtered!=null) this.fqw_filtered.close();
+		if(fqw_unmapped!=null) this.fqw_unmapped.close();
 		typer.stopWaiting();//Tell typer to stop
 		if(!realtimeAnalysis){
 			typer.run();
@@ -663,20 +727,24 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 
 			countsOS = new SequenceOutputStream(outputStream);
 			if(!JSON)
-				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\n");
+				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\tbases_covered\tfraction_covered\tlength_best_contig\tcoverage_percentiles\tmapQ\tprop_to_most_cov_contig\thighest_cov_contig\n");
 		}
-		double[] perc = new double[] { 0.5, 0.75, 0.9, 0.95, 0.99}; // percentiles for printing median
-		
+		double[] perc = new double[] {0.5};// 0.5, 0.75, 0.9, 0.95, 0.99}; // percentiles for printing median
+		double[] percQ = new double[] {0.5};
+		double[] percL = new double[] {0.5};
 		DoubleArray countArray = new DoubleArray();
 		List<String> medianArray = new ArrayList<String>();
 		ArrayList<String> speciesArray = new ArrayList<String> ();
 		double[][] results = null;
+		int[] order = null;
 		public boolean lock = false;
 		Long step;
 		
 		private void simpleAnalysisCurrent()  {
 			lock = true; // so that the datastructure doesnt change while we doing calculation 
 			double[] vals = new double[perc.length];
+			double[] valsQ = new double[percQ.length];
+			double[] valsL = new double[percL.length];
 			//long step = lastTime;
 
 			//Date date = new Date(lastTime);
@@ -694,7 +762,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 			}
 			countArray.clear();medianArray.clear();speciesArray.clear();
 
-			int minCount = MIN_READS_COUNT>0?MIN_READS_COUNT:Math.max(1,sum/50);
+			int minCount = MIN_READS_COUNT>0?MIN_READS_COUNT:Math.max(1,sum/1000);
 
 			for (int i = 0; i < count.length;i++){			
 				if (count[i] >= minCount){
@@ -706,9 +774,32 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 						Coverage cov = typing.species2ReadList.get(spec_name);
 						
 						 //SortedMap<Integer, Double>  covHist = 
-								 cov.medianReadCoverage(perc, vals);
+						double max =0; int maxj=0; double tot_bases=0;
+						double max1=0; int maxj_1 =0; 
+						for(int j =0; j<cov.contig_names.size(); j++){
+						  Double[] stats = cov.medianReadCoverage(new double[0], new double[0], j);
+						  tot_bases+= stats[0];
+						  if(stats[0] >max){
+							  max = stats[0];
+							  maxj=j;
+						  }
+						  if(stats[1] > max1){
+							  max1 = stats[1];
+							  maxj_1 =j;
+						  }
+						}
+						Double proportion = max/ tot_bases;
+						String nme = cov.contig_names.get(maxj);
+						String nme1 = cov.contig_names.get(maxj_1);
+						Double[] stats =  cov.medianReadCoverage(perc, vals,maxj);
 						 String st = combine(perc,vals);
-						 medianArray.add(st);
+						 cov.medianQ(percQ, valsQ,cov.mapq);
+						 cov.medianQ(percL, valsL, cov.mapLen);
+						 String st1 = combine(percQ,valsQ);
+						 String st2 = combine(percL,valsL);
+						 medianArray.add(String.format("%5.3g", stats[0]).trim()+"\t"+String.format("%5.3g",stats[1]).trim()+"\t"+String.format("%5.3g",stats[2]).trim()
+						 +"\t"+st+"\t"+st1+"\t"+st2
+								 +"\t"+nme+":"+String.format("%5.3g",proportion).trim()+"\t"+nme1+":"+max1);
 				/*	if(count[i]>10 * vals[vals.length-1]){
 						System.err.println(count[i]+" vs "+st);
 						if(covHist!=null) System.err.println(covHist);
@@ -727,6 +818,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 			rengine.eval();        
 			//REXP tab  = rengine.eval("tab",true);  
 			results=rengine.tab();
+			this.order = rengine.rank();
 		}
 		@Override
 		protected void writeFinalResults() {
@@ -740,21 +832,24 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 				}
 				
 			}
-			typing.tree.trim(1e-6);
+			typing.tree.trim(1e-7);
 			typing.tree.print(this.krakenResults, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
 			}catch(Exception exc){
 				exc.printStackTrace();
 			}
 			
 		}
-		
-		private void writeResults() throws IOException {
+		public static void sort(double[][] results, int i, int[] order){
+			
+		}
+		private void writeResults(double min_thresh ) throws IOException {
 		
 			Gson gson = new GsonBuilder().serializeNulls().create();
 			List<JsonObject> data = new ArrayList<JsonObject>();
-
-			for (int i = 0; i < results.length;i++){
-				if (results[i][0] <= 0.00001)
+		
+			for (int i1 = 0; i1 < order.length;i1++){
+				int i = order[i1];
+				if (results[i][0] <= min_thresh)
 					continue;
 
 				Double mid = (results[i][0] + results[i][1])/2;
@@ -793,7 +888,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 		private String combine(double[] perc2, double[] vals) {
 			StringBuffer sb = new StringBuffer();
 			for(int i=0; i<perc2.length; i++){
-				sb.append(String.format("%5.3g=%5.3g", new Double[] {perc2[i], vals[i]}).replaceAll(" ", "")+" "); //perc2[i]+"="+vals[i]+" ");
+				sb.append(String.format("%5.3g=%5.3g", new Double[] {perc2[i], vals[i]}).replaceAll(" ", "")+","); //perc2[i]+"="+vals[i]+" ");
 			}
 			return sb.toString().trim();
 		}
@@ -811,23 +906,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 				it.next().close();
 			}
 			//print out
-			if(OUTSEQ){
-				try (BufferedWriter bw = new BufferedWriter(new FileWriter("species2reads.map"))) {
-					for(String sp:typing.species2ReadList.keySet()){
-						ArrayList<String> readList = typing.species2ReadList.get(sp).readList;
-						if(readList.size()==0)
-							continue;
-						//bw.write(">"+sp+"\n");
-						for(String read:readList)
-							bw.write(sp+"\t"+read+"\n");
-					}			
-
-				} catch (IOException e) {
-
-					e.printStackTrace();
-
-				}
-			}
+			
 		}
 
 		/* (non-Javadoc)
@@ -838,7 +917,17 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 			simpleAnalysisCurrent();
 			try{
 				
-				this.writeResults();
+				this.writeResults( 0.000001);
+			}catch (IOException e){
+				LOG.warn(e.getMessage());
+			}
+		}
+		@Override
+		protected void lastAnalysis(){
+			simpleAnalysisCurrent();
+			try{
+				
+				this.writeResults(-1);//to write all results
 			}catch (IOException e){
 				LOG.warn(e.getMessage());
 			}

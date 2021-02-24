@@ -1,7 +1,9 @@
 package japsa.bio.np;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.apache.commons.math3.exception.NotStrictlyPositiveException;
@@ -290,6 +292,7 @@ public class MultinomialCI {
 		   vol2=vol2*(out.getEntry(i,4)-out.getEntry(i,3));
 		   salida.setEntry(i,0,out.getEntry(i,1));
 		   salida.setEntry(i,1, out.getEntry(i,2));
+		   this.order[i] = new DoubleInt(out.getEntry(i, 2),i);
 		  }
 		  String[] c1=new String[] {"PROPORTION", "LOWER(SG)", "UPPER(SG)","LOWER(C+1)","UPPER(C+1)"};
 		  double  cov=100*(1-alpha);
@@ -325,7 +328,7 @@ public class MultinomialCI {
 			x[j] = (int) Math.round(array[j]);
 		}
 		salida = new Array2DRowRealMatrix(x.length,2);
-		
+		order = new DoubleInt[array.length];
 	}
 	public void assignCount(int[] array) {
 		this.x = new int[array.length];
@@ -333,9 +336,30 @@ public class MultinomialCI {
 			x[j] = (int) Math.round(array[j]);
 		}
 		salida = new Array2DRowRealMatrix(x.length,2);
+		order = new DoubleInt[array.length];
 		
 	}
 	public double[][] tab() {
 		return salida.getData();
+	}
+	static class DoubleInt implements Comparable{
+		double v; int ind;
+		DoubleInt(double v, int i){
+			this.v = v; this.ind = i;
+		}
+		@Override
+		public int compareTo(Object o) {
+			return Double.compare(v,((DoubleInt)o).v);
+		}
+	}
+	
+	DoubleInt[] order;
+	public int[] rank(){
+		Arrays.sort(order);;
+		int[] res = new int[order.length];
+		for(int i=0; i<res.length; i++){
+			res[i] = order[i].ind;
+		}
+		return res;
 	}
 }
