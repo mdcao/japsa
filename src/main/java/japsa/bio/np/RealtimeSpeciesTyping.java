@@ -169,6 +169,7 @@ public class RealtimeSpeciesTyping {
 	//	int len;
 		Interval[] newi = new Interval[3];
 		SortedMap<Integer, Integer> mapq = new TreeMap<Integer, Integer>();
+		SortedMap<Integer, Integer> mapAlign = new TreeMap<Integer, Integer>();
 		SortedMap<Integer, Integer> mapLen = new TreeMap<Integer, Integer>();
 
 		int readCount=0; int baseCount=0;
@@ -353,11 +354,16 @@ public class RealtimeSpeciesTyping {
 			this.addInterval(sam.getReferenceName(),sam.getAlignmentStart(), sam.getAlignmentEnd());
 			//System.err.println(this.species);
 			int q = sam.getMappingQuality();
+			int alignL = (sam.getAlignmentEnd()-sam.getAlignmentStart());
 			int readLength = (int) Math.round((double) sam.getReadLength()/10.0) * 10;
+			int alignF = 10*(int) Math.round(10*(double)alignL/(double)sam.getReadLength());
 			Integer cnt = mapq.get(q);
 			Integer cnt1 = mapLen.get(readLength);
+			Integer cnt2 = mapAlign.get(alignF);
 			this.mapq.put(q, cnt==null ? 1 : cnt+1);
 			this.mapLen.put(readLength, cnt1==null ? 1: cnt1+1);
+			this.mapAlign.put(alignF, cnt2==null ? 1: cnt2+1);
+
 			this.baseCount = this.baseCount+ sam.getAlignmentEnd() - sam.getAlignmentStart();
 			this.readCount++;
 		}
@@ -727,7 +733,7 @@ HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
 
 			countsOS = new SequenceOutputStream(outputStream);
 			if(!JSON)
-				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\tbases_covered\tfraction_covered\tlength_best_contig\tcoverage_percentiles\tmapQ\tprop_to_most_cov_contig\thighest_cov_contig\n");
+				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\tbases_covered\tfraction_covered\tlength_best_contig\tcoverage_percentiles\tmapQ\tlength\talignFrac\tprop_to_most_cov_contig\thighest_cov_contig\n");
 		}
 		double[] perc = new double[] {0.5};// 0.5, 0.75, 0.9, 0.95, 0.99}; // percentiles for printing median
 		double[] percQ = new double[] {0.5};
@@ -797,8 +803,10 @@ HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
 						 cov.medianQ(percL, valsL, cov.mapLen);
 						 String st1 = combine(percQ,valsQ);
 						 String st2 = combine(percL,valsL);
+						 cov.medianQ(percL, valsL, cov.mapAlign);
+						 String st3 = combine(percL,valsL);
 						 medianArray.add(String.format("%5.3g", stats[0]).trim()+"\t"+String.format("%5.3g",stats[1]).trim()+"\t"+String.format("%5.3g",stats[2]).trim()
-						 +"\t"+st+"\t"+st1+"\t"+st2
+						 +"\t"+st+"\t"+st1+"\t"+st2+"\t"+st3
 								 +"\t"+nme+":"+String.format("%5.3g",proportion).trim()+"\t"+nme1+":"+max1);
 				/*	if(count[i]>10 * vals[vals.length-1]){
 						System.err.println(count[i]+" vs "+st);

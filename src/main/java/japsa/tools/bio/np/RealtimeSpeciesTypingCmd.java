@@ -189,7 +189,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		if(bamFile!=null && !(new File(bamFile)).exists()) {
 			files = (new File(".")).list(new MatchFilter(bamFile));	
 		}
-		
+		if(files.length==0) throw new RuntimeException("no files match input request");
 		String[] sample_name = new String[files.length];
 		for(int i=0; i<sample_name.length; i++){
 			sample_name[i] = 	files[i].replace(".gz","").substring(0, files[i].lastIndexOf('.'));
