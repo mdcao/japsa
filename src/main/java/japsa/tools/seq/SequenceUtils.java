@@ -650,7 +650,7 @@ public static String mkdb(File refFile, String treef, String speciesIndex,Collec
 	
 	int printed=0;
 	try{
-	RealtimeSpeciesTyping.readSpeciesIndex(speciesIndex, seq2Species);
+	RealtimeSpeciesTyping.readSpeciesIndex(speciesIndex, seq2Species, false);
 	NCBITree tree = new NCBITree(new File(treef), false);
 	SequenceReader reader = SequenceReader.getReader(refFile.getAbsolutePath());
 	Alphabet alphabet = Alphabet.DNA();

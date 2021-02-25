@@ -349,7 +349,7 @@ public class MultinomialCI {
 		}
 		@Override
 		public int compareTo(Object o) {
-			return Double.compare(v,((DoubleInt)o).v);
+			return Double.compare(((DoubleInt)o).v,v);
 		}
 	}
 	

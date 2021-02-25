@@ -35,10 +35,8 @@
 package japsa.bio.np;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -72,6 +70,7 @@ import japsa.bio.phylo.NCBITree;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.tools.seq.CachedFastqWriter;
+import japsa.tools.seq.CachedSequenceOutputStream;
 import japsa.util.DoubleArray;
 import pal.misc.Identifier;
 import pal.tree.Node;
@@ -83,7 +82,6 @@ import pal.tree.Node;
 public class RealtimeSpeciesTyping {
 	public static String bases_covered = "bases_covered";
 	public static String fraction_covered="fraction_covered";
-	
 	
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTyping.class);
 	
@@ -152,15 +150,19 @@ public class RealtimeSpeciesTyping {
 			return end-start + 1;
 		}
 	}
+	
+	 
 	/** this class represents the coverage of each species
 	 * currently only for single chrom species, otherwise each chrom is considered its own species
 	 *  */
 	class Coverage{
 		
-		Coverage(String species, File outdir, Node node, boolean writeSep){
+		Coverage(String species,  Node node, File fastqdir, boolean writeSep1){
 			this.species = species;
 			this.node = node;
-			if(writeSep) this.fqw =new CachedFastqWriter(outdir, species);
+			
+			fqw = writeSep1 ? new CachedSequenceOutputStream(fastqdir, species, true) : null;
+			//	new CachedFastqWriter(outdir, species);
 			//
 		}
 		
@@ -178,7 +180,7 @@ public class RealtimeSpeciesTyping {
 		List<String> contig_names = new ArrayList<String>();
 		//SortedMap<Integer, Interval> coverage = new TreeMap<Integer, Interval>(); //based on start
 		
-		CachedFastqWriter fqw= null;
+		CachedSequenceOutputStream fqw= null;
 		boolean lock = false;
 		
 		public void updateNodeAndParents(){
@@ -328,10 +330,11 @@ public class RealtimeSpeciesTyping {
 		}
 		
 		public void addRead(SAMRecord sam){
-			try{
+			
 				//if(node==null) node = tree.getNode(species);
 			if(fqw!=null){	
-				sam.setReadName(sam.getReadName()+" "+species+" "+sam.getAlignmentStart()+" "+sam.getAlignmentEnd());
+				sam.setReadName(sam.getReadName()+" "+sam.getReferenceName()+":"+sam.getAlignmentStart()+"-"+sam.getAlignmentEnd()+" "+sam.getMappingQuality());
+				
 				fqw.write(sam);
 			}
 			if(sam.getReadString().equals("*")){
@@ -348,9 +351,7 @@ public class RealtimeSpeciesTyping {
 				System.exit(0);
 				throw new RuntimeException("!!");
 			}
-			}catch(IOException exc){
-				exc.printStackTrace();
-			}
+			
 			this.addInterval(sam.getReferenceName(),sam.getAlignmentStart(), sam.getAlignmentEnd());
 			//System.err.println(this.species);
 			int q = sam.getMappingQuality();
@@ -367,6 +368,7 @@ public class RealtimeSpeciesTyping {
 			this.baseCount = this.baseCount+ sam.getAlignmentEnd() - sam.getAlignmentStart();
 			this.readCount++;
 		}
+	
 		Interval firstOverlap(Interval i, int start_pos, int index){
 			SortedMap<Integer, Interval> coverage = this.coverages.get(index);
 			for(Iterator<Interval> it = coverage.tailMap(start_pos).values().iterator(); it.hasNext();){
@@ -439,7 +441,7 @@ public class RealtimeSpeciesTyping {
 		this.fastqdir= new File(outdir,"fastqs"); fastqdir.mkdir();
 		this.unmapped_reads = (new File(outdir, "unmapped")).getAbsolutePath();
 		if(writeUnmapped){
-		this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped");
+		this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped", false);
 		}
 		this.fqw_filtered = null;//new CachedFastqWriter(outdir, "filtered");
 
@@ -506,7 +508,7 @@ public class RealtimeSpeciesTyping {
 //		}
 //
 //	}
-public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Species)throws IOException{
+public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Species, boolean splitPlasmids)throws IOException{
 	BufferedReader indexBufferedReader = SequenceReader.openFile(indexFile);
 	String line = "";
 	while ( (line = indexBufferedReader.readLine())!=null){
@@ -521,8 +523,9 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 			LOG.info("Illegal speciesIndex file!");
 			System.exit(1);
 		}
-			
+			boolean plasmid = splitPlasmids && toks[1].indexOf("plasmid")>=0;
 		sp=toks[0].trim();
+		if(plasmid)sp = sp+".plasmid";
 		seq=toks[1].split("\\s+")[0];
 
 		if (seq2Species.put(seq, sp) != null)
@@ -535,18 +538,22 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 }
 
 HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
+public static List<String> speciesToIgnore = null;
 	private void preTyping() throws IOException{
-		readSpeciesIndex(indexFile, this.seq2Species);
+		readSpeciesIndex(indexFile, this.seq2Species, true);
 		Iterator<String> it = seq2Species.values().iterator();
 		while(it.hasNext()){
 			String sp = it.next();
+			boolean writeSep1 = writeSep && (speciesToIgnore==null || ! speciesToIgnore.contains(sp));
 			if (species2ReadList.get(sp) == null){
 //				LOG.info("add species: "+sp);
 				Node n =tree==null ? null : tree.getNode(sp);
 				if(n==null){
 					LOG.warn("node is null "+sp);
 				}
-				species2ReadList.put(sp,new Coverage(sp, fastqdir,n, writeSep));
+			//	System.err.println(sp);
+				species2ReadList.put(sp,new Coverage(sp,n, 	fastqdir, writeSep1));			
+						
 			}	
 		}
 		tree.annotateWithGenomeLength(referenceFile, seq2Species, species2Len);

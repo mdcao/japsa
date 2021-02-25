@@ -1,23 +1,24 @@
 package japsa.tools.seq;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.fastq.FastqWriter;
-import htsjdk.samtools.fastq.FastqWriterFactory;
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 
 /** this enables splitting of output sequences into species specific bams */
-public class CachedFastqWriter {
+public class CachedSequenceOutputStream {
 	
 	//special thread for this class
 	//public static final ExecutorService writeCompressDirsExecutor  = Executors.newSingleThreadExecutor();
 public static int MIN_READ_COUNT=20;
-	public static 	FastqWriterFactory fqFact = new FastqWriterFactory();
+	//public static 	FastqWriterFactory fqFact = new FastqWriterFactory();
 
 	
 	
@@ -31,32 +32,32 @@ public static int MIN_READ_COUNT=20;
 
  // FastqWriter base = null;
   //Stack<FastqRecord> baseStack = null;
-
-   List<FastqWriter>fqw = null ;
-   List<Stack<FastqRecord>>  stack = null;
+   List<SequenceOutputStream>fqw = null ;
+   List<Stack<Sequence>>  stack = null;
    List<String> nmes = null;
   boolean separate = false;
   int total_count=0;
   boolean fasta;
-  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs) {
+  public CachedSequenceOutputStream(File outdir, String species, boolean separateIntoContigs) {
 	this.outdir = outdir;
 	this.species = species.replace('/', '_');
 	this.separate = separateIntoContigs;
-			this.fqw = new ArrayList<FastqWriter>();
-			this.stack = new ArrayList<Stack<FastqRecord>>();
+			this.fqw = new ArrayList<SequenceOutputStream>();
+			this.stack = new ArrayList<Stack<Sequence>>();
 			this.nmes = new ArrayList<String>();
 	}
 
 boolean print = false;
- 
+ static Alphabet alpha = Alphabet.getAlphabet("DNA");
   public void write(SAMRecord sam)  {
+	  try{
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
 	  String ref = separate  ? sam.getReferenceName() : species;
-		FastqRecord repeat =  new FastqRecord(nme,	readSeq,	"",baseQ);
+		Sequence repeat =  new Sequence(alpha, readSeq,	nme);
 
-	  FastqWriter fqw_i  ;
+	  SequenceOutputStream fqw_i  ;
 	  total_count++;
 	  int  index =  this.nmes.indexOf(ref) ;
 	 if(index<0){
@@ -67,21 +68,22 @@ boolean print = false;
 	    		  if(separate){
 	    			  outdir1 = new File(outdir, species);
 	    		  }
-	    		  FastqWriter fqw_j =  fqFact.newWriter(new File(outdir1,ref.replace('|', '_')+".fq"));
+	    		  SequenceOutputStream fqw_j =  new SequenceOutputStream(new FileOutputStream(new File(outdir1,ref.replace('|', '_')+".fa")));
 	    		  fqw.add(fqw_j); 
 	    		  
 			  }else{
 				  fqw.add(null);
 			  }
-			  stack.add(new Stack<FastqRecord>());
+			  stack.add(new Stack<Sequence>());
 		  }
 		 fqw_i= this.fqw.get(index);
       if(fqw_i!=null){
-    	  fqw_i.write(repeat);
+    	  repeat.writeFasta(fqw_i);
+    	 // fqw_i.write(repeat);
       }
       else{
     	  
-	    	  Stack<FastqRecord> st1 = stack.get(index);
+	    	  Stack<Sequence> st1 = stack.get(index);
 	    	  st1.push(repeat);
 	    	 
 	    	  if(total_count>=MIN_READ_COUNT){ // opening up all the writers once one reaches minimum count
@@ -92,23 +94,30 @@ boolean print = false;
 	    			  outdir1.mkdir();
 	    		  }
 	    		  for(int j=0; j<this.fqw.size(); j++){
-	    			 FastqWriter fqw_j =  fqFact.newWriter(new File(outdir1,ref.replace('|', '_')+".fq"));
+	    			 SequenceOutputStream fqw_j =  new SequenceOutputStream(new FileOutputStream(new File(outdir1,ref.replace('|', '_')+".fa")));
 		    		  this.fqw.set(j,  fqw_j);
-		    		  Stack<FastqRecord> st2 = stack.get(j);
+		    		  Stack<Sequence> st2 = stack.get(j);
 		    		  while(st2.size()>0){
-		    			  fqw_j.write(st2.pop());
+		    			  st2.pop().writeFasta(fqw_j);
 		    		  }
 	    		  }
 			}
     	  }
+	  }catch(Exception exc){
+		  exc.printStackTrace();
+	  }
 	  }
   
 
 public void close(){
 	for(int i=0; i<fqw.size(); i++){
+		try{
 	if(this.fqw.get(i)!=null) {
 		fqw.get(i).close();
 	}
+		}catch(IOException exc){
+			exc.printStackTrace();
+		}
 	}
 	
 }
