@@ -555,7 +555,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 	}//while
 }
 public static boolean hierarchical = false;
-public static boolean fastaOutput = true;
+public static boolean fastaOutput = false;
 HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
 public static List<String> speciesToIgnore = null;
 public static boolean plasmidOnly = true; // only write fastq for plasmids
