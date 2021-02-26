@@ -72,6 +72,7 @@ import pal.tree.Node;
 public class SequenceUtils {
 	
 	public static void flip(SAMRecord sam, boolean switchFlag) {
+		 if(true) throw new RuntimeException(" not clear effect on coordinates in read space");
 		String sa = sam.getReadString();
 		byte[]phredQs = sam.getBaseQualities();
 		byte[] bases = sam.getReadBases();

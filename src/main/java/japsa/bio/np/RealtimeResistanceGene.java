@@ -306,11 +306,11 @@ public class RealtimeResistanceGene {
 
 	    	try {
 	    		if (!JSON) {
-	    			sequenceOutputStream.print("##" + timeNow + "\t" + (this.lastTime - this.startTime) + "\t" + this.lastReadNumber + "\n");
+	    			sequenceOutputStream.print("##" + lastTime + "\t" + (this.lastTime - this.startTime) + "\t" + this.lastReadNumber + "\n");
 	    		}
     			else {
 		          JsonObject jo = new JsonObject();
-		          jo.addProperty("timestamp", timeNow);
+		          jo.addProperty("timestamp", lastTime);
 		          jo.addProperty("timeLast", this.lastTime);
 		          jo.addProperty("timeStart", this.startTime);
 		          jo.addProperty("timeWaited", (this.lastTime - this.startTime));
@@ -385,11 +385,11 @@ public class RealtimeResistanceGene {
 		private void addPreditedGene(String geneID) throws IOException {
 			predictedGenes.add(geneID);
 			if (!JSON) {
-				sequenceOutputStream.print(timeNow + "\t" + (this.lastTime - this.startTime) / 1000 + "\t" + lastReadNumber + "\t" + resistGene.currentBaseCount + "\t" + geneID + "\t" + gene2GeneName.get(geneID) + "\t" + gene2Group.get(geneID) + "\n");
+				sequenceOutputStream.print(lastTime + "\t" + (this.lastTime - this.startTime) / 1000 + "\t" + lastReadNumber + "\t" + resistGene.currentBaseCount + "\t" + geneID + "\t" + gene2GeneName.get(geneID) + "\t" + gene2Group.get(geneID) + "\n");
 			}
 			else {
 		        JsonObject jo = new JsonObject();
-		        jo.addProperty("timeStamp", timeNow);
+		        jo.addProperty("timeStamp", lastTime);
 		        jo.addProperty("timeLast", this.lastTime);
 		        jo.addProperty("timeStart", this.startTime);
 		        jo.addProperty("timeWaited", (this.lastTime - this.startTime));

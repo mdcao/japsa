@@ -325,7 +325,7 @@ public class RealtimeScaffolding {
 				//scaffolding.graph.printRT(scaffolding.currentBaseCount);
 				scaffolding.graph.printSequences();
 				outOS.print("Time |\tStep |\tRead count |\tBase count|\tNumber of scaffolds|\tCircular scaffolds |\tN50 | \tBreaks (maxlen)\n");
-				outOS.print(timeNow + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + scfCount 
+				outOS.print(lastTime + " |\t" + step + " |\t" + lastReadNumber + " |\t" + scaffolding.currentBaseCount + " |\t" + scfCount 
 						+ " |\t" + cirCount + " |\t" + scaffolding.graph.getN50() + " |\t" + scaffolding.graph.getGapsInfo());
 
 				outOS.println();

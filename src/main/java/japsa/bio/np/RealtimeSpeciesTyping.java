@@ -160,7 +160,7 @@ public class RealtimeSpeciesTyping {
 	 *  */
 	class Coverage{
 		
-		Coverage(String species,  Node node, File fastqdir, boolean writeSep1, boolean hierarchical){
+		Coverage(String species,  Node node, File fastqdir, boolean writeSep1, boolean hierarchical, boolean fasta){
 			this.species = species;
 			this.node = node;
 			fqw = null;
@@ -175,7 +175,9 @@ public class RealtimeSpeciesTyping {
 					fastqdir = new File(fastqdir.getAbsolutePath()+sd.toString());
 				}
 				
-				fqw = new CachedSequenceOutputStream(fastqdir, species, true);
+				fqw = fasta ? new CachedSequenceOutputStream(fastqdir, species, true, true) : 
+				new CachedFastqWriter(fastqdir, species, true, true);
+
 			}
 			
 		}
@@ -369,7 +371,9 @@ public class RealtimeSpeciesTyping {
 			this.addInterval(sam.getReferenceName(),sam.getAlignmentStart(), sam.getAlignmentEnd());
 			//System.err.println(this.species);
 			int q = sam.getMappingQuality();
-			int alignL = (sam.getAlignmentEnd()-sam.getAlignmentStart());
+			int st = sam.getReadPositionAtReferencePosition(sam.getAlignmentStart());
+			int end = sam.getReadPositionAtReferencePosition(sam.getAlignmentEnd());
+			int alignL = (end-st+1);
 			int readLength = (int) Math.round((double) sam.getReadLength()/10.0) * 10;
 			int alignF = 10*(int) Math.round(10*(double)alignL/(double)sam.getReadLength());
 			Integer cnt = mapq.get(q);
@@ -441,7 +445,7 @@ public class RealtimeSpeciesTyping {
 			
 		}
 		public void close(){
-			if(fqw!=null) this.fqw.close();
+			if(fqw!=null) this.fqw.close(species2Len);
 		}
 		public double readCount() {
 			
@@ -455,7 +459,7 @@ public class RealtimeSpeciesTyping {
 		this.fastqdir= new File(outdir,"fastqs"); fastqdir.mkdir();
 		this.unmapped_reads = (new File(outdir, "unmapped")).getAbsolutePath();
 		if(writeUnmapped){
-		this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped", false);
+		this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped", false, false);
 		}
 		this.fqw_filtered = null;//new CachedFastqWriter(outdir, "filtered");
 
@@ -551,6 +555,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 	}//while
 }
 public static boolean hierarchical = false;
+public static boolean fastaOutput = true;
 HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
 public static List<String> speciesToIgnore = null;
 public static boolean plasmidOnly = true; // only write fastq for plasmids
@@ -579,7 +584,7 @@ public static boolean plasmidOnly = true; // only write fastq for plasmids
 					}
 				}
 			//	System.err.println(sp);
-				species2ReadList.put(sp,new Coverage(sp,n, 	fastqdir, writeSep1, hierarchical));			
+				species2ReadList.put(sp,new Coverage(sp,n, 	fastqdir, writeSep1, hierarchical, fastaOutput));			
 						
 			}	
 		}
@@ -663,6 +668,9 @@ public static boolean plasmidOnly = true; // only write fastq for plasmids
 				System.err.println("warning sam record is null");
 				break;
 			}
+			if(sam.isSecondaryAlignment()){
+				continue;
+			}
 			if(sam.isSecondaryOrSupplementary()){
 				continue;
 			}
@@ -687,7 +695,7 @@ public static boolean plasmidOnly = true; // only write fastq for plasmids
 
 			if (sam.getMappingQuality() < this.minQual) {
 				LOG.debug("failed minQual check");
-				if(!sam.isSecondaryOrSupplementary()){
+				if(!sam.isSecondaryAlignment()){
 					if(fqw_unmapped!=null) this.fqw_unmapped.write(sam);
 				}
 				continue;
@@ -711,7 +719,7 @@ public static boolean plasmidOnly = true; // only write fastq for plasmids
 			}
 			
 		
-			/* this probably not necessary 
+			/* this probably not necessary  - also unclear what effect this has on coordinates
 			if(sam.getReadNegativeStrandFlag()){
 				//System.err.println("switching strand");
 				SequenceUtils.flip(sam, false); // switch read but keep flag. This corrects minimaps correction when it maps

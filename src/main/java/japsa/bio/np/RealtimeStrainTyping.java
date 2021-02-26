@@ -380,7 +380,7 @@ public class RealtimeStrainTyping {
 					}
 				}
 			}
-			LOG.info(timeNow + ": Found " + seenGenes.size() + "  " + compute);
+			LOG.info(lastTime + ": Found " + seenGenes.size() + "  " + compute);
 
 			if (compute){
 				posterior = lcTyping.calcPosterior();
@@ -403,7 +403,7 @@ public class RealtimeStrainTyping {
 
 				if (lr.postProb < 0.010)
 					break;
-				datOS.print(timeNow + "\t" + step  + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + lr.strainID + "\t" + lr.postProb +"\t" + (lr.postProb - lr.l) + "\t" + (lr.h -lr.postProb)  +"\t"+seenGenes.size());
+				datOS.print(lastTime + "\t" + step  + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + lr.strainID + "\t" + lr.postProb +"\t" + (lr.postProb - lr.l) + "\t" + (lr.h -lr.postProb)  +"\t"+seenGenes.size());
 				datOS.println();			
 			}
 			datOS.flush();
