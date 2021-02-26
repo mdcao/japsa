@@ -6,18 +6,17 @@ import java.util.List;
 import java.util.Stack;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.BasicFastqWriter;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
-import htsjdk.samtools.fastq.FastqWriterFactory;
-import japsa.seq.SequenceOutputStream;
 
 /** this enables splitting of output sequences into species specific bams */
-public class CachedFastqWriter {
+public class CachedFastqWriter implements CachedOutput{
 	
 	//special thread for this class
 	//public static final ExecutorService writeCompressDirsExecutor  = Executors.newSingleThreadExecutor();
 public static int MIN_READ_COUNT=20;
-	public static 	FastqWriterFactory fqFact = new FastqWriterFactory();
+	//public static 	FastqWriterFactory fqFact = new FastqWriterFactory();
 
 	
 	
@@ -67,7 +66,9 @@ boolean print = false;
 	    		  if(separate){
 	    			  outdir1 = new File(outdir, species);
 	    		  }
-	    		  FastqWriter fqw_j =  fqFact.newWriter(new File(outdir1,ref.replace('|', '_')+".fq"));
+	    		  File outf = new File(outdir1,ref.replace('|', '_')+".fq");
+	    		  FastqWriter fqw_j = new BasicFastqWriter(outf);  
+	    				  //fqFact.newWriter();
 	    		  fqw.add(fqw_j); 
 	    		  
 			  }else{
@@ -86,13 +87,14 @@ boolean print = false;
 	    	 
 	    	  if(total_count>=MIN_READ_COUNT){ // opening up all the writers once one reaches minimum count
 	    		  print = true;
+	    		  this.outdir.mkdirs();
 	    		  File outdir1 = outdir;
 	    		  if(separate){
 	    			  outdir1 = new File(outdir, species);
 	    			  outdir1.mkdir();
 	    		  }
 	    		  for(int j=0; j<this.fqw.size(); j++){
-	    			 FastqWriter fqw_j =  fqFact.newWriter(new File(outdir1,ref.replace('|', '_')+".fq"));
+	    			 FastqWriter fqw_j =  new BasicFastqWriter(new File(outdir1,ref.replace('|', '_')+".fq"));
 		    		  this.fqw.set(j,  fqw_j);
 		    		  Stack<FastqRecord> st2 = stack.get(j);
 		    		  while(st2.size()>0){

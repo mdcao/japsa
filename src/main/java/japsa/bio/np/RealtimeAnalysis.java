@@ -62,7 +62,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 	protected Long lastTime = 0L;//The last time an analysis is done
 	protected Long startTime;
 	protected Integer lastReadNumber = 0;
-	protected String timeNow;
+//	protected Long timeNow;
 	public void stopWaiting(){	
 		LOG.info("All reads received at " + new Date());
 		waiting = false;
@@ -103,18 +103,18 @@ public abstract class RealtimeAnalysis implements Runnable {
 			lastReadNumber = currentRead;
 			lastTime = System.currentTimeMillis();
 			//assert: read number satisfied
-			timeNow = new Date(lastTime).toString();
+			//timeNow = (new Date(lastTime)).getTime();
 			analysis();
-			LOG.info("RUNTIME\t" + timeNow  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
+			LOG.info("RUNTIME\t" + lastTime + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		}//while
 
 		//perform the final analysis
 		lastTime = System.currentTimeMillis();
 		lastReadNumber =  getCurrentRead();
-		timeNow = new Date(lastTime).toString();
+	//	timeNow = lastTime;//(new Date(lastTime)).getTime();
 		this.lastAnalysis();
 		this.writeFinalResults();
-		LOG.info("RUNTIME\t" + timeNow  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
+		LOG.info("RUNTIME\t" + lastTime  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		//.. and close it
 		close();
 		LOG.info("Real time analysis done");

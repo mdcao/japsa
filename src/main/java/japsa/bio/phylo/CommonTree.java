@@ -29,6 +29,7 @@ public abstract class CommonTree {
 	public void printKraken(Node node, PrintStream pw, int total){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName().replaceAll("\\+-","");
+		 System.err.println(nme);
 		 Integer level = ((Integer)id.getAttribute("level")).intValue();
 		 String hex = ((String)id.getAttribute("css"));		
 		 String alias = ((String)id.getAttribute("alias"));	
@@ -39,12 +40,12 @@ public abstract class CommonTree {
 		 Integer[] nt = (Integer[] ) id.getAttribute(NCBITree.count_tag);
 		 Integer[] nt1 = (Integer[] ) id.getAttribute(NCBITree.count_tag1);
 		 String perc = String.format("%5.3g", 100*(double)nt[0]/ (double) total).trim();
-		 if(taxon==null){
+		/* if(taxon==null){
 			 taxon=0; nme="root";
-		 }
+		 }*/
 		 Double coverage = (Double) id.getAttribute(RealtimeSpeciesTyping.fraction_covered);
 		 if(coverage==null) coverage =Double.NaN;
-		 pw.print(perc+"\t"+nt[0]+"\t"+nt1[0]+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+coverage);
+		 pw.print(perc+"\t"+nt[0]+"\t"+nt1[0]+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+String.format("%5.3g",coverage).trim());
 		 pw.println();
 	}
 	public void print(Node node, PrintStream pw, String[] attributes, String[] format){

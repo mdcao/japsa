@@ -67,10 +67,13 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import japsa.bio.phylo.NCBITree;
+import japsa.bio.phylo.Slug;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.tools.seq.CachedFastqWriter;
+import japsa.tools.seq.CachedOutput;
 import japsa.tools.seq.CachedSequenceOutputStream;
+import japsa.tools.seq.SequenceUtils;
 import japsa.util.DoubleArray;
 import pal.misc.Identifier;
 import pal.tree.Node;
@@ -99,8 +102,8 @@ public class RealtimeSpeciesTyping {
 	 */
 	private double minQual = 1;
 	private boolean twoDOnly = false;
-	CachedFastqWriter fqw_unmapped = null;
-	CachedFastqWriter fqw_filtered = null;
+	CachedOutput fqw_unmapped = null;
+	CachedOutput fqw_filtered = null;
 	final public String unmapped_reads;
 	String indexFile;
 	Integer currentReadCount = 0;
@@ -157,13 +160,24 @@ public class RealtimeSpeciesTyping {
 	 *  */
 	class Coverage{
 		
-		Coverage(String species,  Node node, File fastqdir, boolean writeSep1){
+		Coverage(String species,  Node node, File fastqdir, boolean writeSep1, boolean hierarchical){
 			this.species = species;
 			this.node = node;
+			fqw = null;
+			if(writeSep1){
+				if(hierarchical && node!=null){
+					Node parent = node.getParent();
+					StringBuffer sd = new StringBuffer();
+					while(!parent.isRoot()){
+						sd.insert(0,"/"+Slug.toSlug(parent.getIdentifier().getName().replace("+-","").trim(),"_"));
+						parent = parent.getParent();
+					}
+					fastqdir = new File(fastqdir.getAbsolutePath()+sd.toString());
+				}
+				
+				fqw = new CachedSequenceOutputStream(fastqdir, species, true);
+			}
 			
-			fqw = writeSep1 ? new CachedSequenceOutputStream(fastqdir, species, true) : null;
-			//	new CachedFastqWriter(outdir, species);
-			//
 		}
 		
 		Node node; // this is the node in the tree.  We dont initialise this until there are at least one read
@@ -180,7 +194,7 @@ public class RealtimeSpeciesTyping {
 		List<String> contig_names = new ArrayList<String>();
 		//SortedMap<Integer, Interval> coverage = new TreeMap<Integer, Interval>(); //based on start
 		
-		CachedSequenceOutputStream fqw= null;
+		CachedOutput fqw= null;
 		boolean lock = false;
 		
 		public void updateNodeAndParents(){
@@ -457,7 +471,7 @@ public class RealtimeSpeciesTyping {
 		this.outputStream = SequenceOutputStream.makeOutputStream(outdir.getAbsolutePath()+"/"+outputFile);
 		
 		//this.indexBufferedReader = SequenceReader.openFile(indexFile);
-		typer = new RealtimeSpeciesTyper(this,outputStream);
+		typer = new RealtimeSpeciesTyper(this,outputStream, outdir.getName());
 		preTyping();
 	
 	}
@@ -467,7 +481,7 @@ public class RealtimeSpeciesTyping {
 		LOG.debug("string outputstream");
 	//	this.indexBufferedReader = SequenceReader.openFile(indexFile);
 		this.outputStream = outputStream;
-		typer = new RealtimeSpeciesTyper(this, outputStream);
+		typer = new RealtimeSpeciesTyper(this, outputStream, outdir.getName());
 		preTyping();
 	}
 
@@ -536,27 +550,41 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 				
 	}//while
 }
-
+public static boolean hierarchical = false;
 HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
 public static List<String> speciesToIgnore = null;
+public static boolean plasmidOnly = true; // only write fastq for plasmids
 	private void preTyping() throws IOException{
 		readSpeciesIndex(indexFile, this.seq2Species, true);
 		Iterator<String> it = seq2Species.values().iterator();
 		while(it.hasNext()){
 			String sp = it.next();
-			boolean writeSep1 = writeSep && (speciesToIgnore==null || ! speciesToIgnore.contains(sp));
+			boolean writeSep1 = writeSep 
+					&& (speciesToIgnore==null || ! speciesToIgnore.contains(sp))
+					&& (!plasmidOnly  || sp.endsWith(".plasmid")); 
+					
 			if (species2ReadList.get(sp) == null){
 //				LOG.info("add species: "+sp);
+				
 				Node n =tree==null ? null : tree.getNode(sp);
+				
 				if(n==null){
-					LOG.warn("node is null "+sp);
+					if(sp.endsWith(".plasmid")){
+						Node n1 = tree.getNode(sp.replace(".plasmid", ""));
+						if(n1!=null){
+							n = this.tree.make(n1, ".plasmid");
+						}
+					}else{
+						LOG.warn("node is null "+sp);
+					}
 				}
 			//	System.err.println(sp);
-				species2ReadList.put(sp,new Coverage(sp,n, 	fastqdir, writeSep1));			
+				species2ReadList.put(sp,new Coverage(sp,n, 	fastqdir, writeSep1, hierarchical));			
 						
 			}	
 		}
-		tree.annotateWithGenomeLength(referenceFile, seq2Species, species2Len);
+	//	tree.makeTrees();
+		SequenceUtils.annotateWithGenomeLength(referenceFile, seq2Species, species2Len);
 		//indexBufferedReader.close();
 	
 		LOG.info(seq2Species.size() + "   " + species2ReadList.size());
@@ -731,16 +759,16 @@ public static List<String> speciesToIgnore = null;
 		RealtimeSpeciesTyping typing;
 		public SequenceOutputStream countsOS;
 		File krakenResults; //kraken formatted results
+		final String sampleID;
 
-
-		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, OutputStream outputStream) throws IOException {
+		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, OutputStream outputStream, String sampleID) throws IOException {
 			typing = t;
 			krakenResults = new File(t.outdir,"results.krkn");
 			rengine = new MultinomialCI(ALPHA);
-
+this.sampleID = sampleID;
 			countsOS = new SequenceOutputStream(outputStream);
 			if(!JSON)
-				countsOS.print("time\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\tbases_covered\tfraction_covered\tlength_best_contig\tcoverage_percentiles\tmapQ\tlength\talignFrac\tprop_to_most_cov_contig\thighest_cov_contig\n");
+				countsOS.print("sampleID\ttime\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\tbases_covered\tfraction_covered\tlength_best_contig\tcoverage_percentiles\tmapQ\tlength\talignFrac\tprop_to_most_cov_contig\thighest_cov_contig\n");
 		}
 		double[] perc = new double[] {0.5};// 0.5, 0.75, 0.9, 0.95, 0.99}; // percentiles for printing median
 		double[] percQ = new double[] {0.5};
@@ -847,7 +875,7 @@ public static List<String> speciesToIgnore = null;
 				}
 				
 			}
-			typing.tree.trim(1e-7);
+			typing.tree.trim(1e-16);
 			typing.tree.print(this.krakenResults, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
 			}catch(Exception exc){
 				exc.printStackTrace();
@@ -870,7 +898,7 @@ public static List<String> speciesToIgnore = null;
 				Double mid = (results[i][0] + results[i][1])/2;
 				Double err = mid - results[i][0];
 				if(!JSON) {
-					countsOS.print(timeNow + "\t" + step + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_", " ") + "\t" + mid + "\t" + err + "\t" + typing.currentReadAligned + "\t" + countArray.get(i)+"\t"+medianArray.get(i));
+					countsOS.print(sampleID+"\t"+lastTime + "\t" + step + "\t" + lastReadNumber + "\t" + typing.currentBaseCount + "\t" + speciesArray.get(i).replaceAll("_", " ") + "\t" + mid + "\t" + err + "\t" + typing.currentReadAligned + "\t" + countArray.get(i)+"\t"+medianArray.get(i));
 					countsOS.println();
 				}
 				else {
@@ -890,7 +918,7 @@ public static List<String> speciesToIgnore = null;
 
 			if(JSON) {
 				countsOS.print(gson.toJson(ImmutableMap.of(
-						"timestamp", timeNow.toString(),
+						"timestamp", lastTime,
 						"data", data
 				)));
 				countsOS.println();

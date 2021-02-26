@@ -13,7 +13,7 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 
 /** this enables splitting of output sequences into species specific bams */
-public class CachedSequenceOutputStream {
+public class CachedSequenceOutputStream implements CachedOutput {
 	
 	//special thread for this class
 	//public static final ExecutorService writeCompressDirsExecutor  = Executors.newSingleThreadExecutor();
@@ -91,8 +91,9 @@ boolean print = false;
 	    		  File outdir1 = outdir;
 	    		  if(separate){
 	    			  outdir1 = new File(outdir, species);
-	    			  outdir1.mkdir();
+	    			  
 	    		  }
+	    		  outdir1.mkdirs();
 	    		  for(int j=0; j<this.fqw.size(); j++){
 	    			 SequenceOutputStream fqw_j =  new SequenceOutputStream(new FileOutputStream(new File(outdir1,ref.replace('|', '_')+".fa")));
 		    		  this.fqw.set(j,  fqw_j);
