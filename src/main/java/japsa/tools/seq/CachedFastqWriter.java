@@ -48,41 +48,46 @@ public class CachedFastqWriter extends CachedOutput{
 	  
   }
   List<Inner> l = new ArrayList<Inner>();
-  final  Inner remainder;
- 
-  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly) {
+  final  Inner remainder; // for leftOver seqs
+  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly){
+	  this(outdir, species, separateIntoContigs, alignedOnly, false);
+  }
+  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly, boolean writeRemainder) {
 	  super(outdir, species, separateIntoContigs, alignedOnly);
 	  this.l = new ArrayList<Inner>();
-	  this.remainder = new Inner("remainder.fq");
+	   this.remainder = writeRemainder ? new Inner("remainder.fq") : null;
 	}
 
     protected  String modify(String ref){
 		 return ref.replace('|', '_')+".fq";
 	 }
 
-  public void write(SAMRecord sam)  {
+  public void write(SAMRecord sam, String annotation)  {
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
 	  if(writeAlignedPortionOnly) {
 		  int st = sam.getReadPositionAtReferencePosition(sam.getAlignmentStart());
 			int end = sam.getReadPositionAtReferencePosition(sam.getAlignmentEnd());
-			if(st > 100){
-		  		 this.remainder.push(new FastqRecord(nme+".L."+st, readSeq.substring(0,st-1),"", baseQ.substring(0,st-1) ));
-		  }
-		  if(end < sam.getReadLength()-100){
-		  		 this.remainder.push(new FastqRecord(nme+".R."+end, readSeq.substring(end,sam.getReadLength()),"", baseQ.substring(end,sam.getReadLength()) ));
+		  if(remainder!=null){
+			
+				if(st > 100){
+			  		 this.remainder.push(new FastqRecord(nme+".L."+st, readSeq.substring(0,st-1),"", baseQ.substring(0,st-1) ));
+			  }
+			  if(end < sam.getReadLength()-100){
+			  		 this.remainder.push(new FastqRecord(nme+".R."+end, readSeq.substring(end,sam.getReadLength()),"", baseQ.substring(end,sam.getReadLength()) ));
+			  }
 		  }
 			//char strand = sam.getReadNegativeStrandFlag() ? '-' : '+';
 	  	readSeq =  readSeq.substring(st-1,end); // because sam is 1-based
 	  	nme = nme+" "+st+"-"+end+" "+sam.isSecondaryOrSupplementary();
   	  }
 	  String ref = separate  ? sam.getReferenceName() : species;
-	  FastqRecord repeat =  new FastqRecord(nme,	readSeq,	"",baseQ);
+	  FastqRecord repeat =  new FastqRecord(nme+"__"+annotation,	readSeq,	"",baseQ);
 	  total_count++;
 	  if(! print && total_count> MIN_READ_COUNT) {
 		  print = true;
-		  this.outdir.mkdirs();
+		 if(outdir!=null) this.outdir.mkdirs();
 	  }
 	  int  index =  this.nmes.indexOf(ref) ;
 	  if(index<0){
@@ -101,7 +106,7 @@ public void close(Map<String, Integer> species2Len){
 	for(int i=0; i<l.size(); i++){
 		l.get(i).close();
 	}
-	this.remainder.close();
+	if(remainder!=null) this.remainder.close();
 	super.writeAssemblyCommand(species2Len);
 	
 }

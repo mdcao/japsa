@@ -34,10 +34,17 @@
  ****************************************************************************/
 package japsa.tools.bio.np;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
 import japsa.bio.np.RealtimeResistanceGene;
-import japsa.bio.np.RealtimeSpeciesTyping;
+import japsa.tools.seq.CachedOutput;
+import japsa.tools.seq.SequenceUtils;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 
@@ -59,6 +66,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");
+		addString("fastqFile", null,  "fastq input");
 
 		addDouble("score", 0.0001,  "The alignment score threshold");
 		addString("msa", "kalign",
@@ -73,8 +81,19 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addInt("time", 1800,   "Minimum number of seconds between analyses");
 		addBoolean("log", false, "Whether to write mapping details to genes2reads.map.");
 
-		addInt("thread", 4,   "Number of threads to run");
+		addInt("thread", 1,   "Number of threads to run");
 
+		addString("mm2Preset", null,  "mm2Preset ",false);
+		addString("mm2_path", "/sw/minimap2/current/minimap2",  "minimap2 path", false);
+		addString("readList", null,  "file with reads to include", false);
+		addInt("maxReads",Integer.MAX_VALUE, "max reads to process", false );
+		long mem = (Runtime.getRuntime().maxMemory()-1000000000);
+		addString("mm2_memory", mem+"",  "minimap2 memory", false);
+		addDouble("fail_thresh", 7.0,  "median phred quality of read", false);
+		addInt("mm2_threads", 4, "threads for mm2", false);
+		addDouble("qual", 1,  "Minimum alignment quality");
+		
+		
 		addStdHelp();
 	} 
 
@@ -85,8 +104,21 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		String output = cmdLine.getStringVal("output");
 		String bamFile = cmdLine.getStringVal("bam");		
 		String msa = cmdLine.getStringVal("msa");
-		String resDB = cmdLine.getStringVal("resDB");
-
+		File resDB = new File(cmdLine.getStringVal("resDB"));
+		String fastqFile = cmdLine.getStringVal("fastqFile");
+		int maxReads = cmdLine.getIntVal("maxReads");
+		String readList = cmdLine.getStringVal("readList");
+		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
+		
+		SequenceUtils.mm2_threads= cmdLine.getIntVal("mm2_threads");
+		SequenceUtils.mm2_mem = cmdLine.getStringVal("mm2_mem");
+		SequenceUtils.mm2_path = cmdLine.getStringVal("mm2_path");
+		SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
+		SequenceUtils.mm2_splicing = null;//
+		SequenceUtils.secondary = false;
+		double q_thresh = cmdLine.getDoubleVal("fail_thresh");
+		CachedOutput.MIN_READ_COUNT=2;
+		
 		RealtimeResistanceGene.OUTSEQ = cmdLine.getBooleanVal("log");
 
 		String tmp = cmdLine.getStringVal("tmp");		
@@ -96,14 +128,25 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		int thread = cmdLine.getIntVal("thread");
 
 		boolean twodonly = cmdLine.getBooleanVal("twodonly");
-		RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, output, resDB, tmp);		
+		RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, output, resDB.getAbsolutePath(), tmp);		
 
 		paTyping.msa = msa;		
 		paTyping.scoreThreshold = scoreThreshold;
 		paTyping.twoDOnly = twodonly;
 		paTyping.numThead = thread;
 
-		paTyping.typing(bamFile);		
+		List<String> sample_names = new ArrayList<String>();	
+		List<Iterator<SAMRecord>> iterators =  new ArrayList<Iterator<SAMRecord>>();
+		List<SamReader> readers =  new ArrayList<SamReader>();
+		RealtimeSpeciesTypingCmd.getSamIterators(bamFile, fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers, 
+				new File(resDB,"DB.fasta"));
+		
+		for(int k=0; k<iterators.size(); k++){
+			paTyping.typing(iterators.get(k));		
+		}
+		for(int i=0; i<readers.size(); i++){
+			readers.get(i).close();
+		}
 	}
 }
 

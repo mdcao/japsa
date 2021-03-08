@@ -94,6 +94,7 @@ public  class NCBITree extends CommonTree {
 	
 	 
 	 public Integer getTaxa(String sciname){
+		 if(gid==null) return Integer.parseInt(sciname);
 		 return gid.getTaxa(sciname);
 	 }
 	 
@@ -121,22 +122,13 @@ public Node getNode(Integer taxa) {
 	 private void updateTree(String st, int lineno, double bl, PrintWriter missing){
 		 String[] str = st.split("\t");
 		// String specName = str[0];
-		Integer taxa = gid.processAlias(str,st);
-	  String alias1 = gid.collapse(str[1].split("\\s+"), 1);
-		String sciname = taxa==null ? null : gid.taxa2Sci.get(taxa);
-		Node n;
-		if(sciname==null && taxa==null)   {
-			n = this.unclassified;
-			Node n1 =  this.createFromSpeciesFile(str,alias1,  n, lineno, bl);
-		//	System.err.println(n1.getIdentifier().getAttribute("level"));
-			//System.err.println(n1.getIdentifier().getAttribute("prefix"));
-			//System.err.println(n1.getIdentifier());
-		}
-		else{
-			n = this.slugToNode1.get(taxa);//getNode( taxa);
-			this.createFromSpeciesFile(str,alias1,  n, lineno, bl);
+		Integer taxa = Integer.parseInt(str[2]); //gid.processAlias(str,st);
+//	  String alias1 = GetTaxonID.collapse(str[1].split("\\s+"), 1);
+		//String sciname = taxa==null ? null : gid.taxa2Sci.get(taxa);
+		 Node	n = this.slugToNode1.get(taxa);//getNode( taxa);
+			this.createFromSpeciesFile(str, n, lineno, bl);
 			//System.err.println(n.getIdentifier().getName());
-		}
+	
 		
 		// this.putSlug1(newnode);
 	 }
@@ -230,7 +222,7 @@ private Node getNode(TreePos tp) {
 	
 	//Map<String, String> alias = new HashMap<String, String>();
 	
-	 private Node createFromSpeciesFile(String[] line, String alias1, Node parent, int cnt, double bl){
+	 private Node createFromSpeciesFile(String[] line, Node parent, int cnt, double bl){
 		 int index =0;
 		 String name = line[index];
 		 String[] names = name.split("\\|");
@@ -238,6 +230,8 @@ private Node getNode(TreePos tp) {
 	if(name.startsWith(">")){
 		name = name.substring(1);
 	}
+	
+		
 		 Node n = new SimpleNode(name,bl);
 		 Identifier id = n.getIdentifier();
 		 Identifier pid = parent.getIdentifier();
@@ -257,17 +251,22 @@ private Node getNode(TreePos tp) {
 			 }
 				 
 		 }
-		 
+		 n.getIdentifier().setName(prefix+n.getIdentifier().getName());
+		 id.setAttribute("taxon", Integer.parseInt(line[2]));
 		 id.setAttribute("level",level);
 		 id.setAttribute("prefix", "  "+prefix);
 		// id.setAttribute("alias", line[0]);
-		 id.setAttribute("alias1", alias1);
+	//	 id.setAttribute("alias1", alias1);
 		 id.setAttribute("speciesIndex", cnt);
 		 String css =(String) pid.getAttribute("css");
 		 if(css!=null){
 			 id.setAttribute("css", css);
 		 }
 		 parent.addChild(n);
+		 n.setParent(parent);
+		// String slug = this.slug(name, false);
+		 //System.err.println("new node "+);
+		 //this.slugToNode.put(slug, n);
 		 this.putSlug1(n);
 		 return n;
 	 }
@@ -750,7 +749,7 @@ public void merge(NCBITree tree1, int pos){
 	public void addSpeciesIndex(File speciesIndex) throws  IOException{
 		if(speciesIndex!=null && speciesIndex.exists()){
 			PrintWriter missing = new PrintWriter(new FileWriter("missing.txt"));
-				 BufferedReader br1 = new BufferedReader(new FileReader(speciesIndex));
+				 BufferedReader br1 = GetTaxonID.getBR(speciesIndex);
 				 String st = "";
 				for(int i=0; (st = br1.readLine())!=null; i++){
 					updateTree(st, i, 0.0, missing);
@@ -803,6 +802,7 @@ public void merge(NCBITree tree1, int pos){
 		}
 		
 	}
+	
 	
 	
 	

@@ -36,7 +36,7 @@ public abstract class CachedOutput {
 			//  this.outdir.mkdirs();
 			
 	}
-	public abstract void write(SAMRecord sam);
+	public abstract void write(SAMRecord sam, String annotation);
 	protected abstract String modify(String in);
 	 public abstract void close(Map<String, Integer> species2Len);
 	public void writeAssemblyCommand(Map<String, Integer> species2Len) {

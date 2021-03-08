@@ -74,7 +74,7 @@ public class CachedSequenceOutputStream extends CachedOutput {
 	 return ref.replace('|', '_')+".fa";
  }
 
- public void write(SAMRecord sam)  {
+ public void write(SAMRecord sam, String annotation)  {
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
@@ -91,7 +91,7 @@ public class CachedSequenceOutputStream extends CachedOutput {
 	  		nme = nme+" "+st+"-"+end+" "+sam.isSecondaryOrSupplementary();
  	  }
 	  String ref = separate  ? sam.getReferenceName() : species;
-	  Sequence repeat =  new Sequence(alpha, readSeq,	nme);
+	  Sequence repeat =  new Sequence(alpha, readSeq,	nme+"_"+annotation);
 	  total_count++;
 	//  System.err.println(total_count);
 	  if(! print && total_count> MIN_READ_COUNT) {

@@ -43,10 +43,12 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -139,7 +141,7 @@ public class SequenceUtils {
 			        process = readsToInclude.remove(readname);
 		        }
 		        double q = SequenceUtils.getQual(value3.getBytes());
-		        System.err.println("quality "+q);
+		       // System.err.println("quality "+q);
 		        if(q<q_thresh) process = false;
 //		        process = process && (q)>= q_thresh);
 		        if(process){
@@ -209,13 +211,13 @@ public static void main(String[] args){
 				if(mm2Preset==null){
 					if(!secondary){
 					pb = new ProcessBuilder(mm2_path, 
-						//	"-t",
-						//	"" + mm2_threads,
-							//"-a",
-						//	"--secondary=no",
+							"-t",
+							"" + mm2_threads,
+							"-a",
+							"--secondary=no",
 						//	"--for-only",
-						//	"-I",
-						//	mm2_mem,
+							"-I",
+							mm2_mem,
 //							"-K",
 //							"200M",
 							mm2Index,
@@ -267,7 +269,12 @@ public static void main(String[] args){
 				
 					);
 			System.err.println(input);
-			
+		List<String> cmd = pb.command();
+		StringBuffer sb  = new StringBuffer();
+		for(int i=0; i<cmd.size(); i++){
+			sb.append(cmd.get(i)+" ");
+		}
+		System.err.println(sb.toString());
 			//	BufferedReader br;
 				InputStream	is ;
 				if(inputFile==null){
@@ -278,7 +285,7 @@ public static void main(String[] args){
 					is= input.endsWith(".gz")  ? new GZIPInputStream(new FileInputStream(inputFile)) : new FileInputStream(inputFile);
 
 				}
-				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
+				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err_minimap2.txt"))).start();
 			PipeConnector pc = new PipeConnector(new BufferedReader(new InputStreamReader(is)), mm2Process.getOutputStream(), max_per_file, readsToInclude,q_thresh);
 			//pc.run();
 			Thread th = new Thread(pc);
@@ -294,7 +301,7 @@ public static void main(String[] args){
 		 File inputFile = null;
 		 
 		
-		 
+		 public int count=0;
 		public FastqToSAMRecord(String input, String mm2Index, int maxReads,Collection<String>readsToInclude, double q_thresh) throws IOException{
 			this.mm2Index = mm2Index;
 			this.q_thresh = q_thresh;
@@ -318,6 +325,7 @@ public static void main(String[] args){
 			boolean res = iterator==null || iterator.hasNext();
 			try{
 			if(!res) {
+				System.err.println("analysed "+count+" records");
 				reader.close();
 			}
 			
@@ -336,6 +344,8 @@ public static void main(String[] args){
 			}
 			if(!iterator.hasNext()){
 				try{
+					System.err.println("analysed "+count+" records");
+
 				reader.close();
 				
 				}catch(IOException exc){
@@ -347,7 +357,8 @@ public static void main(String[] args){
 			SAMRecord nxt = null;
 			try{
 			 nxt =  iterator.next();
-			// System.err.println("h");
+			 count++;
+			// System.err.println("here "+nxt.getReadName());
 			}catch(SAMFormatException exc){
 				exc.printStackTrace();
 			//	System.exit(0);;
@@ -430,7 +441,8 @@ public static void main(String[] args){
 			SAMRecord nxt1 = nxt;
 			inner: while(samIter.hasNext()){
 				nxt = samIter.next();
-				if(reads==null || reads.remove(nxt.getReadName())){
+				String nme = nxt.getReadName();
+				if(reads==null || reads.remove(nme)){
 					if(getQual(nxt.getBaseQualities())>=qual_thresh) {
 						break inner;
 					}
@@ -555,6 +567,7 @@ public static Iterator<SAMRecord>  getCombined(Iterator<SAMRecord>[] samReaders,
 public static String minimapIndex(File refFile,   boolean overwrite, boolean saveSeqs) throws IOException, InterruptedException {
 	final String mm2 = mm2_path;
 	final String mem = mm2_mem;
+	if(refFile.isDirectory()) throw new RuntimeException("is directory");
 	String infile = refFile.getAbsolutePath();
 	File indexFile = new File(infile+".mmi");
 	File indexFile1 =  new File(infile.replaceAll(".fasta","").replaceAll(".fa", "")+".mmi");
@@ -647,11 +660,12 @@ public static String mkdb(File refFile, String treef, String speciesIndex,Collec
 		String refFile_out, String indexFile_out) {
 	
 	Map<String, String> seq2Species = new HashMap<String, String>();
+	Map<String, Integer> seq2Len = new HashMap<String, Integer>();
 	//String[] str = refFile.lastIndexOf('.');
 	
 	int printed=0;
 	try{
-	RealtimeSpeciesTyping.readSpeciesIndex(speciesIndex, seq2Species, false);
+	RealtimeSpeciesTyping.readSpeciesIndex(speciesIndex, seq2Species, seq2Len, false);
 	NCBITree tree = new NCBITree(new File(treef), false);
 	SequenceReader reader = SequenceReader.getReader(refFile.getAbsolutePath());
 	Alphabet alphabet = Alphabet.DNA();
@@ -668,6 +682,7 @@ public static String mkdb(File refFile, String treef, String speciesIndex,Collec
 		Sequence genome = reader.nextSequence(alphabet);
 		if (genome == null)break;
 		String nme = seq2Species.get(genome.getName());
+		//Integer len = seq2Len.get(genome.getName());
 	//	System.err.println(nme);
 		if(targetSpecies.contains(nme)){
 			//seq2Species1.put(genome.getNa, value)
@@ -707,56 +722,41 @@ public static String mkdb(File refFile, String treef, String speciesIndex,Collec
 	if(printed==0) throw new RuntimeException("none extracted");
 	return refFile_out;
 }
-
+/*
 public static void annotateWithGenomeLength(File refFile, 
 		HashMap<String, String> seq2Species, HashMap<String, Integer> seqToLen)  throws NumberFormatException, IOException{
-  if(!refFile.exists()){
-	 // LOG.warn(refFile+" does not exist");
-	  return;
-  }
-	File lenF = new File(refFile.getParentFile(),refFile.getName().replaceAll(".gz", "")+".len.txt.gz");
-	if(lenF.exists()){
-		BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(lenF))));
+//	File lenF = new File(refFile.getParentFile(),refFile.getName().replaceAll(".gz", "")+".len.txt.gz");
+		BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(refFile))));
 		String st = "";
 		while((st = br.readLine())!=null){
 			String[] str = st.split("\t");
-			seqToLen.put(str[0],Integer.parseInt(str[1]));
+			seqToLen.put(str[2],Integer.parseInt(str[4]));
 		//	Node node = this.getNode(str[0]);
 		//	if(node!=null){
 		//	node.getIdentifier().setAttribute("length",Integer.parseInt(str[1]));
 		//	}
 		}
 		br.close();
-	}else{
-		//LOG.info("calculating genome lengths...");
-		
-			SequenceReader reader = SequenceReader.getReader(refFile.getAbsolutePath());
-			Alphabet alphabet = Alphabet.DNA();
-			while (true){
-				Sequence genome = reader.nextSequence(alphabet);
-		
-				if (genome == null)break;
-				//String nme = seq2Species.get(genome.getName());
-				Integer sze = genome.length();
-				
-				//Node node = this.getNode(nme);
-				//int sze1 = speciesToLen.containsKey(nme) ? speciesToLen.get(nme) : 0;
-				seqToLen.put(genome.getName(), sze);
-				//if(node==null){
-				//	System.err.println("warning node is null" +nme);
-				//}else{
-				//	node.getIdentifier().setAttribute("length",sze);
-			//	}
-			}
-			PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(lenF))));
-			for(Iterator<String > it = seqToLen.keySet().iterator(); it.hasNext();){
-				String txt = it.next();
-				Integer val = seqToLen.get(txt);
-				pw.println(txt+"\t"+val+"\t"+seq2Species.get(txt));
-			}
-		pw.close();
-		//LOG.info("..done");
+
+}*/
+
+public static Collection<String> getReadList(String readList, boolean split) {
+	if(readList==null || readList=="null") return null;
+	List<String> reads = new ArrayList<String>();
+	try{
+	
+	InputStream is = new FileInputStream(new File(readList));
+	 if(readList.endsWith(".gz")) is = new GZIPInputStream(is);
+	 BufferedReader br = new BufferedReader(new InputStreamReader(is));
+	 String st = "";
+	 while((st = br.readLine())!=null){
+		 
+		 reads.add(split ? st.split("\\s+")[0] : st);
+	 }
+	}catch(IOException exc){
+		exc.printStackTrace();
 	}
+	return reads;
 }
 
 }

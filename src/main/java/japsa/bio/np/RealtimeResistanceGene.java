@@ -34,10 +34,34 @@
 
 package japsa.bio.np;
 
-import com.google.common.collect.ImmutableMap;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+
+import htsjdk.samtools.SAMRecord;
 import japsa.bio.alignment.ProbFSM.Emission;
 import japsa.bio.alignment.ProbFSM.ProbOneSM;
 //import japsa.bio.alignment.ProbFSM.ProbThreeSM;
@@ -46,21 +70,9 @@ import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
+import japsa.tools.seq.CachedFastqWriter;
+import japsa.tools.seq.CachedOutput;
 import japsa.util.HTSUtilities;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -70,9 +82,13 @@ import java.util.concurrent.TimeUnit;
 
 public class RealtimeResistanceGene {
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeResistanceGene.class);
+	public static boolean writeAlignedOnly = false;
 	public static boolean JSON = false;
 	public static boolean OUTSEQ=false;
 	private static HashMap<String, ArrayList<String>> allAlignedReads;
+	
+	final CachedOutput fqw ;
+	//File fqDir = new File("fastqs");
 	
 	private ResistanceGeneFinder resistFinder;
 	private HashMap<String, ArrayList<Sequence>> alignmentMap;
@@ -86,6 +102,9 @@ public class RealtimeResistanceGene {
 	public Integer numThead = 4;
 
 	public RealtimeResistanceGene(Integer read, Integer time, String outputFile, String resDB, String recordPrefix) throws IOException {
+		File outF = new File(outputFile);
+		fqw = new CachedFastqWriter(outF.getParentFile(), "resistance", false, writeAlignedOnly);	
+		
     File geneListFile = new File(resDB + "/geneList");
     File fastaFile = new File(resDB + "/DB.fasta");
     OutputStream outStream = SequenceOutputStream.makeOutputStream(outputFile);
@@ -97,8 +116,12 @@ public class RealtimeResistanceGene {
 		resistFinder.setTimePeriod(time * 1000);
 	}
 
-	public RealtimeResistanceGene(Integer read, Integer time, OutputStream outStream, InputStream resDBInputStream, InputStream fastaInputStream, String recordPrefix) throws IOException {
-	    resistFinder = new ResistanceGeneFinder(this, outStream, resDBInputStream, fastaInputStream, recordPrefix);
+	public RealtimeResistanceGene(Integer read, Integer time, OutputStream outStream, 
+			InputStream resDBInputStream, InputStream fastaInputStream, String recordPrefix) throws IOException {
+	//    this.fqw = null;
+		fqw = new CachedFastqWriter(new File("."), "resistance.fq", true, writeAlignedOnly);	
+
+		resistFinder = new ResistanceGeneFinder(this, outStream, resDBInputStream, fastaInputStream, recordPrefix);
 	    resistFinder.setReadPeriod(read);
 	    resistFinder.setTimePeriod(time * 1000);
 	}
@@ -112,7 +135,7 @@ public class RealtimeResistanceGene {
 	 * @param bamFile
 	 * @throws IOException
 	 * @throws InterruptedException
-	 */
+	
 	public void typing(String bamFile) throws IOException, InterruptedException {
 		InputStream bamInputStream;
 
@@ -122,9 +145,10 @@ public class RealtimeResistanceGene {
 			bamInputStream = new FileInputStream(bamFile);
 
 		typing(bamInputStream);
-	}
+	} */
 
-	public void typing(InputStream bamInputStream) throws IOException, InterruptedException{
+	
+	public void typing(Iterator<SAMRecord> samIter) throws IOException, InterruptedException{
 		LOG.info("Resistance identification ready at " + new Date());
 
 		alignmentMap = new HashMap<String, ArrayList<Sequence>> ();
@@ -132,9 +156,9 @@ public class RealtimeResistanceGene {
 		if(OUTSEQ)
 			allAlignedReads = new HashMap<String, ArrayList<String>> ();
 		
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
-		SAMRecordIterator samIter = samReader.iterator();
+		//SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+	//	SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
+	//	SAMRecordIterator samIter = samReader.iterator();
 
 		Thread t = new Thread(resistFinder, "SSS");
 		t.start();
@@ -172,7 +196,7 @@ public class RealtimeResistanceGene {
 			int refLength =  resistFinder.geneMap.get(geneID).length();
 			int refStart = record.getAlignmentStart();
 			int refEnd   = record.getAlignmentEnd();
-			
+			String resclass = resistFinder.gene2Group.get(geneID);
 			if (!resistFinder.geneMap.containsKey(geneID))
 				continue;
 			if(refStart > 99 || refEnd < refLength - 99)
@@ -183,6 +207,9 @@ public class RealtimeResistanceGene {
 					alignmentMap.put(geneID, new ArrayList<Sequence>());
 
 				//put the sequence into alignment list
+				CachedOutput fqwj= this.fqw;//.get(resclass);
+			//	if(fqwj==null) fqw.put(resclass, fqwj = new CachedFastqWriter(fqDir, resclass, true, writeAlignedOnly));
+				fqwj.write(record, resclass);
 				Sequence readSeq = HTSUtilities.readSequence(record, readSequence, 99, refLength-99);
 				alignmentMap.get(geneID).add(readSeq);
 				
@@ -193,10 +220,13 @@ public class RealtimeResistanceGene {
 				}
 			}//synchronized(this)
 		}//while
-
+		this.fqw.close();
+//for(Iterator<CachedOutput> it = this.fqw.values().iterator(); it.hasNext();){
+//it.next().close();
+	//	}
 		resistFinder.stopWaiting();
-		samIter.close();
-		samReader.close();
+		//samIter.close();
+		//samReader.close();
 
 		LOG.info("END : " + new Date());
 	}	
@@ -213,7 +243,8 @@ public class RealtimeResistanceGene {
 		private final Map<String, String> gene2Group = new HashMap<String,String>();
 		private final Map<String, Sequence> geneMap = new HashMap<String,Sequence>();
 		private final List<String> geneList = new ArrayList<String>();
-
+		CachedOutput fwq;
+		
 		//Set of genes confirmed to have found
 		private final HashSet<String> predictedGenes = new HashSet<String>();
 
@@ -233,7 +264,8 @@ public class RealtimeResistanceGene {
 	
 	    public ResistanceGeneFinder(RealtimeResistanceGene resistGene, OutputStream outStream, InputStream resDBInputStream, InputStream fastaInputStream, String recordPrefix) throws IOException {
 			this.resistGene = resistGene;
-	
+			
+			
 			readGeneClassInformation(fastaInputStream); // step 1
 			readGeneInformation(resDBInputStream);      // step 2
 	

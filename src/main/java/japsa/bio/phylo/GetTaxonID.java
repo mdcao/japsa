@@ -78,17 +78,10 @@ public class GetTaxonID {
 	  br.close();
   }
   
-  public void read(File taxon_set) throws IOException{
-	  BufferedReader br1 = getBR(taxon_set);
-	  String st1;
-	  while((st1 = br1.readLine())!=null){
-		  this.taxon_set.add(Integer.parseInt(st1.split("\t")[0]));
-	  }
-	  br1.close();
-  }
+ 
   
-  public GetTaxonID( File names_dmp, File node_dmp)  throws IOException{
-	  
+  public GetTaxonID( File names_dmp, File node_dmp, Set<Integer>taxon_set)  throws IOException{
+	  this.taxon_set = taxon_set;
 		  BufferedReader br = getBR(names_dmp);
 		  String st = "";
 		  while((st = br.readLine())!=null){
@@ -120,7 +113,7 @@ public class GetTaxonID {
   }
 
 
-static BufferedReader getBR(File file)throws IOException{
+public static BufferedReader getBR(File file)throws IOException{
 	 BufferedReader br;
 		if(file.getName().endsWith(".gz")){
 			br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));

@@ -72,8 +72,10 @@ public abstract class CommonTree {
         		//System.err.println(format[i]);
         		Integer[] nt = (Integer[] ) id.getAttribute(attributes[i]);
         		//System.err.println(Arrays);
+        		if(nt!=null){
         		String fmt =String.format(format[i],  nt[0]);//id.getAttribute(attributes[i])); 
         		pw.print("\t"+fmt.replaceAll("\\s+",""));
+        		}
         	}
         }
 		 pw.println();
@@ -101,7 +103,7 @@ public abstract class CommonTree {
 		   int total =0;
 			for(int i=roots.size()-1;i>=0; i--){
 				Integer[] cnts = (Integer[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
-				for(int j=0; j<cnts.length; j++) total+=cnts[j];
+				if(cnts!=null)		for(int j=0; j<cnts.length; j++) total+=cnts[j];
 			}
 		   for(int i=0; i<this.roots.size(); i++){
 			   System.err.println(roots.get(i).getIdentifier().getName());
