@@ -5,8 +5,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 import htsjdk.samtools.SAMRecord;
 
@@ -19,9 +22,10 @@ public abstract class CachedOutput {
 	  int total_count=0;
 	  boolean print = false;
 	  public static int MIN_READ_COUNT=20;
-	  boolean writeAlignedPortionOnly = true;
+	  boolean writeAlignedPortionOnly =false;
 	  List<String> nmes = null;
 	  List<Integer> lens = null;
+	
 	 public CachedOutput(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly) {
 		 
 		 this.writeAlignedPortionOnly = alignedOnly;
@@ -39,6 +43,11 @@ public abstract class CachedOutput {
 	public abstract void write(SAMRecord sam, String annotation);
 	protected abstract String modify(String in);
 	 public abstract void close(Map<String, Integer> species2Len);
+	 
+	 public abstract void  getOutFile(List<String> fi);
+	 
+	 public abstract int length();
+
 	public void writeAssemblyCommand(Map<String, Integer> species2Len) {
 		if(species2Len==null) return;
 		if(print){
@@ -74,4 +83,22 @@ public abstract class CachedOutput {
 	this.close(null);	// TODO Auto-generated method stub
 		
 	}
+	public void writeAll(List<SAMRecord> records, List<String> resclasses) {
+		if(records.size()>0){
+		if(this.writeAlignedPortionOnly){
+			for(int i=0; i<records.size(); i++){
+				this.write(records.get(i), resclasses.get(i));
+			}
+		}else{
+			StringBuffer sb = new StringBuffer();
+			Iterator<String>res = resclasses.iterator();
+			while(res.hasNext()) {
+				sb.append(res.next());
+				if(res.hasNext())sb.append("_");
+			}
+			this.write(records.get(0), sb.toString());
+		}
+		}
+	}
+	
 }

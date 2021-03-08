@@ -17,6 +17,7 @@ import japsa.seq.SequenceOutputStream;
 public class CachedFastqWriter extends CachedOutput{
   class Inner{
 	  FastqWriter fqw;
+	  int printed=0;
 	  Stack stack = new Stack();
 	  final String nme1;
 	 
@@ -33,6 +34,7 @@ public class CachedFastqWriter extends CachedOutput{
 		  if(fqw==null && stack.size()>0 && print) fqw =  new BasicFastqWriter(new File(outdir, nme1));
 		  if(print){
 		  while(stack.size()>0){
+			  printed++;
 			  fqw.write((FastqRecord)stack.pop());
 		  }
 		  }
@@ -46,6 +48,17 @@ public class CachedFastqWriter extends CachedOutput{
 		  }
 	  }
 	  
+  }
+  public int length(){
+		 return l.size();
+	 }
+  public  void  getOutFile(List<String> fi){
+	  for(int i=0; i<l.size(); i++){
+		  if(l.get(i).printed>0) fi.add(outdir+"/"+ l.get(i).nme1);
+		  else{
+			  System.err.println("not printed "+l.get(i).stack.size()+" "+this.nmes.get(i));
+		  }
+	  }
   }
   List<Inner> l = new ArrayList<Inner>();
   final  Inner remainder; // for leftOver seqs

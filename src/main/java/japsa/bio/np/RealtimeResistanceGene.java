@@ -87,7 +87,9 @@ public class RealtimeResistanceGene {
 	public static boolean OUTSEQ=false;
 	private static HashMap<String, ArrayList<String>> allAlignedReads;
 	
-	final CachedOutput fqw ;
+	
+//	public final CachedOutput fqw ;
+	Map<String, CachedOutput> fqw = new HashMap<String, CachedOutput>();
 	//File fqDir = new File("fastqs");
 	
 	private ResistanceGeneFinder resistFinder;
@@ -101,10 +103,18 @@ public class RealtimeResistanceGene {
 	public Boolean twoDOnly = false;
 	public Integer numThead = 4;
 
-	public RealtimeResistanceGene(Integer read, Integer time, String outputFile, String resDB, String recordPrefix) throws IOException {
-		File outF = new File(outputFile);
-		fqw = new CachedFastqWriter(outF.getParentFile(), "resistance", false, writeAlignedOnly);	
+	public void getOutfiles(List<String> res){
+		Iterator<CachedOutput> it =  this.fqw.values().iterator();
+		while(it.hasNext()){
+			CachedOutput nxt = it.next();
+			nxt.getOutFile(res);
+		}
+	}
+	
+	public RealtimeResistanceGene(Integer read, Integer time,File outdir,  String outputFile, String resDB, String recordPrefix) throws IOException {
+	//	File outF = new File(outputFile);
 		
+	this.outdir = outdir;
     File geneListFile = new File(resDB + "/geneList");
     File fastaFile = new File(resDB + "/DB.fasta");
     OutputStream outStream = SequenceOutputStream.makeOutputStream(outputFile);
@@ -116,11 +126,13 @@ public class RealtimeResistanceGene {
 		resistFinder.setTimePeriod(time * 1000);
 	}
 
+	
+	
 	public RealtimeResistanceGene(Integer read, Integer time, OutputStream outStream, 
 			InputStream resDBInputStream, InputStream fastaInputStream, String recordPrefix) throws IOException {
 	//    this.fqw = null;
-		fqw = new CachedFastqWriter(new File("."), "resistance.fq", true, writeAlignedOnly);	
-
+		//fqw = new CachedFastqWriter(new File("."), "resistance.fq", true, writeAlignedOnly);	
+this.outdir = new File("./");
 		resistFinder = new ResistanceGeneFinder(this, outStream, resDBInputStream, fastaInputStream, recordPrefix);
 	    resistFinder.setReadPeriod(read);
 	    resistFinder.setTimePeriod(time * 1000);
@@ -166,7 +178,7 @@ public class RealtimeResistanceGene {
 		String readName = "";
 		//A dummy sequence
 		Sequence readSequence = new Sequence(Alphabet.DNA(),1,"");
-
+		Map<String, List<SAMRecord>> records = new HashMap<String, List<SAMRecord>>();
 		while (samIter.hasNext()){
 			SAMRecord record = samIter.next();
 
@@ -187,6 +199,8 @@ public class RealtimeResistanceGene {
 						readSequence.setName(readName);
 					}
 				}
+				writeAll(records, false);
+					
 			}
 
 			if (record.getReadUnmappedFlag())
@@ -207,9 +221,9 @@ public class RealtimeResistanceGene {
 					alignmentMap.put(geneID, new ArrayList<Sequence>());
 
 				//put the sequence into alignment list
-				CachedOutput fqwj= this.fqw;//.get(resclass);
-			//	if(fqwj==null) fqw.put(resclass, fqwj = new CachedFastqWriter(fqDir, resclass, true, writeAlignedOnly));
-				fqwj.write(record, resclass);
+				List<SAMRecord> recs = records.get(resclass);
+				if(recs==null) records.put(resclass,recs = new ArrayList<SAMRecord>());
+				recs.add(record);
 				Sequence readSeq = HTSUtilities.readSequence(record, readSequence, 99, refLength-99);
 				alignmentMap.get(geneID).add(readSeq);
 				
@@ -220,7 +234,8 @@ public class RealtimeResistanceGene {
 				}
 			}//synchronized(this)
 		}//while
-		this.fqw.close();
+		this.writeAll(records, true);
+	//	this.fqw.close();
 //for(Iterator<CachedOutput> it = this.fqw.values().iterator(); it.hasNext();){
 //it.next().close();
 	//	}
@@ -230,6 +245,29 @@ public class RealtimeResistanceGene {
 
 		LOG.info("END : " + new Date());
 	}	
+	final File outdir;
+	
+	/** also clears */
+	private void writeAll(Map<String, List<SAMRecord>> records, boolean close) {
+		Iterator<String> it = records.keySet().iterator();
+		while(it.hasNext()){
+			String resc = it.next();
+			List<SAMRecord> rec = records.get(resc);
+			if(rec.size()==0) continue;
+			CachedOutput co = this.fqw.get(resc);
+			if(co==null){
+				co = new CachedFastqWriter(outdir, resc, false, writeAlignedOnly);	
+				fqw.put(resc, (CachedFastqWriter) co);
+			}
+			
+			for(int i=0; i<rec.size(); i++){
+				co.write(rec.get(i), resc);
+			}
+			if(close) co.close();
+			rec.clear();
+		}
+		
+	}
 
 	//TODO: way to improve performance:
 	//1. 
@@ -531,5 +569,13 @@ public class RealtimeResistanceGene {
 			}
 		}
 
+	}
+
+	public void close() {
+	Iterator<CachedOutput> it = this.fqw.values().iterator();
+	while(it.hasNext()){
+		it.next().close();
+	}
+		
 	}
 }

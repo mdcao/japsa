@@ -56,6 +56,7 @@ import japsa.bio.np.RealtimeSpeciesTyping;
 import japsa.bio.phylo.CSSProcessCommand;
 import japsa.bio.phylo.NCBITree;
 import japsa.bio.phylo.Trie;
+import japsa.tools.seq.CachedOutput;
 import japsa.tools.seq.SequenceUtils;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
@@ -71,6 +72,16 @@ import japsa.util.deploy.Deployable;
 	)
 public class RealtimeSpeciesTypingCmd extends CommandLine {
 
+	static double q_thresh=7; 
+	static double qual=1;
+	
+	static String filter;
+	
+	static boolean twoOnly=false;
+	static int maxReads=Integer.MAX_VALUE;
+	static int number ;
+	static int time=30;
+	
 	public RealtimeSpeciesTypingCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
@@ -81,6 +92,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		addString("bamFile", null,  "The bam file",false);	
 		addString("fastqFile", null, "Fastq file", false);
 		addString("dbPath",null, "path to databases",false);
+		addString("resdb",null, "Resistance database",false);
 		addString("dbs",null, "databases to use in path",false);
 		addString("species",null, "species to restrict search",false);
 		addBoolean("realtimeAnalysis", false, "whether to run analysis in realtime");
@@ -130,21 +142,24 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 	}
 	
 	
-	public static void  getSamIterators(String bamFile, String fastqFile, String readListSt, int maxReads,double q_thresh,
+	public static void  getSamIterators(String[] bamFile, String[] fastqFile, String readListSt, int maxReads,double q_thresh,
 			List<String> sample_name, List<Iterator<SAMRecord>> iterators,List<SamReader> samReaders,File refFile
 			) throws IOException, FileNotFoundException{
 		boolean bam = fastqFile==null;
-		String[] files = bam ? bamFile.split(":") : fastqFile.split(":");
+		String[] files = bam ? bamFile : fastqFile;
 		
 		Collection<String> readList=SequenceUtils.getReadList(readListSt, true);
 		
-		if(bamFile!=null && !(new File(bamFile)).exists()) {
-			files = (new File(".")).list(new MatchFilter(bamFile));	
+		if(bamFile!=null && bamFile.length==1 && !(new File(bamFile[0])).exists()) {
+			files = (new File(".")).list(new MatchFilter(bamFile[0]));	
 		}
-		if(fastqFile!=null && !(new File(fastqFile)).exists()) {
-			files = (new File(".")).list(new MatchFilter(fastqFile));	
+		if(fastqFile!=null && fastqFile.length==1 &&  !(new File(fastqFile[0])).exists()) {
+			files = (new File(".")).list(new MatchFilter(fastqFile[0]));	
 		}
-		if(files.length==0) throw new RuntimeException("no files match input request");
+		if(files.length==0) {
+			System.err.println(bam ? bamFile[0]  : fastqFile[0]);
+			throw new RuntimeException("no files match input request");
+		}
 	//	String[] sample_name = new String[files.length];
 		for(int i=0; i<files.length; i++){
 			String filek = files[i];//.replace(".gz","");//.substring(0, files[i].lastIndexOf('.'));
@@ -190,8 +205,11 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 			speciesIndex=Trie.getIndexFile(taxaDir, refFile);
 			String treef = CSSProcessCommand.getTree(taxaDir,dbdir, speciesIndex, false).getAbsolutePath();
 			boolean useTaxaAsSlug=false;
+			String treef_mod = treef+".mod";
 			tree = new NCBITree(new File(treef), useTaxaAsSlug);
 			tree.addSpeciesIndex(speciesIndex);
+			tree.print(new File(treef_mod)); // this prints out to tree
+	//		if(true)System.exit(0);
 			// treef = dbPath+"/"+dbs+"/"+ "commontree.txt.css.mod";
 			 modDB = new File("./db");
 			 if(speciesFile!=null){
@@ -218,11 +236,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		
 	}
 	
-	static double q_thresh, qual; 
-	static String filter;
 	
-	static boolean twoOnly;
-	static int maxReads, number ,time;
 	
 	static void setParams(CommandLine cmdLine){
 		
@@ -246,6 +260,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		RealtimeSpeciesTyping.writeSep = cmdLine.getBooleanVal( "writeSep");
 		RealtimeSpeciesTyping.writeUnmapped = cmdLine.getBooleanVal("writeUnmapped");
 		RealtimeSpeciesTyping.speciesToIgnore = Arrays.asList(cmdLine.getStringVal("speciesToIgnore").split(":"));
+		CachedOutput.MIN_READ_COUNT = RealtimeSpeciesTyping.MIN_READS_COUNT;
 	}
 	
 	/**
@@ -260,16 +275,32 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 	    String output    = cmdLine.getStringVal("output");
 		String bamFile   = cmdLine.getStringVal("bamFile");		
 		String fastqFile = cmdLine.getStringVal("fastqFile");
+		String resDB = cmdLine.getStringVal("resDB");
+		if(resDB!=null){
+			RealtimeSpeciesTyping.plasmidOnly = false;
+			RealtimeSpeciesTyping.writeSep = true;
+		}
 		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
 		String dbPath = cmdLine.getStringVal("dbPath");
 		String dbs = cmdLine.getStringVal("dbs");//.split(":");
 		String readList = cmdLine.getStringVal("readList");
 		String speciesFile=cmdLine.getStringVal("species");
 		ReferenceDB refDB = new ReferenceDB(dbPath, dbs, speciesFile);
-		speciesTyping(refDB, readList, bamFile, fastqFile, output);
+		List<String> out_fastq = new ArrayList<String>();
+		speciesTyping(refDB, readList, bamFile==null ? null : bamFile.split(":"), 
+										fastqFile==null ? null : fastqFile.split(":"), output, out_fastq);
+	
+		if(resDB!=null && out_fastq.size()>0){
+			SequenceUtils.secondary = true;
+			CachedOutput.MIN_READ_COUNT=2;
+			List<String> outfiles = new ArrayList<String>();
+			File outdir = new File(".");
+			RealtimeResistanceGeneCmd.resistanceTyping(new File(resDB), null,
+					out_fastq.toArray(new String[0]), readList, outdir, output, outfiles);
+		}
 	}
 	public static void speciesTyping(ReferenceDB refDB, String readList,
-		 String bamFile, String fastqFile, String output
+		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq 
 			) throws IOException{
 			List<String> sample_names = new ArrayList<String>();	
 			List<Iterator<SAMRecord>> iterators =  new ArrayList<Iterator<SAMRecord>>();
@@ -281,6 +312,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 			}
 			String outdir_new = "./";
 			outdir_new = outdir_new+"_"+refDB.dbs;
+		
 			for(int k=0; k<iterators.size(); k++){ // do multiple samples sequentially , could consider doing in parallel later
 				File outdir = new File(outdir_new+"/"+sample_names.get(k));
 				outdir.mkdirs();
@@ -298,6 +330,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 				}
 				if(samReader!=null) samReader.close();
 				readList = null;
+				paTyping.getOutfiles(out_fastq);
 				//files[k] = paTyping.unmapped_reads;  // unmapped reads taken forward to next database
 			}
 	//	}dbs

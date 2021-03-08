@@ -43,6 +43,8 @@ import java.util.List;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import japsa.bio.np.RealtimeResistanceGene;
+import japsa.bio.np.RealtimeSpeciesTyping;
+import japsa.tools.bio.np.RealtimeSpeciesTypingCmd.ReferenceDB;
 import japsa.tools.seq.CachedOutput;
 import japsa.tools.seq.SequenceUtils;
 import japsa.util.CommandLine;
@@ -74,6 +76,9 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 
 		addString("tmp", "_tmpt",  "Temporary folder");				
 		addString("resDB", null,  "Path to resistance database", true);
+		addString("dbs", null,  "For subsequent species typing", false);
+		addString("dbPath",null, "path to databases",false);
+
 
 		addDouble("qual", 0,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");				
@@ -96,40 +101,68 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		
 		addStdHelp();
 	} 
-
+	
+	static double scoreThreshold = 0.0010;
+	static int readPeriod = 50;
+	static int time = 100;
+	static int thread = 1;
+	static boolean twodonly = false;
+   static  int maxReads = Integer.MAX_VALUE;
+   static String msa = "kalign";
+   static double q_thresh=7;
+   static String tmp="_tmpt";
+   
 	public static void main(String[] args) throws IOException, InterruptedException{
 		CommandLine cmdLine = new RealtimeResistanceGeneCmd();
 		args = cmdLine.stdParseLine(args);		
+		scoreThreshold = cmdLine.getDoubleVal("score");		
+		readPeriod = cmdLine.getIntVal("read");
+		time = cmdLine.getIntVal("time");
+		thread = cmdLine.getIntVal("thread");
+		twodonly = cmdLine.getBooleanVal("twodonly");
+		msa = cmdLine.getStringVal("msa");
+		maxReads = cmdLine.getIntVal("maxReads");
+		q_thresh = cmdLine.getDoubleVal("fail_thresh");
 
-		String output = cmdLine.getStringVal("output");
-		String bamFile = cmdLine.getStringVal("bam");		
-		String msa = cmdLine.getStringVal("msa");
-		File resDB = new File(cmdLine.getStringVal("resDB"));
-		String fastqFile = cmdLine.getStringVal("fastqFile");
-		int maxReads = cmdLine.getIntVal("maxReads");
-		String readList = cmdLine.getStringVal("readList");
-		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
-		
 		SequenceUtils.mm2_threads= cmdLine.getIntVal("mm2_threads");
 		SequenceUtils.mm2_mem = cmdLine.getStringVal("mm2_mem");
 		SequenceUtils.mm2_path = cmdLine.getStringVal("mm2_path");
 		SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
 		SequenceUtils.mm2_splicing = null;//
-		SequenceUtils.secondary = false;
-		double q_thresh = cmdLine.getDoubleVal("fail_thresh");
+		SequenceUtils.secondary = true;
 		CachedOutput.MIN_READ_COUNT=2;
-		
 		RealtimeResistanceGene.OUTSEQ = cmdLine.getBooleanVal("log");
+		tmp = cmdLine.getStringVal("tmp");		
 
-		String tmp = cmdLine.getStringVal("tmp");		
-		double scoreThreshold = cmdLine.getDoubleVal("score");		
-		int readPeriod = cmdLine.getIntVal("read");
-		int time = cmdLine.getIntVal("time");
-		int thread = cmdLine.getIntVal("thread");
+		
+		String output = cmdLine.getStringVal("output");
+		String bamFile = cmdLine.getStringVal("bam");		
+		File resDB = new File(cmdLine.getStringVal("resDB"));
+		String fastqFile = cmdLine.getStringVal("fastqFile");
+		String readList = cmdLine.getStringVal("readList");
+		
+		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
 
-		boolean twodonly = cmdLine.getBooleanVal("twodonly");
-		RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, output, resDB.getAbsolutePath(), tmp);		
+		File outdir = new File("./");
+		List<String> outfiles = new ArrayList<String>();
+		resistanceTyping(resDB, bamFile==null ? null : bamFile.split(":"),
+				fastqFile==null ? null : fastqFile.split(":"), readList, outdir, output, outfiles);
+		//now do species typing on the resistance genes;
+		String dbPath =  cmdLine.getStringVal("dbPath");
+		String dbs = cmdLine.getStringVal("dbs");//.split(":");
+		if(dbPath!=null && dbs!=null && outfiles.size()>0){
+			CachedOutput.MIN_READ_COUNT=10;
+			SequenceUtils.secondary = false;
+			ReferenceDB refDB = new ReferenceDB(dbPath, dbs, null);
+			RealtimeSpeciesTyping.plasmidOnly = false;
+			List<String> species_output_files = new ArrayList<String>();
+			RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null,outfiles.toArray(new String[0]),  "output.dat", species_output_files);
+		}
+	}
 
+	public static void resistanceTyping(File resDB, String[] bamFile, 
+			String[] fastqFile,String readList, File outdir, String output, List<String> outfiles)  throws IOException, InterruptedException{
+		RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, outdir, output, resDB.getAbsolutePath(), tmp);		
 		paTyping.msa = msa;		
 		paTyping.scoreThreshold = scoreThreshold;
 		paTyping.twoDOnly = twodonly;
@@ -138,7 +171,9 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		List<String> sample_names = new ArrayList<String>();	
 		List<Iterator<SAMRecord>> iterators =  new ArrayList<Iterator<SAMRecord>>();
 		List<SamReader> readers =  new ArrayList<SamReader>();
-		RealtimeSpeciesTypingCmd.getSamIterators(bamFile, fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers, 
+		
+		RealtimeSpeciesTypingCmd.getSamIterators(bamFile==null ? null : bamFile, 
+				fastqFile==null ? null : fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers, 
 				new File(resDB,"DB.fasta"));
 		
 		for(int k=0; k<iterators.size(); k++){
@@ -147,6 +182,8 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		for(int i=0; i<readers.size(); i++){
 			readers.get(i).close();
 		}
+		paTyping.close();
+		paTyping.getOutfiles(outfiles);
 	}
 }
 
