@@ -227,6 +227,7 @@ public static void main(String[] args){
 						pb = new ProcessBuilder(mm2_path, 
 								"-t",
 								"" + mm2_threads,
+								"-a",
 								"-I",
 								mm2_mem,
 //								"-K",
