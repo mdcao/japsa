@@ -1,6 +1,7 @@
 --merge=false
 --dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping/
---dbs=clinicaldb
+#--dbs=clinicaldb
+--dbs=bacteria_2019Feb
 #--dbs=combined_bacteria_virus_human
 --qual=0  
 --fail_thresh=7

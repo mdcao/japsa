@@ -1,6 +1,6 @@
 --resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceGenes/resFinder
-#--dbpath=/home/lachlan/SpeciesTyping
-#--dbs=clinicaldb
+--dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping
+--dbs=clinicaldb
 --log=true
 --mm2_path=/sw/minimap2/current/minimap2
 #--readList=readList_fos1.txt 
