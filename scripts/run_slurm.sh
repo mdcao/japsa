@@ -29,6 +29,9 @@ echo ${japsa_coverage}
 typ=$1
 bamfiles=$2
 
+#typ="species"
+#bamfiles="--fastqFile=aqip003.fastq.gz"
+
 if [ $typ == "species" ]; then
 	mainclass="japsa.tools.bio.np.RealtimeSpeciesTypingCmd"
 	optsfile="opts_species.txt"
