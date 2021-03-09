@@ -1,4 +1,4 @@
---resDB=/home/lachlan/ResistanceTyping/resFinder
+--resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceGenes/resFinder
 #--dbpath=/home/lachlan/SpeciesTyping
 #--dbs=clinicaldb
 --log=true
