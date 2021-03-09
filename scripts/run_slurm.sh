@@ -21,24 +21,22 @@
 ##tip - use symbolic link to put this in the directory with bam files
 #run as sbatch run_slurm.sh species --bamFile=file.bam 
 #  sbatch run_slurm_combined.sh human combined --RNA=false
-export JSA_MEM=8000m
+export JSA_MEM=31800m
 
 export japsa_coverage="${HOME}/github/japsa_coverage"
 echo ${japsa_coverage}
 
-typ=$1
+species=$1
 bamfiles=$2
 
-#typ="species"
-#bamfiles="--fastqFile=aqip003.fastq.gz"
-
-if [ $typ == "species" ]; then
+if [ $species ]; then
 	mainclass="japsa.tools.bio.np.RealtimeSpeciesTypingCmd"
 	optsfile="opts_species.txt"
 else
 	mainclass="japsa.tools.bio.np.RealtimeResistanceGeneCmd"
 	optsfile="opts_resistance.txt"
 fi
+echo $mainclass
 
 if [ ! -f $optsfile ]; then
   echo "need to copy ${optsfile}  into your working directory from ${japsa_coverage}/scripts/"
@@ -53,5 +51,7 @@ dat=$(date +%Y%m%d%H%M%S)
 resdir="results_${dat}"
 
 opts=$(grep -v '^#' ${optsfile})
-bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts}
+echo $bamfiles
+echo $typ
+#bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts}
 

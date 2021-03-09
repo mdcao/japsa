@@ -26,8 +26,7 @@ export JSA_MEM=31800m
 export japsa_coverage="${HOME}/github/japsa_coverage"
 echo ${japsa_coverage}
 
-species=$1
-bamfiles=$2
+bamfiles=$1
 
 	mainclass="japsa.tools.bio.np.RealtimeResistanceGeneCmd"
 	optsfile="opts_resistance.txt"
