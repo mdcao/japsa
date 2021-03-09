@@ -1,0 +1,14 @@
+--merge=false
+--dbpath=/home/lachlan/SpeciesTyping 
+--dbs=clinicaldb
+--qual=0  
+--fail_thresh=7
+--output fastq_pass_species.dat  
+--time 0  
+--log=false 
+#--maxReads=1000  
+--writeSep=true
+--mm2_path=/home/lachlan/github/minimap2/minimap2
+--resDB=/home/lachlan/ResistanceTyping/resFinder
+--minCount=2
+

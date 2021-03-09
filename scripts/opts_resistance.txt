@@ -1,0 +1,8 @@
+--resDB=/home/lachlan/ResistanceTyping/resFinder
+--dbpath=/home/lachlan/SpeciesTyping
+--dbs=clinicaldb
+--log=true
+--mm2_path=/home/lachlan/github/minimap2/minimap2 
+--readList=readList_fos1.txt 
+#--time=1 
+
