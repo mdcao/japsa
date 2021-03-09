@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#SBATCH --job-name=jST
+#SBATCH --job-name=jRT
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
