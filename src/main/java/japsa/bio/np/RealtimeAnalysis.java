@@ -107,7 +107,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 			analysis();
 			LOG.info("RUNTIME\t" + lastTime + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		}//while
-
+		
 		//perform the final analysis
 		lastTime = System.currentTimeMillis();
 		lastReadNumber =  getCurrentRead();

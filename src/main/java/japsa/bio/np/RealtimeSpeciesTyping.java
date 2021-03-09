@@ -262,8 +262,12 @@ public class RealtimeSpeciesTyping {
 		}
 		//covs= new TreeMap<Integer, Double>()
 		public  synchronized  Double[]  medianReadCoverage(double[] percentiles, double[] vals, int index,
-				SortedMap<Integer, Integer> covs , SortedMap<Integer, Interval> intervalMap
+				SortedMap<Integer, Integer> covs , SortedMap<Integer, Interval> intervalMap,
+				SortedMap<Integer, Integer> segsMap
 				){
+			covs.clear();
+			intervalMap.clear();
+			segsMap.clear();
 			SortedMap<Integer, Interval> coverage = this.coverages.get(index);
 			int non_zero_bases=0;
 			Integer len = species2Len.get(this.contig_names.get(index));// node==null ? null : (Integer) node.getIdentifier().getAttribute("length");
@@ -314,6 +318,9 @@ public class RealtimeSpeciesTyping {
 					Integer cnt  = covs.get(cov);
 					covs.put(cov, (cnt==null ? 0 :  cnt)+li.bases());
 					if(!intervalMap.containsKey(cov)) intervalMap.put(cov,li);
+					Integer segs = segsMap.get(cov);
+					segsMap.put(cov, segs==null ? 1 :  segs+1);
+					
 				}
 				double perc0 = cumul0 / (double) len;
 				double perc = cumul / (double) len;
@@ -869,11 +876,15 @@ this.sampleID = sampleID;
 
 			int minCount = MIN_READS_COUNT>0?MIN_READS_COUNT:Math.max(1,sum/1000);
 			SortedMap<Integer,Integer> covMap = null;
+			SortedMap<Integer,Integer> segsMap = null;
+
 			SortedMap<Integer,Interval> intervalMap = null;
 
 			if(final_analysis){
 				covMap = new TreeMap<Integer, Integer>();// this can capture the distribution of bases against depth
 				intervalMap = new TreeMap<Integer, Interval>();
+				segsMap = new TreeMap<Integer, Integer>();// this can capture the distribution of bases against depth
+
 			}
 			for (int i = 0; i < count.length;i++){			
 				if (count[i] >= minCount){
@@ -888,15 +899,15 @@ this.sampleID = sampleID;
 						double max =0; int maxj=0; double tot_bases=0;
 						double max1=0; int maxj_1 =0; 
 						for(int j =0; j<cov.contig_names.size(); j++){
-							covMap.clear();
-						  Double[] stats = cov.medianReadCoverage(new double[0], new double[0], j,covMap, intervalMap);
+							
+						  Double[] stats = cov.medianReadCoverage(new double[0], new double[0], j,covMap, intervalMap, segsMap);
 						  if(covMap!=null){
 							  for(Iterator<Entry<Integer, Integer>> covs = covMap.entrySet().iterator();covs.hasNext(); ){
 								  Entry<Integer, Integer> nxt = covs.next();
 								  Interval iv = intervalMap.get(nxt.getKey());
-								  String iv_str = iv==null ?  "": iv.toString();
+								  String iv_str = iv==null ?  "-": iv.toString();
 								  this.coverage_out.println(spec_name+"\t"+cov.contig_names.get(j)+"\t"+nxt.getKey()+"\t"+nxt.getValue()
-								  +"\t"+iv_str
+								  +"\t"+segsMap.get(nxt.getKey())+"\t"+iv_str
 										 );
 							  }
 						  }
@@ -913,7 +924,7 @@ this.sampleID = sampleID;
 						Double proportion = max/ tot_bases;
 						String nme = cov.contig_names.get(maxj);
 						String nme1 = cov.contig_names.get(maxj_1);
-						Double[] stats =  cov.medianReadCoverage(perc, vals,maxj, covMap, intervalMap);
+						Double[] stats =  cov.medianReadCoverage(perc, vals,maxj, covMap, intervalMap,segsMap);
 						 String st = combine(perc,vals);
 						 cov.medianQ(percQ, valsQ,cov.mapq);
 						 cov.medianQ(percL, valsL, cov.mapLen);

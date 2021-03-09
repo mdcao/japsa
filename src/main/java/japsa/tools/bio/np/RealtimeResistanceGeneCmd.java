@@ -69,7 +69,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");
 		addString("fastqFile", null,  "fastq input");
-
+		addBoolean("runKAlign", false, "whether to run msa to get high confidence calls");
 		addDouble("score", 0.0001,  "The alignment score threshold");
 		addString("msa", "kalign",
 			"Name of the msa method, support poa, kalign, muscle and clustalo");
@@ -132,6 +132,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		SequenceUtils.secondary = true;
 		CachedOutput.MIN_READ_COUNT=2;
 		RealtimeResistanceGene.OUTSEQ = cmdLine.getBooleanVal("log");
+		RealtimeResistanceGene.runKAlign = cmdLine.getBooleanVal("runKAlign");
 		tmp = cmdLine.getStringVal("tmp");		
 
 		
@@ -162,11 +163,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 
 	public static void resistanceTyping(File resDB, String[] bamFile, 
 			String[] fastqFile,String readList, File outdir, String output, List<String> outfiles)  throws IOException, InterruptedException{
-		RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, outdir, output, resDB.getAbsolutePath(), tmp);		
-		paTyping.msa = msa;		
-		paTyping.scoreThreshold = scoreThreshold;
-		paTyping.twoDOnly = twodonly;
-		paTyping.numThead = thread;
+	
 
 		List<String> sample_names = new ArrayList<String>();	
 		List<Iterator<SAMRecord>> iterators =  new ArrayList<Iterator<SAMRecord>>();
@@ -177,13 +174,22 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 				new File(resDB,"DB.fasta"));
 		
 		for(int k=0; k<iterators.size(); k++){
-			paTyping.typing(iterators.get(k));		
+			String output1 = sample_names.get(k)+".resistance.dat";
+			File outdir1 =new File(sample_names.get(k)+".resistance_fq");
+			RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, outdir1, output1, resDB.getAbsolutePath(), tmp);		
+			paTyping.msa = msa;		
+			paTyping.scoreThreshold = scoreThreshold;
+			paTyping.twoDOnly = twodonly;
+			paTyping.numThead = thread;
+			paTyping.typing(iterators.get(k));	
+			paTyping.close();
+			
+			paTyping.getOutfiles(outfiles);
 		}
 		for(int i=0; i<readers.size(); i++){
 			readers.get(i).close();
 		}
-		paTyping.close();
-		paTyping.getOutfiles(outfiles);
+	
 	}
 }
 

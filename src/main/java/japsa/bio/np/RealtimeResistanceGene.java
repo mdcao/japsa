@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -86,7 +87,8 @@ public class RealtimeResistanceGene {
 	public static boolean JSON = false;
 	public static boolean OUTSEQ=false;
 	private static HashMap<String, ArrayList<String>> allAlignedReads;
-	
+	public static boolean realtimeAnalysis = false;
+	public static boolean runKAlign = false;
 	
 //	public final CachedOutput fqw ;
 	Map<String, CachedOutput> fqw = new HashMap<String, CachedOutput>();
@@ -171,14 +173,16 @@ this.outdir = new File("./");
 		//SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 	//	SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
 	//	SAMRecordIterator samIter = samReader.iterator();
-
+		if(realtimeAnalysis){
 		Thread t = new Thread(resistFinder, "SSS");
 		t.start();
+		}
 
 		String readName = "";
 		//A dummy sequence
 		Sequence readSequence = new Sequence(Alphabet.DNA(),1,"");
 		Map<String, List<SAMRecord>> records = new HashMap<String, List<SAMRecord>>();
+		List<String>resist = new ArrayList<String>();
 		while (samIter.hasNext()){
 			SAMRecord record = samIter.next();
 
@@ -186,6 +190,7 @@ this.outdir = new File("./");
 				continue;
 
 			if (!record.getReadName().equals(readName)) {
+				writeAll(records, false, readName, resist);
 				readName = record.getReadName();
 
 				currentReadCount ++;	
@@ -199,7 +204,7 @@ this.outdir = new File("./");
 						readSequence.setName(readName);
 					}
 				}
-				writeAll(records, false);
+			
 					
 			}
 
@@ -217,7 +222,7 @@ this.outdir = new File("./");
 				continue;			
 
 			synchronized(this){
-				if (alignmentMap.get(geneID) == null)
+				if (runKAlign && alignmentMap.get(geneID) == null)
 					alignmentMap.put(geneID, new ArrayList<Sequence>());
 
 				//put the sequence into alignment list
@@ -225,21 +230,24 @@ this.outdir = new File("./");
 				if(recs==null) records.put(resclass,recs = new ArrayList<SAMRecord>());
 				recs.add(record);
 				Sequence readSeq = HTSUtilities.readSequence(record, readSequence, 99, refLength-99);
-				alignmentMap.get(geneID).add(readSeq);
+				if(runKAlign) alignmentMap.get(geneID).add(readSeq);
 				
 				if(OUTSEQ){
-					if (allAlignedReads.get(geneID) == null)
-						allAlignedReads.put(geneID, new ArrayList<String>());
-					allAlignedReads.get(geneID).add(readSequence.getName());
+					resist.add(geneID);
+					//System.err.println(resist.size());
+					
 				}
 			}//synchronized(this)
 		}//while
-		this.writeAll(records, true);
+		this.writeAll(records, true,readName, resist);
 	//	this.fqw.close();
 //for(Iterator<CachedOutput> it = this.fqw.values().iterator(); it.hasNext();){
 //it.next().close();
 	//	}
 		resistFinder.stopWaiting();
+		if(!realtimeAnalysis){
+			resistFinder.run();
+		}
 		//samIter.close();
 		//samReader.close();
 
@@ -247,8 +255,24 @@ this.outdir = new File("./");
 	}	
 	final File outdir;
 	
-	/** also clears */
-	private void writeAll(Map<String, List<SAMRecord>> records, boolean close) {
+	/** also clears 
+	 * @param resist 
+	 * @param readName */
+	private void writeAll(Map<String, List<SAMRecord>> records, boolean close, String readName, List<String> resist) {
+		
+		Collections.sort(resist);
+		if(resist.size()>0){
+			StringBuffer sb = new StringBuffer();
+			for(int i=0; i<resist.size(); i++){
+				sb.append(resist.get(i));
+				if(i<resist.size()-1) sb.append(";");
+			}
+			resist.clear();
+			String sbs = sb.toString();
+			ArrayList<String> li = allAlignedReads.get(sbs);
+			if(li==null) allAlignedReads.put(sbs, li = new ArrayList<String>());
+			li.add(readName);
+		}
 		Iterator<String> it = records.keySet().iterator();
 		while(it.hasNext()){
 			String resc = it.next();
@@ -268,6 +292,24 @@ this.outdir = new File("./");
 		}
 		
 	}
+	
+	 static double fsmAlignment(Sequence consensus, Sequence gene){
+			ProbOneSM tsmF = new ProbOneSM(gene);
+			double cost = 100000000;						
+			for (int c = 0; c < 10; c++){
+				tsmF.resetCount();
+				Emission retState = tsmF.alignGenerative(consensus);
+				if (cost  <= retState.myCost)
+					break;//for c
+
+				cost = retState.myCost;
+				int emitCount = tsmF.updateCount(retState);
+				LOG.info("Iter " + c + " : " + emitCount + " states and " + cost + " bits " + consensus.length() + "bp " + consensus.getName() + " by " + gene.getName());
+				tsmF.reEstimate();	
+			}				
+			return (consensus.length() * 2 - cost) / gene.length();
+		}
+
 
 	//TODO: way to improve performance:
 	//1. 
@@ -275,7 +317,7 @@ this.outdir = new File("./");
 	//4. 
 	//5. Future improve: incrementally multiple alignment
 
-	public static class ResistanceGeneFinder extends RealtimeAnalysis{
+	public  class ResistanceGeneFinder extends RealtimeAnalysis{
 		private final Map<String, ArrayList<Sequence>> alignmentMapSnap = new HashMap<String, ArrayList<Sequence>>();
 		private final Map<String, String> gene2GeneName = new HashMap<String,String>();
 		private final Map<String, String> gene2Group = new HashMap<String,String>();
@@ -475,23 +517,7 @@ this.outdir = new File("./");
 			sequenceOutputStream.flush();
 		}
 
-		private static double fsmAlignment(Sequence consensus, Sequence gene){
-			ProbOneSM tsmF = new ProbOneSM(gene);
-			double cost = 100000000;						
-			for (int c = 0; c < 10; c++){
-				tsmF.resetCount();
-				Emission retState = tsmF.alignGenerative(consensus);
-				if (cost  <= retState.myCost)
-					break;//for c
-
-				cost = retState.myCost;
-				int emitCount = tsmF.updateCount(retState);
-				LOG.info("Iter " + c + " : " + emitCount + " states and " + cost + " bits " + consensus.length() + "bp " + consensus.getName() + " by " + gene.getName());
-				tsmF.reEstimate();	
-			}				
-			return (consensus.length() * 2 - cost) / gene.length();
-		}
-
+		
 
 
 		/* (non-Javadoc)
@@ -530,7 +556,34 @@ this.outdir = new File("./");
 		 */
 		@Override
 		protected void analysis() {
-			antiBioticAnalysis();
+			//antiBioticAnalysis();
+
+		}
+		@Override
+		protected void lastAnalysis() {
+			if(RealtimeResistanceGene.runKAlign)		antiBioticAnalysis();
+			else{
+				try{
+				Iterator<String> genes = allAlignedReads.keySet().iterator();
+				
+				while(genes.hasNext()){
+					String gene = genes.next();
+					List<String> reads = allAlignedReads.get(gene);
+					String[] gnes = gene.split(";");
+					StringBuffer nmes = new StringBuffer();
+					StringBuffer groups = new StringBuffer();
+					for(int k=0; k<gnes.length; k++){
+						String xtra = k<gnes.length-1 ? ";" : "";
+						nmes.append(gene2GeneName.get(gnes[k])+xtra);
+						groups.append(gene2Group.get(gnes[k])+xtra);
+					}
+					this.sequenceOutputStream.print(gene+"\t"+nmes.toString()+"\t"+groups.toString()+"\t"+reads.size());//+"\t"+bases);
+					this.sequenceOutputStream.println();
+				}
+				}catch(Exception exc){
+					exc.printStackTrace();
+				}
+			}
 
 		}
 
@@ -554,7 +607,7 @@ this.outdir = new File("./");
 		 */
 		@Override
 		public void run() {
-			double score = ResistanceGeneFinder.fsmAlignment(consensus, gene);
+			double score =fsmAlignment(consensus, gene);
 			LOG.info("SGF: score=" + score + " geneID=" + geneID + " group=" + resGeneFinder.gene2Group.get(geneID));
 
 			if (score >= resGeneFinder.resistGene.scoreThreshold){
