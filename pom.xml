@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>coin</groupId>
-    <artifactId>japsa</artifactId>
+    <artifactId>japsa_coverage</artifactId>
     <version>1.0-SNAPSHOT</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -81,11 +81,11 @@
 		    <artifactId>guava</artifactId>
 		    <version>18.0</version>
 		</dependency>
-		<dependency>
-		    <groupId>com.github.samtools</groupId>
-		    <artifactId>htsjdk</artifactId>
-		    <version>2.18.2</version>
-		</dependency>
+			<dependency>
+   <groupId>com.github.samtools</groupId>
+   <artifactId>htsjdk</artifactId>
+   <version>2.23.0</version>
+</dependency>
 		<dependency>
 		    <groupId>org.hdfgroup</groupId>
 		    <artifactId>hdf-java</artifactId>
@@ -152,7 +152,7 @@
                   				</manifestEntries>
                			 		</transformer>				
               				</transformers>
-					<finalName>japsa-1.9.4</finalName>
+					<finalName>japsacov-1.9.5e</finalName>
               				<excludes>
               					<exclude>japsa/**</exclude>
               				</excludes>
