@@ -7,6 +7,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReaderFactory;
+
 import java.io.*;
 
 import static junit.framework.TestCase.assertTrue;
@@ -45,7 +48,7 @@ public class RealtimeResistanceGeneTest {
     RealtimeResistanceGene rg = new RealtimeResistanceGene(readNumber, timeNumber, outStream, resDBInputStream0, fastaInputStream0, recordPrefix);
     RealtimeResistanceGene.JSON = true;
     rg.setScoreThreshold(scoreThreshold);
-    rg.typing(bamInputStream0);
+    rg.typing(	SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream0)).iterator());
 
     try {
       Thread.sleep(10000);
