@@ -2,6 +2,7 @@ package japsa.tools.seq;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,15 +10,44 @@ import java.util.Stack;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.BasicFastqWriter;
+import htsjdk.samtools.fastq.FastqEncoder;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 import japsa.seq.SequenceOutputStream;
 
 /** this enables splitting of output sequences into species specific bams */
 public class CachedFastqWriter extends CachedOutput{
+	
+	static class FQWriter implements FastqWriter{
+		private  PrintStream writer;
+		public FQWriter(File outdir, String nme1, boolean append) {
+			try{
+			writer = new PrintStream(new FileOutputStream(new File(outdir, nme1), append));
+			}catch(Exception exc){
+				exc.printStackTrace();
+				System.exit(0);
+			}
+		}
+
+		@Override
+		public void close() {
+			writer.println();
+			writer.close();
+		}
+
+		@Override
+		public void write(FastqRecord rec) {
+			// TODO Auto-generated method stub
+			 FastqEncoder.write(writer, rec);
+		}
+		
+	}	
+	
+	
   class Inner{
 	  FastqWriter fqw;
 	  int printed=0;
+	  boolean append = false;
 	  Stack stack = new Stack();
 	  final String nme1;
 	 
@@ -26,17 +56,20 @@ public class CachedFastqWriter extends CachedOutput{
 	  }
 	  public void push(Object fqw){
 		  stack.push(fqw);
-		  if(print ){
+		  if(print && stack.size()>=buffer ){
 			  clear();
 		  }
 	  }
 	  public void clear(){
 		  if(fqw==null && stack.size()>0 && print) fqw =  new BasicFastqWriter(new File(outdir, nme1));
+			//	  new CachedFastqWriter.FQWriter(outdir, nme1, append); //n;
 		  if(print){
-		  while(stack.size()>0){
-			  printed++;
-			  fqw.write((FastqRecord)stack.pop());
-		  }
+			  while(stack.size()>0){
+				  printed++;
+				  fqw.write((FastqRecord)stack.pop());
+			  }
+			//  fqw.close();
+			 // append=true;
 		  }
 	  }
 	  public void close(){

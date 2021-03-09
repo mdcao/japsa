@@ -66,6 +66,8 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
+		addString("resdir", "results", "Results directory");
+
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");
 		addString("fastqFile", null,  "fastq input");
@@ -79,6 +81,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addString("dbs", null,  "For subsequent species typing", false);
 		addString("dbPath",null, "path to databases",false);
 
+		addString("resdir", "japsa_resistance_typing", "Results directory");
 
 		addDouble("qual", 0,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");				
@@ -111,7 +114,8 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
    static String msa = "kalign";
    static double q_thresh=7;
    static String tmp="_tmpt";
-   
+	static File resdir = new File("japsa_resistance_typing");
+
 	public static void main(String[] args) throws IOException, InterruptedException{
 		CommandLine cmdLine = new RealtimeResistanceGeneCmd();
 		args = cmdLine.stdParseLine(args);		
@@ -123,7 +127,8 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		msa = cmdLine.getStringVal("msa");
 		maxReads = cmdLine.getIntVal("maxReads");
 		q_thresh = cmdLine.getDoubleVal("fail_thresh");
-
+		resdir = new File(cmdLine.getStringVal("resdir"));
+		resdir.mkdirs();
 		SequenceUtils.mm2_threads= cmdLine.getIntVal("mm2_threads");
 		SequenceUtils.mm2_mem = cmdLine.getStringVal("mm2_mem");
 		SequenceUtils.mm2_path = cmdLine.getStringVal("mm2_path");
@@ -146,7 +151,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 
 		File outdir = new File("./");
 		List<String> outfiles = new ArrayList<String>();
-		resistanceTyping(resDB, bamFile==null ? null : bamFile.split(":"),
+		resistanceTyping(resDB,resdir,  bamFile==null ? null : bamFile.split(":"),
 				fastqFile==null ? null : fastqFile.split(":"), readList, outdir, output, outfiles);
 		//now do species typing on the resistance genes;
 		String dbPath =  cmdLine.getStringVal("dbPath");
@@ -157,11 +162,11 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 			ReferenceDB refDB = new ReferenceDB(dbPath, dbs, null);
 			RealtimeSpeciesTyping.plasmidOnly = false;
 			List<String> species_output_files = new ArrayList<String>();
-			RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null,outfiles.toArray(new String[0]),  "output.dat", species_output_files);
+			RealtimeSpeciesTypingCmd.speciesTyping(refDB, resdir, null, null,outfiles.toArray(new String[0]),  "output.dat", species_output_files);
 		}
 	}
 
-	public static void resistanceTyping(File resDB, String[] bamFile, 
+	public static void resistanceTyping(File resDB, File resdir, String[] bamFile, 
 			String[] fastqFile,String readList, File outdir, String output, List<String> outfiles)  throws IOException, InterruptedException{
 	
 
@@ -174,9 +179,10 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 				new File(resDB,"DB.fasta"));
 		
 		for(int k=0; k<iterators.size(); k++){
-			String output1 = sample_names.get(k)+".resistance.dat";
-			File outdir1 =new File(sample_names.get(k)+".resistance_fq");
-			RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, outdir1, output1, resDB.getAbsolutePath(), tmp);		
+			File outdir1 =new File(resdir, sample_names.get(k)+".resistance");
+			
+			outdir1.mkdirs();
+			RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, outdir1,outdir1.getAbsolutePath()+"/"+output, resDB.getAbsolutePath(), tmp);		
 			paTyping.msa = msa;		
 			paTyping.scoreThreshold = scoreThreshold;
 			paTyping.twoDOnly = twodonly;

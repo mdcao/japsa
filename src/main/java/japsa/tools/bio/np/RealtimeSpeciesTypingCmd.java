@@ -52,6 +52,7 @@ import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
+import japsa.bio.np.RealtimeResistanceGene;
 import japsa.bio.np.RealtimeSpeciesTyping;
 import japsa.bio.phylo.CSSProcessCommand;
 import japsa.bio.phylo.NCBITree;
@@ -81,13 +82,13 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 	static int maxReads=Integer.MAX_VALUE;
 	static int number ;
 	static int time=30;
-	
+	static File resdir = new File("japsa_species_typing");
 	public RealtimeSpeciesTypingCmd(){
 		super();
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-
+		addString("resdir", "japsa_species_typing", "Results directory");
 		addString("output", "output.dat",  "Output file, - for standard output");		
 		addString("bamFile", null,  "The bam file",false);	
 		addString("fastqFile", null, "Fastq file", false);
@@ -162,8 +163,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		}
 	//	String[] sample_name = new String[files.length];
 		for(int i=0; i<files.length; i++){
-			String filek = files[i];//.replace(".gz","");//.substring(0, files[i].lastIndexOf('.'));
-			sample_name.add(filek	);
+			File filek = new File(files[i]);//.replace(".gz","");//.substring(0, files[i].lastIndexOf('.'));
+			sample_name.add(filek.getName()	);
 			Iterator<SAMRecord> samIter = null;
 			SamReader samReader= null;
 		if(bam){
@@ -182,7 +183,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 			boolean saveSeqs=true;
 			try{
 			String mm2_index = SequenceUtils.minimapIndex(refFile,  false,saveSeqs);
-			samIter = SequenceUtils.getSAMIteratorFromFastq(filek, mm2_index, maxReads, readList, q_thresh);
+			samIter = SequenceUtils.getSAMIteratorFromFastq(filek.getAbsolutePath(), mm2_index, maxReads, readList, q_thresh);
 			}catch(Exception exc){
 				exc.printStackTrace();
 			}
@@ -261,6 +262,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		RealtimeSpeciesTyping.writeUnmapped = cmdLine.getBooleanVal("writeUnmapped");
 		RealtimeSpeciesTyping.speciesToIgnore = Arrays.asList(cmdLine.getStringVal("speciesToIgnore").split(":"));
 		CachedOutput.MIN_READ_COUNT = RealtimeSpeciesTyping.MIN_READS_COUNT;
+		RealtimeSpeciesTyping.realtimeAnalysis = cmdLine.getBooleanVal("realtimeAnalysis");
 	}
 	
 	/**
@@ -272,10 +274,12 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		CommandLine cmdLine = new RealtimeSpeciesTypingCmd();		
 		args = cmdLine.stdParseLine(args);		
 		setParams(cmdLine);
+		resdir = new File(cmdLine.getStringVal("resdir"));
+		resdir.mkdirs();
 	    String output    = cmdLine.getStringVal("output");
 		String bamFile   = cmdLine.getStringVal("bamFile");		
 		String fastqFile = cmdLine.getStringVal("fastqFile");
-		String resDB = cmdLine.getStringVal("resDB");
+		String resDB = cmdLine.getStringVal("resdb");
 		if(resDB!=null){
 			RealtimeSpeciesTyping.plasmidOnly = false;
 			RealtimeSpeciesTyping.writeSep = true;
@@ -287,7 +291,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String speciesFile=cmdLine.getStringVal("species");
 		ReferenceDB refDB = new ReferenceDB(dbPath, dbs, speciesFile);
 		List<String> out_fastq = new ArrayList<String>();
-		speciesTyping(refDB, readList, bamFile==null ? null : bamFile.split(":"), 
+		speciesTyping(refDB, resdir, readList, bamFile==null ? null : bamFile.split(":"), 
 										fastqFile==null ? null : fastqFile.split(":"), output, out_fastq);
 	
 		if(resDB!=null && out_fastq.size()>0){
@@ -295,11 +299,12 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 			CachedOutput.MIN_READ_COUNT=2;
 			List<String> outfiles = new ArrayList<String>();
 			File outdir = new File(".");
-			RealtimeResistanceGeneCmd.resistanceTyping(new File(resDB), null,
+			RealtimeResistanceGene.writeSep=false; // no need to write fastq files
+			RealtimeResistanceGeneCmd.resistanceTyping(new File(resDB),resdir,  null,
 					out_fastq.toArray(new String[0]), readList, outdir, output, outfiles);
 		}
 	}
-	public static void speciesTyping(ReferenceDB refDB, String readList,
+	public static void speciesTyping(ReferenceDB refDB, File resdir, String readList,
 		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq 
 			) throws IOException{
 			List<String> sample_names = new ArrayList<String>();	
@@ -310,9 +315,9 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 				// this merges multiple iterators into one
 				//Iterator<SAMRecord> it = SequenceUtils.getCombined(iterators.toArray(new Iterator[0]), false, true);
 			}
-			String outdir_new = "./";
-			outdir_new = outdir_new+"_"+refDB.dbs;
-		
+			File outdir_new = 
+			 new File(resdir,refDB.dbs);
+			outdir_new.mkdir();
 			for(int k=0; k<iterators.size(); k++){ // do multiple samples sequentially , could consider doing in parallel later
 				File outdir = new File(outdir_new+"/"+sample_names.get(k));
 				outdir.mkdirs();

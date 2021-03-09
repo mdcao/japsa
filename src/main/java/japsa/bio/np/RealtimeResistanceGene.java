@@ -85,11 +85,11 @@ public class RealtimeResistanceGene {
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeResistanceGene.class);
 	public static boolean writeAlignedOnly = false;
 	public static boolean JSON = false;
-	public static boolean OUTSEQ=false;
+	public static boolean OUTSEQ=true;
 	private static HashMap<String, ArrayList<String>> allAlignedReads;
 	public static boolean realtimeAnalysis = false;
 	public static boolean runKAlign = false;
-	
+	public static boolean writeSep=true;
 //	public final CachedOutput fqw ;
 	Map<String, CachedOutput> fqw = new HashMap<String, CachedOutput>();
 	//File fqDir = new File("fastqs");
@@ -228,7 +228,7 @@ this.outdir = new File("./");
 				//put the sequence into alignment list
 				List<SAMRecord> recs = records.get(resclass);
 				if(recs==null) records.put(resclass,recs = new ArrayList<SAMRecord>());
-				recs.add(record);
+				if(writeSep) recs.add(record);
 				Sequence readSeq = HTSUtilities.readSequence(record, readSequence, 99, refLength-99);
 				if(runKAlign) alignmentMap.get(geneID).add(readSeq);
 				
@@ -273,6 +273,7 @@ this.outdir = new File("./");
 			if(li==null) allAlignedReads.put(sbs, li = new ArrayList<String>());
 			li.add(readName);
 		}
+		
 		Iterator<String> it = records.keySet().iterator();
 		while(it.hasNext()){
 			String resc = it.next();
