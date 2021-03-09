@@ -2,18 +2,17 @@ package japsa.tools.seq;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import java.util.zip.GZIPOutputStream;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.BasicFastqWriter;
-import htsjdk.samtools.fastq.FastqEncoder;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
-import japsa.seq.SequenceOutputStream;
 
 /** this enables splitting of output sequences into species specific bams */
 public class CachedFastqWriter extends CachedOutput{
@@ -22,7 +21,9 @@ public class CachedFastqWriter extends CachedOutput{
 		private  PrintStream writer;
 		public FQWriter(File outdir, String nme1, boolean append) {
 			try{
-			writer = new PrintStream(new FileOutputStream(new File(outdir, nme1), append));
+				OutputStream fos = new FileOutputStream(new File(outdir, nme1), append);
+				if(nme1.endsWith(".gz")) fos = new GZIPOutputStream(fos);
+			writer = new PrintStream(fos);
 			}catch(Exception exc){
 				exc.printStackTrace();
 				System.exit(0);
@@ -31,14 +32,15 @@ public class CachedFastqWriter extends CachedOutput{
 
 		@Override
 		public void close() {
-			writer.println();
 			writer.close();
 		}
 
 		@Override
 		public void write(FastqRecord rec) {
 			// TODO Auto-generated method stub
-			 FastqEncoder.write(writer, rec);
+			writer.print(rec.toFastQString());
+			writer.println();
+		//	 FastqEncoder.write(writer, rec);
 		}
 		
 	}	
@@ -52,7 +54,7 @@ public class CachedFastqWriter extends CachedOutput{
 	  final String nme1;
 	 
 	  Inner(String nme1){
-		  this.nme1 = nme1;
+		  this.nme1 = nme1+".gz";
 	  }
 	  public void push(Object fqw){
 		  stack.push(fqw);
@@ -61,15 +63,18 @@ public class CachedFastqWriter extends CachedOutput{
 		  }
 	  }
 	  public void clear(){
-		  if(fqw==null && stack.size()>0 && print) fqw =  new BasicFastqWriter(new File(outdir, nme1));
-			//	  new CachedFastqWriter.FQWriter(outdir, nme1, append); //n;
+		  if(fqw==null && stack.size()>0 && print){ 
+			  	fqw =  //new BasicFastqWriter(new File(outdir, nme1));
+			  new CachedFastqWriter.FQWriter(outdir, nme1, append); //n;
+		  }
 		  if(print){
 			  while(stack.size()>0){
 				  printed++;
 				  fqw.write((FastqRecord)stack.pop());
 			  }
-			//  fqw.close();
-			 // append=true;
+			  fqw.close();
+			  fqw=null;
+			  append=true;
 		  }
 	  }
 	  public void close(){

@@ -503,7 +503,8 @@ public class RealtimeSpeciesTyping {
 		this.outdir = outdir;
 		this.tree = tree;
 		this.indexFile = indexFile;
-		this.fastqdir= new File(outdir,"fastqs"); fastqdir.mkdir();
+		this.fastqdir= new File(outdir,"fastqs"); 
+		if(writeSep) fastqdir.mkdir();
 		this.unmapped_reads = (new File(outdir, "unmapped")).getAbsolutePath();
 		if(writeUnmapped){
 		this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped", false, false);

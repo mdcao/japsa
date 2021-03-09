@@ -126,6 +126,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		addBoolean("merge", false, "whether to merge results from multiple bam into single output file");
 		
 		addBoolean("writeSep" , false, "whether to output fastq for each species detected");
+		addBoolean("plasmidOnly", false,  "If writeSep is true, then whether to only output plasmid mapping reads");
+
 		addBoolean("writeUnmapped", false, "whether to output fastq of unmapped reads");
 		addString("speciesToIgnore","GRCh38:GRCh38,"," species not to extract sequence for",false);
 
@@ -259,6 +261,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		RealtimeSpeciesTyping.ALPHA = cmdLine.getDoubleVal("alpha");
 		RealtimeSpeciesTyping.MIN_READS_COUNT = cmdLine.getIntVal("minCount");
 		RealtimeSpeciesTyping.writeSep = cmdLine.getBooleanVal( "writeSep");
+		RealtimeSpeciesTyping.plasmidOnly = cmdLine.getBooleanVal("plasmidOnly");
 		RealtimeSpeciesTyping.writeUnmapped = cmdLine.getBooleanVal("writeUnmapped");
 		RealtimeSpeciesTyping.speciesToIgnore = Arrays.asList(cmdLine.getStringVal("speciesToIgnore").split(":"));
 		CachedOutput.MIN_READ_COUNT = RealtimeSpeciesTyping.MIN_READS_COUNT;

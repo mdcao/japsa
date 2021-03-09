@@ -66,7 +66,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
-		addString("resdir", "results", "Results directory");
+		addString("resdir", "japsa_resistance_typing", "Results directory");
 
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");

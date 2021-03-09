@@ -22,7 +22,7 @@ public abstract class CachedOutput {
 	  int total_count=0;
 	  boolean print = false;
 	  public static int MIN_READ_COUNT=20;
-	  public static int buffer = 100;
+	  public static int buffer = 50;
 	  boolean writeAlignedPortionOnly =false;
 	  List<String> nmes = null;
 	  List<Integer> lens = null;
