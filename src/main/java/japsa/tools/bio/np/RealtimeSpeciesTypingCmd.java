@@ -211,7 +211,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 			String treef_mod = treef+".mod";
 			tree = new NCBITree(new File(treef), useTaxaAsSlug);
 			tree.addSpeciesIndex(speciesIndex);
-			tree.print(new File(treef_mod)); // this prints out to tree
+			//tree.print(new File(treef_mod)); // this prints out to tree
 	//		if(true)System.exit(0);
 			// treef = dbPath+"/"+dbs+"/"+ "commontree.txt.css.mod";
 			 modDB = new File("./db");
