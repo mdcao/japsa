@@ -2,6 +2,7 @@
 --dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping
 --dbs=clinicaldb
 --log=true
+--resdir=jRT
 --mm2_path=/sw/minimap2/current/minimap2
 #--readList=readList_fos1.txt 
 #--time=1 
