@@ -68,6 +68,8 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		setDesc(annotation.scriptDesc());
 
 		addString("writeSep" , null, "strings to match for what to write fastq file out, which can be colon separated, e.g. plasmid:phage or all");
+		addInt("minCountResistance", 2, "Mininum number of mapped reads for a species to be considered (for species typing step)");
+		addInt("minCountSpecies", 2, "Mininum number of mapped reads for a species to be considered (for species typing step)");
 
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");
@@ -134,7 +136,9 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
 		SequenceUtils.mm2_splicing = null;//
 		SequenceUtils.secondary = true;
-		CachedOutput.MIN_READ_COUNT=2;
+		CachedOutput.MIN_READ_COUNT=cmdLine.getIntVal("minCountResistance"); // this for detection of abx
+		
+		RealtimeSpeciesTyping.MIN_READS_COUNT = cmdLine.getIntVal("minCountSpecies");
 		RealtimeResistanceGene.OUTSEQ = cmdLine.getBooleanVal("log");
 		RealtimeResistanceGene.runKAlign = cmdLine.getBooleanVal("runKAlign");
 		tmp = cmdLine.getStringVal("tmp");		
@@ -156,7 +160,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		String dbPath =  cmdLine.getStringVal("dbPath");
 		String dbs = cmdLine.getStringVal("dbs");//.split(":");
 		if(dbPath!=null && dbs!=null && outfiles.size()>0){
-			CachedOutput.MIN_READ_COUNT=10;
+			CachedOutput.MIN_READ_COUNT=RealtimeSpeciesTyping.MIN_READS_COUNT;
 			RealtimeSpeciesTyping.writeSep = Pattern.compile("[a-z]");
 			SequenceUtils.secondary = false;
 			ReferenceDB refDB = new ReferenceDB(dbPath, dbs, null);
