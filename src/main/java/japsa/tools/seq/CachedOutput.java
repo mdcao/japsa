@@ -15,6 +15,7 @@ import htsjdk.samtools.SAMRecord;
 
 public abstract class CachedOutput {
 	  public static int max_seqs_per_cluster = Integer.MAX_VALUE;
+	  public static boolean writeAssemblyCommand = false;
 	  final File outdir;
 	  String species ;
 	  int seqs_printed=0;
@@ -50,6 +51,7 @@ public abstract class CachedOutput {
 	 public abstract int length();
 
 	public void writeAssemblyCommand(Map<String, Integer> species2Len) {
+		if(!writeAssemblyCommand) return;
 		if(species2Len==null) return;
 		if(print){
 			try{
