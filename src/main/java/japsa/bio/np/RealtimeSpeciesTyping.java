@@ -54,6 +54,7 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.Stack;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +94,7 @@ public class RealtimeSpeciesTyping {
 	public static boolean JSON = false;
 	public static double ALPHA=0.05;
 	public static int MIN_READS_COUNT=0;
-	public static boolean writeSep = false;
+	public static Pattern writeSep = null;
 	public static boolean writeUnmapped = false;
 	private RealtimeSpeciesTyper typer;
 	private OutputStream outputStream;
@@ -504,7 +505,7 @@ public class RealtimeSpeciesTyping {
 		this.tree = tree;
 		this.indexFile = indexFile;
 		this.fastqdir= new File(outdir,"fastqs"); 
-		if(writeSep) fastqdir.mkdir();
+		if(writeSep!=null) fastqdir.mkdir();
 		this.unmapped_reads = (new File(outdir, "unmapped")).getAbsolutePath();
 		if(writeUnmapped){
 		this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped", false, false);
@@ -614,19 +615,19 @@ public static boolean alignedOnly = false; // whether just to output the aligned
 public static boolean fastaOutput = false;
 HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
 public static List<String> speciesToIgnore = null;
-public static boolean plasmidOnly = true; // only write fastq for plasmids
 	private void preTyping() throws IOException{
 		readSpeciesIndex(indexFile, this.seq2Species, species2Len, true);
 		Iterator<String> it = seq2Species.values().iterator();
 		while(it.hasNext()){
 			String sp = it.next();
-			boolean plasmid = sp.contains("plasmid");
+			//boolean plasmid = sp.contains("plasmid");
 		/*	if(plasmid){
 				System.err.println("h");
 			}*/
-			boolean writeSep1 = writeSep 
+			boolean writeSep1 = writeSep !=null
 					&& (speciesToIgnore==null || ! speciesToIgnore.contains(sp))
-					&& (!plasmidOnly  || plasmid); 
+					&& writeSep.matcher(sp).find();
+			
 					
 			if (species2ReadList.get(sp) == null){
 //				LOG.info("add species: "+sp);

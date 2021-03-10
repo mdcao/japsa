@@ -66,6 +66,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 
+		addString("writeSep" , null, "strings to match for what to write fastq file out, which can be colon separated, e.g. plasmid:phage or all");
 
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");
@@ -79,9 +80,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addString("resDB", null,  "Path to resistance database", true);
 		addString("dbs", null,  "For subsequent species typing", false);
 		addString("dbPath",null, "path to databases",false);
-
 		addString("resdir", "japsa_resistance_typing", "Results directory");
-
 		addDouble("qual", 0,  "Minimum alignment quality");
 		addBoolean("twodonly", false,  "Use only two dimentional reads");				
 		addInt("read", 50,  "Minimum number of reads between analyses");		
@@ -159,9 +158,8 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 			CachedOutput.MIN_READ_COUNT=10;
 			SequenceUtils.secondary = false;
 			ReferenceDB refDB = new ReferenceDB(dbPath, dbs, null);
-			RealtimeSpeciesTyping.plasmidOnly = false;
 			List<String> species_output_files = new ArrayList<String>();
-			RealtimeSpeciesTypingCmd.speciesTyping(refDB, resdir, null, null,outfiles.toArray(new String[0]),  "output.dat", species_output_files);
+			RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null,outfiles.toArray(new String[0]),  "output.dat", species_output_files);
 		}
 	}
 
@@ -169,7 +167,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 			String[] fastqFile,String readList, File outdir, String output, List<String> outfiles)  throws IOException, InterruptedException{
 	
 
-		List<String> sample_names = new ArrayList<String>();	
+		List<File> sample_names = new ArrayList<File>();	
 		List<Iterator<SAMRecord>> iterators =  new ArrayList<Iterator<SAMRecord>>();
 		List<SamReader> readers =  new ArrayList<SamReader>();
 		
