@@ -1,15 +1,16 @@
 --merge=false
 --dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping/
-#--dbs=clinicaldb
---dbs=bacteria_2019Feb
+--dbs=clinicaldb
+#--dbs=bacteria_2019Feb
 #--dbs=combined_bacteria_virus_human
 --qual=0  
 --fail_thresh=7
+--resdir=jST
 --output fastq_pass_species.dat  
+--writeSep=false
 --time 0  
 --log=false 
 #--maxReads=1000  
---writeSep=true
 --mm2_path=/sw/minimap2/current/minimap2
 #--resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceTyping/resFinder
 --minCount=2
