@@ -4,10 +4,10 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem=15800 # mb
+#SBATCH --mem=31800 # mb
 #SBATCH --time=100:00:00
-#SBATCH --output=jst.stdout
-#SBATCH --error=jst.stderr
+#SBATCH --output=jrt.stdout
+#SBATCH --error=jrt.stderr
 #SBATCH --cpus-per-task=16
 
 
@@ -21,7 +21,7 @@
 ##tip - use symbolic link to put this in the directory with bam files
 #run as sbatch run_slurm.sh species --bamFile=file.bam 
 #  sbatch run_slurm_combined.sh human combined --RNA=false
-export JSA_MEM=15200m
+export JSA_MEM=31200m
 
 export japsa_coverage="${HOME}/github/japsa_coverage"
 echo ${japsa_coverage}
@@ -33,8 +33,7 @@ bamfiles=$1
 echo $mainclass
 
 if [ ! -f $optsfile ]; then
-  echo "need to copy ${optsfile}  into your working directory from ${japsa_coverage}/scripts/"
-	exit;
+	optsfile="${japsa_coverage}/scripts/opts_resistance.txt"
 fi
 
 if [ ! $bamfiles ];then

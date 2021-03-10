@@ -1,6 +1,7 @@
 --resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceGenes/resFinder
 --dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping
---dbs=clinicaldb
+#--dbs=clinicaldb
+--dbs=bacteria_2019Feb
 --log=true
 --resdir=jRT
 --mm2_path=/sw/minimap2/current/minimap2
