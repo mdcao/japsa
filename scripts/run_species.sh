@@ -33,8 +33,7 @@ bamfiles=$1
 #echo $mainclass
 
 if [ ! -f $optsfile ]; then
-  echo "need to copy ${optsfile}  into your working directory from ${japsa_coverage}/scripts/"
-	exit;
+ optsfile="${japsa_coverage}/scripts/opts_species.txt"
 fi
 
 if [ ! $bamfiles ];then
