@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
@@ -156,6 +157,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		String dbs = cmdLine.getStringVal("dbs");//.split(":");
 		if(dbPath!=null && dbs!=null && outfiles.size()>0){
 			CachedOutput.MIN_READ_COUNT=10;
+			RealtimeSpeciesTyping.writeSep = Pattern.compile("[a-z]");
 			SequenceUtils.secondary = false;
 			ReferenceDB refDB = new ReferenceDB(dbPath, dbs, null);
 			List<String> species_output_files = new ArrayList<String>();
