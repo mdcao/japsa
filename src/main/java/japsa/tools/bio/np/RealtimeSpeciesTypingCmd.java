@@ -127,7 +127,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		
 		addString("writeSep" , null, "strings to match for what to write fastq file out, which can be colon separated, e.g. plasmid:phage or all");
 
-		addBoolean("writeUnmapped", false, "whether to output fastq of unmapped reads");
+		//addBoolean("writeUnmapped", false, "whether to output fastq of unmapped reads");
 		addString("speciesToIgnore","GRCh38:GRCh38,"," species not to extract sequence for",false);
 
 		addStdHelp();		
@@ -264,7 +264,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		//boolean match = RealtimeSpeciesTyping.writeSep.matcher("abcde").find();
 	//System.err.println(match);
 	//if(true) System.exit(0);;
-		RealtimeSpeciesTyping.writeUnmapped = cmdLine.getBooleanVal("writeUnmapped");
+		//RealtimeSpeciesTyping.writeUnmapped = cmdLine.getBooleanVal("writeUnmapped");
 		RealtimeSpeciesTyping.speciesToIgnore = Arrays.asList(cmdLine.getStringVal("speciesToIgnore").split(":"));
 		CachedOutput.MIN_READ_COUNT = RealtimeSpeciesTyping.MIN_READS_COUNT;
 		RealtimeSpeciesTyping.realtimeAnalysis = cmdLine.getBooleanVal("realtimeAnalysis");
@@ -287,13 +287,30 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String resDB = cmdLine.getStringVal("resdb");
 		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
 		String dbPath = cmdLine.getStringVal("dbPath");
-		String dbs = cmdLine.getStringVal("dbs");//.split(":");
+		String[] dbs = cmdLine.getStringVal("dbs").split(":");
 		String readList = cmdLine.getStringVal("readList");
 		String speciesFile=cmdLine.getStringVal("species");
-		ReferenceDB refDB = new ReferenceDB(dbPath, dbs, speciesFile);
 		List<String> out_fastq = new ArrayList<String>();
-		speciesTyping(refDB, resdir, readList, bamFile==null ? null : bamFile.split(":"), 
-										fastqFile==null ? null : fastqFile.split(":"), output, out_fastq);
+		
+		String[] fastqFiles = fastqFile==null ? null : fastqFile.split(":");
+		String[] bamFiles = bamFile==null ? null : bamFile.split(":");
+		List<String> unmapped_reads = dbs.length>1 ? new ArrayList<String>(): null;
+		inner: for(int i=0; i<dbs.length; i++){
+			System.err.println(dbs[i]);
+			ReferenceDB refDB = new ReferenceDB(dbPath, dbs[i], speciesFile);
+			
+			
+			speciesTyping(refDB, i==0 ? resdir : null, readList, bamFiles, fastqFiles, output,
+							out_fastq, i==dbs.length-1 ? null : unmapped_reads);
+			
+			bamFiles = null;
+			fastqFiles = unmapped_reads.toArray(new String[0]);
+			for(int j=0; j<unmapped_reads.size(); j++){
+						(new File(unmapped_reads.get(j))).deleteOnExit();
+			}
+			unmapped_reads.clear();
+			if(fastqFiles.length==0) break inner;
+		}
 	
 		if(resDB!=null && out_fastq.size()>0){
 			SequenceUtils.secondary = true;
@@ -306,7 +323,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		}
 	}
 	public static void speciesTyping(ReferenceDB refDB, File resdir, String readList,
-		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq 
+		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq , 
+		 List<String> unmapped_reads
 			) throws IOException{
 			List<File> sample_names = new ArrayList<File>();	
 			List<Iterator<SAMRecord>> iterators =  new ArrayList<Iterator<SAMRecord>>();
@@ -322,12 +340,14 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 				outdir_new.mkdir();
 			}
 			for(int k=0; k<iterators.size(); k++){ // do multiple samples sequentially , could consider doing in parallel later
-				File outdir = outdir_new!=null ?  new File(outdir_new+"/"+sample_names.get(k)) : new File(sample_names.get(k).getAbsolutePath()+".jST");
+				File outdir = outdir_new!=null ?  new File(outdir_new+"/"+sample_names.get(k).getName()) : new File(sample_names.get(k).getAbsolutePath()+"."+refDB.dbs+".jST");
 				outdir.mkdirs();
 				Iterator<SAMRecord> samIter = iterators.get(k);
 				SamReader samReader = readers.size()>0 ? readers.get(k) : null;
 				RealtimeSpeciesTyping paTyping =
-						new RealtimeSpeciesTyping(refDB.speciesIndex,	refDB.tree, output,outdir,  refDB.refFile);
+						new RealtimeSpeciesTyping(refDB.speciesIndex,	
+								refDB.tree, output,outdir,  refDB.refFile, unmapped_reads!=null);
+				
 				paTyping.setMinQual(qual);
 				paTyping.setTwoOnly(twoOnly);	
 				paTyping.setFilter(filter);
@@ -339,6 +359,9 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 				if(samReader!=null) samReader.close();
 				readList = null;
 				paTyping.getOutfiles(out_fastq);
+				if(paTyping.fqw_unmapped!=null){
+					paTyping.fqw_unmapped.getOutFile(unmapped_reads);
+				}
 				//files[k] = paTyping.unmapped_reads;  // unmapped reads taken forward to next database
 			}
 	//	}dbs

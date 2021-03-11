@@ -71,6 +71,7 @@ import japsa.seq.FastaReader;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
+import japsa.tools.bio.np.RealtimeResistanceGeneCmd;
 import japsa.tools.seq.CachedFastqWriter;
 import japsa.tools.seq.CachedOutput;
 import japsa.util.HTSUtilities;
@@ -226,9 +227,12 @@ this.outdir = new File("./");
 					alignmentMap.put(geneID, new ArrayList<Sequence>());
 
 				//put the sequence into alignment list
+				if(RealtimeResistanceGeneCmd.writeABX!=null && RealtimeResistanceGeneCmd.writeABX.matcher(resclass).find()){
 				List<SAMRecord> recs = records.get(resclass);
-				if(recs==null) records.put(resclass,recs = new ArrayList<SAMRecord>());
-				if(writeSep) recs.add(record);
+					if(recs==null)
+						records.put(resclass,recs = new ArrayList<SAMRecord>());
+					recs.add(record);
+				}
 				Sequence readSeq = HTSUtilities.readSequence(record, readSequence, 99, refLength-99);
 				if(runKAlign) alignmentMap.get(geneID).add(readSeq);
 				
@@ -284,6 +288,7 @@ this.outdir = new File("./");
 				co = new CachedFastqWriter(outdir, resc, false, writeAlignedOnly);	
 				fqw.put(resc, (CachedFastqWriter) co);
 			}
+			
 			
 			for(int i=0; i<rec.size(); i++){
 				co.write(rec.get(i), resc);

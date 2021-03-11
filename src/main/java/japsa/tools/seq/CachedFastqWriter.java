@@ -136,7 +136,7 @@ public class CachedFastqWriter extends CachedOutput{
 	  String ref = separate  ? sam.getReferenceName() : species;
 	  FastqRecord repeat =  new FastqRecord(nme+"__"+annotation,	readSeq,	"",baseQ);
 	  total_count++;
-	  if(! print && total_count> MIN_READ_COUNT) {
+	  if(! print && total_count>= MIN_READ_COUNT) {
 		  print = true;
 		 if(outdir!=null) this.outdir.mkdirs();
 	  }

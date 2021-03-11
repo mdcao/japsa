@@ -95,7 +95,7 @@ public class RealtimeSpeciesTyping {
 	public static double ALPHA=0.05;
 	public static int MIN_READS_COUNT=0;
 	public static Pattern writeSep = null;
-	public static boolean writeUnmapped = false;
+//	public static boolean writeUnmapped = false;
 	private RealtimeSpeciesTyper typer;
 	private OutputStream outputStream;
 	//private BufferedReader indexBufferedReader;
@@ -105,7 +105,7 @@ public class RealtimeSpeciesTyping {
 	 */
 	private double minQual = 1;
 	private boolean twoDOnly = false;
-	CachedOutput fqw_unmapped = null;
+	public CachedOutput fqw_unmapped = null;
 	CachedOutput fqw_filtered = null;
 	final public String unmapped_reads;
 	String indexFile;
@@ -500,7 +500,7 @@ public class RealtimeSpeciesTyping {
 		}
 	}
 	
-	public RealtimeSpeciesTyping(File outdir, String indexFile, NCBITree tree) throws IOException{
+	public RealtimeSpeciesTyping(File outdir, String indexFile, NCBITree tree, boolean writeUnmapped) throws IOException{
 		this.outdir = outdir;
 		this.tree = tree;
 		this.indexFile = indexFile;
@@ -508,7 +508,7 @@ public class RealtimeSpeciesTyping {
 		if(writeSep!=null) fastqdir.mkdir();
 		this.unmapped_reads = (new File(outdir, "unmapped")).getAbsolutePath();
 		if(writeUnmapped){
-		this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped", false, false);
+			this.fqw_unmapped = new CachedFastqWriter(outdir, "unmapped", false, false);
 		}
 		this.fqw_filtered = null;//new CachedFastqWriter(outdir, "filtered");
 
@@ -516,8 +516,8 @@ public class RealtimeSpeciesTyping {
 	final NCBITree tree;
 	
 	//* referenceFile is to get the length map */
-	public RealtimeSpeciesTyping(File indexFile, NCBITree tree, String outputFile, File outdir, File referenceFile) throws IOException{
-		this(outdir, indexFile.getAbsolutePath(), tree);
+	public RealtimeSpeciesTyping(File indexFile, NCBITree tree, String outputFile, File outdir, File referenceFile, boolean unmapped_reads) throws IOException{
+		this(outdir, indexFile.getAbsolutePath(), tree, unmapped_reads);
 		
 		this.referenceFile = referenceFile;
 	//	boolean useTaxaAsSlug=false;
@@ -531,8 +531,8 @@ public class RealtimeSpeciesTyping {
 	
 	}
 
-	public RealtimeSpeciesTyping(String indexFile, OutputStream outputStream, File outdir) throws IOException {
-		this(outdir, indexFile, null);
+	public RealtimeSpeciesTyping(String indexFile, OutputStream outputStream, File outdir, boolean unmapped_reads) throws IOException {
+		this(outdir, indexFile, null, unmapped_reads);
 		LOG.debug("string outputstream");
 	//	this.indexBufferedReader = SequenceReader.openFile(indexFile);
 		this.outputStream = outputStream;
@@ -751,7 +751,9 @@ public static List<String> speciesToIgnore = null;
 			
 			if (sam.getReadUnmappedFlag()){
 				LOG.debug("failed unmapped check");
-				if(fqw_unmapped!=null) this.fqw_unmapped.write(sam,"unmapped");
+				if(fqw_unmapped!=null) {
+					this.fqw_unmapped.write(sam,"unmapped");
+				}
 				continue;			
 			}
 
@@ -815,7 +817,9 @@ public static List<String> speciesToIgnore = null;
 		//final run
 		//typer.simpleAnalysisCurrent();
 		if(fqw_filtered!=null) this.fqw_filtered.close();
-		if(fqw_unmapped!=null) this.fqw_unmapped.close();
+		if(fqw_unmapped!=null) {
+			this.fqw_unmapped.close();
+		}
 		typer.stopWaiting();//Tell typer to stop
 		if(!realtimeAnalysis){
 			typer.run();
