@@ -72,7 +72,7 @@ public class CachedFastqWriter extends CachedOutput{
 				  printed++;
 				  fqw.write((FastqRecord)stack.pop());
 			  }
-			  fqw.close();
+			  if(fqw!=null) fqw.close();
 			  fqw=null;
 			  append=true;
 		  }
