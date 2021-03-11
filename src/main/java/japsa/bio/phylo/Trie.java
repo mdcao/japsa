@@ -84,7 +84,7 @@ public class Trie {
 			return outF;
 	
 	}
-	static int max_depth = 30;
+	static int max_depth = 60;
 	
 	public void getIndex(File refFile, File outF) throws IOException{
 			SequenceReader reader = SequenceReader.getReader(refFile.getAbsolutePath());
