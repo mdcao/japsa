@@ -304,6 +304,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 							out_fastq, i==dbs.length-1 ? null : unmapped_reads);
 			
 			bamFiles = null;
+			if(unmapped_reads==null) break inner;
 			fastqFiles = unmapped_reads.toArray(new String[0]);
 			for(int j=0; j<unmapped_reads.size(); j++){
 						(new File(unmapped_reads.get(j))).deleteOnExit();

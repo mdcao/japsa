@@ -166,12 +166,13 @@ public static Pattern writeABX = null;
 			CachedOutput.MIN_READ_COUNT=RealtimeSpeciesTyping.MIN_READS_COUNT;
 			RealtimeSpeciesTyping.writeSep = Pattern.compile("[a-z]");
 			SequenceUtils.secondary = false;
-			for(int i=0; i<dbs.length; i++){
+			inner: for(int i=0; i<dbs.length; i++){
 				ReferenceDB refDB = new ReferenceDB(dbPath, dbs[i], null);
 				List<String> species_output_files = new ArrayList<String>();
 				if(fastqFiles.length==0) break;
 				RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null,fastqFiles,  "output.dat", species_output_files,
 						i==dbs.length-1 ? null : unmapped_reads);
+				if(unmapped_reads==null) break inner;
 				fastqFiles = unmapped_reads.toArray(new String[0]);
 				for(int j=0; j<unmapped_reads.size(); j++){
 					(new File(unmapped_reads.get(j))).deleteOnExit();
