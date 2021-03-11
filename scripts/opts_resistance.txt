@@ -1,8 +1,12 @@
 --resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceGenes/resFinder
+#--writeABX=aminoglycoside|beta-lactamase|colistin|fosfomycin|fusidicacid|macrolide|nitroimidazole|phenicol|quinolone|rifampicin|sulphonamide|tetracycline|trimethoprim|vancomycin
+#--resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceGenes/resFinder-latest
 --dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping
+--dbs=Human:plasmids:Bacteria:archaea_2019Feb:viral_2019Jan:fungi_2019feb:invertebrate_2019Feb:protozoa_2019Feb
 #--dbs=clinicaldb
---dbs=bacteria_2019Feb
+#--dbs=bacteria_2019Feb:viral_2019Jan
 --log=true
+--writeABX=[a-z]
 --resdir=jRT
 --minCountResistance=2
 --minCountSpecies=2

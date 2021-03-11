@@ -1,13 +1,17 @@
 --merge=false
 --dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping/
-#--dbs=clinicaldb
---dbs=bacteria_2019Feb
+#--dbs=clinicaldb:viral_2019Jan
+--dbs=Human:plasmids:Bacteria:archaea_2019Feb:viral_2019Jan:fungi_2019feb:invertebrate_2019Feb:protozoa_2019Feb
+#--dbs=Human
+#--dbs=bacteria_2019Feb
+#--dbs=viral_2019Jan
+#--dbs=viral_2019Jan
 #--dbs=combined_bacteria_virus_human
 --qual=0  
 --fail_thresh=7
 --resdir=jST
---output fastq_pass_species.dat  
---time 0  
+--output=fastq_pass_species.dat  
+--time=0  
 --log=false 
 #--maxReads=1000  
 --mm2_path=/sw/minimap2/current/minimap2
