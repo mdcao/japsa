@@ -355,15 +355,10 @@ public static void main(String[] args){
 				
 				return null;
 			}
-			SAMRecord nxt = null;
-			try{
-			 nxt =  iterator.next();
+			
+			 SAMRecord nxt =  iterator.next();
 			 count++;
-			// System.err.println("here "+nxt.getReadName());
-			}catch(SAMFormatException exc){
-				exc.printStackTrace();
-			//	System.exit(0);;
-			}
+			
 			 return nxt;
 		}
 		 

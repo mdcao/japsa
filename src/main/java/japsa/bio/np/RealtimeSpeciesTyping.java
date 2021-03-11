@@ -723,7 +723,7 @@ public static List<String> speciesToIgnore = null;
 		}
 		HashSet<String> skipList = new HashSet<>();
 		while (samIter.hasNext()){
-//			try{
+			try{
 			SAMRecord sam = samIter.next();
 		
 			if(sam==null) {
@@ -809,9 +809,9 @@ public static List<String> speciesToIgnore = null;
 					//readList.add(readName);
 	
 				}
-//			}catch(Exception exc){
-//				exc.printStackTrace();
-//			}
+		}catch(Exception exc){
+				exc.printStackTrace();
+			}
 		}//while
 
 		//final run
