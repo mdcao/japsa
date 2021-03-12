@@ -144,32 +144,43 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		}
 	}
 	
-	
-	public static void  getSamIterators(String[] bamFile, String[] fastqFile, String readListSt, int maxReads,double q_thresh,
-			List<File> sample_name, List<Iterator<SAMRecord>> iterators,List<SamReader> samReaders,File refFile
-			) throws IOException, FileNotFoundException{
-		boolean bam = fastqFile==null;
-		String[] files = bam ? bamFile : fastqFile;
+	public static Iterator<SAMRecord>  getSamIteratorsFQ( String[] fastqFile, String readListSt, int maxReads,double q_thresh,	File refFile
 		
+			) throws IOException, FileNotFoundException, InterruptedException{
+		String[] files =  fastqFile;
 		Collection<String> readList=SequenceUtils.getReadList(readListSt, true);
-		
-		if(bamFile!=null && bamFile.length==1 && !(new File(bamFile[0])).exists()) {
-			files = (new File(".")).list(new MatchFilter(bamFile[0]));	
-		}
-		if(fastqFile!=null && fastqFile.length==1 &&  !(new File(fastqFile[0])).exists()) {
+		if(fastqFile.length==1 &&  !(new File(fastqFile[0])).exists()) {
 			files = (new File(".")).list(new MatchFilter(fastqFile[0]));	
 		}
 		if(files.length==0) {
-			System.err.println(bam ? bamFile[0]  : fastqFile[0]);
+			throw new RuntimeException("no files match input request");
+		}
+		boolean saveSeqs=true;
+		
+		String mm2_index = SequenceUtils.minimapIndex(refFile,  false,saveSeqs);
+		//sample_name.add (new File(files[0]));
+		return  SequenceUtils.getSAMIteratorFromFastq(files, mm2_index, maxReads, readList, q_thresh);
+	}
+	
+	public static Iterator<SAMRecord>  getSamIteratorsBam(String[] bamFile ,String readListSt, int maxReads,double q_thresh,
+			List<SamReader> samReaders,File refFile
+			) throws IOException, FileNotFoundException{
+	
+		Collection<String> readList=SequenceUtils.getReadList(readListSt, true);
+		String[] files = bamFile;
+		if(bamFile.length==1 && !(new File(bamFile[0])).exists()) {
+			files = (new File(".")).list(new MatchFilter(bamFile[0]));	
+		}
+		if(files.length==0) {
 			throw new RuntimeException("no files match input request");
 		}
 	//	String[] sample_name = new String[files.length];
+		//sample_name.add (new File(files[0]));
+		List<Iterator> iterators = new ArrayList<Iterator>();
 		for(int i=0; i<files.length; i++){
 			File filek = new File(files[i]);//.replace(".gz","");//.substring(0, files[i].lastIndexOf('.'));
-			sample_name.add(filek	);
 			Iterator<SAMRecord> samIter = null;
 			SamReader samReader= null;
-		if(bam){
 			SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 			InputStream bamInputStream;
 			if("-".equals(filek)){
@@ -178,20 +189,11 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 				bamInputStream =	new FileInputStream(filek);
 			}
 				samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
-			//	sam_it1 = 
 				samReaders.add(samReader);
 				samIter = SequenceUtils.getFilteredIterator(samReader.iterator(), readList, maxReads, q_thresh);
-		}else{
-			boolean saveSeqs=true;
-			try{
-			String mm2_index = SequenceUtils.minimapIndex(refFile,  false,saveSeqs);
-			samIter = SequenceUtils.getSAMIteratorFromFastq(filek.getAbsolutePath(), mm2_index, maxReads, readList, q_thresh);
-			}catch(Exception exc){
-				exc.printStackTrace();
-			}
+				iterators.add(samIter);
 		}
-		iterators.add(samIter);
-		}
+		return SequenceUtils.getCombined(iterators.toArray(new Iterator[0]), false, true);
 	}
 	
 	static class ReferenceDB{
@@ -326,28 +328,26 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 					out_fastq.toArray(new String[0]), readList, outdir, output, outfiles);
 		}
 	}
+	
+	
 	public static void speciesTyping(ReferenceDB refDB, File resdir, String readList,
 		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq , 
 		 List<String> unmapped_reads
-			) throws IOException{
-			List<File> sample_names = new ArrayList<File>();	
-			List<Iterator<SAMRecord>> iterators =  new ArrayList<Iterator<SAMRecord>>();
+			) throws IOException, InterruptedException{
 			List<SamReader> readers =  new ArrayList<SamReader>();
-			RealtimeSpeciesTypingCmd.getSamIterators(bamFile, fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers,  refDB.refFile);
-			if(false){
-				// this merges multiple iterators into one
-				//Iterator<SAMRecord> it = SequenceUtils.getCombined(iterators.toArray(new Iterator[0]), false, true);
-			}
+			Iterator<SAMRecord> samIter= 
+					bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(bamFile,  readList, maxReads, q_thresh, readers,  refDB.refFile) : 
+						RealtimeSpeciesTypingCmd.getSamIteratorsFQ(fastqFile, readList, maxReads, q_thresh, refDB.refFile);
 			File outdir_new  = null;
 			if(resdir!=null){
 				outdir_new =  new File(resdir,refDB.dbs);
 				outdir_new.mkdir();
 			}
-			for(int k=0; k<iterators.size(); k++){ // do multiple samples sequentially , could consider doing in parallel later
-				File outdir = outdir_new!=null ?  new File(outdir_new+"/"+sample_names.get(k).getName()) : new File(sample_names.get(k).getAbsolutePath()+"."+refDB.dbs+".jST");
+			File sample_namesk = bamFile!=null ?  new File(bamFile[0]) : new File(fastqFile[0]);
+				File outdir = outdir_new!=null ?  new File(outdir_new+"/"+sample_namesk.getName()) : new File(sample_namesk.getAbsolutePath()+"."+refDB.dbs+".jST");
 				outdir.mkdirs();
-				Iterator<SAMRecord> samIter = iterators.get(k);
-				SamReader samReader = readers.size()>0 ? readers.get(k) : null;
+			
+			//	SamReader samReader = readers.size()>0 ? readers.get(k) : null;
 				RealtimeSpeciesTyping paTyping =
 						new RealtimeSpeciesTyping(refDB.speciesIndex,	
 								refDB.tree, output,outdir,  refDB.refFile, unmapped_reads!=null);
@@ -360,14 +360,13 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 				}catch(InterruptedException exc){
 					exc.printStackTrace();
 				}
-				if(samReader!=null) samReader.close();
+				for(int i=0; i<readers.size(); i++) readers.get(i).close();
 				readList = null;
 				paTyping.getOutfiles(out_fastq);
 				if(paTyping.fqw_unmapped!=null){
 					paTyping.fqw_unmapped.getOutFile(unmapped_reads);
 				}
 				//files[k] = paTyping.unmapped_reads;  // unmapped reads taken forward to next database
-			}
 	//	}dbs
 		
 		//paTyping.typing(bamFile, number, time);		

@@ -516,7 +516,9 @@ public class RealtimeSpeciesTyping {
 	final NCBITree tree;
 	
 	//* referenceFile is to get the length map */
-	public RealtimeSpeciesTyping(File indexFile, NCBITree tree, String outputFile, File outdir, File referenceFile, boolean unmapped_reads) throws IOException{
+	public RealtimeSpeciesTyping(File indexFile, NCBITree tree, 
+			String outputFile, File outdir, File referenceFile, 
+			boolean unmapped_reads) throws IOException{
 		this(outdir, indexFile.getAbsolutePath(), tree, unmapped_reads);
 		
 		this.referenceFile = referenceFile;

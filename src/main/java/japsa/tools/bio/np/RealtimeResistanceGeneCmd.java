@@ -78,7 +78,6 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addDouble("score", 0.0001,  "The alignment score threshold");
 		addString("msa", "kalign",
 			"Name of the msa method, support poa, kalign, muscle and clustalo");
-
 		addString("tmp", "_tmpt",  "Temporary folder");				
 		addString("resDB", null,  "Path to resistance database", true);
 		addString("dbs", null,  "For subsequent species typing", false);
@@ -186,16 +185,17 @@ public static Pattern writeABX = null;
 			String[] fastqFile,String readList, File outdir, String output, List<String> outfiles)  throws IOException, InterruptedException{
 	
 
-		List<File> sample_names = new ArrayList<File>();	
-		List<Iterator<SAMRecord>> iterators =  new ArrayList<Iterator<SAMRecord>>();
 		List<SamReader> readers =  new ArrayList<SamReader>();
+		Iterator<SAMRecord> samIter= 
+				bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(bamFile,  readList, maxReads, q_thresh, readers, new File(resDB,"DB.fasta")) : 
+					RealtimeSpeciesTypingCmd.getSamIteratorsFQ(fastqFile, readList, maxReads, q_thresh, new File(resDB,"DB.fasta"));
+				File sample_namek = bamFile!=null ? new File(bamFile[0]) : new File(fastqFile[0]);
+	//	RealtimeSpeciesTypingCmd.getSamIterators(bamFile==null ? null : bamFile, 
+	//			fastqFile==null ? null : fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers, 
+	//			new File(resDB,"DB.fasta"));
 		
-		RealtimeSpeciesTypingCmd.getSamIterators(bamFile==null ? null : bamFile, 
-				fastqFile==null ? null : fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers, 
-				new File(resDB,"DB.fasta"));
-		
-		for(int k=0; k<iterators.size(); k++){
-			File outdir1 =new File(resdir, sample_names.get(k)+".resistance");
+		//for(int k=0; k<iterators.size(); k++){
+			File outdir1 =new File(resdir, sample_namek+".resistance");
 			
 			outdir1.mkdirs();
 			RealtimeResistanceGene paTyping = new RealtimeResistanceGene(readPeriod, time, outdir1,outdir1.getAbsolutePath()+"/"+output, resDB.getAbsolutePath(), tmp);		
@@ -203,11 +203,11 @@ public static Pattern writeABX = null;
 			paTyping.scoreThreshold = scoreThreshold;
 			paTyping.twoDOnly = twodonly;
 			paTyping.numThead = thread;
-			paTyping.typing(iterators.get(k));	
+			paTyping.typing(samIter);	
 			paTyping.close();
 			
 			paTyping.getOutfiles(outfiles);
-		}
+		//}
 		for(int i=0; i<readers.size(); i++){
 			readers.get(i).close();
 		}

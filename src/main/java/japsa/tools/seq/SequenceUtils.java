@@ -172,7 +172,7 @@ public static void main(String[] args){
 		String refFile = "/home/lachlan/github/npTranscript/data/SARS-Cov2/VIC01/wuhan_coronavirus_australia.fasta.gz";
 		mm2_path="/home/lachlan/github/minimap2/minimap2";
 		String mm2_index = SequenceUtils.minimapIndex(new File(refFile),  false, true);
-		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq("ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz", mm2_index, 100, null,0);
+		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq(new String[]{"ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz"}, mm2_index, 100, null,0);
 		while(sm.hasNext()){
 			System.err.println(sm.next().getAlignmentStart());
 		}
@@ -181,7 +181,7 @@ public static void main(String[] args){
 	}
 	}
 	
-	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String url, String mm2Index, int maxReads, Collection<String>readsToInclude, double q_thresh) throws IOException{
+	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String[] url, String mm2Index, int maxReads, Collection<String>readsToInclude, double q_thresh) throws IOException{
 		return new FastqToSAMRecord(url, mm2Index,maxReads, readsToInclude, q_thresh );
 	}
 	
@@ -200,11 +200,11 @@ public static void main(String[] args){
 		SAMRecordIterator iterator;
 		final String mm2Index;
 		final double q_thresh;
-		final String input;
+		final String[] input;
 		int max_per_file;
 		final Collection<String> readsToInclude;
 	//	final boolean deleteFile;
-		private void init() throws IOException{
+		private void init(int k) throws IOException{
 			ProcessBuilder pb;
 			System.err.println("making builder");
 			if(mm2_splicing==null) {
@@ -269,7 +269,7 @@ public static void main(String[] args){
 					"-"
 				
 					);
-			System.err.println(input);
+			System.err.println(input[k]);
 		List<String> cmd = pb.command();
 		StringBuffer sb  = new StringBuffer();
 		for(int i=0; i<cmd.size(); i++){
@@ -279,11 +279,11 @@ public static void main(String[] args){
 			//	BufferedReader br;
 				InputStream	is ;
 				if(inputFile==null){
-					URL  url = new URL(input);
+					URL  url = new URL(input[k]);
 					URLConnection urlc = url.openConnection();
-				is= input.endsWith(".gz")  ? new GZIPInputStream(urlc.getInputStream()) : urlc.getInputStream();
+				is= input[k].endsWith(".gz")  ? new GZIPInputStream(urlc.getInputStream()) : urlc.getInputStream();
 				}else{
-					is= input.endsWith(".gz")  ? new GZIPInputStream(new FileInputStream(inputFile)) : new FileInputStream(inputFile);
+					is= input[k].endsWith(".gz")  ? new GZIPInputStream(new FileInputStream(inputFile[k])) : new FileInputStream(inputFile[k]);
 
 				}
 				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err_minimap2.txt"))).start();
@@ -299,22 +299,27 @@ public static void main(String[] args){
 				
 		}
 	//	static int id = 
-		 File inputFile = null;
+		 File[] inputFile = null;
 		 
 		
 		 public int count=0;
-		public FastqToSAMRecord(String input, String mm2Index, int maxReads,Collection<String>readsToInclude, double q_thresh) throws IOException{
+		public FastqToSAMRecord(String[] input, String mm2Index, int maxReads,Collection<String>readsToInclude, double q_thresh) throws IOException{
 			this.mm2Index = mm2Index;
 			this.q_thresh = q_thresh;
 			this.readsToInclude = readsToInclude;
 			 max_per_file = maxReads;
 			if(max_per_file <0) max_per_file = Integer.MAX_VALUE;
 		
-			if(input.startsWith("ftp://")  || input.startsWith("file:/")){
+			if(input[0].startsWith("ftp://")  || input[0].startsWith("file:/")){
 				 this.input = input;
 			}else{
-				inputFile = new File(input);
-			     this.input = "file:/"+(inputFile).getAbsolutePath();	
+				inputFile = new File[input.length];
+				this.input = new String[input.length];
+				for(int k=0; k<input.length; k++) {
+					inputFile[k] = new File(input[k]);;
+					this.input[k] = "file:/"+(inputFile[k]).getAbsolutePath();	
+				}
+			     
 			}
 		 }
 		
@@ -323,7 +328,7 @@ public static void main(String[] args){
 		@Override
 		public boolean hasNext() {
 			// if its null it has not been initialised
-			boolean res = iterator==null || iterator.hasNext();
+			boolean res = this.curr_index< this.input.length || iterator.hasNext();
 			try{
 			if(!res) {
 				System.err.println("analysed "+count+" records");
@@ -336,29 +341,28 @@ public static void main(String[] args){
 			return res;
 		}
 
+		int curr_index=0;
+		
 		@Override
 		public SAMRecord next() {
-			if(iterator==null) try{
-				init();
-			}catch(IOException exc){
-				exc.printStackTrace();
-			}
-			if(!iterator.hasNext()){
+			if(iterator !=null && !iterator.hasNext()){
 				try{
 					System.err.println("analysed "+count+" records");
-
+					iterator.close();
 				reader.close();
-				
+				iterator=null;
 				}catch(IOException exc){
 					exc.printStackTrace();
 				}
-				
-				return null;
 			}
-			
+			if(iterator==null && curr_index < this.input.length) try{
+				init(curr_index);
+				curr_index++;
+			}catch(IOException exc){
+				exc.printStackTrace();
+			}
 			 SAMRecord nxt =  iterator.next();
 			 count++;
-			
 			 return nxt;
 		}
 		 
@@ -421,31 +425,33 @@ public static void main(String[] args){
 			 this.reads = reads;
 			 this.qual_thresh= qual_thresh;
 			 this.max_reads = max_reads;
-			 nxt = sam.next();
+			 nxt = getNext();
 		 }
 		@Override
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
-			return nxt!=null && cnt < max_reads;
+			return  nxt!=null && cnt < max_reads;
 		}
-
-		@Override
-		public SAMRecord next() {
+public SAMRecord next(){
+	SAMRecord nxt1 = nxt;
+	nxt = getNext();
+	return nxt1;
+}
+		
+		public SAMRecord getNext() {
 			
-			cnt++;
-			// TODO Auto-generated method stub
-			SAMRecord nxt1 = nxt;
-			inner: while(samIter.hasNext()){
-				nxt = samIter.next();
+			while(samIter.hasNext()){
+				SAMRecord nxt = samIter.next();
 				String nme = nxt.getReadName();
-				if(reads==null || reads.remove(nme)){
+				if(reads==null || reads.contains(nme)){
+					
 					if(getQual(nxt.getBaseQualities())>=qual_thresh) {
-						break inner;
+						return nxt;
 					}
 				}
 				//nxt=null;
 			}
-			return nxt1;
+			return null;
 		}
 		 
 	 }
@@ -738,7 +744,7 @@ public static void annotateWithGenomeLength(File refFile,
 
 public static Collection<String> getReadList(String readList, boolean split) {
 	if(readList==null || readList=="null") return null;
-	List<String> reads = new ArrayList<String>();
+	Set<String> reads = new HashSet<String>();
 	try{
 	
 	InputStream is = new FileInputStream(new File(readList));

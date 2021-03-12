@@ -83,6 +83,7 @@ import japsa.util.HTSUtilities;
  */
 
 public class RealtimeResistanceGene {
+	//public static int maxDistToEnds=99;
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeResistanceGene.class);
 	public static boolean writeAlignedOnly = false;
 	public static boolean JSON = false;
@@ -193,7 +194,7 @@ this.outdir = new File("./");
 			if (this.twoDOnly && !record.getReadName().contains("twodim"))
 				continue;
 
-			if (!record.getReadName().equals(readName)) {
+			if (!record.getReadName().equals(readName) ) {
 				writeAll(records, false, readName, resist);
 				readName = record.getReadName();
 
@@ -219,10 +220,11 @@ this.outdir = new File("./");
 			int refLength =  resistFinder.geneMap.get(geneID).length();
 			int refStart = record.getAlignmentStart();
 			int refEnd   = record.getAlignmentEnd();
+		//	int alignLength = refEnd - refStart+1;
 			String resclass = resistFinder.gene2Group.get(geneID);
 			if (!resistFinder.geneMap.containsKey(geneID))
 				continue;
-			if(refStart > 99 || refEnd < refLength - 99)
+			if(runKAlign && (refStart > 99 || refEnd < refLength - 99))
 				continue;			
 
 			synchronized(this){
