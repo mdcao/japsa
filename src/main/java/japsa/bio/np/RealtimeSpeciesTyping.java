@@ -90,6 +90,7 @@ import pal.tree.Node;
  *
  */
 public class RealtimeSpeciesTyping {
+	public static double pseudo = 0.01;
 	public static String bases_covered = "bases_covered";
 	public static String fraction_covered="fraction_covered";
 	
@@ -746,9 +747,11 @@ public static List<String> speciesToIgnore = null;
 			}
 		}
 		//update abundance
-		public void maximisation(double[] v){
+		public void maximisation(double[] v, double pseudo){
 			double[] abund = new double[len];
-			double tot = 0;
+			Arrays.fill(abund, pseudo);
+			if(svs.size()==0 && single.size()==0) throw new RuntimeException("nothing");
+			double tot = pseudo*len+svs.size()+single.size();
 			double score =0;
 			for(int i=0; i<this.svs.size(); i++){
 				SparseVector sv = svs.get(i);
@@ -769,14 +772,13 @@ public static List<String> speciesToIgnore = null;
 					abund[j] += sc;
 				
 				}
-				tot+=1.0;
 				score+=Math.log(scorej);
 			}
 			for(int i=0; i< this.single.size(); i++){
 				abund[this.single.get(i)] +=1.0;
-				tot+=1.0;
 			}
 			double diff = 0;
+			
 			for(int j=0; j<abund.length; j++){
 				double newv = abund[j]/tot;
 				diff += Math.abs(abundance[j] - newv);
@@ -987,11 +989,11 @@ public static List<String> speciesToIgnore = null;
 			this.fqw_unmapped.close();
 		}
 		double[]v = new double[2];
-		this.all_reads.maximisation(v);
+		this.all_reads.maximisation(v, pseudo);
 
 		for(int i=0; i<10; i++){
 			
-			this.all_reads.maximisation(v);
+			this.all_reads.maximisation(v, pseudo);
 			if(v[1]<0.001)  break;
 			System.err.println(v[0]+"\t"+v[1]);
 		}
