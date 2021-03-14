@@ -29,7 +29,7 @@ public abstract class CommonTree {
 	public void printKraken(Node node, PrintStream pw, int total){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName().replaceAll("\\+-","");
-		 System.err.println(nme);
+	//	 System.err.println(nme);
 		 Integer level = ((Integer)id.getAttribute("level")).intValue();
 		 String hex = ((String)id.getAttribute("css"));		
 		 String alias = ((String)id.getAttribute("alias"));	

@@ -143,7 +143,7 @@ public Node getNode(Integer taxa) {
 		}
 		if(!n.isRoot() && n.getChildCount()==1 && !n.isLeaf() ){
 			Node child  = n.getChild(0);
-			System.err.println("removing1 "+n.getIdentifier().getName());
+		//	System.err.println("removing1 "+n.getIdentifier().getName());
 			n.getParent().setChild(i, child);
 		}
 		
@@ -647,7 +647,7 @@ public boolean  trimNode(Node node, int thresh){
 		sum +=v[i];
 	}
 	if(sum<thresh){
-		System.err.println("removing "+node.getIdentifier().getName()+" "+sum);
+	//	System.err.println("removing "+node.getIdentifier().getName()+" "+sum);
 		return true;
 	}
 	else{
@@ -796,7 +796,7 @@ public void merge(NCBITree tree1, int pos){
 			int cnt1 = NodeUtils.getExternalNodes(roots.get(i)).length;
 			System.err.println(roots.get(i).getIdentifier()+" "+cnt);
 			if(cnt==0 || cnt1==1) { //|| !target.contains(roots.get(i).getIdentifier().getAttribute("taxon"))){
-				System.err.println("removing "+roots.get(i).getIdentifier());
+		//		System.err.println("removing "+roots.get(i).getIdentifier());
 				roots.remove(i);
 			}
 		}

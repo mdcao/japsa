@@ -434,6 +434,7 @@ public static void main(String[] args){
 		}
 public SAMRecord next(){
 	SAMRecord nxt1 = nxt;
+	cnt++;
 	nxt = getNext();
 	return nxt1;
 }

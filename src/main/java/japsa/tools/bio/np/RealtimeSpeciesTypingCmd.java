@@ -123,7 +123,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 
 		addBoolean("web", false, "Whether to use Web visualization.");
 		addBoolean("log", false, "Whether to write mapping details to species2reads.map.");
-		addBoolean("merge", false, "whether to merge results from multiple bam into single output file");
+		//addBoolean("merge", false, "whether to merge results from multiple bam into single output file");
 		
 		addString("writeSep" , null, "strings to match for what to write fastq file out, which can be colon separated, e.g. plasmid:phage or all");
 
@@ -250,7 +250,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		SequenceUtils.mm2_path = cmdLine.getStringVal("mm2_path");
 		SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
 		SequenceUtils.mm2_splicing = null;//
-		SequenceUtils.secondary = false;
+		SequenceUtils.secondary = true;
 		RealtimeSpeciesTypingCmd.q_thresh = cmdLine.getDoubleVal("fail_thresh");
 		RealtimeSpeciesTypingCmd.filter = cmdLine.getStringVal("filter");
 		RealtimeSpeciesTypingCmd.maxReads = cmdLine.getIntVal("maxReads");
