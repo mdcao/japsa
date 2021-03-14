@@ -769,6 +769,7 @@ public static List<String> speciesToIgnore = null;
 					abund[j] += sc;
 				
 				}
+				tot+=1.0;
 				score+=Math.log(scorej);
 			}
 			for(int i=0; i< this.single.size(); i++){
