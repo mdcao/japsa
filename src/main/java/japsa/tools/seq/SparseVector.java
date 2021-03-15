@@ -33,7 +33,7 @@ public class SparseVector{
 		m.put(position, val==null ? i : val.doubleValue() + i);
 	}
 	public String toString(){
-		return m.keySet().toString();
+		return m.toString();
 	}
 
 	public List<Integer> keys() {
