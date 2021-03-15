@@ -767,14 +767,19 @@ public static List<String> speciesToIgnore = null;
 					totj+=sc;
 					scorej+=sc;
 				}
-				
-				for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
-					Integer j = it.next();
-					double sc = abundance[j] * sv.get(j).doubleValue()/totj;
-					abund[j] += sc;
-				
+				if(totj>0){
+					for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
+						Integer j = it.next();
+						double sc = abundance[j] * sv.get(j).doubleValue()/totj;
+						abund[j] += sc;
+					
+					}
+					score+=Math.log(scorej);
+				}else{
+					tot = tot -1;
+					System.err.println("warning totj is zero "+i+" "+sv.toString());
 				}
-				score+=Math.log(scorej);
+				
 			}
 			for(int i=0; i< this.single.size(); i++){
 				abund[this.single.get(i)] +=1.0;
