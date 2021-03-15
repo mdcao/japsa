@@ -110,6 +110,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 //		addString("mm2_memory", "4g",  "minimap2 memory", false);
 		long mem = (Runtime.getRuntime().maxMemory()-1000000000);
 		addString("mm2_memory", mem+"",  "minimap2 memory", false);
+		addString("excludeFile",null,  "file of regions to exclude", false);
+
 		addDouble("fail_thresh", 7.0,  "median phred quality of read", false);
 		addInt("mm2_threads", 4, "threads for mm2", false);
 		addDouble("qual", 1,  "Minimum alignment quality");
@@ -295,18 +297,16 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String readList = cmdLine.getStringVal("readList");
 		String speciesFile=cmdLine.getStringVal("species");
 		List<String> out_fastq = new ArrayList<String>();
-		
+		String exclfile = cmdLine.getStringVal("excludeFile");
+		File excl = exclfile==null ? null : new File(exclfile);
 		String[] fastqFiles = fastqFile==null ? null : fastqFile.split(":");
 		String[] bamFiles = bamFile==null ? null : bamFile.split(":");
 		List<String> unmapped_reads = dbs.length>1 ? new ArrayList<String>(): null;
 		inner: for(int i=0; i<dbs.length; i++){
 			System.err.println(dbs[i]);
 			ReferenceDB refDB = new ReferenceDB(dbPath, dbs[i], speciesFile);
-			
-			
 			speciesTyping(refDB, i==0 ? resdir : null, readList, bamFiles, fastqFiles, output,
-							out_fastq, i==dbs.length-1 ? null : unmapped_reads);
-			
+							out_fastq, i==dbs.length-1 ? null : unmapped_reads, excl);
 			bamFiles = null;
 			if(unmapped_reads==null) break inner;
 			fastqFiles = unmapped_reads.toArray(new String[0]);
@@ -334,8 +334,10 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 	
 	public static void speciesTyping(ReferenceDB refDB, File resdir, String readList,
 		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq , 
-		 List<String> unmapped_reads
+		 List<String> unmapped_reads, File exclude
 			) throws IOException, InterruptedException{
+		
+		
 			List<SamReader> readers =  new ArrayList<SamReader>();
 			Iterator<SAMRecord> samIter= 
 					bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(bamFile,  readList, maxReads, q_thresh, readers,  refDB.refFile) : 
@@ -358,7 +360,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 				paTyping.setTwoOnly(twoOnly);	
 				paTyping.setFilter(filter);
 				try{
-				paTyping.typing(samIter, number, time);
+				paTyping.typing(samIter, number, time, exclude);
 				}catch(InterruptedException exc){
 					exc.printStackTrace();
 				}
