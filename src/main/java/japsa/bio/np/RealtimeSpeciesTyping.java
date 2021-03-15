@@ -90,7 +90,8 @@ import pal.tree.Node;
  *
  */
 public class RealtimeSpeciesTyping {
-	public static double pseudo = 0.01;
+	public static double pseudo = 0.001;
+	public static double base=2; // lower numbers spread out the probability distribution, however it should be base10
 	public static String bases_covered = "bases_covered";
 	public static String fraction_covered="fraction_covered";
 	
@@ -750,6 +751,7 @@ public static List<String> speciesToIgnore = null;
 		public void maximisation(double[] v, double pseudo){
 			double[] abund = new double[len];
 			Arrays.fill(abund, pseudo);
+			System.err.println(svs.size()+","+single.size());
 			if(svs.size()==0 && single.size()==0) throw new RuntimeException("nothing");
 			double tot = pseudo*len+svs.size()+single.size();
 			double score =0;
@@ -837,7 +839,10 @@ public static List<String> speciesToIgnore = null;
 			this.refs.add(sam.getReferenceName());
 			this.species.add(spec);
 			double q = sam.getMappingQuality();
-			Math.max(0, 1-Math.pow(10,-1*q));
+			q= Math.max(0, 1-Math.pow(base,-1*q));
+			if(Double.isNaN(q)){
+				throw new RuntimeException("!!");
+			}
 			this.all_species.update(spec,q);
 			
 //			this.quality.add(sam.getMappingQuality());
@@ -990,11 +995,11 @@ public static List<String> speciesToIgnore = null;
 		}
 		double[]v = new double[2];
 		this.all_reads.maximisation(v, pseudo);
-
+		System.err.println(v[0]+"\t"+v[1]);
 		for(int i=0; i<10; i++){
 			
 			this.all_reads.maximisation(v, pseudo);
-			if(v[1]<0.001)  break;
+			//if(v[1]<0.001)  break;
 			System.err.println(v[0]+"\t"+v[1]);
 		}
 		typer.stopWaiting();//Tell typer to stop
