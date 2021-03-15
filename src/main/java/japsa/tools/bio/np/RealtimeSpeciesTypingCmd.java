@@ -133,13 +133,15 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		addStdHelp();		
 	} 
 	static class MatchFilter implements FilenameFilter{
-		final Pattern p;
-		MatchFilter(String st){
+		final Pattern p,p1;
+		
+		MatchFilter(String st, String suffix){
 			this.p = Pattern.compile(st);
+			this.p1 = Pattern.compile(suffix);
 		}
 		@Override
 		public boolean accept(File dir, String name) {
-			boolean res =  p.matcher(name).find();
+			boolean res =  p.matcher(name).find() && p1.matcher(name).find();
 			return res;
 		}
 	}
@@ -150,7 +152,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String[] files =  fastqFile;
 		Collection<String> readList=SequenceUtils.getReadList(readListSt, true);
 		if(fastqFile.length==1 &&  !(new File(fastqFile[0])).exists()) {
-			files = (new File(".")).list(new MatchFilter(fastqFile[0]));	
+			files = (new File(".")).list(new MatchFilter(fastqFile[0], "fq|fastq"));	
 		}
 		if(files.length==0) {
 			throw new RuntimeException("no files match input request");
@@ -169,7 +171,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		Collection<String> readList=SequenceUtils.getReadList(readListSt, true);
 		String[] files = bamFile;
 		if(bamFile.length==1 && !(new File(bamFile[0])).exists()) {
-			files = (new File(".")).list(new MatchFilter(bamFile[0]));	
+			files = (new File(".")).list(new MatchFilter(bamFile[0], "bam|sam"));	
 		}
 		if(files.length==0) {
 			throw new RuntimeException("no files match input request");

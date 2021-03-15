@@ -45,6 +45,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,13 +91,22 @@ import pal.tree.Node;
  *
  */
 public class RealtimeSpeciesTyping {
+	public static boolean reestimate = true;
+	//public static boolean useBases = true;
 	public static double pseudo = 0.001;
 	public static double base=2; // lower numbers spread out the probability distribution, however it should be base10
 	public static String bases_covered = "bases_covered";
 	public static String fraction_covered="fraction_covered";
 	
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTyping.class);
-	
+	Comparator<Interval> compar = new Comparator<Interval>(){
+
+		@Override
+		public int compare(Interval o1, Interval o2) {
+			return Integer.compare(o1.start,o2.start);
+		}
+		
+	};
 	public static boolean JSON = false;
 	public static double ALPHA=0.05;
 	public static int MIN_READS_COUNT=0;
@@ -130,6 +140,34 @@ public class RealtimeSpeciesTyping {
 	public static boolean OUTSEQ=false;
 	List<Coverage> species2ReadList = new ArrayList<Coverage>();
 
+	 public static int getBases(List<SAMRecord> sams) {
+			int res =0;
+			for(int i=0; i<sams.size(); i++){
+				res +=baseCount(sams.get(i));
+			}
+			return res;
+		}
+		public static  int baseCount(SAMRecord sam) {
+			return sam.getAlignmentEnd() - sam.getAlignmentStart()+1;
+		}
+	
+	public static void filter(List<SAMRecord> sams, List<SAMRecord> out, int besti){
+		int len = sams.size();
+		SAMRecord first = sams.get(besti);
+		out.add(first);
+		for(int i=0; i<len; i++){
+			if(i==besti) continue;
+			SAMRecord sam= sams.get(i);
+			int overlap = overlap(sam, first);
+			if(overlap>10){
+				continue;
+			}
+			if(sam.getReadNegativeStrandFlag()!=first.getReadNegativeStrandFlag()){
+			  continue;
+			}
+			out.add(sam);
+		}
+	}
 	public static int overlap(SAMRecord sam1, SAMRecord sam2){
 		int st1 = sam1.getAlignmentStart(); int end1 = sam1.getAlignmentEnd(); int st2 = sam2.getAlignmentStart(); int end2  = sam2.getAlignmentEnd();
 		st1 = sam1.getReadPositionAtReferencePosition(st1);
@@ -192,6 +230,12 @@ public class RealtimeSpeciesTyping {
 			if(res<=0) throw new RuntimeException(" segment size of zero");
 			return res;
 		}
+		public void merge(Interval nxt) {
+			this.start = Math.min(start, nxt.start);
+			this.end = Math.max(end, nxt.end);
+			this.coverage = Math.min(nxt.coverage, coverage);
+			
+		}
 	}
 	
 	 
@@ -236,6 +280,36 @@ public class RealtimeSpeciesTyping {
 		List<SortedMap<Integer,Interval>> coverages = new ArrayList<SortedMap<Integer, Interval>>();
 		List<String> contig_names = new ArrayList<String>();
 		//SortedMap<Integer, Interval> coverage = new TreeMap<Integer, Interval>(); //based on start
+		
+		
+		//gets all regions with coverage greater than equal to thresh
+				public List<Interval> getRegions(Integer thresh, int index) {
+					Iterator<Interval> it = this.coverages.get(index).values().iterator();
+					List<Interval> coverage = new ArrayList<Interval>();
+
+					while(it.hasNext()){
+						Interval nxt = it.next();
+						if(nxt.coverage>=thresh){
+							coverage.add(nxt);
+						}
+					}
+					if(coverage.size()<=1) return coverage;
+	
+					Collections.sort(coverage, compar);
+					List<Interval> cov1 = new ArrayList<Interval>();
+					Interval curr = coverage.get(0);
+					cov1.add(curr);
+					for(int i=1; i<coverage.size(); i++){
+						Interval nxt = coverage.get(i);
+						if(curr.overlap(nxt)>=-10){
+							curr.merge(nxt);
+						}else{
+							curr = nxt;
+							cov1.add(curr);
+						}
+					}
+					return cov1;
+				}
 		
 		CachedOutput fqw= null;
 		boolean lock = false;
@@ -411,27 +485,15 @@ public class RealtimeSpeciesTyping {
 		public void addRead( List<SAMRecord> sams){
 		//	System.err.println(sams.size()+" "+getAlignedFrac(sams.get(0)));
 			if(sams.size()==0) return;
-			SAMRecord first = sams.get(0);
 			int len = inclSuppl ? sams.size(): 1;
 			for(int i=0; i<len; i++){
 				SAMRecord sam= sams.get(i);
-				if(i>0){
-				int overlap = overlap(sam, first);
-				if(overlap>10){
-					continue;
-//					throw new RuntimeException("too much overlap "+overlap);
-				}
-				
-				if(sam.getReadNegativeStrandFlag()!=first.getReadNegativeStrandFlag()){
-				  continue;
-				}
-				}
 				//if(node==null) node = tree.getNode(species);
-			if(fqw!=null){	
-				sam.setReadName(sam.getReadName()+" "+sam.getReferenceName()+":"+sam.getAlignmentStart()+"-"+sam.getAlignmentEnd()+" "+sam.getMappingQuality());
+				if(fqw!=null){	
+					sam.setReadName(sam.getReadName()+" "+sam.getReferenceName()+":"+sam.getAlignmentStart()+"-"+sam.getAlignmentEnd()+" "+sam.getMappingQuality());
 				
-				fqw.write(sam, this.species);
-			}
+					fqw.write(sam, this.species);
+				}
 			
 			this.addInterval(sam.getReferenceName(),sam.getAlignmentStart(), sam.getAlignmentEnd());
 			//System.err.println(this.species);
@@ -447,12 +509,12 @@ public class RealtimeSpeciesTyping {
 			this.mapq.put(q, cnt==null ? 1 : cnt+1);
 			this.mapLen.put(readLength, cnt1==null ? 1: cnt1+1);
 			this.mapAlign.put(alignF, cnt2==null ? 1: cnt2+1);
-
-			this.baseCount = this.baseCount+ sam.getAlignmentEnd() - sam.getAlignmentStart();
+		//	List<AlignmentBlock> blocks  = sam.getAlignmentBlocks();
+			this.baseCount += RealtimeSpeciesTyping.baseCount(sam);
 			this.readCount++;
 			}
 		}
-	
+	 
 		private double getAlignedFrac(SAMRecord sam) {
 			double a = sam.getEnd() - sam.getStart()+1;
 			double b = sam.getReadLength();
@@ -525,6 +587,10 @@ public class RealtimeSpeciesTyping {
 			
 			return readCount;
 		}
+		public double baseCount(){
+			return baseCount;
+		}
+		
 	}
 	
 	public RealtimeSpeciesTyping(File outdir, String indexFile, NCBITree tree, boolean writeUnmapped) throws IOException{
@@ -557,7 +623,7 @@ public class RealtimeSpeciesTyping {
 		//this.indexBufferedReader = SequenceReader.openFile(indexFile);
 		typer = new RealtimeSpeciesTyper(this,outputStream, outdir.getName());
 		preTyping();
-		this.all_reads = new SparseVectorCollection(this.speciesList.size());
+		if(reestimate) this.all_reads = new SparseVectorCollection(this.speciesList.size());
 	
 	}
 
@@ -726,9 +792,6 @@ public static List<String> speciesToIgnore = null;
 	}
 	public static boolean realtimeAnalysis = false;
 	class SparseVectorCollection{
-		
-		
-		
 		final double[] abundance;
 		int len;
 		SparseVectorCollection(int numSpecies){
@@ -753,7 +816,8 @@ public static List<String> speciesToIgnore = null;
 			Arrays.fill(abund, pseudo);
 			System.err.println(svs.size()+","+single.size());
 			if(svs.size()==0 && single.size()==0) throw new RuntimeException("nothing");
-			double tot = pseudo*len+svs.size()+single.size();
+			double tot = pseudo*len;//+svs.size()+single.size();
+			tot+=svs.size()+ single.size();//  add 
 			double score =0;
 			for(int i=0; i<this.svs.size(); i++){
 				SparseVector sv = svs.get(i);
@@ -794,13 +858,15 @@ public static List<String> speciesToIgnore = null;
 			v[0] = score; v[1] = diff;
 		}
 	}
-	SparseVectorCollection all_reads;
+	SparseVectorCollection all_reads = null ;
 	 class AllRecords{
 		String readnme = null;
 		List<SAMRecord> records = new ArrayList<SAMRecord>();
 		List<String> refs = new ArrayList<String>();
 		List<Integer> species = new ArrayList<Integer>(); //specesIndex
 		SparseVector all_species = new SparseVector();
+		//SparseVector all_speciesLen = new SparseVector(); // for capturing number of bases
+
 		//List<Integer> quality = new ArrayList<Integer>();
 		public void clear(){
 			readnme=null;
@@ -810,17 +876,22 @@ public static List<String> speciesToIgnore = null;
 			species.clear();
 		//	quality.clear();
 		}
-		public boolean  getAll(Integer species2,List<SAMRecord> out) {
-			boolean primary= false;
+		
+		//return 
+		public int  getAll(Integer species2,List<SAMRecord> out) {
+			int q = -1;
+			int best =-1;
 			for(int i=0; i<records.size(); i++){
 				if(species.get(i).equals(species2)){
-					
-						if(!records.get(i).isSecondaryOrSupplementary()) 						primary = true;
-					
+					int q1 = records.get(i).getMappingQuality();
+					if(q1>q){
+						best = out.size();
+						q = q1;
+					}
 					out.add(records.get(i));
 				}
 			}
-			return primary;
+			return best;
 			//return out;
 		}
 		
@@ -843,12 +914,8 @@ public static List<String> speciesToIgnore = null;
 			this.records.add(sam);
 			this.refs.add(sam.getReferenceName());
 			this.species.add(spec);
-			double q = sam.getMappingQuality();
-			q= Math.max(0, 1-Math.pow(base,-1*q));
-			if(Double.isNaN(q)){
-				throw new RuntimeException("!!");
-			}
-			this.all_species.update(spec,q);
+			this.all_species.addToEntry(spec, 0); // set as placemarker
+		
 			
 //			this.quality.add(sam.getMappingQuality());
 		}
@@ -863,21 +930,31 @@ public static List<String> speciesToIgnore = null;
 				//}
 				Iterator<Integer> specs = this.all_species.keySet().iterator();
 				List<SAMRecord> sams= new ArrayList<SAMRecord>();
+				List<SAMRecord> filtered  = new ArrayList<SAMRecord>();
 				while(specs.hasNext()){
 					Integer spec = specs.next();
 				//	sv.addToEntry(spec,all_species.get(spec));
 				//			-1*Math.pow(10, -1*all_species.get(spec).doubleValue()));
 					Coverage coverage = species2ReadList.get(spec);
-					sams.clear();
-					boolean primary = getAll(spec,sams);
-					if(primary) coverage.addRead(sams);
+					sams.clear();filtered.clear();
+					int besti = getAll(spec,sams);
+					int q = sams.get(besti).getMappingQuality();
+					boolean primary = !sams.get(besti).isSecondaryOrSupplementary();
+					filter(sams, filtered, besti);
+					if(primary) coverage.addRead(filtered);
+					// we use 0.1 as minimum to avoid zero probability for mq=0 reads
+					this.all_species.update(spec,Math.max(0.1, 1-Math.pow(base,-1.0*(double)q)));
+				//	this.all_speciesLen.update(spec,getBases(filtered));
+					
 				}
-				all_reads.add(this.all_species);
+				if(all_reads !=null) all_reads.add(this.all_species);
 
 				}
 			all_species = new SparseVector();
 			this.clear();
 		}
+
+		
 	}
 	public void typing(Iterator<SAMRecord> samIter, int readNumber, int timeNumber) throws IOException, InterruptedException{
 		//if (readNumber <= 0)
@@ -937,9 +1014,10 @@ public static List<String> speciesToIgnore = null;
 				continue;			
 			}
 			//System.err.println(sam.getReadName()+"\t"+sam.getReferenceName()+"\t"+records.size()+"\t"+sam.isSecondaryOrSupplementary());
-
-			if (sam.getMappingQuality() < this.minQual) {
-				LOG.debug("failed minQual check");
+			int mq = sam.getMappingQuality();
+			if (mq < this.minQual) {
+				
+				LOG.debug("failed minQual check "+mq);
 				if(!sam.isSecondaryOrSupplementary()){
 					if(fqw_unmapped!=null) this.fqw_unmapped.write(sam,"unmapped");
 			
@@ -999,13 +1077,13 @@ public static List<String> speciesToIgnore = null;
 			this.fqw_unmapped.close();
 		}
 		double[]v = new double[2];
-		this.all_reads.maximisation(v, pseudo);
-		System.err.println(v[0]+"\t"+v[1]);
-		for(int i=0; i<10; i++){
-			
+		if(all_reads!=null){
 			this.all_reads.maximisation(v, pseudo);
-			//if(v[1]<0.001)  break;
 			System.err.println(v[0]+"\t"+v[1]);
+			for(int i=0; i<10; i++){
+				this.all_reads.maximisation(v, pseudo);
+				System.err.println(v[0]+"\t"+v[1]);
+			}
 		}
 		typer.stopWaiting();//Tell typer to stop
 		if(!realtimeAnalysis){
@@ -1022,12 +1100,13 @@ public static List<String> speciesToIgnore = null;
 		File krakenResults; //kraken formatted results
 		final String sampleID;
 		//File coverageOutput;
-		PrintWriter coverage_out;
+		PrintWriter coverage_out, regions_to_exclude;
 		
 		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, OutputStream outputStream, String sampleID) throws IOException {
 			typing = t;
 			krakenResults = new File(t.outdir,"results.krkn");
 			coverage_out = new PrintWriter(new FileWriter(new File(t.outdir, "coverage.txt")));
+			regions_to_exclude = new PrintWriter(new FileWriter(new File(t.outdir, "exclude.txt")));
 			rengine = new MultinomialCI(ALPHA);
 this.sampleID = sampleID;
 			countsOS = new SequenceOutputStream(outputStream);
@@ -1044,8 +1123,9 @@ this.sampleID = sampleID;
 		int[] order = null;
 		public boolean lock = false;
 		Long step;
-		
+		 double  frac = 1.0;
 		private void simpleAnalysisCurrent()  {
+			
 			lock = true; // so that the datastructure doesnt change while we doing calculation 
 			double[] vals = new double[perc.length];
 			double[] valsQ = new double[percQ.length];
@@ -1060,7 +1140,7 @@ this.sampleID = sampleID;
 			for (int i = 0; i < count.length;i++){
 			//	String spec_name = typing.speciesList.get(i);
 				Coverage cov = typing.species2ReadList.get(i);
-				count[i] = cov.readCount();		
+				count[i] =  cov.readCount();		
 				sum += count[i];
 				
 				
@@ -1095,13 +1175,31 @@ this.sampleID = sampleID;
 							
 						  Double[] stats = cov.medianReadCoverage(new double[0], new double[0], j,covMap, intervalMap, segsMap);
 						  if(covMap!=null){
+							  Entry<Integer,Integer> prev = null;
+							  Integer thresh = null;
 							  for(Iterator<Entry<Integer, Integer>> covs = covMap.entrySet().iterator();covs.hasNext(); ){
 								  Entry<Integer, Integer> nxt = covs.next();
+								 
+								  if(thresh==null && prev!=null){
+									  if(nxt.getKey()>prev.getKey()+1 ||
+											 nxt.getValue() > frac* prev.getValue()){
+										  thresh =nxt.getKey();
+									  }
+								  }
+								  prev = nxt;
+								  
 								  Interval iv = intervalMap.get(nxt.getKey());
 								  String iv_str = iv==null ?  "-": iv.toString();
 								  this.coverage_out.println(spec_name+"\t"+cov.contig_names.get(j)+"\t"+nxt.getKey()+"\t"+nxt.getValue()
 								  +"\t"+segsMap.get(nxt.getKey())+"\t"+iv_str
 										 );
+							  }
+							  if(thresh!=null){
+								 List<Interval> exclusions =  cov.getRegions(thresh,j);
+								 for(int jk=0; jk<exclusions.size(); jk++){
+									 Interval iv = exclusions.get(jk);
+									 this.regions_to_exclude.println(spec_name+"\t"+cov.contig_names.get(j)+"\t"+ iv.start+"\t"+iv.end+"\t"+iv.coverage);
+								 }
 							  }
 						  }
 						  tot_bases+= stats[0];
@@ -1125,7 +1223,7 @@ this.sampleID = sampleID;
 						 String st2 = combine(percL,valsL);
 						 cov.medianQ(percL, valsL, cov.mapAlign);
 						 String st3 = combine(percL,valsL);
-						 double adj_res = all_reads.abundance[i];
+						 String adj_res = all_reads==null ? "":""+all_reads.abundance[i];
 						 medianArray.add(String.format("%5.3g", stats[0]).trim()+"\t"+String.format("%5.3g",stats[1]).trim()+"\t"+String.format("%5.3g",stats[2]).trim()
 						 +"\t"+st+"\t"+st1+"\t"+st2+"\t"+st3
 								 +"\t"+nme+":"+String.format("%5.3g",proportion).trim()+"\t"+nme1+":"+max1+"\t"+adj_res);
@@ -1258,6 +1356,7 @@ this.sampleID = sampleID;
 			this.final_analysis=true;
 			simpleAnalysisCurrent();
 			if(coverage_out!=null) this.coverage_out.close();
+			if(this.regions_to_exclude!=null) this.regions_to_exclude.close();
 			try{
 				
 				this.writeResults(-1);//to write all results
