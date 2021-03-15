@@ -37,6 +37,7 @@ package japsa.bio.np;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -202,11 +203,19 @@ public class RealtimeSpeciesTyping {
 		public String toString(){
 			return start+"-"+end+","+bases()+","+coverage;
 		}
+		public Interval(){
+			
+		}
 		public Interval(int start2, int end2, int i) {
 		if(end2 <start2) throw new RuntimeException(start2+","+end2);
 			this.start = start2; this.end = end2; this.coverage = i;
 		}
 		
+		public Interval(String[] str) {
+			this.start = Integer.parseInt(str[2]);
+			this.end= Integer.parseInt(str[3]);
+
+		}
 		public int overlap(Interval interval){
 			int start2 = interval.start; int end2 = interval.end;
 			int overl = Math.min(end -start2,end2 -start);
@@ -301,7 +310,7 @@ public class RealtimeSpeciesTyping {
 					cov1.add(curr);
 					for(int i=1; i<coverage.size(); i++){
 						Interval nxt = coverage.get(i);
-						if(curr.overlap(nxt)>=-10){
+						if(curr.overlap(nxt)>=-100){
 							curr.merge(nxt);
 						}else{
 							curr = nxt;
@@ -759,7 +768,7 @@ public static List<String> speciesToIgnore = null;
 		this.twoDOnly = twoOnly;
 	}
 
-	public void typing(String bamFile, int readNumber, int timeNumber) throws IOException, InterruptedException {
+	public void typing(String bamFile, int readNumber, int timeNumber, File excl) throws IOException, InterruptedException {
 		InputStream bamInputStream;
 
 		if ("-".equals(bamFile))
@@ -767,7 +776,7 @@ public static List<String> speciesToIgnore = null;
 		else
 			bamInputStream = new FileInputStream(bamFile);
 
-		typing(bamInputStream, readNumber, timeNumber);
+		typing(bamInputStream, readNumber, timeNumber, excl);
 	}
 
 	/**\
@@ -783,11 +792,11 @@ public static List<String> speciesToIgnore = null;
 		}
 		
 	}
-	public void typing(InputStream bamInputStream, int readNumber, int timeNumber) throws IOException, InterruptedException{
+	public void typing(InputStream bamInputStream, int readNumber, int timeNumber, File excl) throws IOException, InterruptedException{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
 		SAMRecordIterator samIter = samReader.iterator();
-		typing(samIter, readNumber, timeNumber);
+		typing(samIter, readNumber, timeNumber, excl);
 		samReader.close();
 	}
 	public static boolean realtimeAnalysis = false;
@@ -956,9 +965,11 @@ public static List<String> speciesToIgnore = null;
 
 		
 	}
-	public void typing(Iterator<SAMRecord> samIter, int readNumber, int timeNumber) throws IOException, InterruptedException{
+	public void typing(Iterator<SAMRecord> samIter, int readNumber, int timeNumber,
+			File excl) throws IOException, InterruptedException{
 		//if (readNumber <= 0)
-		//	readNumber = 1;			
+		//	readNumber = 1;		
+		Map<String, List<Interval>> li = getIntervals(excl);
 		typer.setReadPeriod(readNumber);
 		typer.setTimePeriod(timeNumber * 1000);
 		LOG.info("Species typing ready at " + new Date());
@@ -975,11 +986,14 @@ public static List<String> speciesToIgnore = null;
 		//String prevReadName = "";
 		//String prevRefName= "";
 		AllRecords records = new AllRecords(); // for supplementary alignemnts to same reference
-	
-		while (samIter.hasNext()){
+		Interval interval = new Interval();
+		outer: while (samIter.hasNext()){
 			try{
 			SAMRecord sam = samIter.next();
-		
+			interval.start = sam.getAlignmentStart();
+			interval.end = sam.getAlignmentEnd();
+			
+			
 			if(sam==null) {
 				System.err.println("warning sam record is null");
 				break;
@@ -1012,6 +1026,16 @@ public static List<String> speciesToIgnore = null;
 					this.fqw_unmapped.write(sam,"unmapped");
 				}
 				continue;			
+			}
+//			String rn = sam.getReferenceName();
+			List<Interval>lis = li.get(refName);
+			if(lis!=null){
+				for(int jk=0; jk<lis.size(); jk++){
+					if(lis.get(jk).overlap(interval)>=0){
+						System.err.println("overlaps excluded region "+speciesList.get(seq2Species.get(refName))+" "+interval);
+						continue outer;
+					}
+				}
 			}
 			//System.err.println(sam.getReadName()+"\t"+sam.getReferenceName()+"\t"+records.size()+"\t"+sam.isSecondaryOrSupplementary());
 			int mq = sam.getMappingQuality();
@@ -1092,6 +1116,26 @@ public static List<String> speciesToIgnore = null;
 		//samIter.close();
 		
 	}	
+
+	private Map<String, List<Interval>> getIntervals(File excl) {
+		Map<String, List<Interval>> m = new HashMap<String, List<Interval>>();
+		if(excl==null) return m;
+		try{
+			BufferedReader br = new BufferedReader(new FileReader(excl));
+			String st = "";
+			while((st = br.readLine())!=null){
+				String[] str = st.split("\t");
+				String seq = str[1];
+				List<Interval> li = m.get(seq);
+				if(li==null)m.put(seq, li = new ArrayList<Interval>());
+				li.add(new Interval(str));
+			}
+		}catch(Exception exc){
+			exc.printStackTrace();
+		}
+		return m;
+	}
+
 
 	public class RealtimeSpeciesTyper extends RealtimeAnalysis {
 		MultinomialCI rengine;

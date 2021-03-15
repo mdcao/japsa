@@ -52,7 +52,7 @@ public class RealtimeSpeciesTypingTest extends TestCase {
     typing = null;//new RealtimeSpeciesTyping(br, os, null, null); need to fix this
     typing.setMinQual(1);
     typing.setTwoOnly(false);
-    typing.typing(bamFile, readNumber, timeNumber);
+    typing.typing(bamFile, readNumber, timeNumber, null);
     try {
       Thread.sleep(2000);
     } catch (InterruptedException e) {
@@ -79,7 +79,7 @@ public class RealtimeSpeciesTypingTest extends TestCase {
     typing = null;//new RealtimeSpeciesTyping(idxFile, outFile.getAbsolutePath(),null, null);
     typing.setMinQual(1);
     typing.setTwoOnly(false);
-    typing.typing(bamFile, readNumber, timeNumber);
+    typing.typing(bamFile, readNumber, timeNumber,null);
     try {
       LOG.info("start sleep");
       Thread.sleep(5000);
