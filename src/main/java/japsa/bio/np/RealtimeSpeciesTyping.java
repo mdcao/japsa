@@ -93,6 +93,8 @@ import pal.tree.Node;
  */
 public class RealtimeSpeciesTyping {
 	public static boolean reestimate = true;
+	public static int mincount=2; // this for designing regions for MSA
+	public static int minlength =100; // min length for MSA
 	//public static boolean useBases = true;
 	public static double pseudo = 0.001;
 	public static double maxOverlap = .1; // maximum overlap with excl region to remove read
@@ -101,13 +103,18 @@ public class RealtimeSpeciesTyping {
 	public static String fraction_covered="fraction_covered";
 	
 	private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTyping.class);
-	Comparator<Interval> compar = new Comparator<Interval>(){
-
+	Comparator<Interval> compar_start = new Comparator<Interval>(){
 		@Override
 		public int compare(Interval o1, Interval o2) {
 			return Integer.compare(o1.start,o2.start);
 		}
 		
+	};
+	Comparator<Interval> compar_len= new Comparator<Interval>(){
+		@Override
+		public int compare(Interval o1, Interval o2) {
+			return -1*Integer.compare(o1.length(),o2.length());
+		}
 	};
 	public static boolean JSON = false;
 	public static double ALPHA=0.05;
@@ -201,6 +208,9 @@ public class RealtimeSpeciesTyping {
 		public boolean equals(Object o){
 			return start== ((Interval)o).start && end== ((Interval)o).end && coverage== ((Interval)o).coverage;  
 		}
+		public int length() {
+			return end - start+1;
+		}
 		public String toString(){
 			return start+"-"+end+","+bases()+","+coverage;
 		}
@@ -292,8 +302,10 @@ public class RealtimeSpeciesTyping {
 		//SortedMap<Integer, Interval> coverage = new TreeMap<Integer, Interval>(); //based on start
 		
 		
+		
+		
 		//gets all regions with coverage greater than equal to thresh
-				public List<Interval> getRegions(Integer thresh, int index) {
+				public List<Interval> getRegions(Integer thresh, int index, int merge_thresh) {
 					Iterator<Interval> it = this.coverages.get(index).values().iterator();
 					List<Interval> coverage = new ArrayList<Interval>();
 
@@ -304,14 +316,13 @@ public class RealtimeSpeciesTyping {
 						}
 					}
 					if(coverage.size()<=1) return coverage;
-	
-					Collections.sort(coverage, compar);
+					Collections.sort(coverage, compar_start);
 					List<Interval> cov1 = new ArrayList<Interval>();
 					Interval curr = coverage.get(0);
 					cov1.add(curr);
 					for(int i=1; i<coverage.size(); i++){
 						Interval nxt = coverage.get(i);
-						if(curr.overlap(nxt)>=-100){
+						if(curr.overlap(nxt)>=merge_thresh){
 							curr.merge(nxt);
 						}else{
 							curr = nxt;
@@ -825,7 +836,11 @@ public static List<String> speciesToIgnore = null;
 			double[] abund = new double[len];
 			Arrays.fill(abund, pseudo);
 			System.err.println(svs.size()+","+single.size());
-			if(svs.size()==0 && single.size()==0) throw new RuntimeException("nothing");
+		
+			if(svs.size()==0 && single.size()==0){
+				System.err.println("no matches");
+				return;//throw new RuntimeException("nothing");
+			}
 			double tot = pseudo*len;//+svs.size()+single.size();
 			tot+=svs.size()+ single.size();//  add 
 			double score =0;
@@ -1147,13 +1162,14 @@ public static List<String> speciesToIgnore = null;
 		File krakenResults; //kraken formatted results
 		final String sampleID;
 		//File coverageOutput;
-		PrintWriter coverage_out, regions_to_exclude;
+		File outdir; 
+		
 		
 		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t, OutputStream outputStream, String sampleID) throws IOException {
 			typing = t;
+			this.outdir = t.outdir;
 			krakenResults = new File(t.outdir,"results.krkn");
-			coverage_out = new PrintWriter(new FileWriter(new File(t.outdir, "coverage.txt")));
-			regions_to_exclude = new PrintWriter(new FileWriter(new File(t.outdir, "exclude.txt")));
+			
 			rengine = new MultinomialCI(ALPHA);
 this.sampleID = sampleID;
 			countsOS = new SequenceOutputStream(outputStream);
@@ -1199,12 +1215,18 @@ this.sampleID = sampleID;
 			SortedMap<Integer,Integer> segsMap = null;
 
 			SortedMap<Integer,Interval> intervalMap = null;
-
+			PrintWriter  coverage_out = null; PrintWriter  regions_to_exclude = null; PrintWriter regions_to_use= null;
 			if(final_analysis){
 				covMap = new TreeMap<Integer, Integer>();// this can capture the distribution of bases against depth
 				intervalMap = new TreeMap<Integer, Interval>();
 				segsMap = new TreeMap<Integer, Integer>();// this can capture the distribution of bases against depth
-
+				try{
+				coverage_out = new PrintWriter(new FileWriter(new File(outdir, "coverage.txt")));
+				regions_to_exclude = new PrintWriter(new FileWriter(new File(outdir, "exclude.txt")));
+				regions_to_use=  new PrintWriter(new FileWriter(new File(outdir, "consensus_regions.txt")));
+				}catch(IOException exc){
+					exc.printStackTrace();
+				}
 			}
 			for (int i = 0; i < count.length;i++){			
 				if (count[i] >= minCount){
@@ -1221,6 +1243,7 @@ this.sampleID = sampleID;
 						for(int j =0; j<cov.contig_names.size(); j++){
 							
 						  Double[] stats = cov.medianReadCoverage(new double[0], new double[0], j,covMap, intervalMap, segsMap);
+						  
 						  if(covMap!=null){
 							  Entry<Integer,Integer> prev = null;
 							  Integer thresh = null;
@@ -1228,7 +1251,7 @@ this.sampleID = sampleID;
 								  Entry<Integer, Integer> nxt = covs.next();
 								 
 								  if(thresh==null && prev!=null){
-									  if(nxt.getKey()>prev.getKey()+1 ||
+									  if(//nxt.getKey()>prev.getKey()+1 ||
 											 nxt.getValue() > frac* prev.getValue()){
 										  thresh =nxt.getKey();
 									  }
@@ -1237,17 +1260,45 @@ this.sampleID = sampleID;
 								  
 								  Interval iv = intervalMap.get(nxt.getKey());
 								  String iv_str = iv==null ?  "-": iv.toString();
-								  this.coverage_out.println(spec_name+"\t"+cov.contig_names.get(j)+"\t"+nxt.getKey()+"\t"+nxt.getValue()
+								  coverage_out.println(spec_name+"\t"+cov.contig_names.get(j)+"\t"+nxt.getKey()+"\t"+nxt.getValue()
 								  +"\t"+segsMap.get(nxt.getKey())+"\t"+iv_str
 										 );
 							  }
+							  ;
 							  if(thresh!=null){
-								 List<Interval> exclusions =  cov.getRegions(thresh,j);
+								 List<Interval> exclusions =  cov.getRegions(thresh,j, -100);
 								 for(int jk=0; jk<exclusions.size(); jk++){
 									 Interval iv = exclusions.get(jk);
-									 this.regions_to_exclude.println(spec_name+"\t"+cov.contig_names.get(j)+"\t"+ iv.start+"\t"+iv.end+"\t"+iv.coverage);
+									regions_to_exclude.println(spec_name+"\t"+cov.contig_names.get(j)+"\t"+ iv.start+"\t"+iv.end+"\t"+iv.coverage);
 								 }
 							  }
+							List<Integer> keys = new ArrayList<Integer>(covMap.keySet());
+							Collections.sort(keys);
+							for(int jk=keys.size()-1; jk>=0; jk--){
+							  int keyj  =keys.get(jk);
+							  if(keyj>=mincount){
+								  List<Interval> intervals = cov.getRegions(keyj,j, -10);
+								  if(intervals.size()>0){
+									  Collections.sort(intervals, compar_len);
+									  int maxlength = intervals.get(0).length();
+									
+									  if(maxlength>=minlength){
+										 
+										  int ik=0;
+										  while(ik<intervals.size() && intervals.get(ik).length()>=minlength) ik++;
+										  regions_to_use.print(spec_name+"\t"+cov.contig_names.get(j)+"\t"+keyj+"\t"+ik+"\t"+maxlength+"\t");
+										  for(int ik1=0; ik1<ik; ik1++){
+											  Interval iv = intervals.get(ik1);
+											   regions_to_use.print(iv.start+","+iv.end);
+											   if(ik1<ik-1) regions_to_use.print(";");
+											  
+										  }
+										  regions_to_use.println();
+									  }
+								  }
+							  }
+							  
+							}
 						  }
 						  tot_bases+= stats[0];
 						  if(stats[0] >max){
@@ -1293,7 +1344,13 @@ this.sampleID = sampleID;
 			//REXP tab  = rengine.eval("tab",true);  
 			results=rengine.tab();
 			this.order = rengine.rank();
+			if(coverage_out!=null) coverage_out.close();
+			if(regions_to_exclude!=null) regions_to_exclude.close();
+			if(regions_to_use!=null) regions_to_use.close();
 		}
+		
+		
+
 		@Override
 		protected void writeFinalResults() {
 			try{
@@ -1402,8 +1459,7 @@ this.sampleID = sampleID;
 		protected void lastAnalysis(){
 			this.final_analysis=true;
 			simpleAnalysisCurrent();
-			if(coverage_out!=null) this.coverage_out.close();
-			if(this.regions_to_exclude!=null) this.regions_to_exclude.close();
+			
 			try{
 				
 				this.writeResults(-1);//to write all results
