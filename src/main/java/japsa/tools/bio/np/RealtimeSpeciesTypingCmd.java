@@ -90,13 +90,16 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		setDesc(annotation.scriptDesc());
 		addString("resdir", "japsa_species_typing", "Results directory");
 		addString("output", "output.dat",  "Output file, - for standard output");		
-		addString("bamFile", null,  "The bam file",false);	
+		addString("bamFile", null,  "The bam file",false);
+		
 		addString("fastqFile", null, "Fastq file", false);
 		addString("dbPath",null, "path to databases",false);
 		addString("resdb",null, "Resistance database",false);
 		addString("dbs",null, "databases to use in path",false);
 		addString("speciesToRestrict",null, "species to restrict search",false);
 		addBoolean("realtimeAnalysis", false, "whether to run analysis in realtime");
+		addBoolean("alignedOnly", false, "whether to output only the aligned portion of a read in fasta file");
+
 	//	addString("reference", null, "Reference db if fastq is presented", false);
 	//	addString("indexFile", null,  "indexFile ",true);
 		addString("mm2Preset", null,  "mm2Preset ",false);
@@ -260,13 +263,16 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		RealtimeSpeciesTypingCmd.maxReads = cmdLine.getIntVal("maxReads");
 		RealtimeSpeciesTypingCmd.number       = cmdLine.getIntVal("read");
 		RealtimeSpeciesTypingCmd.time       = cmdLine.getIntVal("time");		
-		RealtimeSpeciesTypingCmd.qual      = cmdLine.getDoubleVal("qual");				
+		RealtimeSpeciesTypingCmd.qual      = cmdLine.getDoubleVal("qual");	
+
 		RealtimeSpeciesTypingCmd.twoOnly      = cmdLine.getBooleanVal("twodonly");
 		RealtimeSpeciesTyping.JSON = cmdLine.getBooleanVal("web");
 		RealtimeSpeciesTyping.OUTSEQ = cmdLine.getBooleanVal("log");
 		RealtimeSpeciesTyping.ALPHA = cmdLine.getDoubleVal("alpha");
 		RealtimeSpeciesTyping.MIN_READS_COUNT = cmdLine.getIntVal("minCount");
 		RealtimeSpeciesTyping.writeSep =cmdLine.getStringVal( "writeSep")==null ? null :  Pattern.compile(cmdLine.getStringVal( "writeSep"));
+		RealtimeSpeciesTyping.alignedOnly     = cmdLine.getBooleanVal("alignedOnly");//"qual");				
+
 		//boolean match = RealtimeSpeciesTyping.writeSep.matcher("abcde").find();
 	//System.err.println(match);
 	//if(true) System.exit(0);;

@@ -8,10 +8,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
 
 import htsjdk.samtools.SAMRecord;
+import japsa.bio.np.RealtimeSpeciesTyping;
 
 public abstract class CachedOutput {
 	  public static int max_seqs_per_cluster = Integer.MAX_VALUE;
@@ -24,13 +23,13 @@ public abstract class CachedOutput {
 	  boolean print = false;
 	  public static int MIN_READ_COUNT=20;
 	  public static int buffer = 50;
-	  boolean writeAlignedPortionOnly =false;
+	//  boolean writeAlignedPortionOnly =false;
 	  List<String> nmes = null;
 	  List<Integer> lens = null;
 	
-	 public CachedOutput(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly) {
+	 public CachedOutput(File outdir, String species, boolean separateIntoContigs) {
 		 
-		 this.writeAlignedPortionOnly = alignedOnly;
+	//	 this.writeAlignedPortionOnly = alignedOnly;
 		this.species = species.replace('/', '_');
 			this.separate = separateIntoContigs;
 			this.nmes = new ArrayList<String>();
@@ -88,7 +87,7 @@ public abstract class CachedOutput {
 	}
 	public void writeAll(List<SAMRecord> records, List<String> resclasses) {
 		if(records.size()>0){
-		if(this.writeAlignedPortionOnly){
+		if(RealtimeSpeciesTyping.alignedOnly){
 			for(int i=0; i<records.size(); i++){
 				this.write(records.get(i), resclasses.get(i));
 			}

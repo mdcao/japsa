@@ -253,8 +253,8 @@ public class RealtimeSpeciesTyping {
 	 *  */
 	class Coverage{
 		
-		Coverage(String species,  Node node, File fastqdir, boolean writeSep1, boolean hierarchical, boolean fasta, boolean separateIntoContigs, 
-				boolean alignedOnly){
+		Coverage(String species,  Node node, File fastqdir, boolean writeSep1, boolean hierarchical, boolean fasta, boolean separateIntoContigs
+			){
 			this.species = species;
 			this.node = node;
 			fqw = null;
@@ -269,8 +269,8 @@ public class RealtimeSpeciesTyping {
 					fastqdir = new File(fastqdir.getAbsolutePath()+sd.toString());
 				}
 				
-				fqw = fasta ? new CachedSequenceOutputStream(fastqdir, species, true, true) : 
-				new CachedFastqWriter(fastqdir, species, separateIntoContigs, alignedOnly);
+				fqw = fasta ? new CachedSequenceOutputStream(fastqdir, species, true) : 
+				new CachedFastqWriter(fastqdir, species, separateIntoContigs);
 
 			}
 			
@@ -499,9 +499,9 @@ public class RealtimeSpeciesTyping {
 				SAMRecord sam= sams.get(i);
 				//if(node==null) node = tree.getNode(species);
 				if(fqw!=null){	
-					sam.setReadName(sam.getReadName()+" "+sam.getReferenceName()+":"+sam.getAlignmentStart()+"-"+sam.getAlignmentEnd()+" "+sam.getMappingQuality());
-				
-					fqw.write(sam, this.species);
+					//sam.setReadName(sam.getReadName()+" "+sam.getReferenceName()+":"+sam.getAlignmentStart()+"-"+sam.getAlignmentEnd()+" "+sam.getMappingQuality());
+					if(alignedOnly || i==0)  fqw.write(sam, this.species);
+					
 				}
 			
 			this.addInterval(sam.getReferenceName(),sam.getAlignmentStart(), sam.getAlignmentEnd());
@@ -717,7 +717,7 @@ public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Sp
 public static boolean hierarchical = false;
 public static boolean separateIntoContigs = false; // whether to do separate file for each contig
 public static boolean alignedOnly = false; // whether just to output the aligned component in the output fastq
-public static boolean fastaOutput = false;
+public static boolean fastaOutput = true;
 HashMap<String, Integer> species2Len = new HashMap<String, Integer>();
 HashMap<String, Integer> species2Index = new HashMap<String, Integer>();
 public static List<String> speciesToIgnore = null;
@@ -742,7 +742,7 @@ public static List<String> speciesToIgnore = null;
 					&& (speciesToIgnore==null || ! speciesToIgnore.contains(sp))
 					&& writeSep.matcher(sp).find();
 				Node n =tree.getNode(sp);
-				species2ReadList.add(new Coverage(sp,n, 	fastqdir, writeSep1, hierarchical, fastaOutput, separateIntoContigs, alignedOnly));			
+				species2ReadList.add(new Coverage(sp,n, 	fastqdir, writeSep1, hierarchical, fastaOutput, separateIntoContigs));			
 		}
 	//	tree.makeTrees();
 		

@@ -9,12 +9,15 @@ import java.util.Map;
 import java.util.Stack;
 
 import htsjdk.samtools.SAMRecord;
+import japsa.bio.np.RealtimeSpeciesTyping;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 
 /** this enables splitting of output sequences into species specific bams */
 public class CachedSequenceOutputStream extends CachedOutput {
+	
+	public static int remainderThresh = Integer.MAX_VALUE;// limit to write remainder sequence
 	 public  void  getOutFile(List<String> fi){
 		  for(int i=0; i<l.size(); i++){
 			  if(l.get(i).printed>0) fi.add(outdir+"/"+ l.get(i).nme1);
@@ -72,8 +75,8 @@ public class CachedSequenceOutputStream extends CachedOutput {
 	  List<Inner> l = new ArrayList<Inner>();
 	  final  Inner remainder;
 	
-	  public CachedSequenceOutputStream(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly) {
-		super(outdir, species, separateIntoContigs, alignedOnly);
+	  public CachedSequenceOutputStream(File outdir, String species, boolean separateIntoContig) {
+		super(outdir, species, separateIntoContig);
 		this.l = new ArrayList<Inner>();
 		this.remainder = new Inner("remainder.fa");
 	}
@@ -84,23 +87,34 @@ public class CachedSequenceOutputStream extends CachedOutput {
  }
 
  public void write(SAMRecord sam, String annotation)  {
+	 boolean primary  = !sam.isSecondaryOrSupplementary();
+	 
+	 
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
-	  if(writeAlignedPortionOnly) {
-		  int st = sam.getReadPositionAtReferencePosition(sam.getAlignmentStart());
-			int end = sam.getReadPositionAtReferencePosition(sam.getAlignmentEnd());
-			 if(st > 100){
+	  int stA = sam.getAlignmentStart();
+	  int endA = sam.getAlignmentEnd();
+	  int st = sam.getReadPositionAtReferencePosition(stA);
+		int end = sam.getReadPositionAtReferencePosition(endA);
+		  String desc = sam.getReferenceName()+":"+stA+","+endA;//
+
+	  if(RealtimeSpeciesTyping.alignedOnly) {
+			 if(primary && st > remainderThresh){
 		  		 this.remainder.push(new Sequence(alpha, readSeq.substring(0,st-1), nme+".L."+st));
-		  }
-		  if(end < sam.getReadLength()-100){
-			  	this.remainder.push(new Sequence(alpha, readSeq.substring(end,sam.getReadLength()), nme+".R."+end));
-		  }
+			 }
+			  if(primary && end < sam.getReadLength()-remainderThresh){
+				  	this.remainder.push(new Sequence(alpha, readSeq.substring(end,sam.getReadLength()), nme+".R."+end));
+			  }
 		  readSeq =  readSeq.substring(st-1,end); // because sam is 1-based
-	  		nme = nme+" "+st+"-"+end+" "+sam.isSecondaryOrSupplementary();
+	  		nme = nme+"."+st+"_"+end;
+	 
+ 	  }else{
+ 		  desc = desc +" read:"+st+","+end;
  	  }
 	  String ref = separate  ? sam.getReferenceName() : species;
 	  Sequence repeat =  new Sequence(alpha, readSeq,	nme+"_"+annotation);
+	  repeat.setDesc(desc);
 	  total_count++;
 	//  System.err.println(total_count);
 	  if(! print && total_count> MIN_READ_COUNT) {

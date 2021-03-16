@@ -13,6 +13,7 @@ import java.util.zip.GZIPOutputStream;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
+import japsa.bio.np.RealtimeSpeciesTyping;
 
 /** this enables splitting of output sequences into species specific bams */
 public class CachedFastqWriter extends CachedOutput{
@@ -100,11 +101,11 @@ public class CachedFastqWriter extends CachedOutput{
   }
   List<Inner> l = new ArrayList<Inner>();
   final  Inner remainder; // for leftOver seqs
-  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly){
-	  this(outdir, species, separateIntoContigs, alignedOnly, false);
+  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs){
+	  this(outdir, species, separateIntoContigs, false);
   }
-  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly, boolean writeRemainder) {
-	  super(outdir, species, separateIntoContigs, alignedOnly);
+  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean writeRemainder) {
+	  super(outdir, species, separateIntoContigs);
 	  this.l = new ArrayList<Inner>();
 	   this.remainder = writeRemainder ? new Inner("remainder.fq") : null;
 	}
@@ -117,7 +118,7 @@ public class CachedFastqWriter extends CachedOutput{
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
-	  if(writeAlignedPortionOnly) {
+	  if(RealtimeSpeciesTyping.alignedOnly) {
 		  int st = sam.getReadPositionAtReferencePosition(sam.getAlignmentStart());
 			int end = sam.getReadPositionAtReferencePosition(sam.getAlignmentEnd());
 		  if(remainder!=null){
