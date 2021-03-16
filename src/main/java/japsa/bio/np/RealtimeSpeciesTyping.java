@@ -95,6 +95,7 @@ public class RealtimeSpeciesTyping {
 	public static boolean reestimate = true;
 	//public static boolean useBases = true;
 	public static double pseudo = 0.001;
+	public static double maxOverlap = .1; // maximum overlap with excl region to remove read
 	public static double base=2; // lower numbers spread out the probability distribution, however it should be base10
 	public static String bases_covered = "bases_covered";
 	public static String fraction_covered="fraction_covered";
@@ -1028,11 +1029,13 @@ public static List<String> speciesToIgnore = null;
 				continue;			
 			}
 //			String rn = sam.getReferenceName();
+			int len = sam.getAlignmentEnd() - sam.getAlignmentStart()+1;
 			List<Interval>lis = li.get(refName);
 			if(lis!=null){
 				for(int jk=0; jk<lis.size(); jk++){
-					if(lis.get(jk).overlap(interval)>=0){
-						System.err.println("overlaps excluded region "+speciesList.get(seq2Species.get(refName))+" "+interval);
+					double overlapR = lis.get(jk).overlap(interval)/(double )len;
+					if(overlapR>0.1 ){
+						System.err.println("overlaps excluded region "+speciesList.get(seq2Species.get(refName))+" "+interval+" "+overlapR);
 						continue outer;
 					}
 				}

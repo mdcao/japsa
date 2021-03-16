@@ -124,10 +124,10 @@ public class SequenceUtils {
 		   * Perform the copy operation in a separate thread
 		   */
 		  public void run () {
+			  try{
 		    String value0, value1,value2, value3; //fastq lines
 		   boolean process = true;
 		   for(int i =0; i<max; i++) {
-		      try {
 		        value0 = _process1Output.readLine();
 		        if (value0 == null) break;  // end of input stream
 		        value1 = _process1Output.readLine();
@@ -149,18 +149,15 @@ public class SequenceUtils {
 		        	_process2Input.flush();
 		        }
 		        if(readsToInclude!=null && readsToInclude.size()==0) break; // no more reads to include
-		      }
-		      catch (IOException error) {
-		        break;
-		      }
 		    }
 		   
 		System.err.println("finished piping input data");
-		    try {
+		   
 		      _process1Output.close();
 		    }
-		    catch (IOException error) {}
-		  
+		    catch (IOException error) {
+		    	error.printStackTrace();
+		    }
 		      _process2Input.close();
 		  }
 		}
