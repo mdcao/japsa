@@ -188,7 +188,7 @@ public class ErrorCorrection {
 			}
 
 			LOG.info("Running " + Arrays.toString(cmd));
-			ProcessBuilder builder = new ProcessBuilder(cmd).redirectErrorStream(true);
+			ProcessBuilder builder = new ProcessBuilder(cmd).redirectError(new File("kalign_err.txt"));
 			if (msa.startsWith("spoa")){
 				builder.redirectOutput(new File(faoFile));			
 			}
