@@ -515,21 +515,25 @@ Map<String, Integer> name2Taxa= new HashMap<String, Integer>();
 
 final int index;
 
-
-
-
 public NCBITree(File file, boolean useTaxaAsAsslug, boolean kraken) throws IOException {
+this(new File[] {file}, useTaxaAsAsslug, kraken);
+}
+
+
+
+public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOException {
 //	this(f, null);
 	index = kraken ? 5 : 0;
 	this.kraken = kraken;
 	    this.useTaxaAsSlug = useTaxaAsAsslug;
 		err= new PrintWriter(new FileWriter(new File("error.txt")));
 		BufferedReader br;
-		if(file.getName().endsWith(".gz")){
-			br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
+		for(int i=0; i<file.length; i++){
+		if(file[i].getName().endsWith(".gz")){
+			br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file[i]))));
 		}
 		else{
-			br = new BufferedReader(new FileReader(file));
+			br = new BufferedReader(new FileReader(file[i]));
 		}
 		String nextLine = br.readLine();
 		if(nextLine.indexOf("unclassified")>=0){
@@ -587,15 +591,16 @@ public NCBITree(File file, boolean useTaxaAsAsslug, boolean kraken) throws IOExc
 		
 		}
 		br.close();
+		}
 	   if(err!=null){
 		   err.close();
 	   }
-		for(int i=1; i<roots.size(); i++){
-			Node root = roots.get(i);
-			if(root.getIdentifier().getName().equals("unclassified")){
-				throw new RuntimeException("unclassified should be first entry, if it exists");
-			}
-		}
+		//for(int i=1; i<roots.size(); i++){
+		//	Node root = roots.get(i);
+		//	if(root.getIdentifier().getName().equals("unclassified")){
+		//		throw new RuntimeException("unclassified should be first entry, if it exists");
+		//	}
+		//}
 		if(!kraken)makeTrees();
 	}
 		

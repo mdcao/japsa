@@ -89,10 +89,11 @@ public class MergeKrakenCmd extends CommandLine{
 			}
 		}
 		Collections.sort(f);
-			KrakenTree[] kt = new KrakenTree[f.size()];
-			for(int i=0; i<kt.length; i++){
-				kt[i] = new KrakenTree(new File(f.get(i)));
-				kt[i].modAll(i, kt.length+ extra.length);
+			List<KrakenTree> kt = new ArrayList<KrakenTree>();
+			for(int i=0; i<f.size(); i++){
+				//kt[i] = new KrakenTree(new File(f.get(i)));
+				KrakenTree kti = new KrakenTree(new File(f.get(i)),regex);
+				kt.add(kti);
 			//	kt[i].print(new File(i+".combined.txt"),"",
 				//		header.toString()
 					//	);
@@ -100,11 +101,13 @@ public class MergeKrakenCmd extends CommandLine{
 			}
 			
 			
-			NCBITree combined = kt[0];
-			for(int j=1; j<kt.length; j++){
-				combined.merge(kt[j], j);
+			NCBITree combined = kt.get(0);
+			combined.modAll(0, kt.size()+ extra.length);
+			for(int j=1; j<kt.size(); j++){
+				kt.get(j).modAll(j, kt.size()+ extra.length);
+				combined.merge(kt.get(j), j);
 			}
-			int len = kt.length;
+			int len = kt.size();
 			
 			for(int i=0; i<extra.length; i++){
 				BufferedReader br = new BufferedReader(new FileReader(extra[i]));
@@ -152,7 +155,7 @@ public class MergeKrakenCmd extends CommandLine{
 			designF.println("Name,Grp1,Grp2");
 		
 			for(int i=0; i<f.size(); i++){
-				String nmei = f.get(i);
+				String nmei = f.get(i).replaceAll("./", "");
 				header.append("\t");
 				
 			//	String	nmei = fi.getName();
@@ -166,8 +169,9 @@ public class MergeKrakenCmd extends CommandLine{
 				}
 					//nmei = nmei+fi.getName();
 				//}
-				designF.println(split[split.length-1]+","+(i+1)+","+grp);
-				header.append(split[split.length-1]);
+				nmei = nmei.replace("results.krkn", "");
+				designF.println(nmei+","+(i+1)+","+grp);
+				header.append(nmei);
 			}
 			designF.close();
 			for(int i=0; i<extra.length; i++){
