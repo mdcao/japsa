@@ -58,10 +58,10 @@ public  class NCBITree extends CommonTree {
 						for(int j=0; j<tags.length; j++)
 						{
 							String count_tag2 = tags[j];
-							Integer cnt = (Integer) id.getAttribute(count_tag2);
-							if(cnt==null) cnt=0;
+							Integer[] cnt = (Integer[]) id.getAttribute(count_tag2);
+							if(cnt==null) cnt=new Integer[] {0};
 							Integer[] v = new Integer[len];
-							v[i] = cnt;
+							v[i] = cnt[0];
 							id.setAttribute(count_tag2, v);
 						}
 					}
@@ -395,13 +395,13 @@ private Node make(String line_, int  level, Node parent, int index){
 	   n.getIdentifier().setAttribute("prefix",prefix);
 	   Integer taxonvalue = null;
 	   if(kraken && !line.equals("unclassified")){
-		   int taxon =Integer.parseInt(lines[index-1]); 
+		   int taxon =  lines[index-1].equals("null") ? 0 : Integer.parseInt(lines[index-1]); 
 		   this.name2Taxa.put(name, taxon);
 		 //  this.taxa2Node.put(taxon, n);
 		   n.getIdentifier().setAttribute("taxon",taxon);
 		  // Integer[] l1 = new Integer[] {Integer.parseInt(lines[1]), Integer.parseInt(lines[2])};
-		   n.getIdentifier().setAttribute(NCBITree.count_tag,Integer.parseInt(lines[1]));
-		   n.getIdentifier().setAttribute(NCBITree.count_tag1,Integer.parseInt(lines[2]));
+		   n.getIdentifier().setAttribute(NCBITree.count_tag,new Integer[] {Integer.parseInt(lines[1])});
+		   n.getIdentifier().setAttribute(NCBITree.count_tag1,new Integer[] {Integer.parseInt(lines[2])});
 
 	   }else{
 	  for(int i=1; i<lines.length; i++){
@@ -528,7 +528,7 @@ public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOE
 	    this.useTaxaAsSlug = useTaxaAsAsslug;
 		err= new PrintWriter(new FileWriter(new File("error.txt")));
 		BufferedReader br;
-		for(int i=0; i<file.length; i++){
+		inner1: for(int i=0; i<file.length; i++){
 		if(file[i].getName().endsWith(".gz")){
 			br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file[i]))));
 		}
@@ -536,6 +536,10 @@ public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOE
 			br = new BufferedReader(new FileReader(file[i]));
 		}
 		String nextLine = br.readLine();
+		if(nextLine==null) {
+			br.close();
+			continue inner1;
+		}
 		if(nextLine.indexOf("unclassified")>=0){
 			nextLine = br.readLine();
 		}

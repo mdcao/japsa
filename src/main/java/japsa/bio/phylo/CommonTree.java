@@ -36,16 +36,19 @@ public abstract class CommonTree {
 		 String alias1 = ((String)id.getAttribute("alias1"));	
 		 String prefix = ((String)id.getAttribute("prefix"));	
 		 Integer taxon = ((Integer)id.getAttribute("taxon"));	
+		 if(taxon==null || taxon <0) return;
 		 double height = node.getNodeHeight();
+		
 		 Integer[] nt = (Integer[] ) id.getAttribute(NCBITree.count_tag);
 		 Integer[] nt1 = (Integer[] ) id.getAttribute(NCBITree.count_tag1);
-		 String perc = String.format("%5.3g", 100*(double)nt[0]/ (double) total).trim();
+		 String perc = nt==null ? "null": String.format("%5.3g", 100*(double)nt[0]/ (double) total).trim();
 		/* if(taxon==null){
 			 taxon=0; nme="root";
 		 }*/
+		 String cntString = nt==null ? "NA\tNA": nt[0]+"\t"+nt1[0];
 		 Double coverage = (Double) id.getAttribute(RealtimeSpeciesTyping.fraction_covered);
 		 if(coverage==null) coverage =Double.NaN;
-		 pw.print(perc+"\t"+nt[0]+"\t"+nt1[0]+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+String.format("%5.3g",coverage).trim());
+		 pw.print(perc+"\t"+cntString+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+String.format("%5.3g",coverage).trim());
 		 pw.println();
 	}
 	public void print(Node node, PrintStream pw, String[] attributes, String[] format){
@@ -102,8 +105,12 @@ public abstract class CommonTree {
 		   if(!kraken_style) pw.println(header);
 		   int total =0;
 			for(int i=roots.size()-1;i>=0; i--){
-				Integer[] cnts = (Integer[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
-				if(cnts!=null)		for(int j=0; j<cnts.length; j++) total+=cnts[j];
+				Object cnts =  roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
+				if(cnts!=null){
+					if(cnts instanceof Integer[] )	for(int j=0; j<((Integer[])cnts).length; j++) total+=((Integer[]) cnts)[j];
+					else if(cnts instanceof Integer )	total+=((Integer) cnts);
+					
+				}
 			}
 		   for(int i=0; i<this.roots.size(); i++){
 			   System.err.println(roots.get(i).getIdentifier().getName());

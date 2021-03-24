@@ -55,6 +55,7 @@ import htsjdk.samtools.ValidationStringency;
 import japsa.bio.np.RealtimeResistanceGene;
 import japsa.bio.np.RealtimeSpeciesTyping;
 import japsa.bio.phylo.CSSProcessCommand;
+import japsa.bio.phylo.KrakenTree;
 import japsa.bio.phylo.NCBITree;
 import japsa.bio.phylo.Trie;
 import japsa.tools.seq.CachedOutput;
@@ -308,11 +309,13 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String[] fastqFiles = fastqFile==null ? null : fastqFile.split(":");
 		String[] bamFiles = bamFile==null ? null : bamFile.split(":");
 		List<String> unmapped_reads = dbs.length>1 ? new ArrayList<String>(): null;
+		File outdirTop = null;
 		inner: for(int i=0; i<dbs.length; i++){
 			System.err.println(dbs[i]);
 			ReferenceDB refDB = new ReferenceDB(dbPath, dbs[i], speciesFile);
-			speciesTyping(refDB, i==0 ? resdir : null, readList, bamFiles, fastqFiles, output,
+			File outD = speciesTyping(refDB, i==0 ? resdir : null, readList, bamFiles, fastqFiles, output,
 							out_fastq, i==dbs.length-1 ? null : unmapped_reads, excl);
+			if(outdirTop==null && !dbs[i].equals("Human")) outdirTop = outD;
 			bamFiles = null;
 			if(unmapped_reads==null) break inner;
 			fastqFiles = unmapped_reads.toArray(new String[0]);
@@ -325,7 +328,11 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 			unmapped_reads.clear();
 			if(fastqFiles.length==0) break inner;
 		}
-	
+		if(outdirTop!=null){
+		KrakenTree overall = new  KrakenTree(outdirTop, "results.krkn");
+		//overa.trim(1e-16);
+		overall.print(new File(outdirTop,"results_combined.krkn"), new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
+		}
 		if(resDB!=null && out_fastq.size()>0){
 			SequenceUtils.secondary = true;
 			CachedOutput.MIN_READ_COUNT=2;
@@ -338,7 +345,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 	}
 	
 	
-	public static void speciesTyping(ReferenceDB refDB, File resdir, String readList,
+	public static File speciesTyping(ReferenceDB refDB, File resdir, String readList,
 		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq , 
 		 List<String> unmapped_reads, File exclude
 			) throws IOException, InterruptedException{
@@ -378,7 +385,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 				}
 				//files[k] = paTyping.unmapped_reads;  // unmapped reads taken forward to next database
 	//	}dbs
-		
+		return outdir;
 		//paTyping.typing(bamFile, number, time);		
 	}
 }
