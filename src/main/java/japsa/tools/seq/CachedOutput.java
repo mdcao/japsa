@@ -41,7 +41,7 @@ public abstract class CachedOutput {
 			//  this.outdir.mkdirs();
 			
 	}
-	public abstract void write(SAMRecord sam, String annotation);
+	public abstract void write(SAMRecord sam, String annotation, RealtimeSpeciesTyping.Interval interval);
 	protected abstract String modify(String in);
 	 public abstract void close(Map<String, Integer> species2Len);
 	 
@@ -83,7 +83,7 @@ public abstract class CachedOutput {
 	}
 	public void close() {
 	this.close(null);	// TODO Auto-generated method stub
-		
+		if(outdir.listFiles().length==0) outdir.delete();
 	}
 	public void writeAll(List<SAMRecord> records, List<String> resclasses) {
 		if(records.size()>0){
@@ -101,6 +101,9 @@ public abstract class CachedOutput {
 			this.write(records.get(0), sb.toString());
 		}
 		}
+	}
+	public  void write(SAMRecord samRecord, String string) {
+		this.write(samRecord, string, null);
 	}
 	
 }

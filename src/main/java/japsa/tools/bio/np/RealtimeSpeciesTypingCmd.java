@@ -107,7 +107,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		addString("mm2_path", "/sw/minimap2/current/minimap2",  "minimap2 path", false);
 		addString("readList", null,  "file with reads to include", false);
 		addInt("maxReads",Integer.MAX_VALUE, "max reads to process", false );
-		
+		addInt("minCoverage",2, "minimum coverage from consensus file", false );
+		addInt("minLength",500, "minimum length from consensus file", false );
 		//addString("mm2Preset", "splice",  "preset for minimap2", false);
 	//	addBoolean("writeBed", false, "whether to write bed",false);
 		//addString("mm2Preset", "map-ont",  "preset for minimap2", false);
@@ -115,7 +116,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		long mem = (Runtime.getRuntime().maxMemory()-1000000000);
 		addString("mm2_memory", mem+"",  "minimap2 memory", false);
 		addString("excludeFile",null,  "file of regions to exclude", false);
-
+		addString("consensusFile",null,  "file of regions to use for building consensus", false);
 		addDouble("fail_thresh", 7.0,  "median phred quality of read", false);
 		addInt("mm2_threads", 4, "threads for mm2", false);
 		addDouble("qual", 1,  "Minimum alignment quality");
@@ -273,6 +274,8 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		RealtimeSpeciesTyping.MIN_READS_COUNT = cmdLine.getIntVal("minCount");
 		RealtimeSpeciesTyping.writeSep =cmdLine.getStringVal( "writeSep")==null ? null :  Pattern.compile(cmdLine.getStringVal( "writeSep"));
 		RealtimeSpeciesTyping.alignedOnly     = cmdLine.getBooleanVal("alignedOnly");//"qual");				
+		RealtimeSpeciesTyping.minCoverage = cmdLine.getIntVal("minCoverage");
+		RealtimeSpeciesTyping.minlength = cmdLine.getIntVal("minLength");
 
 		//boolean match = RealtimeSpeciesTyping.writeSep.matcher("abcde").find();
 	//System.err.println(match);
@@ -305,7 +308,9 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 		String speciesFile=cmdLine.getStringVal("species");
 		List<String> out_fastq = new ArrayList<String>();
 		String exclfile = cmdLine.getStringVal("excludeFile");
-		File excl = exclfile==null ? null : new File(exclfile);
+		String consensusFile = cmdLine.getStringVal("consensusFile");
+		//File excl = exclfile==null ? null : new File(exclfile);
+		//File consensus = consensusFile==null ? null : new File(consensusFile);
 		String[] fastqFiles = fastqFile==null ? null : fastqFile.split(":");
 		String[] bamFiles = bamFile==null ? null : bamFile.split(":");
 		List<String> unmapped_reads = dbs.length>1 ? new ArrayList<String>(): null;
@@ -314,7 +319,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 			System.err.println(dbs[i]);
 			ReferenceDB refDB = new ReferenceDB(dbPath, dbs[i], speciesFile);
 			File outD = speciesTyping(refDB, i==0 ? resdir : null, readList, bamFiles, fastqFiles, output,
-							out_fastq, i==dbs.length-1 ? null : unmapped_reads, excl);
+							out_fastq, i==dbs.length-1 ? null : unmapped_reads, exclfile, consensusFile);
 			if(outdirTop==null && !dbs[i].equals("Human")) outdirTop = outD;
 			bamFiles = null;
 			if(unmapped_reads==null) break inner;
@@ -347,7 +352,7 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 	
 	public static File speciesTyping(ReferenceDB refDB, File resdir, String readList,
 		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq , 
-		 List<String> unmapped_reads, File exclude
+		 List<String> unmapped_reads, String exclude, String consensus
 			) throws IOException, InterruptedException{
 		
 		
@@ -366,14 +371,14 @@ public class RealtimeSpeciesTypingCmd extends CommandLine {
 			
 			//	SamReader samReader = readers.size()>0 ? readers.get(k) : null;
 				RealtimeSpeciesTyping paTyping =
-						new RealtimeSpeciesTyping(refDB.speciesIndex,	
+						new RealtimeSpeciesTyping(refDB.speciesIndex,	exclude,consensus,
 								refDB.tree, output,outdir,  refDB.refFile, unmapped_reads!=null);
 				
 				paTyping.setMinQual(qual);
 				paTyping.setTwoOnly(twoOnly);	
 				paTyping.setFilter(filter);
 				try{
-				paTyping.typing(samIter, number, time, exclude);
+				paTyping.typing(samIter, number, time);
 				}catch(InterruptedException exc){
 					exc.printStackTrace();
 				}

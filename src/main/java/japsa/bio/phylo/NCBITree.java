@@ -537,6 +537,7 @@ public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOE
 		}
 		String nextLine = br.readLine();
 		if(nextLine==null) {
+			System.err.println("input file was empty "+file[i].getName());
 			br.close();
 			continue inner1;
 		}

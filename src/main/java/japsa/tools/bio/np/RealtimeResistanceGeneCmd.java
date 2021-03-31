@@ -162,7 +162,8 @@ public static Pattern writeABX = null;
 		String dbPath =  cmdLine.getStringVal("dbPath");
 		String[] dbs = cmdLine.getStringVal("dbs") == null ? null : cmdLine.getStringVal("dbs").split(":");
 		String[] fastqFiles = outfiles.toArray(new String[0]);
-		File excl = null;// can add in excl file here
+		String excl = null;// can add in excl file here
+		String consensus = null;
 		if(dbPath!=null && dbs!=null && outfiles.size()>0){
 			
 			CachedOutput.MIN_READ_COUNT=RealtimeSpeciesTyping.MIN_READS_COUNT;
@@ -179,7 +180,7 @@ public static Pattern writeABX = null;
 					List<String> species_output_files = new ArrayList<String>();
 				//	if(fastqFiles.length==0) break;
 					File outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null,fqFiles,  "output.dat", species_output_files,
-							i==dbs.length-1 ? null : unmapped_reads, excl);
+							i==dbs.length-1 ? null : unmapped_reads, excl, consensus);
 					if(outdirTop==null && !dbs[i].equals("Human"))  outdirTop = outD;
 					if(unmapped_reads==null) break inner;
 					fqFiles = unmapped_reads.toArray(new String[0]);

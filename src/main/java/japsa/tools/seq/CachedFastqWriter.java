@@ -114,13 +114,15 @@ public class CachedFastqWriter extends CachedOutput{
 		 return ref.replace('|', '_')+".fq";
 	 }
 
-  public void write(SAMRecord sam, String annotation)  {
+  public void write(SAMRecord sam, String annotation, RealtimeSpeciesTyping.Interval interval)  {
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
 	  if(RealtimeSpeciesTyping.alignedOnly) {
-		  int st = sam.getReadPositionAtReferencePosition(sam.getAlignmentStart());
-			int end = sam.getReadPositionAtReferencePosition(sam.getAlignmentEnd());
+		  int stA = interval==null ? sam.getAlignmentStart() : Math.max(interval.start, sam.getAlignmentStart());
+		  int endA = interval==null ? sam.getAlignmentEnd() : Math.min(interval.end, sam.getAlignmentEnd());
+		  int st = sam.getReadPositionAtReferencePosition(stA);
+			int end = sam.getReadPositionAtReferencePosition(endA);
 		  if(remainder!=null){
 			
 				if(st > 100){
@@ -135,6 +137,7 @@ public class CachedFastqWriter extends CachedOutput{
 	  	nme = nme+" "+st+"-"+end+" "+sam.isSecondaryOrSupplementary();
   	  }
 	  String ref = separate  ? sam.getReferenceName() : species;
+	  if(interval!=null) ref = ref+"."+interval.start+"."+interval.end;
 	  FastqRecord repeat =  new FastqRecord(nme+"__"+annotation,	readSeq,	"",baseQ);
 	  total_count++;
 	  if(! print && total_count>= MIN_READ_COUNT) {

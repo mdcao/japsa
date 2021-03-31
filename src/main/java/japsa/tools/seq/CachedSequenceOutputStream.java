@@ -10,6 +10,7 @@ import java.util.Stack;
 
 import htsjdk.samtools.SAMRecord;
 import japsa.bio.np.RealtimeSpeciesTyping;
+import japsa.bio.np.RealtimeSpeciesTyping.Interval;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
@@ -37,15 +38,15 @@ public class CachedSequenceOutputStream extends CachedOutput {
 		  }
 		  public void push(Object fqw){
 			  stack.push(fqw);
-			  if(print ){
+			  if(print  && stack.size()>=buffer){
 				  clear();
 			  }
 		  }
 		  public void clear(){
 			  try{
-				  if(print){
+				  if(print && (stack.size()+printed) >= MIN_READ_COUNT){
 					  if(fqw_os==null && stack.size()>0 ) {
-						  fqw_os =  new SequenceOutputStream(new FileOutputStream((new File(outdir, nme1))));  
+						  fqw_os =  new SequenceOutputStream(new FileOutputStream((new File(outdir, nme1+"_"+stack.size()))));  
 					  }
 					
 						  while(stack.size()>0){
@@ -86,17 +87,20 @@ public class CachedSequenceOutputStream extends CachedOutput {
 	 return ref.replace('|', '_')+".fa";
  }
 
- public void write(SAMRecord sam, String annotation)  {
+
+ // interval is target interval in reference
+ public void write(SAMRecord sam, String annotation, RealtimeSpeciesTyping.Interval interval)  {
 	 boolean primary  = !sam.isSecondaryOrSupplementary();
 	 
 	 
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
-	  int stA = sam.getAlignmentStart();
-	  int endA = sam.getAlignmentEnd();
-	  int st = sam.getReadPositionAtReferencePosition(stA);
-		int end = sam.getReadPositionAtReferencePosition(endA);
+	  int stA = interval==null ? sam.getAlignmentStart() : Math.max(interval.start, sam.getAlignmentStart());
+	  int endA = interval==null ? sam.getAlignmentEnd() : Math.min(interval.end, sam.getAlignmentEnd());
+	  
+	  int st = sam.getReadPositionAtReferencePosition(stA, true);
+		int end = sam.getReadPositionAtReferencePosition(endA, true);
 		  String desc = sam.getReferenceName()+":"+stA+","+endA;//
 
 	  if(RealtimeSpeciesTyping.alignedOnly) {
@@ -106,18 +110,22 @@ public class CachedSequenceOutputStream extends CachedOutput {
 			  if(primary && end < sam.getReadLength()-remainderThresh){
 				  	this.remainder.push(new Sequence(alpha, readSeq.substring(end,sam.getReadLength()), nme+".R."+end));
 			  }
-		  readSeq =  readSeq.substring(st-1,end); // because sam is 1-based
+			  if(st <0 || end-1 >=readSeq.length()){
+				  throw new RuntimeException("out of bounds");
+			  }
+		  readSeq =  readSeq.substring(st,end); // because sam is 1-based
 	  		nme = nme+"."+st+"_"+end;
 	 
  	  }else{
  		  desc = desc +" read:"+st+","+end;
  	  }
 	  String ref = separate  ? sam.getReferenceName() : species;
+	  if(interval!=null) ref = ref+"."+interval.start+"-"+interval.end+"."+interval.coverage;
 	  Sequence repeat =  new Sequence(alpha, readSeq,	nme+"_"+annotation);
 	  repeat.setDesc(desc);
 	  total_count++;
 	//  System.err.println(total_count);
-	  if(! print && total_count> MIN_READ_COUNT) {
+	  if(! print && total_count>= MIN_READ_COUNT) {
 		  print = true;
 		  this.outdir.mkdirs();
 	  }
@@ -140,7 +148,7 @@ public void close(Map<String, Integer> species2Len){
 		l.get(i).close();
 	}
 	this.remainder.close();
-	super.writeAssemblyCommand(species2Len);
+//	super.writeAssemblyCommand(species2Len);
 	
 }
 
