@@ -133,7 +133,7 @@ public class CachedFastqWriter extends CachedOutput{
 			  }
 		  }
 			//char strand = sam.getReadNegativeStrandFlag() ? '-' : '+';
-	  	readSeq =  readSeq.substring(st-1,end); // because sam is 1-based
+	  	readSeq =  readSeq.substring(st,end); // because sam is 1-based
 	  	nme = nme+" "+st+"-"+end+" "+sam.isSecondaryOrSupplementary();
   	  }
 	  String ref = separate  ? sam.getReferenceName() : species;

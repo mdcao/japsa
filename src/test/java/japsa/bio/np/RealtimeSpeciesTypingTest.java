@@ -1,15 +1,23 @@
 package japsa.bio.np;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import junit.framework.TestCase;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import junit.framework.TestCase;
 
 public class RealtimeSpeciesTypingTest extends TestCase {
   private static final Logger LOG = LoggerFactory.getLogger(RealtimeSpeciesTypingTest.class);
@@ -52,7 +60,7 @@ public class RealtimeSpeciesTypingTest extends TestCase {
     typing = null;//new RealtimeSpeciesTyping(br, os, null, null); need to fix this
     typing.setMinQual(1);
     typing.setTwoOnly(false);
-    typing.typing(bamFile, readNumber, timeNumber, null);
+    typing.typing(bamFile, readNumber, timeNumber, new ArrayList<String>());
     try {
       Thread.sleep(2000);
     } catch (InterruptedException e) {
@@ -79,7 +87,8 @@ public class RealtimeSpeciesTypingTest extends TestCase {
     typing = null;//new RealtimeSpeciesTyping(idxFile, outFile.getAbsolutePath(),null, null);
     typing.setMinQual(1);
     typing.setTwoOnly(false);
-    typing.typing(bamFile, readNumber, timeNumber,null);
+   List<String> species = new ArrayList<String>(); 
+    typing.typing(bamFile, readNumber, timeNumber, species);
     try {
       LOG.info("start sleep");
       Thread.sleep(5000);

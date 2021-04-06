@@ -47,7 +47,6 @@ import japsa.bio.np.RealtimeResistanceGene;
 import japsa.bio.np.RealtimeSpeciesTyping;
 import japsa.bio.phylo.KrakenTree;
 import japsa.bio.phylo.NCBITree;
-import japsa.tools.bio.np.RealtimeSpeciesTypingCmd.ReferenceDB;
 import japsa.tools.seq.CachedOutput;
 import japsa.tools.seq.SequenceUtils;
 import japsa.util.CommandLine;
@@ -176,11 +175,12 @@ public static Pattern writeABX = null;
 				String[] fqFiles = new String[] {fastqFiles[k]};
 				File outdirTop = null;
 				inner: for(int i=0; i<dbs.length; i++){
-					ReferenceDB refDB = new ReferenceDB(dbPath, dbs[i], null);
+					ReferenceDB refDB = new ReferenceDB(new File(dbPath+"/"+dbs[i]));
 					List<String> species_output_files = new ArrayList<String>();
 				//	if(fastqFiles.length==0) break;
+					List<String> species = new ArrayList<String>();
 					File outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null,fqFiles,  "output.dat", species_output_files,
-							i==dbs.length-1 ? null : unmapped_reads, excl, consensus);
+							i==dbs.length-1 ? null : unmapped_reads, excl, consensus, species);
 					if(outdirTop==null && !dbs[i].equals("Human"))  outdirTop = outD;
 					if(unmapped_reads==null) break inner;
 					fqFiles = unmapped_reads.toArray(new String[0]);
