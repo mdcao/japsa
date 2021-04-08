@@ -33,40 +33,46 @@ package japsa.tools.seq;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SAMTextWriter;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.fastq.BasicFastqWriter;
-import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.SequenceUtil;
+import japsa.bio.np.RealtimeSpeciesTyping;
+import japsa.bio.phylo.NCBITree;
+import japsa.seq.Alphabet;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
+import japsa.seq.SequenceReader;
+import pal.tree.Node;
 
 public class SequenceUtils {
-	public static SAMFileWriterFactory sfw = new SAMFileWriterFactory();
+	
 	public static void flip(SAMRecord sam, boolean switchFlag) {
 		 if(true) throw new RuntimeException(" not clear effect on coordinates in read space");
 		String sa = sam.getReadString();
@@ -97,9 +103,8 @@ public class SequenceUtils {
 	public static class PipeConnector implements Runnable {
 		 final Collection<String> readsToInclude;
 		final double q_thresh;
-	//  private BufferedReader  _process1Output = null;
-		  private Iterator<FastqRecord> _process1Output  = null;//
-		  private BasicFastqWriter _process2Input  = null;
+		  private BufferedReader  _process1Output = null;
+		  private PrintWriter _process2Input  = null;
 		  private int max;
 		  /**
 		   * Initialize the PipeConnector
@@ -107,45 +112,40 @@ public class SequenceUtils {
 		   * @param  process1Output  The output stream from the first process (read as an InputStream)
 		   * @param  process2Input   The input stream to the second process (written as an OutputStream)
 		   */
-		  public PipeConnector (Iterator<FastqRecord> process1Output, OutputStream process2Input, int max, Collection<String> readsToInclude, double q_thresh) {
+		  public PipeConnector (BufferedReader process1Output, OutputStream process2Input, int max, Collection<String> readsToInclude, double q_thresh) {
 		    _process1Output = process1Output;
 		    this.readsToInclude = readsToInclude;
 		    this.q_thresh = q_thresh;
-		    _process2Input  = new BasicFastqWriter(new PrintStream(process2Input));
+		    _process2Input  = new PrintWriter(new OutputStreamWriter(process2Input));
 		    this.max = max;
 		  }
-		 String st0,st1,st2,st3;
-		  
+		 
 		  /**
 		   * Perform the copy operation in a separate thread
 		   */
 		  public void run () {
-		 FastqRecord nxt = null;
+			  try{
+		    String value0, value1,value2, value3; //fastq lines
 		   boolean process = true;
 		   for(int i =0; i<max; i++) {
-		        nxt= _process1Output.next();
-		        if (nxt == null){
-		        	break;  // end of input stream
-		        }
-		     
+		        value0 = _process1Output.readLine();
+		        if (value0 == null) break;  // end of input stream
+		        value1 = _process1Output.readLine();
+		        value2 = _process1Output.readLine();
+		        value3 = _process1Output.readLine();
+		       
 		        if(readsToInclude==null){
 		        	process=true;
 		        }else{
-		        	String readname = nxt.getReadName();
+		        	String readname = value0.split("\\s+")[0].substring(1);
 			        process = readsToInclude.remove(readname);
 		        }
-		        double q = SequenceUtils.getQual(nxt.getBaseQualities());
+		        double q = SequenceUtils.getQual(value3.getBytes());
 		       // System.err.println("quality "+q);
 		        if(q<q_thresh) process = false;
 //		        process = process && (q)>= q_thresh);
 		        if(process){
-		        	//st0= nxt.getReadName();
-		        	//st1 = nxt.getReadString();
-		        	//st2 = nxt.getBaseQualityHeader();
-		        	//st3 = nxt.getBaseQualityString();
-		       // 	st2 = "";
-		        	_process2Input.write(nxt);
-		        	//_process2Input.println();
+		        	_process2Input.println(value0); _process2Input.println(value1); _process2Input.println(value2); _process2Input.println(value3);
 		        	_process2Input.flush();
 		        }
 		        if(readsToInclude!=null && readsToInclude.size()==0) break; // no more reads to include
@@ -153,8 +153,11 @@ public class SequenceUtils {
 		   
 		System.err.println("finished piping input data");
 		   
-		      //_process1Output.close();
-		   
+		      _process1Output.close();
+		    }
+		    catch (IOException error) {
+		    	error.printStackTrace();
+		    }
 		      _process2Input.close();
 		  }
 		}
@@ -163,12 +166,10 @@ public class SequenceUtils {
 	
 public static void main(String[] args){
 	try{
-	//	boolean keepBAM=false;
 		String refFile = "/home/lachlan/github/npTranscript/data/SARS-Cov2/VIC01/wuhan_coronavirus_australia.fasta.gz";
 		mm2_path="/home/lachlan/github/minimap2/minimap2";
 		String mm2_index = SequenceUtils.minimapIndex(new File(refFile),  false, true);
-		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq(new String[]{"ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz"},
-				mm2_index, 100, null,0, null);
+		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq(new String[]{"ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz"}, mm2_index, 100, null,0);
 		while(sm.hasNext()){
 			System.err.println(sm.next().getAlignmentStart());
 		}
@@ -177,15 +178,11 @@ public static void main(String[] args){
 	}
 	}
 	
-	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String[] url, String mm2Index, int maxReads, Collection<String>readsToInclude, 
-			double q_thresh, Stack<File> bamOut) throws IOException{
-		FastqToSAMRecord it =  new FastqToSAMRecord(url, mm2Index,maxReads, readsToInclude, q_thresh , bamOut!=null);
-		if(bamOut!=null) bamOut.push(it.outputBAM);
-		return it;
+	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String[] url, String mm2Index, int maxReads, Collection<String>readsToInclude, double q_thresh) throws IOException{
+		return new FastqToSAMRecord(url, mm2Index,maxReads, readsToInclude, q_thresh );
 	}
 	
 	public static int mm2_threads=4;
-	public static int max_secondary=10;
 	public static String mm2_path="minimap2";
 	public static String mm2_mem = "1000000000";
 	public static String mm2Preset="splice";
@@ -203,7 +200,6 @@ public static void main(String[] args){
 		final String[] input;
 		int max_per_file;
 		final Collection<String> readsToInclude;
-		final SAMTextWriter bfw;
 	//	final boolean deleteFile;
 		private void init(int k) throws IOException{
 			ProcessBuilder pb;
@@ -229,8 +225,8 @@ public static void main(String[] args){
 								"-t",
 								"" + mm2_threads,
 								"-a",
-								"-I",mm2_mem,
-								"-N",""+max_secondary,
+								"-I",
+								mm2_mem,
 //								"-K",
 //								"200M",
 								mm2Index,
@@ -247,7 +243,6 @@ public static void main(String[] args){
 				//	"--for-only",
 					"-I",
 					mm2_mem,
-					"-N",""+max_secondary,
 //					"-K",
 //					"200M",
 					mm2Index,
@@ -279,26 +274,17 @@ public static void main(String[] args){
 		}
 		System.err.println(sb.toString());
 			//	BufferedReader br;
-				InputStream	is  = null;
-				SamReader samReader= null;
-				SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+				InputStream	is ;
 				if(inputFile==null){
 					URL  url = new URL(input[k]);
 					URLConnection urlc = url.openConnection();
 				is= input[k].endsWith(".gz")  ? new GZIPInputStream(urlc.getInputStream()) : urlc.getInputStream();
-				}else if(input[k].endsWith(".bam") || input[k].endsWith(".sam")){
-					 InputStream	bamInputStream =	new FileInputStream(inputFile[k]);
-					samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
 				}else{
 					is= input[k].endsWith(".gz")  ? new GZIPInputStream(new FileInputStream(inputFile[k])) : new FileInputStream(inputFile[k]);
 
 				}
-			///.redirectError(Redirect.INHERIT).start();//
 				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err_minimap2.txt"))).start();
-				Iterator<FastqRecord> fastqIt = is==null ? 
-						getFastqIterator(samReader):
-						getFastqIterator(new BufferedReader(new InputStreamReader(is)));
-			PipeConnector pc = new PipeConnector(fastqIt, mm2Process.getOutputStream(), max_per_file, readsToInclude,q_thresh);
+			PipeConnector pc = new PipeConnector(new BufferedReader(new InputStreamReader(is)), mm2Process.getOutputStream(), max_per_file, readsToInclude,q_thresh);
 			//pc.run();
 			Thread th = new Thread(pc);
 			th.start();
@@ -306,94 +292,15 @@ public static void main(String[] args){
 			//	OutputStream os = mm2Process.getOutputStream();
 				reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
 				iterator = reader.iterator();
-				if(!iterator.hasNext()){
-					System.err.println("WARNING: nothing to return");
-				}
 				//pc.run();
 				
 		}
-		private Iterator<FastqRecord> getFastqIterator(	final SamReader samR) throws IOException {
-		
-			return new Iterator<FastqRecord>(){
-				Iterator<SAMRecord>sams = samR.iterator();
-				@Override
-				public boolean hasNext() {
-					boolean nxt =  sams.hasNext();
-					if(!nxt)this.close();
-					return nxt;
-				}
-
-				public void close(){
-					try{
-						samR.close();
-						}catch(IOException exc){
-							exc.printStackTrace();
-						}
-				}
-				@Override
-				public FastqRecord next() {
-					SAMRecord sam = sams.next();
-					while(sam.isSecondaryOrSupplementary() && sams.hasNext()){
-						sam = sams.next();
-						if(sam==null) {
-							close();
-							return null;
-						}
-					}
-					if(sam!=null && sam.isSecondaryOrSupplementary()) sam = null;
-					if(sam==null){
-						close();
-						return null;
-					}
-					return  new FastqRecord(sam.getReadName(),	sam.getReadString(),"+",sam.getBaseQualityString());
-				}
-				
-			};
-		}
-		
-	private Iterator<FastqRecord> getFastqIterator(BufferedReader br) throws IOException {
-		return new Iterator<FastqRecord>(){
-			String st1,st2,st3;
-			String st0 = br.readLine();
-			@Override
-			public boolean hasNext() {
-				boolean hasNext =  st0!=null;
-				if(!hasNext) try{
-					br.close();
-				}catch(IOException exc){
-					exc.printStackTrace();
-				}
-				return hasNext;
-			}
-
-			@Override
-			public FastqRecord next() {
-				FastqRecord fq = null;
-				try{
-					if(st0==null) {
-						br.close();
-						return null;
-					}
-				st1 = br.readLine();
-				 st2 = br.readLine();
-				 st3 = br.readLine();
-				
-			 fq  =   new FastqRecord(st0.split(" ")[0].substring(1),	st1,	st2,st3);
-				 st0=br.readLine();
-				
-				}catch(IOException exc){
-					exc.printStackTrace();
-				}
-				return fq;
-			}};
-		}
-		//	static int id = 
+	//	static int id = 
 		 File[] inputFile = null;
 		 
 		
 		 public int count=0;
-		 File outputBAM;
-		public FastqToSAMRecord(String[] input, String mm2Index, int maxReads,Collection<String>readsToInclude, double q_thresh, boolean keepBam) throws IOException{
+		public FastqToSAMRecord(String[] input, String mm2Index, int maxReads,Collection<String>readsToInclude, double q_thresh) throws IOException{
 			this.mm2Index = mm2Index;
 			this.q_thresh = q_thresh;
 			this.readsToInclude = readsToInclude;
@@ -411,18 +318,6 @@ public static void main(String[] args){
 				}
 			     
 			}
-			if(keepBam){
-				this.outputBAM = new File(inputFile[0]+"."+System.currentTimeMillis()+".sam");
-
-				//outputBAM.deleteOnExit();
-			
-			//	SAMFileHeader header  = new SAMFileHeader();
-				
-				this.bfw =  new SAMTextWriter(outputBAM);//sfw.makeSAMWriter(header, false, outputBAM);
-				this.bfw.setSortOrder(SortOrder.unsorted, false);
-			}else{
-				this.bfw = null;
-			}
 		 }
 		
 		
@@ -435,9 +330,6 @@ public static void main(String[] args){
 			if(!res) {
 				System.err.println("analysed "+count+" records");
 				reader.close();
-				if(bfw!=null) {
-					this.bfw.close();
-				}
 			}
 			
 			}catch(IOException exc){
@@ -466,16 +358,8 @@ public static void main(String[] args){
 			}catch(IOException exc){
 				exc.printStackTrace();
 			}
-			//System.err.println(iterator.hasNext());
-			 SAMRecord nxt =   iterator.hasNext() ? iterator.next() : null ;
-			 if(this.bfw!=null && nxt!=null){
-				 bfw.addAlignment(nxt);
-			 }
-		//	System.err.println(nxt.getReadName());
-		//	 System.err.println(nxt.getReadString());
+			 SAMRecord nxt =  iterator.next();
 			 count++;
-				if(nxt==null && bfw!=null) bfw.close();
-
 			 return nxt;
 		}
 		 
@@ -771,7 +655,73 @@ public static Iterator<SAMRecord> getCombined(Iterator<SAMRecord>[] samIters, Co
 		
 	};
 }
-
+//currently not using the tree, but in future, will use it to select entire clades if requried.
+public static String mkdb(File refFile, String treef, String speciesIndex,Collection<String>  targetSpecies, 
+		String refFile_out, String indexFile_out) {
+	
+	Map<String, String> seq2Species = new HashMap<String, String>();
+	Map<String, Integer> seq2Len = new HashMap<String, Integer>();
+	//String[] str = refFile.lastIndexOf('.');
+	
+	int printed=0;
+	try{
+	RealtimeSpeciesTyping.readSpeciesIndex(speciesIndex, seq2Species, seq2Len, false);
+	NCBITree tree = new NCBITree(new File(treef), false);
+	SequenceReader reader = SequenceReader.getReader(refFile.getAbsolutePath());
+	Alphabet alphabet = Alphabet.DNA();
+	SequenceOutputStream sos = new SequenceOutputStream(new GZIPOutputStream(new FileOutputStream(refFile_out)));
+	Set	<Node> targets = new HashSet<Node>();
+	Iterator<String> it = targetSpecies.iterator();
+	while(it.hasNext()){
+		String nme = it.next();
+		Node n = tree.getNode(nme);
+		if(n!=null) targets.add(n);
+	}
+	
+	while (true){
+		Sequence genome = reader.nextSequence(alphabet);
+		if (genome == null)break;
+		String nme = seq2Species.get(genome.getName());
+		//Integer len = seq2Len.get(genome.getName());
+	//	System.err.println(nme);
+		if(targetSpecies.contains(nme)){
+			//seq2Species1.put(genome.getNa, value)
+			genome.writeFasta(sos);
+			printed++;
+		}else{
+			seq2Species.remove(genome.getName());
+			if(false){
+				Node node = tree.getNode(nme);
+				Node parent = node;
+				inner: while(parent!=null){
+					if(targets.contains(node)){
+						genome.writeFasta(sos);
+						printed++;
+						break inner;
+					}
+			}
+			}
+		}
+//		Integer sze = genome.length();
+		//pw.println(nme+","+sze);
+		//node.getIdentifier().setAttribute("length",sze);
+	}
+	sos.close();
+	PrintWriter pw = new PrintWriter(new FileWriter(indexFile_out));
+	Iterator<Entry<String, String>> it1 = seq2Species.entrySet().iterator();
+	while(it1.hasNext()){
+		Entry<String, String> ent = it1.next();
+		pw.println(ent.getValue()+">"+ent.getKey());
+	}
+	pw.close();
+	
+	
+	}catch(Exception exc){
+		exc.printStackTrace();
+	}
+	if(printed==0) throw new RuntimeException("none extracted");
+	return refFile_out;
+}
 /*
 public static void annotateWithGenomeLength(File refFile, 
 		HashMap<String, String> seq2Species, HashMap<String, Integer> seqToLen)  throws NumberFormatException, IOException{
@@ -787,7 +737,6 @@ public static void annotateWithGenomeLength(File refFile,
 		//	}
 		}
 		br.close();
-
 }*/
 
 public static Collection<String> getReadList(String readList, boolean split) {
@@ -807,6 +756,4 @@ public static Collection<String> getReadList(String readList, boolean split) {
 		exc.printStackTrace();
 	}
 	return reads;
-}
-
 }

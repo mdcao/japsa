@@ -26,15 +26,15 @@ public abstract class CachedOutput {
 	//  boolean writeAlignedPortionOnly =false;
 	  List<String> nmes = null;
 	  List<Integer> lens = null;
-	
-	 public CachedOutput(File outdir, String species, boolean separateIntoContigs) {
-		 
+	  final boolean alignedOnly;
+	 public CachedOutput(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly) {
+		 this.alignedOnly = alignedOnly;
 	//	 this.writeAlignedPortionOnly = alignedOnly;
-		this.species = species.replace('/', '_');
+		this.species = species.replace('/', '_').replace(" ", "_");
 			this.separate = separateIntoContigs;
 			this.nmes = new ArrayList<String>();
 			 if(separateIntoContigs){
-				 this.outdir = new File(outdir, species);
+				 this.outdir = new File(outdir, this.species);
 			  }else{
 				  this.outdir = outdir;
 			  }

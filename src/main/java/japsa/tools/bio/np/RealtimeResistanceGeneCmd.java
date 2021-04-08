@@ -179,9 +179,9 @@ public static Pattern writeABX = null;
 					List<String> species_output_files = new ArrayList<String>();
 				//	if(fastqFiles.length==0) break;
 					List<String> species = new ArrayList<String>();
-					File outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null,fqFiles,  "output.dat", species_output_files,
-							i==dbs.length-1 ? null : unmapped_reads, excl, consensus, species);
-					if(outdirTop==null && !dbs[i].equals("Human"))  outdirTop = outD;
+					File[] outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null,fqFiles,  "output.dat", species_output_files,
+							i==dbs.length-1 ? null : unmapped_reads, excl, consensus, species, true, null);
+					if(outdirTop==null && !dbs[i].equals("Human"))  outdirTop = outD[0];
 					if(unmapped_reads==null) break inner;
 					fqFiles = unmapped_reads.toArray(new String[0]);
 					for(int j=0; j<unmapped_reads.size(); j++){
@@ -206,7 +206,7 @@ public static Pattern writeABX = null;
 		List<SamReader> readers =  new ArrayList<SamReader>();
 		Iterator<SAMRecord> samIter= 
 				bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(bamFile,  readList, maxReads, q_thresh, readers, new File(resDB,"DB.fasta")) : 
-					RealtimeSpeciesTypingCmd.getSamIteratorsFQ(fastqFile, readList, maxReads, q_thresh, new File(resDB,"DB.fasta"));
+					RealtimeSpeciesTypingCmd.getSamIteratorsFQ(fastqFile, readList, maxReads, q_thresh, new File(resDB,"DB.fasta"), null);
 				File sample_namek = bamFile!=null ? new File(bamFile[0]) : new File(fastqFile[0]);
 	//	RealtimeSpeciesTypingCmd.getSamIterators(bamFile==null ? null : bamFile, 
 	//			fastqFile==null ? null : fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers, 

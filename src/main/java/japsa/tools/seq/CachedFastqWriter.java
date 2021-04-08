@@ -101,11 +101,12 @@ public class CachedFastqWriter extends CachedOutput{
   }
   List<Inner> l = new ArrayList<Inner>();
   final  Inner remainder; // for leftOver seqs
-  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs){
-	  this(outdir, species, separateIntoContigs, false);
+  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean alignedOnly){
+	  this(outdir, species, separateIntoContigs, false, alignedOnly);
   }
-  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean writeRemainder) {
-	  super(outdir, species, separateIntoContigs);
+  public CachedFastqWriter(File outdir, String species, boolean separateIntoContigs, boolean writeRemainder, boolean alignedOnly) {
+	  super(outdir, species, separateIntoContigs, alignedOnly);
+	
 	  this.l = new ArrayList<Inner>();
 	   this.remainder = writeRemainder ? new Inner("remainder.fq") : null;
 	}
@@ -113,12 +114,14 @@ public class CachedFastqWriter extends CachedOutput{
     protected  String modify(String ref){
 		 return ref.replace('|', '_')+".fq";
 	 }
+    
+   
 
   public void write(SAMRecord sam, String annotation, RealtimeSpeciesTyping.Interval interval)  {
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
-	  if(RealtimeSpeciesTyping.alignedOnly) {
+	  if(alignedOnly) {
 		  int stA = interval==null ? sam.getAlignmentStart() : Math.max(interval.start, sam.getAlignmentStart());
 		  int endA = interval==null ? sam.getAlignmentEnd() : Math.min(interval.end, sam.getAlignmentEnd());
 		  int st = sam.getReadPositionAtReferencePosition(stA);

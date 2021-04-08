@@ -51,7 +51,14 @@ public class CachedSequenceOutputStream extends CachedOutput {
 					
 						  while(stack.size()>0){
 							  printed++;
-							 ((Sequence)stack.pop()).writeFasta(fqw_os);
+							  Sequence seq = (Sequence)stack.pop();
+							  try{
+							 (seq).writeFasta(fqw_os);
+							  }catch(Exception exc){
+								  System.err.println("problem "+seq.getName());
+								  System.err.println(seq.toString());
+								  exc.printStackTrace();
+							  }
 						  }
 					
 				  }
@@ -76,8 +83,8 @@ public class CachedSequenceOutputStream extends CachedOutput {
 	  List<Inner> l = new ArrayList<Inner>();
 	  final  Inner remainder;
 	
-	  public CachedSequenceOutputStream(File outdir, String species, boolean separateIntoContig) {
-		super(outdir, species, separateIntoContig);
+	  public CachedSequenceOutputStream(File outdir, String species, boolean separateIntoContig, boolean alignedOnly) {
+		super(outdir, species, separateIntoContig, alignedOnly);
 		this.l = new ArrayList<Inner>();
 		this.remainder = new Inner("remainder.fa");
 	}
@@ -96,14 +103,18 @@ public class CachedSequenceOutputStream extends CachedOutput {
 	  String baseQ = sam.getBaseQualityString();
 	  String readSeq = sam.getReadString();
 	  String nme = sam.getReadName();
+	  if(nme.length()>100){
+		  System.err.println("h");
+	  }
 	  int stA = interval==null ? sam.getAlignmentStart() : Math.max(interval.start, sam.getAlignmentStart());
 	  int endA = interval==null ? sam.getAlignmentEnd() : Math.min(interval.end, sam.getAlignmentEnd());
-	  
+	  int lenA = endA - stA;
 	  int st = sam.getReadPositionAtReferencePosition(stA, true);
 		int end = sam.getReadPositionAtReferencePosition(endA, true);
+		int len = end - st;
 		  String desc = sam.getReferenceName()+":"+stA+","+endA;//
 
-	  if(RealtimeSpeciesTyping.alignedOnly) {
+	  if(alignedOnly) {
 			 if(primary && st > remainderThresh){
 		  		 this.remainder.push(new Sequence(alpha, readSeq.substring(0,st-1), nme+".L."+st));
 			 }

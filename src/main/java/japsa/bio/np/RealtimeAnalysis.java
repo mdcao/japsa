@@ -66,6 +66,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 	public void stopWaiting(){	
 		LOG.info("All reads received at " + new Date());
 		waiting = false;
+		close();
 		//TODO: implement notifies if I am sleeping
 	}
 
@@ -116,7 +117,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 		this.writeFinalResults();
 		LOG.info("RUNTIME\t" + lastTime  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		//.. and close it
-		close();
+		
 		LOG.info("Real time analysis done");
 	}
 
