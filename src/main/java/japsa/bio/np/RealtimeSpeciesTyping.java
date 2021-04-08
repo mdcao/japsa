@@ -94,7 +94,7 @@ import pal.tree.Node;
  *
  */
 public class RealtimeSpeciesTyping {
-	public static double targetOverlap =0.9;
+	public static double targetOverlap =0.95;
 	public static double 	 epsilon = 0.001;
 	public static double removeLikelihoodThresh=0.1;
 //	public static boolean exclude = false; //whether to use exclude file to exclude reads
@@ -548,7 +548,8 @@ public class RealtimeSpeciesTyping {
 							if(interval.coverage <minCov1) continue;
 							double overlapR = interval.overlap(sam);///(double )len;
 							int len2 = interval.length();
-							if(overlapR/len1>targetOverlap && overlapR/len2 > targetOverlap){ // this overlaps the target interval more than 90%
+							if(//overlapR/len1>targetOverlap && 
+									overlapR/len2 > targetOverlap){ // this overlaps the target interval more than 90%
 								fqw.write(sam, this.species, interval);
 								//System.err.println("overlaps excluded region "+speciesList.get(seq2Species.get(refName))+" "+sam.getAlignmentStart()+" "+overlapR);
 								//continue outer;
@@ -1301,7 +1302,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 				if(consensus){ // this for consensus.txt
 					String[] str1 = str[5].split(";");
 					int coverage = Integer.parseInt(str[2]);
-				//	if(coverage >=minCoverage){
+					if(coverage >=2){
 					inner: for(int k=0; k<str1.length; k++){
 						Interval in = new Interval(str1[k].split(","),0,1);
 						if(in.length() > minlength){
@@ -1315,7 +1316,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 							li.add(in);
 						}
 					}
-					//}
+					}
 				}else{ // this for exclude.txt
 					li.add(new Interval(str));
 				}
