@@ -175,23 +175,26 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		return  SequenceUtils.getSAMIteratorFromFastq(files, mm2_index, maxReads, readList, q_thresh, keepBAM);
 	}
 	
-	public static Iterator<SAMRecord>  getSamIteratorsBam(String[] bamFile ,String readListSt, int maxReads,double q_thresh,
+	public static Iterator<SAMRecord>  getSamIteratorsBam(File parentDir, String[] bamFile ,String readListSt, int maxReads,double q_thresh,
 			List<SamReader> samReaders,File refFile
 			) throws IOException, FileNotFoundException{
-	
+		 System.err.println(Arrays.asList(bamFile));
 		Collection<String> readList=SequenceUtils.getReadList(readListSt, true);
 		String[] files = bamFile;
-		if(bamFile.length==1 && !(new File(bamFile[0])).exists()) {
-			files = (new File(".")).list(new MatchFilter(bamFile[0], "bam|sam"));	
+		if(bamFile.length==1 && !(new File(parentDir, bamFile[0])).exists()) {
+			files = parentDir.list(new MatchFilter(bamFile[0], "bam|sam"));	
 		}
+		
 		if(files.length==0) {
+		
+		//	else System.err.println(Arrays.asList(fastqFile));
 			throw new RuntimeException("no files match input request");
 		}
 	//	String[] sample_name = new String[files.length];
 		//sample_name.add (new File(files[0]));
 		List<Iterator> iterators = new ArrayList<Iterator>();
 		for(int i=0; i<files.length; i++){
-			File filek = new File(files[i]);//.replace(".gz","");//.substring(0, files[i].lastIndexOf('.'));
+			File filek = new File(parentDir, files[i]);//.replace(".gz","");//.substring(0, files[i].lastIndexOf('.'));
 			Iterator<SAMRecord> samIter = null;
 			SamReader samReader= null;
 			SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -297,17 +300,19 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 			}
 			String consensusFile = cmdLine.getStringVal("consensusFile");
 			List<String> species = new ArrayList<String>();
+			File currDir = new File(".");
 			Stack<File> bamOut = buildConsensus ?new Stack<File>() : null;
-			File[] outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, bamFiles, fastqFiles, output,
-							out_fastq, i==dbs.length-1 ? null : unmapped_reads, exclfile, consensusFile, species, true, bamOut);
+			File[] outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, currDir, bamFiles, fastqFiles, output,
+							out_fastq, i==dbs.length-1 ? null : unmapped_reads, exclfile, consensusFile, species, true, bamOut, null);
 			if(buildConsensus && consensusFile==null){
-				 consensusFile = outDs[1].getAbsolutePath();
+				String consensusFile1 = consensusFile==null ? outDs[1].getAbsolutePath(): consensusFile;
 				System.err.println("rerunning to build consensus");
 				String[] bamFiles1 = bamFiles;
 				File bamO = bamOut.pop();
+				System.err.println(bamO);
 				if(bamFiles1==null)bamFiles1 = new String[] {bamO.getName()};
-				outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, bamFiles1, null, output,
-						null, null, exclfile, consensusFile, null, false, null);
+				outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, bamO.getParentFile(), bamFiles1, null, output,
+						null, null, exclfile, consensusFile1, null, false, null, outDs[0]);
 				bamO.delete();
 			}
 			if(speciesFile ==null && species.size()>0 &&  reduceToSpecies){
@@ -319,20 +324,20 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 				pw.close();
 				List<String> species1 = new ArrayList<String>();
 				refDB = refDB.update(specFile1);
-				consensusFile = cmdLine.getStringVal("consensusFile");
+			//	consensusFile = cmdLine.getStringVal("consensusFile");
 				String[] fastqFiles1 = fastqFiles;
 				System.err.println("running on subset");
-				outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, null, fastqFiles1, output,
-						out_fastq,  null , exclfile, consensusFile, species1, true, bamOut);
+				outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, currDir, null, fastqFiles1, output,
+						out_fastq,  null , exclfile, consensusFile, species1, true, bamOut, null);
 				System.err.println(species1.size());
 				if(buildConsensus && consensusFile==null){
-					 consensusFile = outDs[1].getAbsolutePath();
+					String consensusFile1 = consensusFile==null ? outDs[1].getAbsolutePath(): consensusFile;
 					System.err.println("rerunning to build consensus");
 					String[] bamFiles1 = bamFiles;
 					File bamO = bamOut.pop();
 					if(bamFiles1==null)bamFiles1 = new String[] {bamO.getName()};
-					outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, bamFiles1, null, output,
-							null,  null , exclfile, consensusFile,null, false, null);
+					outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, bamO.getParentFile(),  bamFiles1, null, output,
+							null,  null , exclfile, consensusFile1,null, false, null, outDs[0]);
 					bamO.delete();
 				}
 			}
@@ -369,15 +374,16 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 	
 	
 	public static File[] speciesTyping(ReferenceDB refDB, File resdir, String readList,
+			File parentDir,
 		 String [] bamFile, String[] fastqFile, String output,	List<String> out_fastq , 
 		 List<String> unmapped_reads, String exclude, String consensus,
-		 List<String> species, boolean runAnalysis, Stack<File> keepBAM
+		 List<String> species, boolean runAnalysis, Stack<File> keepBAM, File outdir
 			) throws IOException, InterruptedException{
 		
 		
 			List<SamReader> readers =  new ArrayList<SamReader>();
 			Iterator<SAMRecord> samIter= 
-					bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(bamFile,  readList, maxReads, q_thresh, readers,  refDB.refFile) : 
+					bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(parentDir, bamFile,  readList, maxReads, q_thresh, readers,  refDB.refFile) : 
 						RealtimeSpeciesTypingCmd.getSamIteratorsFQ(fastqFile, readList, maxReads, q_thresh, refDB.refFile, keepBAM);
 			File outdir_new  = null;
 			if(resdir!=null){
@@ -385,7 +391,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 				outdir_new.mkdir();
 			}
 			File sample_namesk = bamFile!=null ?  new File(bamFile[0]) : new File(fastqFile[0]);
-				File outdir = outdir_new!=null ?  new File(outdir_new+"/"+sample_namesk.getName()) : new File(sample_namesk.getAbsolutePath()+"."+refDB.dbs+".jST");
+				if(outdir==null)  outdir = outdir_new!=null ?  new File(outdir_new+"/"+sample_namesk.getName()) : new File(sample_namesk.getAbsolutePath()+"."+refDB.dbs+".jST");
 				outdir.mkdirs();
 			
 			//	SamReader samReader = readers.size()>0 ? readers.get(k) : null;

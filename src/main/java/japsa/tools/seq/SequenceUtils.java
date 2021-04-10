@@ -414,7 +414,7 @@ public static void main(String[] args){
 			if(keepBam){
 				this.outputBAM = new File(inputFile[0]+"."+System.currentTimeMillis()+".sam");
 
-				//outputBAM.deleteOnExit();
+				outputBAM.deleteOnExit();
 			
 			//	SAMFileHeader header  = new SAMFileHeader();
 				
