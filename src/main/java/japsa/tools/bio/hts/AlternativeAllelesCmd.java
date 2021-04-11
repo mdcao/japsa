@@ -36,14 +36,24 @@ package japsa.tools.bio.hts;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMTextWriter;
@@ -55,8 +65,6 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author minhduc
@@ -105,10 +113,31 @@ public class AlternativeAllelesCmd extends CommandLine{
 		int pos;
 		int base; //Alphabet.DNA.A, Alphabet.DNA.C, Alphabet.DNA.G, Alphabet.DNA.T;
 
-		VarRecord(String s, int p, int b){
+		double sumDiff=0;
+		double sumSq=0;
+		int count=0;
+		
+		String in;
+		public String toString(){
+			return in+"\t"+(double)sumDiff/(double) count;
+		}
+		VarRecord(String s, int p, int b, String line){
+			this.in = line;
 			chrom = s;
 			pos = p;
 			base = b;			
+		}
+		void print(PrintWriter pw, String left, String right){
+			double mean = (double)sumDiff/(double) count;
+			double sd = Math.sqrt(sumSq/(double)count - mean);
+			pw.print(in);
+			pw.print("\t");
+			pw.print(mean);
+			pw.print("\t");
+			pw.print(sd);
+			pw.print("\t");
+			pw.print(left+"\t"+right);
+			pw.println();
 		}
 
 		static VarRecord parseLine(String line){
@@ -146,8 +175,16 @@ public class AlternativeAllelesCmd extends CommandLine{
 			}
 
 			int p = Integer.parseInt(toks[1]) - 1;
-			return new VarRecord(toks[0], p, b);
+			return new VarRecord(toks[0], p, b, line);
 
+		}
+
+		public void add(int diff) {
+			this.sumDiff+=diff;
+			this.sumSq+=Math.pow((double) diff, 2);
+			this.count++;
+			// TODO Auto-generated method stub
+			
 		}
 	}
 
@@ -160,6 +197,72 @@ public class AlternativeAllelesCmd extends CommandLine{
 
 	}
 
+	static class FragInfo{
+		public FragInfo(int alignmentStart) {
+			this.start = alignmentStart;
+		}
+		int start;
+		int end;
+		List<VarRecord> snps  = new ArrayList<VarRecord>();
+		public void setEnd(int alignmentEnd) {
+			this.end = alignmentEnd;
+		}
+		public String toString(){
+			String st = this.start+"";
+			if(snps!=null) st = st+":"+snps.toString();
+			return st;
+		}
+		public void addSNP(VarRecord var) {
+			snps.add(var);
+			
+		}
+		public void complete() {
+			int diff = end - start;
+			for(int i=0; i<snps.size(); i++){
+				snps.get(i).add(diff);
+			}
+		}
+	}
+	static ConcurrentMap<String, FragInfo> readToPos = new ConcurrentHashMap<String, FragInfo>();// maps read pair to position
+	
+	
+	/*static class Fragments{
+		
+		public Fragments(Integer diff, String readName) {
+			// TODO Auto-generated constructor stub
+		}
+		int sumFrag;
+		int sum;
+	}*/
+	
+	static void clearUpTo( PrintWriter pw, LinkedList<VarRecord> varList, int pos ,String chrom, Sequence ref){
+		int i=0; 
+		for (i=0; i<varList.size(); i++){
+			VarRecord var = varList.get(i);
+			if(!var.chrom.equals(chrom)) throw new RuntimeException("!!");
+			if(var.pos>pos) break;
+			var.print(pw, ref.subSequence(var.pos-10, var.pos).toString(), ref.subSequence(var.pos, var.pos+10).toString());
+		}
+		pw.flush();
+		for(int j=i-1; j>=0;j--){
+			varList.remove(j);
+		}
+		
+		
+	}
+	static void clearUpTo(ConcurrentMap<String, FragInfo> readToPos2,int pos ,String chrom, PrintWriter ls){
+	//	Set<String> torem = new HashSet<String>();
+		for(Iterator<String> it = readToPos2.keySet().iterator(); it.hasNext();){
+			String key = it.next();
+			FragInfo val = readToPos2.get(key);
+			if(val.start < pos){
+			//	System.err.println("removing "+key+" "+val);
+				ls.println(key);
+				readToPos2.remove(key);
+			}
+		}
+	}
+	
 	static void addSequence(String inFile, String vcfFile, String reference, String outFile, int threshold) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
 		//int countGood = 0, countBad = 0, countUgly = 0;
@@ -169,10 +272,11 @@ public class AlternativeAllelesCmd extends CommandLine{
 		//Bad:  insertSize >SIZE_THRESHOLD
 		//Ugly: insertSize=0
 		
-		HashSet<String> somaticSet = new HashSet<String>(); 
+		Set<String> somaticSet = new HashSet<String>(); 
 
 
 		BufferedReader bf =  SequenceReader.openFile(vcfFile);
+		
 		bf.readLine();//dont care the first line
 
 		LinkedList<VarRecord> varList = new  LinkedList<VarRecord>();
@@ -181,7 +285,10 @@ public class AlternativeAllelesCmd extends CommandLine{
 
 		varList.add(fVar);
 
-		String myChrom = fVar.chrom;
+		final String myChrom = fVar.chrom;
+		PrintWriter vcf_out = new PrintWriter(new FileWriter(new File(vcfFile+".out.vcf")));
+		PrintWriter ls = new PrintWriter(new FileWriter(new File("unmatched_reads.txt")));
+
 		Sequence refSeq = null;
 		{
 			LOG.info("Read reference started");
@@ -238,7 +345,10 @@ public class AlternativeAllelesCmd extends CommandLine{
 
 			if (samRefIndex > myChromIndex)
 				break;//while
-
+			
+			
+			clearUpTo(vcf_out,varList,sam.getAlignmentStart()-10000, myChrom , refSeq); // clear up varlist up to 10,000 bases before current
+			clearUpTo(readToPos, sam.getAlignmentStart()-10000, myChrom, ls);
 			//assert samRefIndex == myChromIndex
 			
 			//int insertSize = Math.abs(sam.getInferredInsertSize());
@@ -253,13 +363,28 @@ public class AlternativeAllelesCmd extends CommandLine{
 			//	countALLBad ++;
 			//}
 			
-			String readName = sam.getReadName();
-			if (somaticSet.contains(readName))
-				continue;
+			String readName = sam.getReadName();	
+			FragInfo pairedPos = readToPos.remove(readName);
+		//	boolean firstPair = sam.getFirstOfPairFlag();
+		//	boolean secondPair = sam.getSecondOfPairFlag();
+		//	boolean neg = sam.getReadNegativeStrandFlag();
+			if(sam.getPairedReadName()!=null){
+				if(pairedPos==null){
+					readToPos.put(readName, pairedPos=new FragInfo(sam.getAlignmentStart()));
+				}
+				else{
+					pairedPos.setEnd(sam.getAlignmentEnd());
+					pairedPos.complete();
+					//System.err.println("DIFFF "+ diff);
+				}
+			}
+			if(pairedPos==null) continue;
+		//	if (somaticSet.contains(readName))
+		//		continue;
 
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			boolean support = false;
-
+			
 			int readPos = 0;//start from 0					
 			int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index
 			for (final CigarElement e : sam.getCigar().getCigarElements()) {
@@ -288,7 +413,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 						int readBase = readSeq.getBase(readPos + i);
 						if (refSeq.getBase(refPos + i) != readBase){
 							//1. 
-							while(varList.size() > 0){
+							/*while(varList.size() > 0){
 								VarRecord first = varList.getFirst();
 
 								if (first.pos < sam.getAlignmentStart()){
@@ -296,7 +421,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 									continue;
 								}
 								break;
-							}
+							}*/
 
 							//2. go through the list
 							int currentVarPos = -1;
@@ -305,6 +430,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 								if (var.pos == refPos + i && var.base == readBase){
 									//yay
 									support = true;
+									pairedPos.addSNP(var);
 									break;//for									
 								}
 
@@ -326,6 +452,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 								if (var.pos == refPos + i && var.base == readBase){
 									//yay
 									support = true;
+									pairedPos.addSNP(var);
 									break;//for									
 								}
 
@@ -354,12 +481,12 @@ public class AlternativeAllelesCmd extends CommandLine{
 					break;
 				default : throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
 				}//case
-				if (support)
-					break;
+			//	if (support)	break;
+				
 			}//for
 
-			if (support){
-				//samWriter.writeAlignment(sam);				
+			if (support && somaticSet!=null){
+				//samWriter.writeAlignment(sca$240am);				
 				//if (insertSize == 0){
 				//	countUgly ++;
 				//}else if (insertSize <= threshold){
@@ -369,6 +496,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 				//}else{
 				//	countBad ++;
 				//}
+				//pairedPos.
 				somaticSet.add(readName);
 			}
 
@@ -376,18 +504,27 @@ public class AlternativeAllelesCmd extends CommandLine{
 		
 		samIter.close();
 		
-		samIter = samReader.query(refSeq.getName(),0,0,false);
-		while (samIter.hasNext()){			
-			SAMRecord sam = samIter.next();
-			String readName = sam.getReadName();
-			if (somaticSet.contains(readName)){
-				samWriter.writeAlignment(sam);
+		if(somaticSet!=null){
+			samIter = samReader.query(refSeq.getName(),0,0,false);
+			while (samIter.hasNext()){			
+				SAMRecord sam = samIter.next();
+				String readName = sam.getReadName();
+				if (somaticSet.contains(readName)){
+					samWriter.writeAlignment(sam);
+				}
 			}
+			
+			
+			samWriter.close();
+			samReader.close();
 		}
-		
-		samWriter.close();
-		samReader.close();
 		bf.close();
+		clearUpTo(vcf_out,varList,refSeq.length(), myChrom , refSeq); // clear up varlist up to 10,000 bases before current
+
+		vcf_out.close();
+		ls.close();
+		
+		
 		/**********************************************************************
 		
 		System.out.println("================ ALL DATA===================");
