@@ -129,7 +129,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 		}
 		void print(PrintWriter pw, String left, String right){
 			double mean = (double)sumDiff/(double) count;
-			double sd = Math.sqrt(sumSq/(double)count - mean);
+			double sd = Math.sqrt(sumSq/(double)count - Math.pow(mean,2));
 			pw.print(in);
 			pw.print("\t");
 			pw.print(mean);
