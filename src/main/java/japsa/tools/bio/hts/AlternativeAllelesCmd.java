@@ -136,6 +136,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 			pw.print("\t");
 			pw.print(sd);
 			pw.print("\t");
+			pw.print(count);
+			pw.print("\t");
 			pw.print(left+"\t"+right);
 			pw.println();
 		}
