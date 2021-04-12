@@ -207,7 +207,7 @@ public static Pattern writeABX = null;
 		List<SamReader> readers =  new ArrayList<SamReader>();
 		Iterator<SAMRecord> samIter= 
 				bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(parentDir, bamFile,  readList, maxReads, q_thresh, readers, new File(resDB,"DB.fasta")) : 
-					RealtimeSpeciesTypingCmd.getSamIteratorsFQ(fastqFile, readList, maxReads, q_thresh, new File(resDB,"DB.fasta"), null);
+					RealtimeSpeciesTypingCmd.getSamIteratorsFQ(parentDir, fastqFile, readList, maxReads, q_thresh, new File(resDB,"DB.fasta"), null);
 				File sample_namek = bamFile!=null ? new File(bamFile[0]) : new File(fastqFile[0]);
 	//	RealtimeSpeciesTypingCmd.getSamIterators(bamFile==null ? null : bamFile, 
 	//			fastqFile==null ? null : fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers, 
