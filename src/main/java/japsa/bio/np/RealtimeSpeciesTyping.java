@@ -1254,10 +1254,11 @@ Stack<Integer> zerovs = new Stack<Integer>();
 			}
 			Integer[] nonZero = all_reads.nonZero(0.01);
 			//String[] species = new String[nonZero.length];
+			if(species!=null){
 			for(int i=0; i<nonZero.length; i++){
 				species.add(refDB.speciesList.get(nonZero[i]));
 			}
-			
+			}
 			
 			if( !realtimeAnalysis){
 				typer.run();

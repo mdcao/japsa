@@ -41,7 +41,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.ProcessBuilder.Redirect;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -112,18 +111,23 @@ public class SequenceUtils {
 	//  private BufferedReader  _process1Output = null;
 		  private Iterator<FastqRecord> _process1Output  = null;//
 		  private BasicFastqWriter _process2Input  = null;
+		  private SequenceOutputStream sos = null;
 		  private int max;
+		  final boolean fasta;
 		  /**
 		   * Initialize the PipeConnector
 		   *
 		   * @param  process1Output  The output stream from the first process (read as an InputStream)
 		   * @param  process2Input   The input stream to the second process (written as an OutputStream)
+		 * @param fasta 
 		   */
-		  public PipeConnector (Iterator<FastqRecord> process1Output, OutputStream process2Input, int max, Collection<String> readsToInclude, double q_thresh) {
+		  public PipeConnector (Iterator<FastqRecord> process1Output, OutputStream process2Input, int max, Collection<String> readsToInclude, double q_thresh, boolean fasta) {
 		    _process1Output = process1Output;
+		    this.fasta = fasta;
 		    this.readsToInclude = readsToInclude;
 		    this.q_thresh = q_thresh;
-		    _process2Input  = new BasicFastqWriter(new PrintStream(process2Input));
+		    if(fasta) sos = new SequenceOutputStream(process2Input);
+		    else _process2Input  = new BasicFastqWriter(new PrintStream(process2Input));
 		    this.max = max;
 		  }
 		 String st0,st1,st2,st3;
@@ -132,6 +136,7 @@ public class SequenceUtils {
 		   * Perform the copy operation in a separate thread
 		   */
 		  public void run () {
+				try{
 		 FastqRecord nxt = null;
 		   boolean process = true;
 		   for(int i =0; i<max; i++) {
@@ -146,9 +151,11 @@ public class SequenceUtils {
 		        	String readname = nxt.getReadName();
 			        process = readsToInclude.remove(readname);
 		        }
-		        double q = SequenceUtils.getQual(nxt.getBaseQualities());
-		       // System.err.println("quality "+q);
-		        if(q<q_thresh) process = false;
+		        if(!fasta){
+			        double q = SequenceUtils.getQual(nxt.getBaseQualities());
+			       // System.err.println("quality "+q);
+			        if(q<q_thresh) process = false;
+		        }
 //		        process = process && (q)>= q_thresh);
 		        if(process){
 		        	//st0= nxt.getReadName();
@@ -156,9 +163,17 @@ public class SequenceUtils {
 		        	//st2 = nxt.getBaseQualityHeader();
 		        	//st3 = nxt.getBaseQualityString();
 		       // 	st2 = "";
+		        	if(fasta){
+		        		String nme=">"+nxt.getReadName();
+		        		this.sos.print(nme);sos.println();
+		        		sos.print(nxt.getReadString()); sos.println();
+		        		sos.flush();
+		        	}else{
 		        	_process2Input.write(nxt);
-		        	//_process2Input.println();
 		        	_process2Input.flush();
+
+		        	}
+		        	//_process2Input.println();
 		        }
 		        if(readsToInclude!=null && readsToInclude.size()==0) break; // no more reads to include
 		    }
@@ -166,8 +181,13 @@ public class SequenceUtils {
 		System.err.println("finished piping input data");
 		   
 		      //_process1Output.close();
-		   
-		      _process2Input.close();
+		   if(fasta)sos.close();
+		   else    _process2Input.close();
+		  
+		  }catch(IOException exc){
+  			exc.printStackTrace();
+  			
+  		}
 		  }
 		}
 	
@@ -414,6 +434,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		printCommand(pb);
 			//	BufferedReader br;
 				InputStream	is  = null;
+				boolean fasta=false;
 				SamReader samReader= null;
 				SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 				if(inputFile==null){
@@ -425,14 +446,14 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 					samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
 				}else{
 					is= input[k].endsWith(".gz")  ? new GZIPInputStream(new FileInputStream(inputFile[k])) : new FileInputStream(inputFile[k]);
-
+					fasta = input[k].endsWith(".fa") || input[k].endsWith(".fasta");
 				}
 			///.redirectError(Redirect.INHERIT).start();//
-				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err_minimap2.txt"))).start();
+				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err_minimap.txt"))).start();
 				Iterator<FastqRecord> fastqIt = is==null ? 
 						getFastqIterator(samReader):
-						getFastqIterator(new BufferedReader(new InputStreamReader(is)));
-			PipeConnector pc = new PipeConnector(fastqIt, mm2Process.getOutputStream(), max_per_file, readsToInclude,q_thresh);
+					(fasta ? getFastaIterator(is)	 : getFastqIterator(new BufferedReader(new InputStreamReader(is))));
+			PipeConnector pc = new PipeConnector(fastqIt, mm2Process.getOutputStream(), max_per_file, readsToInclude,q_thresh, fasta);
 			//pc.run();
 			Thread th = new Thread(pc);
 			th.start();
@@ -486,6 +507,36 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 			};
 		}
 		
+		private Iterator<FastqRecord> getFastaIterator(InputStream ins) throws IOException {
+			return new Iterator<FastqRecord>(){
+				Alphabet alph = Alphabet.DNA16();
+				FastaReader fr = new FastaReader(ins);
+				
+				@Override
+				public boolean hasNext() {
+					try{
+					return fr.hasNext();
+					}catch(IOException exc){
+						exc.printStackTrace();
+					}
+					return false;
+				}
+
+				@Override
+				public FastqRecord next() {
+					FastqRecord fq = null;
+					
+					try{
+					Sequence seq = fr.nextSequence(alph);
+					if(seq==null) return null;
+					fq  =   new FastqRecord(seq.getName(),	seq.toString(),	null,null);
+					}catch(IOException exc){
+						exc.printStackTrace();
+					}
+					return fq;
+				}};
+			}
+		
 	private Iterator<FastqRecord> getFastqIterator(BufferedReader br) throws IOException {
 		return new Iterator<FastqRecord>(){
 			String st1,st2,st3;
@@ -509,11 +560,13 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 						br.close();
 						return null;
 					}
+					
 				st1 = br.readLine();
-				 st2 = br.readLine();
-				 st3 = br.readLine();
 				
-			 fq  =   new FastqRecord(st0.split(" ")[0].substring(1),	st1,	st2,st3);
+					st2 = br.readLine();
+					st3 = br.readLine();
+				
+				fq  =   new FastqRecord(st0.split(" ")[0].substring(1),	st1,	st2,st3);
 				 st0=br.readLine();
 				
 				}catch(IOException exc){
