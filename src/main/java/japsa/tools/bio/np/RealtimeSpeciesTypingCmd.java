@@ -322,7 +322,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 			Stack<File> bamOut = buildConsensus ?new Stack<File>() : null;
 			File[] outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, currDir, bamFiles, fastqFiles, output,
 							out_fastq, i==dbs.length-1 ? null : unmapped_reads, exclfile, consensusFile, species, true, bamOut, null);
-			if(buildConsensus && consensusFile==null){
+			if(buildConsensus && consensusFile==null && !dbs[i].equals("Human") ){
 				String consensusFile1 = consensusFile==null ? outDs[1].getAbsolutePath(): consensusFile;
 				System.err.println("rerunning to build consensus");
 				String[] bamFiles1 = bamFiles;
@@ -338,7 +338,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 						null, null, null, null, null, true, null, new File(consensus.getAbsolutePath()+".jST"));
 			
 			}
-			if(speciesFile ==null && species.size()>0 &&  reduceToSpecies){
+			if(speciesFile ==null && species.size()>0 &&  reduceToSpecies && !dbs[i].equals("Human") ){
 				File specFile1 = new File(resdir, dbs[i]+"."+System.currentTimeMillis()+".txt");
 				PrintWriter pw = new PrintWriter(new FileWriter(specFile1));
 				for(int k=0; k<species.size(); k++){
