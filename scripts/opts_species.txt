@@ -16,5 +16,12 @@
 #--maxReads=1000  
 --mm2_path=/sw/minimap2/current/minimap2
 #--resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceTyping/resFinder
---minCount=2
-
+--minCount=4
+--writeSep=[a-z]
+--alignedOnly=true   
+--minCoverage=4 
+--minLength=1000 
+--reduceToSpecies=false  
+--buildConsensus=true
+ --deleteUnmapped=true 
+# --abpoa_path=/home/lachlan/abPOA-v1.0.1/bin/abpoa
