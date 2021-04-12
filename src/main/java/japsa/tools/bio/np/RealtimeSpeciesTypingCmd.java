@@ -109,6 +109,8 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 	//	addString("indexFile", null,  "indexFile ",true);
 		addString("mm2Preset", "map-ont",  "mm2Preset ",false);
 		addString("mm2_path", "/sw/minimap2/current/minimap2",  "minimap2 path", false);
+		addString("abpoa_path", "/sw/abpoa/current/abpoa",  "abpoa path", false);
+
 		addString("readList", null,  "file with reads to include", false);
 		addInt("maxReads",Integer.MAX_VALUE, "max reads to process", false );
 		addInt("minCoverage",2, "minimum coverage from consensus file", false );
@@ -221,6 +223,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		SequenceUtils.mm2_path = cmdLine.getStringVal("mm2_path");
 		SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
 		SequenceUtils.mm2_splicing = null;//
+		SequenceUtils.apboa_path = cmdLine.getStringVal("abpoa_path");
 		SequenceUtils.secondary = true;
 		RealtimeSpeciesTypingCmd.q_thresh = cmdLine.getDoubleVal("fail_thresh");
 		RealtimeSpeciesTypingCmd.filter = cmdLine.getStringVal("filter");
@@ -313,7 +316,9 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 				if(bamFiles1==null)bamFiles1 = new String[] {bamO.getName()};
 				outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, bamO.getParentFile(), bamFiles1, null, output,
 						null, null, exclfile, consensusFile1, null, false, null, outDs[0]);
+				
 				bamO.delete();
+				File consensus = SequenceUtils.makeConsensus(new File(outDs[0], "fastqs"),4, true);
 			}
 			if(speciesFile ==null && species.size()>0 &&  reduceToSpecies){
 				File specFile1 = new File(resdir, dbs[i]+"."+System.currentTimeMillis()+".txt");
@@ -339,6 +344,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 					outDs = speciesTyping(refDB, i==0 ? resdir : null, readList, bamO.getParentFile(),  bamFiles1, null, output,
 							null,  null , exclfile, consensusFile1,null, false, null, outDs[0]);
 					bamO.delete();
+					File consensus = SequenceUtils.makeConsensus(new File(outDs[0], "fastqs"),2, true);
 				}
 			}
 			if(outdirTop==null && !dbs[i].equals("Human")) outdirTop = outDs[0];

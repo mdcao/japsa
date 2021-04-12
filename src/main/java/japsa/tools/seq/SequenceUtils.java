@@ -32,14 +32,20 @@ package japsa.tools.seq;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.ProcessBuilder.Redirect;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,9 +55,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.zip.GZIPInputStream;
 
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
@@ -64,6 +72,10 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.fastq.BasicFastqWriter;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.SequenceUtil;
+import japsa.seq.Alphabet;
+import japsa.seq.FastaReader;
+import japsa.seq.Sequence;
+import japsa.seq.SequenceOutputStream;
 
 public class SequenceUtils {
 	public static SAMFileWriterFactory sfw = new SAMFileWriterFactory();
@@ -163,15 +175,17 @@ public class SequenceUtils {
 	
 public static void main(String[] args){
 	try{
-	//	boolean keepBAM=false;
-		String refFile = "/home/lachlan/github/npTranscript/data/SARS-Cov2/VIC01/wuhan_coronavirus_australia.fasta.gz";
-		mm2_path="/home/lachlan/github/minimap2/minimap2";
-		String mm2_index = SequenceUtils.minimapIndex(new File(refFile),  false, true);
-		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq(new String[]{"ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz"},
-				mm2_index, 100, null,0, null);
-		while(sm.hasNext()){
-			System.err.println(sm.next().getAlignmentStart());
-		}
+		SequenceUtils.apboa_path = "/home/lachlan/abPOA-v1.0.1/bin/abpoa";
+		File f = new File("/home/lachlan/WORK/AQIP/japsa_species_typing/plasmids/aqip003.fastq/fastqs");
+		SequenceUtils.makeConsensus(f, 4, true);
+//		String refFile = "/home/lachlan/github/npTranscript/data/SARS-Cov2/VIC01/wuhan_coronavirus_australia.fasta.gz";
+//		mm2_path="/home/lachlan/github/minimap2/minimap2";
+//		String mm2_index = SequenceUtils.minimapIndex(new File(refFile),  false, true);
+//		Iterator<SAMRecord>  sm = getSAMIteratorFromFastq(new String[]{"ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR408/005/ERR4082025/ERR4082025_1.fastq.gz"},
+//				mm2_index, 100, null,0, null);
+///		while(sm.hasNext()){
+	//		System.err.println(sm.next().getAlignmentStart());
+		//}
 	}catch(Exception exc){
 		exc.printStackTrace();
 	}
@@ -191,6 +205,131 @@ public static void main(String[] args){
 	public static String mm2Preset="splice";
 	public static String mm2_splicing="-un";
 	public static boolean secondary =true;
+	
+	public static String apboa_path="abpoa";
+	
+	public static void waitOnThreads(ExecutorService executor, int sleep) {
+		if(executor==null) return ;
+		if(executor instanceof ThreadPoolExecutor){
+	    	while(((ThreadPoolExecutor) executor).getActiveCount()>0){
+	    		try{
+		    	System.err.println("OUTPUTS: awaiting completion "+((ThreadPoolExecutor)executor).getActiveCount());
+		    	//Thread.currentThread();
+				Thread.sleep(sleep);
+	    		}catch(InterruptedException exc){
+	    			exc.printStackTrace();
+	    		}
+	    	}
+	    	}
+		
+	}
+	
+	static void printCommand(ProcessBuilder pb) {
+		List<String> cmd = pb.command();
+		StringBuffer sb  = new StringBuffer();
+		for(int i=0; i<cmd.size(); i++){
+			sb.append(cmd.get(i)+" ");
+		}
+		System.err.println(sb.toString());
+		
+	}
+public static File makeConsensus(File file, int threads, boolean deleteFa) {
+	File output = new File(file.getParentFile(), "consensus_output.fa");
+	try{
+	MultiAbpoa mab = new MultiAbpoa(file, threads,Alphabet.DNA16(), output, deleteFa);
+	mab.run();
+	
+	}catch(Exception exc){
+		exc.printStackTrace();
+	}
+	return output;
+	}
+	
+	
+	
+
+	public static class MultiAbpoa{
+		final ExecutorService executor;
+		final SequenceOutputStream pw;
+		final List<File> files = new ArrayList<File>();
+		final Alphabet alph;
+		MultiAbpoa(File file, int threads, Alphabet alph, File out, boolean del) throws FileNotFoundException{
+			pw = new SequenceOutputStream(new FileOutputStream(out));
+			executor = Executors.newFixedThreadPool(threads);
+			this.alph = alph;
+			File[] f = file.listFiles(new FileFilter(){
+
+				@Override
+				public boolean accept(File pathname) {
+					return pathname.isDirectory() && pathname.listFiles().length>0;
+				}
+				
+			});
+			for(int i=0; i<f.length; i++){
+				files.addAll(Arrays.asList(f[i].listFiles()));
+			}
+			if(del){
+				file.deleteOnExit();
+				for(int i=0; i<f.length; i++) f[i].deleteOnExit();
+				for(int i=0; i<files.size(); i++){
+					files.get(i).deleteOnExit();
+				}
+				
+				
+			}
+		}
+		public void run() throws IOException{
+			for(int i=0; i<files.size(); i++){
+			executor.execute(new Abpoa(files.get(i), alph));
+			}
+			waitOnThreads(executor,1000);
+			executor.shutdown();
+			pw.close();
+		}
+		
+		synchronized void print(Sequence seq) throws IOException{
+			seq.print(pw);
+		}
+		
+		class Abpoa implements Runnable{
+		//FastaReader br;
+			Process proc;
+			Alphabet alph;
+			String name;
+			String desc;
+			File in;
+			public Abpoa(File in, Alphabet alph) throws IOException{
+				this.alph = alph;
+				this.in = in;
+				this.name = in.getName();
+				this.desc = in.getParentFile().getName();//.replace(" ", "_");
+				//pw = new PrintWriter(new OutputStreamWriter(proc.getOutputStream()));
+			}
+			@Override
+			public void run() {
+				try{
+					ProcessBuilder 	pb = new ProcessBuilder(apboa_path, 
+							in.getAbsolutePath()
+							);
+					printCommand(pb);
+					proc =  pb.start();//redirectError(ProcessBuilder.Redirect.to(new File("err_minimap2.txt"))).start();
+				//	br  = new FastaReader(proc.getInputStream());
+					Sequence seq = FastaReader.read(proc.getInputStream(),alph);
+					seq.setName(name);seq.setDesc(desc);
+					print(seq);
+				}catch(IOException exc){
+					exc.printStackTrace();
+				}
+				
+				// TODO Auto-generated method stub
+				
+			}
+			
+		}
+		
+	}
+	
+	 
 	
 	
 	
@@ -272,12 +411,7 @@ public static void main(String[] args){
 				
 					);
 			System.err.println(input[k]);
-		List<String> cmd = pb.command();
-		StringBuffer sb  = new StringBuffer();
-		for(int i=0; i<cmd.size(); i++){
-			sb.append(cmd.get(i)+" ");
-		}
-		System.err.println(sb.toString());
+		printCommand(pb);
 			//	BufferedReader br;
 				InputStream	is  = null;
 				SamReader samReader= null;
@@ -312,6 +446,7 @@ public static void main(String[] args){
 				//pc.run();
 				
 		}
+		
 		private Iterator<FastqRecord> getFastqIterator(	final SamReader samR) throws IOException {
 		
 			return new Iterator<FastqRecord>(){
@@ -808,5 +943,6 @@ public static Collection<String> getReadList(String readList, boolean split) {
 	}
 	return reads;
 }
+
 
 }
