@@ -91,9 +91,9 @@ public class CachedFastqWriter extends CachedOutput{
   public int length(){
 		 return l.size();
 	 }
-  public  void  getOutFile(List<String> fi){
+  public  void  getOutFile(List<File> fi){
 	  for(int i=0; i<l.size(); i++){
-		  if(l.get(i).printed>0) fi.add(outdir+"/"+ l.get(i).nme1);
+		  if(l.get(i).printed>0) fi.add(new File(outdir+"/"+ l.get(i).nme1));
 		  else{
 			  System.err.println("not printed "+l.get(i).stack.size()+" "+this.nmes.get(i));
 		  }

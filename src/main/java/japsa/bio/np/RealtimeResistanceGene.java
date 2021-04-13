@@ -107,7 +107,7 @@ public class RealtimeResistanceGene {
 	public Boolean twoDOnly = false;
 	public Integer numThead = 4;
 
-	public void getOutfiles(List<String> res){
+	public void getOutfiles(List<File> res){
 		Iterator<CachedOutput> it =  this.fqw.values().iterator();
 		while(it.hasNext()){
 			CachedOutput nxt = it.next();

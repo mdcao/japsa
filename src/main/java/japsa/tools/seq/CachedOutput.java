@@ -45,7 +45,7 @@ public abstract class CachedOutput {
 	protected abstract String modify(String in);
 	 public abstract void close(Map<String, Integer> species2Len);
 	 
-	 public abstract void  getOutFile(List<String> fi);
+	 public abstract void  getOutFile(List<File> fi);
 	 
 	 public abstract int length();
 

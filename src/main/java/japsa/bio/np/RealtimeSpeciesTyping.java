@@ -199,7 +199,7 @@ public class RealtimeSpeciesTyping {
 		return Math.min(minlen, overlap);
 	}
 	
-	public void getOutfiles(List<String> res) {
+	public void getOutfiles(List<File> res) {
 		Iterator<Coverage> it =  species2ReadList.iterator();
 		while(it.hasNext()){
 			Coverage nxt = it.next();
@@ -1239,6 +1239,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 					//	System.err.println(a_j+" vs "+all_reads.abundance[j]);
 						vals[i] = (v1[0]-v[0])/v[0];
 					}
+					if(vals.length>0){
 					int min_index = findMinAbs(vals);
 					 minv = Math.abs(vals[min_index]);
 					if(minv < removeLikelihoodThresh){
@@ -1248,6 +1249,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 					//System.err.println(Arrays.asList(vals));
 					System.err.println("Can remove "+ refDB.speciesList.get(nonZero[min_index])+ " "+minv+" "+orig[nonZero[min_index]]);
 	//				System.err.println("h");
+					}
 				}
 				this.all_reads.maximisation(v, pseudo,10, null);
 				all_reads.check();
@@ -1271,12 +1273,14 @@ Stack<Integer> zerovs = new Stack<Integer>();
 	private int findMinAbs(Double[] vals) {
 		int min_i=0;
 		double minv = Math.abs(vals[0]);
+		if(vals.length>1){
 		for(int j=1; j<vals.length; j++){
 			double v = Math.abs(vals[j]);
 			if(v<minv){
 				minv = v;
 				min_i= j;
 			}
+		}
 		}
 		return min_i;
 	}

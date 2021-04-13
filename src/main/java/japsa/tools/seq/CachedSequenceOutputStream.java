@@ -19,9 +19,9 @@ import japsa.seq.SequenceOutputStream;
 public class CachedSequenceOutputStream extends CachedOutput {
 	
 	public static int remainderThresh = Integer.MAX_VALUE;// limit to write remainder sequence
-	 public  void  getOutFile(List<String> fi){
+	 public  void  getOutFile(List<File> fi){
 		  for(int i=0; i<l.size(); i++){
-			  if(l.get(i).printed>0) fi.add(outdir+"/"+ l.get(i).nme1);
+			  if(l.get(i).printed>0) fi.add(new File(outdir+"/"+ l.get(i).nme1));
 		  }
 	  }
 	 public int length(){

@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Stack;
 import java.util.regex.Pattern;
 
 import htsjdk.samtools.SAMRecord;
@@ -154,13 +155,13 @@ public static Pattern writeABX = null;
 		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
 
 		File outdir = new File("./");
-		List<String> outfiles = new ArrayList<String>();
-		resistanceTyping(resDB,resdir,  bamFile==null ? null : bamFile.split(":"),
-				fastqFile==null ? null : fastqFile.split(":"), readList, outdir, output, outfiles);
+		List<File> outfiles = new ArrayList<File>();
+		resistanceTyping(resDB,resdir,  RealtimeSpeciesTypingCmd.getFiles(null, bamFile, ":"), RealtimeSpeciesTypingCmd.getFiles(null, fastqFile, ":"),
+				readList, outdir, output, outfiles);
 		//now do species typing on the resistance genes;
 		String dbPath =  cmdLine.getStringVal("dbPath");
 		String[] dbs = cmdLine.getStringVal("dbs") == null ? null : cmdLine.getStringVal("dbs").split(":");
-		String[] fastqFiles = outfiles.toArray(new String[0]);
+		File[] fastqFiles = outfiles.toArray(new File[0]);
 		String excl = null;// can add in excl file here
 		String consensus = null;
 		File currDir = new File(".");
@@ -172,21 +173,21 @@ public static Pattern writeABX = null;
 			if(fastqFiles.length>0){
 			outer: for(int k=fastqFiles.length-1; k>=0; k--){
 				System.err.println("species typing for "+fastqFiles[k]);
-				List<String> unmapped_reads = dbs.length>1 ? new ArrayList<String>(): null;
-				String[] fqFiles = new String[] {fastqFiles[k]};
+				List<File> unmapped_reads = dbs.length>1 ? new ArrayList<File>(): null;
+				File[] fqFiles = new  File[] {fastqFiles[k]};
 				File outdirTop = null;
 				inner: for(int i=0; i<dbs.length; i++){
 					ReferenceDB refDB = new ReferenceDB(new File(dbPath+"/"+dbs[i]));
-					List<String> species_output_files = new ArrayList<String>();
+					List<File> species_output_files = new ArrayList<File>();
 				//	if(fastqFiles.length==0) break;
 					List<String> species = new ArrayList<String>();
-					File[] outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null,currDir, null,fqFiles,  "output.dat", species_output_files,
+					File[] outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null, fqFiles,  "output.dat", species_output_files,
 							i==dbs.length-1 ? null : unmapped_reads, excl, consensus, species, true, null, null);
 					if(outdirTop==null && !dbs[i].equals("Human"))  outdirTop = outD[0];
 					if(unmapped_reads==null) break inner;
-					fqFiles = unmapped_reads.toArray(new String[0]);
+					fqFiles = unmapped_reads.toArray(new File[0]);
 					for(int j=0; j<unmapped_reads.size(); j++){
-						(new File(unmapped_reads.get(j))).deleteOnExit();
+						unmapped_reads.get(j).deleteOnExit();
 					}
 					unmapped_reads.clear();
 				}
@@ -200,15 +201,14 @@ public static Pattern writeABX = null;
 		}
 	}
 
-	public static void resistanceTyping(File resDB, File resdir, String[] bamFile, 
-			String[] fastqFile,String readList, File outdir, String output, List<String> outfiles)  throws IOException, InterruptedException{
+	public static void resistanceTyping(File resDB, File resdir, File[] bamFile, 
+			File[] fastqFile,String readList, File outdir, String output, List<File> outfiles)  throws IOException, InterruptedException{
 	
-		File parentDir = new File(".");
 		List<SamReader> readers =  new ArrayList<SamReader>();
 		Iterator<SAMRecord> samIter= 
-				bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(parentDir, bamFile,  readList, maxReads, q_thresh, readers, new File(resDB,"DB.fasta")) : 
-					RealtimeSpeciesTypingCmd.getSamIteratorsFQ(parentDir, fastqFile, readList, maxReads, q_thresh, new File(resDB,"DB.fasta"), null);
-				File sample_namek = bamFile!=null ? new File(bamFile[0]) : new File(fastqFile[0]);
+				bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam( bamFile,  readList, maxReads, q_thresh, readers, new File(resDB,"DB.fasta")) : 
+					RealtimeSpeciesTypingCmd.getSamIteratorsFQ( fastqFile, readList, maxReads, q_thresh, new File(resDB,"DB.fasta"), null);
+				File sample_namek = bamFile!=null ? bamFile[0]: fastqFile[0];
 	//	RealtimeSpeciesTypingCmd.getSamIterators(bamFile==null ? null : bamFile, 
 	//			fastqFile==null ? null : fastqFile, readList, maxReads, q_thresh, sample_names,iterators, readers, 
 	//			new File(resDB,"DB.fasta"));
