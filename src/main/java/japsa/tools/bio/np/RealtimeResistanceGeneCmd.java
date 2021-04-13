@@ -91,6 +91,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addInt("read", 50,  "Minimum number of reads between analyses");		
 		addInt("time", 1800,   "Minimum number of seconds between analyses");
 		addBoolean("log", false, "Whether to write mapping details to genes2reads.map.");
+		addBoolean("buildConsensus", true, "whether to try to build species consensus during species typing ");
 
 		addInt("thread", 1,   "Number of threads to run");
 
@@ -169,7 +170,7 @@ public static Pattern writeABX = null;
 		File[] fastqFiles = outfiles.toArray(new File[0]);
 		String excl = null;// can add in excl file here
 		File currDir = new File(".");
-		boolean buildConsensus =true;
+		boolean buildConsensus =cmdLine.getBooleanVal("buildConsensus");
 		String consensusFile= null;
 		if(dbPath!=null && dbs!=null && outfiles.size()>0){
 			
