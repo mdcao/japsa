@@ -78,7 +78,7 @@ static boolean reduceToSpecies = false;// whether to re-run after reducing db to
 static boolean buildConsensus = false;// this re-runs analysis and builds consensus;
 	static double q_thresh=7; 
 	static double qual=1;
-	static boolean deleteUnmappedIntermediates = false;
+	static boolean deleteUnmappedIntermediates = true;
 	static String filter;
 	
 	static boolean twoOnly=false;

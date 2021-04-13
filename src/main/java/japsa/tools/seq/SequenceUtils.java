@@ -41,6 +41,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.ProcessBuilder.Redirect;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -332,13 +333,14 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 							in.getAbsolutePath()
 							);
 					printCommand(pb);
-					proc =  pb.start();//redirectError(ProcessBuilder.Redirect.to(new File("err_minimap2.txt"))).start();
+					proc =  pb.redirectError(Redirect.INHERIT).start();//redirectError(ProcessBuilder.Redirect.to(new File("err_minimap2.txt"))).start();
 				//	br  = new FastaReader(proc.getInputStream());
 					Sequence seq = FastaReader.read(proc.getInputStream(),alph);
 					seq.setName(name);seq.setDesc(desc);
 					print(seq);
 				}catch(IOException exc){
-					exc.printStackTrace();
+					System.err.println("WARNING:  problem with building consensus for"+in.getAbsolutePath());
+					//exc.printStackTrace();
 				}
 				
 				// TODO Auto-generated method stub
