@@ -72,6 +72,7 @@ public class RealtimeResistanceGeneCmd extends CommandLine{
 		addString("writeABX" , null, "strings to match for what to write fastq file out, which can be colon separated, e.g. fosfomycin|vancomycin");
 		addInt("minCountResistance", 1, "Mininum number of mapped reads for a species to be considered (for species typing step)");
 		addInt("minCountSpecies", 1, "Mininum number of mapped reads for a species to be considered (for species typing step)");
+		addString("abpoa_path", "/sw/abpoa/current/abpoa",  "abpoa path", false);
 
 		addString("output", "output.dat",  "Output file");
 		addString("bamFile", null,  "The bam file");
@@ -138,9 +139,13 @@ public static Pattern writeABX = null;
 		SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
 		SequenceUtils.mm2_splicing = null;//
 		SequenceUtils.secondary = true;
+		SequenceUtils.apboa_path  = cmdLine.getStringVal("abpoa_path");
 		CachedOutput.MIN_READ_COUNT=cmdLine.getIntVal("minCountResistance"); // this for detection of abx
 		
 		RealtimeSpeciesTyping.MIN_READS_COUNT = cmdLine.getIntVal("minCountSpecies");
+		RealtimeSpeciesTyping.mincount=2;
+		RealtimeSpeciesTyping.minCoverage=2;
+		RealtimeSpeciesTyping.minlength=300;
 		RealtimeResistanceGene.OUTSEQ = cmdLine.getBooleanVal("log");
 		RealtimeResistanceGene.runKAlign = cmdLine.getBooleanVal("runKAlign");
 		tmp = cmdLine.getStringVal("tmp");		
@@ -163,8 +168,9 @@ public static Pattern writeABX = null;
 		String[] dbs = cmdLine.getStringVal("dbs") == null ? null : cmdLine.getStringVal("dbs").split(":");
 		File[] fastqFiles = outfiles.toArray(new File[0]);
 		String excl = null;// can add in excl file here
-		String consensus = null;
 		File currDir = new File(".");
+		boolean buildConsensus =true;
+		String consensusFile= null;
 		if(dbPath!=null && dbs!=null && outfiles.size()>0){
 			
 			CachedOutput.MIN_READ_COUNT=RealtimeSpeciesTyping.MIN_READS_COUNT;
@@ -181,8 +187,28 @@ public static Pattern writeABX = null;
 					List<File> species_output_files = new ArrayList<File>();
 				//	if(fastqFiles.length==0) break;
 					List<String> species = new ArrayList<String>();
+					if(fqFiles.length==0) break inner;
+					Stack<File> bamOut = buildConsensus ?new Stack<File>() : null;
+
 					File[] outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null, fqFiles,  "output.dat", species_output_files,
-							i==dbs.length-1 ? null : unmapped_reads, excl, consensus, species, true, null, null);
+							i==dbs.length-1 ? null : unmapped_reads, excl, null, species, true,  bamOut, null);
+					
+					if(buildConsensus && consensusFile==null && !dbs[i].equals("Human") ){
+						String consensusFile1 = consensusFile==null ? outD[1].getAbsolutePath(): consensusFile;
+						System.err.println("rerunning to build consensus");
+						File bamO = bamOut.pop();
+						System.err.println(bamO);
+						File[] bamFiles1 = new File[] {bamO};
+						outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, i==0 ? resdir : null, readList,  bamFiles1, null, "output.dat",
+								null, null, excl, consensusFile1, null, false, null, outD[0]);
+						
+						bamO.delete();
+						File consensus = SequenceUtils.makeConsensus(new File(outD[0], "fastqs"),4, true);
+						RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null, new File[] {consensus}, "output.dat",
+							null, null, null, null, null, true, null, new File(consensus.getAbsolutePath()+".jST"));
+					
+					}
+					
 					if(outdirTop==null && !dbs[i].equals("Human"))  outdirTop = outD[0];
 					if(unmapped_reads==null) break inner;
 					fqFiles = unmapped_reads.toArray(new File[0]);

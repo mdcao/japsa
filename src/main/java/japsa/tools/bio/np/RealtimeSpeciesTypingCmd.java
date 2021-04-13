@@ -78,7 +78,7 @@ static boolean reduceToSpecies = false;// whether to re-run after reducing db to
 static boolean buildConsensus = false;// this re-runs analysis and builds consensus;
 	static double q_thresh=7; 
 	static double qual=1;
-	static boolean deleteUnmappedIntermediates = true;
+	static boolean deleteUnmappedIntermediates = false;
 	static String filter;
 	
 	static boolean twoOnly=false;
@@ -319,7 +319,6 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 			
 			String consensusFile = cmdLine.getStringVal("consensusFile");
 			List<String> species = new ArrayList<String>();
-			File currDir = new File(".");
 			Stack<File> bamOut = buildConsensus ?new Stack<File>() : null;
 		//	ReferenceDB refDB, File resdir, String readList,
 		//	 File [] bamFile, File[] fastqFile, String output,	List<String> out_fastq , 
@@ -420,7 +419,10 @@ public static File[]  getFiles(File base, String str, String sp) {
 		 List<String> species, boolean runAnalysis, Stack<File> keepBAM, File outdir
 			) throws IOException, InterruptedException{
 		
+		if(fastqFile!=null) {
 		
+			System.err.println("running on "+Arrays.asList(fastqFile));
+		}
 			List<SamReader> readers =  new ArrayList<SamReader>();
 			Iterator<SAMRecord> samIter= 
 					bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(bamFile,  readList, maxReads, q_thresh, readers,  refDB.refFile) : 
@@ -452,6 +454,7 @@ public static File[]  getFiles(File base, String str, String sp) {
 				if(out_fastq!=null && runAnalysis) paTyping.getOutfiles(out_fastq);
 				if(paTyping.fqw_unmapped!=null){
 					paTyping.fqw_unmapped.getOutFile(unmapped_reads);
+					System.err.println("unmapped reads "+Arrays.asList(unmapped_reads));
 				}
 				//files[k] = paTyping.unmapped_reads;  // unmapped reads taken forward to next database
 	//	}dbs
