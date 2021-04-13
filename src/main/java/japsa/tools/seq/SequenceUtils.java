@@ -338,7 +338,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 					Sequence seq = FastaReader.read(proc.getInputStream(),alph);
 					seq.setName(name);seq.setDesc(desc);
 					print(seq);
-				}catch(IOException exc){
+				}catch(Exception exc){
 					System.err.println("WARNING:  problem with building consensus for"+in.getAbsolutePath());
 					//exc.printStackTrace();
 				}
