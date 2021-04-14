@@ -301,7 +301,13 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		}
 		public void run() throws IOException{
 			for(int i=0; i<files.size(); i++){
+				try{
+			
 			executor.execute(new Abpoa(files.get(i), alph));
+				}catch(Exception exc){
+					System.err.println("prob with "+files.get(i));
+					exc.printStackTrace();
+				}
 			}
 			waitOnThreads(executor,1000);
 			executor.shutdown();
@@ -324,6 +330,13 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 				this.in = in;
 				this.name = in.getName();
 				this.desc = in.getParentFile().getName();//.replace(" ", "_");
+				if(true){
+					InputStream is = new FileInputStream(in);
+					Sequence seq1 = FastaReader.read(is, alph);
+					String desc1 = seq1.getDesc();
+					desc= desc+" ; "+desc1;
+					is.close();
+				}
 				//pw = new PrintWriter(new OutputStreamWriter(proc.getOutputStream()));
 			}
 			@Override
@@ -333,10 +346,18 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 							in.getAbsolutePath()
 							);
 					printCommand(pb);
+					String extra = "";
+					
+					//System.err.println("HERE");
+					//System.err.println(desc1);
+					
 					proc =  pb.redirectError(Redirect.INHERIT).start();//redirectError(ProcessBuilder.Redirect.to(new File("err_minimap2.txt"))).start();
 				//	br  = new FastaReader(proc.getInputStream());
 					Sequence seq = FastaReader.read(proc.getInputStream(),alph);
-					seq.setName(name);seq.setDesc(desc);
+					
+				
+					
+					seq.setName(name);seq.setDesc(desc+extra);
 					print(seq);
 				}catch(Exception exc){
 					System.err.println("WARNING:  problem with building consensus for"+in.getAbsolutePath());
