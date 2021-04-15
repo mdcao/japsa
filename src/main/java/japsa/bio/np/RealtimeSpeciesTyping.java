@@ -96,7 +96,7 @@ import pal.tree.Node;
 public class RealtimeSpeciesTyping {
 	public static double targetOverlap =0.95;
 	public static double 	 epsilon = 0.001;
-	public static double removeLikelihoodThresh=0.1;
+	public static double removeLikelihoodThresh=0.0; // 
 //	public static boolean exclude = false; //whether to use exclude file to exclude reads
 //	public static boolean writeConsensus = false;
 	public static boolean reestimate = true;
@@ -1218,11 +1218,13 @@ Stack<Integer> zerovs = new Stack<Integer>();
 			double[]v = new double[2];
 			if( all_reads!=null){
 				double minv = 0.0;
-				while(minv < removeLikelihoodThresh){
+				if(removeLikelihoodThresh>0.00001){
+				for(int cnt=0; minv < removeLikelihoodThresh && cnt < 10; cnt++){
 					this.all_reads.maximisation(v, pseudo,10, null);
 					//this.all_reads.check();
 					double[] orig = all_reads.abundance.clone();
 					Integer[] nonZero = all_reads.nonZero(0.01);
+					if(nonZero.length==0) break;
 					double[] v1 = new double[2];
 					Double[] vals = new Double[nonZero.length];
 					Double[] new_a = new Double[nonZero.length];
@@ -1239,6 +1241,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 					//	System.err.println(a_j+" vs "+all_reads.abundance[j]);
 						vals[i] = (v1[0]-v[0])/v[0];
 					}
+					
 					if(vals.length>0){
 					int min_index = findMinAbs(vals);
 					 minv = Math.abs(vals[min_index]);
@@ -1251,9 +1254,11 @@ Stack<Integer> zerovs = new Stack<Integer>();
 	//				System.err.println("h");
 					}
 				}
+				}//if(removeLikelihoodThresh>0.00001)
 				this.all_reads.maximisation(v, pseudo,10, null);
 				all_reads.check();
 			}
+				
 			Integer[] nonZero = all_reads.nonZero(0.01);
 			//String[] species = new String[nonZero.length];
 			if(species!=null){

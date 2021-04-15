@@ -210,8 +210,8 @@ public static Pattern writeABX = null;
 						File consensus = SequenceUtils.makeConsensus(new File(outD[0], "fastqs"),4, true);
 						System.err.println("done  "+consensus.getName());
 					//	System.err.println("re typing for consensus "+consensus.getAbsolutePath()+" "+dbs[i]);
-//						RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null, new File[] {consensus}, "output.dat",
-	//						null, null, null, null, null, true, null, new File(consensus.getAbsolutePath()+".jST"));
+						RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null, new File[] {consensus}, "output.dat",
+							null, null, null, null, null, true, null, new File(consensus.getAbsolutePath()+".jST"));
 					
 					}
 					
@@ -231,6 +231,7 @@ public static Pattern writeABX = null;
 			}
 			}
 		}
+		
 	}
 
 	public static void resistanceTyping(File resDB, File resdir, File[] bamFile, 

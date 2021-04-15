@@ -100,6 +100,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		addString("dbPath",null, "path to databases",false);
 		addString("resdb",null, "Resistance database",false);
 		addString("dbs",null, "databases to use in path",false);
+		addDouble("removeLikelihoodThresh", 0, "what is the relative likelihood for removing species");
 		addString("speciesFile",null, "species to restrict search",false);
 		addBoolean("realtimeAnalysis", false, "whether to run analysis in realtime");
 		addBoolean("alignedOnly", false, "whether to output only the aligned portion of a read in fasta file");
@@ -237,6 +238,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		SequenceUtils.mm2_splicing = null;//
 		SequenceUtils.apboa_path = cmdLine.getStringVal("abpoa_path");
 		SequenceUtils.secondary = true;
+		RealtimeSpeciesTyping.removeLikelihoodThresh= cmdLine.getDoubleVal("removeLikelihoodThresh");
 		RealtimeSpeciesTypingCmd.q_thresh = cmdLine.getDoubleVal("fail_thresh");
 		RealtimeSpeciesTypingCmd.filter = cmdLine.getStringVal("filter");
 		RealtimeSpeciesTypingCmd.maxReads = cmdLine.getIntVal("maxReads");
@@ -279,6 +281,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		String bamFile   = cmdLine.getStringVal("bamFile");		
 		String fastqFile = cmdLine.getStringVal("fastqFile");
 		reduceToSpecies = cmdLine.getBooleanVal("reduceToSpecies");
+		if(RealtimeSpeciesTyping.removeLikelihoodThresh<=0.00001) reduceToSpecies=false;
 		String resDB = cmdLine.getStringVal("resdb");
 		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
 		String dbPath = cmdLine.getStringVal("dbPath");

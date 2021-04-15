@@ -60,6 +60,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.zip.GZIPInputStream;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
@@ -71,6 +72,9 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.fastq.BasicFastqWriter;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.fastq.FastqWriter;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SequenceUtil;
 import japsa.seq.Alphabet;
 import japsa.seq.FastaReader;
@@ -78,7 +82,11 @@ import japsa.seq.Sequence;
 import japsa.seq.SequenceOutputStream;
 
 public class SequenceUtils {
+	public static boolean deleteErr = true;
 	public static SAMFileWriterFactory sfw = new SAMFileWriterFactory();
+	{
+		sfw.setUseAsyncIo(true);
+	}
 	public static void flip(SAMRecord sam, boolean switchFlag) {
 		 if(true) throw new RuntimeException(" not clear effect on coordinates in read space");
 		String sa = sam.getReadString();
@@ -131,7 +139,7 @@ public class SequenceUtils {
 		    else _process2Input  = new BasicFastqWriter(new PrintStream(process2Input));
 		    this.max = max;
 		  }
-		 String st0,st1,st2,st3;
+		// String st0,st1,st2,st3;
 		  
 		  /**
 		   * Perform the copy operation in a separate thread
@@ -154,16 +162,9 @@ public class SequenceUtils {
 		        }
 		        if(!fasta){
 			        double q = SequenceUtils.getQual(nxt.getBaseQualities());
-			       // System.err.println("quality "+q);
 			        if(q<q_thresh) process = false;
 		        }
-//		        process = process && (q)>= q_thresh);
 		        if(process){
-		        	//st0= nxt.getReadName();
-		        	//st1 = nxt.getReadString();
-		        	//st2 = nxt.getBaseQualityHeader();
-		        	//st3 = nxt.getBaseQualityString();
-		       // 	st2 = "";
 		        	if(fasta){
 		        		String nme=">"+nxt.getReadName();
 		        		this.sos.print(nme);sos.println();
@@ -179,7 +180,7 @@ public class SequenceUtils {
 		        if(readsToInclude!=null && readsToInclude.size()==0) break; // no more reads to include
 		    }
 		   
-		System.err.println("finished piping input data");
+		System.err.println("finished piping input data "+fasta);
 		   
 		      //_process1Output.close();
 		   if(fasta)sos.close();
@@ -267,7 +268,6 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 	}
 	
 	
-	
 
 	public static class MultiAbpoa{
 		final ExecutorService executor;
@@ -309,7 +309,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 					exc.printStackTrace();
 				}
 			}
-			waitOnThreads(executor,1000);
+			waitOnThreads(executor,100);
 			executor.shutdown();
 			pw.close();
 		}
@@ -373,11 +373,131 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 	}
 	
 	 
+	 static Iterator<FastqRecord> getFastaIterator(InputStream ins) throws IOException {
+		 final FastaReader fr = new FastaReader(ins);
+		 if(!fr.hasNext()) return null;
+		return new Iterator<FastqRecord>(){
+			Alphabet alph = Alphabet.DNA16();
+			
+			
+			@Override
+			public boolean hasNext() {
+				try{
+				boolean nxt =  fr.hasNext();
+				if(!nxt) fr.close();
+				return nxt;
+				}catch(IOException exc){
+					exc.printStackTrace();
+				}
+				return false;
+			}
+
+			@Override
+			public FastqRecord next() {
+				FastqRecord fq = null;
+				
+				try{
+				Sequence seq = fr.nextSequence(alph);
+				if(seq==null) {
+					fr.close();
+					return null;
+				}
+				fq  =   new FastqRecord(seq.getName(),	seq.toString(),	null,null);
+				}catch(IOException exc){
+					exc.printStackTrace();
+				}
+				
+				return fq;
+			}};
+		}
+	
+ static Iterator<FastqRecord> getFastqIterator(BufferedReader br) throws IOException {
+	 String st0_ = br.readLine();
+	 if(st0_==null) return null; // if file is empty
+	Iterator<FastqRecord> it1 = new Iterator<FastqRecord>(){
+		String st1,st2,st3;
+		String st0 = st0_;
+		@Override
+		public boolean hasNext() {
+			boolean hasNext =  st0!=null;
+			if(!hasNext) try{
+				br.close();
+			}catch(IOException exc){
+				exc.printStackTrace();
+			}
+			return hasNext;
+		}
+
+		@Override
+		public FastqRecord next() {
+			FastqRecord fq = null;
+			try{
+				if(st0==null) {
+					br.close();
+					return null;
+				}
+				
+			st1 = br.readLine();
+			
+				st2 = br.readLine();
+				st3 = br.readLine();
+			
+			fq  =   new FastqRecord(st0.split(" ")[0].substring(1),	st1,	st2,st3);
+			 st0=br.readLine();
+			
+			}catch(IOException exc){
+				exc.printStackTrace();
+			}
+			return fq;
+		}};
+		return it1;
+	}
 	
 	
+ static Iterator<FastqRecord> getFastqIterator(	final SamReader samR) throws IOException {
+		
+		return new Iterator<FastqRecord>(){
+			Iterator<SAMRecord>sams = samR.iterator();
+			@Override
+			public boolean hasNext() {
+				boolean nxt =  sams.hasNext();
+				if(!nxt)this.close();
+				return nxt;
+			}
+
+			public void close(){
+				try{
+					samR.close();
+					}catch(IOException exc){
+						exc.printStackTrace();
+					}
+			}
+			@Override
+			public FastqRecord next() {
+				SAMRecord sam = sams.next();
+				while(sam.isSecondaryOrSupplementary() && sams.hasNext()){
+					sam = sams.next();
+					if(sam==null) {
+						close();
+						return null;
+					}
+				}
+				if(sam!=null && sam.isSecondaryOrSupplementary()) sam = null;
+				if(sam==null){
+					close();
+					return null;
+				}
+				return  new FastqRecord(sam.getReadName(),	sam.getReadString(),"+",sam.getBaseQualityString());
+			}
+			
+		};
+	}
 	
+   
 	private static class FastqToSAMRecord implements Iterator<SAMRecord> {
 		// ProcessBuilder pb;
+	//	 ExecutorService ex1 = Executors.newFixedThreadPool(1);
+		InputStream is = null;
 		 SamReader reader;
 		SAMRecordIterator iterator;
 		final String mm2Index;
@@ -385,219 +505,148 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		final String[] input;
 		int max_per_file;
 		final Collection<String> readsToInclude;
-		final SAMTextWriter bfw;
+		 SAMTextWriter bfw = null;
+		Log log = null;
+		 ProgressLogger pl = null; 
+		 int cntsAdded = 0;
+		 
+		 public boolean finished(){
+			 return this.bfw!=null || pl.getCount()==cntsAdded;
+		 }
+		 public void refresh(){
+			 try{
+				 System.err.println("refreshing: analysed "+count+" records");
+			 is.close();
+			if(reader!=null) reader.close();
+			if(iterator!=null) iterator.close();
+			 iterator = null;
+			 }catch(Exception exc){
+				 exc.printStackTrace();
+			 }
+		 }
+		
+		public void close(){
+			try{
+			System.err.println("closing: analysed "+count+" records "+Arrays.asList(input));
+			System.err.println("writing alignments "+bfw==null);
+			this.refresh();
+			if(bfw!=null) { // this is bfw is async
+				while(!finished()){
+					System.err.println("sleep "+100);
+					 Thread.currentThread().sleep(100);
+				}
+				this.bfw.close();
+			}
+			}catch(Exception exc){
+				exc.printStackTrace();
+			}
+		
+			//ex1.shutdown();
+		}
 	//	final boolean deleteFile;
-		private void init(int k) throws IOException{
+		private void init(int k) {
+			reader=null; iterator = null;
+			try{
 			ProcessBuilder pb;
 			System.err.println("making builder");
 			if(mm2_splicing==null) {
 				if(mm2Preset==null){
 					if(!secondary){
-					pb = new ProcessBuilder(mm2_path, 
-							"-t",
-							"" + mm2_threads,
-							"-a",
-							"--secondary=no",
-						//	"--for-only",
-							"-I",
-							mm2_mem,
-//							"-K",
-//							"200M",
-							mm2Index,
-							"-"
-							);
+					pb = new ProcessBuilder(mm2_path, 	"-t","" + mm2_threads,"-a","--secondary=no",	"-I",	mm2_mem,	mm2Index,	"-");
 					}else{
-						pb = new ProcessBuilder(mm2_path, 
-								"-t",
-								"" + mm2_threads,
-								"-a",
-								"-I",mm2_mem,
-								"-N",""+max_secondary,
-//								"-K",
-//								"200M",
-								mm2Index,
-								"-"
-								);
+						pb = new ProcessBuilder(mm2_path, "-t","" + mm2_threads,	"-a","-I",mm2_mem,"-N",""+max_secondary,	mm2Index,	"-");
 					}
 				}else{
-				pb = new ProcessBuilder(mm2_path, 
-			
-					"-t",
-					"" + mm2_threads,
-					"-ax",
-					mm2Preset,
-				//	"--for-only",
-					"-I",
-					mm2_mem,
-					"-N",""+max_secondary,
-//					"-K",
-//					"200M",
-					mm2Index,
-					"-"
-				
-					);
+				pb = new ProcessBuilder(mm2_path, 	"-t","" + mm2_threads,"-ax",	mm2Preset,	"-I",	mm2_mem,	"-N",""+max_secondary,	mm2Index,"-");
 				}
 			}
 			else pb = new ProcessBuilder(mm2_path, 
-					"-t",
-					"" + mm2_threads,
-					"-ax",
-					mm2Preset,
-					mm2_splicing,
-				//	"--for-only",
-					"-I",
-					mm2_mem,
-//					"-K",
-//					"200M",
-					mm2Index,
-					"-"
-				
-					);
-			System.err.println(input[k]);
-		printCommand(pb);
-			//	BufferedReader br;
-				InputStream	is  = null;
+					"-t","" + mm2_threads,"-ax",mm2Preset,mm2_splicing,	"-I",	mm2_mem,	mm2Index,	"-");
+			printCommand(pb);
+			boolean bam = false;
 				boolean fasta=false;
 				SamReader samReader= null;
 				SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 				if(inputFile==null){
 					URL  url = new URL(input[k]);
 					URLConnection urlc = url.openConnection();
-				is= input[k].endsWith(".gz")  ? new GZIPInputStream(urlc.getInputStream()) : urlc.getInputStream();
+					is= input[k].endsWith(".gz")  ? new GZIPInputStream(urlc.getInputStream()) : urlc.getInputStream();
 				}else if(input[k].endsWith(".bam") || input[k].endsWith(".sam")){
-					 InputStream	bamInputStream =	new FileInputStream(inputFile[k]);
-					samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
+					is=	new FileInputStream(inputFile[k]);
+					bam = true;
+					samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(is));
 				}else{
 					is= input[k].endsWith(".gz")  ? new GZIPInputStream(new FileInputStream(inputFile[k])) : new FileInputStream(inputFile[k]);
 					fasta = input[k].endsWith(".fa") || input[k].endsWith(".fasta");
+					System.err.println("input file "+input[k]+" "+fasta);
+
 				}
-			///.redirectError(Redirect.INHERIT).start();//
-				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.to(new File("err_minimap.txt"))).start();
-				Iterator<FastqRecord> fastqIt = is==null ? 
+				Iterator<FastqRecord> fastqIt1 = bam ? 
 						getFastqIterator(samReader):
 					(fasta ? getFastaIterator(is)	 : getFastqIterator(new BufferedReader(new InputStreamReader(is))));
-			PipeConnector pc = new PipeConnector(fastqIt, mm2Process.getOutputStream(), max_per_file, readsToInclude,q_thresh, fasta);
-			//pc.run();
-			Thread th = new Thread(pc);
-			th.start();
-			//	Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
-			//	OutputStream os = mm2Process.getOutputStream();
+			//	BufferedIterator<FastqRecord> fastqIt = fastqIt1==null ? null :   new BufferedIterator<FastqRecord>(fastqIt1,5);
+			if(fastqIt1!=null){
+				
+				if(false){
+					File  tmp = new File("tmp."+System.currentTimeMillis()+"."+Math.random());
+					this.print(tmp, fasta, fastqIt1);
+					System.err.println("tmp : "+tmp.getAbsolutePath());
+					tmp.deleteOnExit();
+				}
+				File minimaperr = new File("err_minimap."+System.currentTimeMillis()+"."+Math.random());
+				if(deleteErr) minimaperr.deleteOnExit();
+				Redirect error = ProcessBuilder.Redirect.to(minimaperr);//Redirect.INHERIT
+				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(error).start();
+			//	Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.from(tmp)).redirectError(error).start();
+				PipeConnector pc = new PipeConnector(fastqIt1, mm2Process.getOutputStream(), max_per_file, readsToInclude,q_thresh, fasta);
+				Thread th = new Thread(pc);
+				th.start();
+				//.redirectError(Redirect.INHERIT).start();
 				reader =  SamReaderFactory.makeDefault().open(SamInputResource.of(mm2Process.getInputStream()));
 				iterator = reader.iterator();
 				if(!iterator.hasNext()){
 					System.err.println("WARNING: nothing to return");
 				}
+			//pc.run();
+//			ex1.execute(run);
+//			Thread th = new Thread(pc);
+//			th.start();
+			//	Process mm2Process  = pb.redirectError(ProcessBuilder.Redirect.to(new File("err.txt"))).start();
+			//	OutputStream os = mm2Process.getOutputStream();
+			}
+			}catch(Exception exc){
+				exc.printStackTrace();
+			}
 				//pc.run();
 				
 		}
 		
-		private Iterator<FastqRecord> getFastqIterator(	final SamReader samR) throws IOException {
-		
-			return new Iterator<FastqRecord>(){
-				Iterator<SAMRecord>sams = samR.iterator();
-				@Override
-				public boolean hasNext() {
-					boolean nxt =  sams.hasNext();
-					if(!nxt)this.close();
-					return nxt;
-				}
+	 
+		//** prints fastqIterator directly to file
+		private void print(File tmp, boolean fasta, Iterator<FastqRecord> fastqIt1) throws IOException {
+			
+				if(fasta){
+					SequenceOutputStream sos = new SequenceOutputStream(new FileOutputStream(tmp));
+					while(fastqIt1.hasNext()){
+						FastqRecord nxt = fastqIt1.next();
+						String nme=">"+nxt.getReadName();
+	        			sos.print(nme);sos.println();
+	        		sos.print(nxt.getReadString()); sos.println();
+					}
+	        		sos.close();
+				}else{
+				FastqWriter pw = new BasicFastqWriter(new PrintStream(new FileOutputStream(tmp)));
 
-				public void close(){
-					try{
-						samR.close();
-						}catch(IOException exc){
-							exc.printStackTrace();
-						}
+				while(fastqIt1.hasNext()){
+					pw.write(fastqIt1.next());
 				}
-				@Override
-				public FastqRecord next() {
-					SAMRecord sam = sams.next();
-					while(sam.isSecondaryOrSupplementary() && sams.hasNext()){
-						sam = sams.next();
-						if(sam==null) {
-							close();
-							return null;
-						}
-					}
-					if(sam!=null && sam.isSecondaryOrSupplementary()) sam = null;
-					if(sam==null){
-						close();
-						return null;
-					}
-					return  new FastqRecord(sam.getReadName(),	sam.getReadString(),"+",sam.getBaseQualityString());
+				pw.close();
 				}
-				
-			};
-		}
 		
-		private Iterator<FastqRecord> getFastaIterator(InputStream ins) throws IOException {
-			return new Iterator<FastqRecord>(){
-				Alphabet alph = Alphabet.DNA16();
-				FastaReader fr = new FastaReader(ins);
-				
-				@Override
-				public boolean hasNext() {
-					try{
-					return fr.hasNext();
-					}catch(IOException exc){
-						exc.printStackTrace();
-					}
-					return false;
-				}
+	}
 
-				@Override
-				public FastqRecord next() {
-					FastqRecord fq = null;
-					
-					try{
-					Sequence seq = fr.nextSequence(alph);
-					if(seq==null) return null;
-					fq  =   new FastqRecord(seq.getName(),	seq.toString(),	null,null);
-					}catch(IOException exc){
-						exc.printStackTrace();
-					}
-					return fq;
-				}};
-			}
-		
-	private Iterator<FastqRecord> getFastqIterator(BufferedReader br) throws IOException {
-		return new Iterator<FastqRecord>(){
-			String st1,st2,st3;
-			String st0 = br.readLine();
-			@Override
-			public boolean hasNext() {
-				boolean hasNext =  st0!=null;
-				if(!hasNext) try{
-					br.close();
-				}catch(IOException exc){
-					exc.printStackTrace();
-				}
-				return hasNext;
-			}
 
-			@Override
-			public FastqRecord next() {
-				FastqRecord fq = null;
-				try{
-					if(st0==null) {
-						br.close();
-						return null;
-					}
-					
-				st1 = br.readLine();
-				
-					st2 = br.readLine();
-					st3 = br.readLine();
-				
-				fq  =   new FastqRecord(st0.split(" ")[0].substring(1),	st1,	st2,st3);
-				 st0=br.readLine();
-				
-				}catch(IOException exc){
-					exc.printStackTrace();
-				}
-				return fq;
-			}};
-		}
+
 		//	static int id = 
 		 File[] inputFile = null;
 		 
@@ -627,12 +676,14 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 
 				outputBAM.deleteOnExit();
 			
-			//	SAMFileHeader header  = new SAMFileHeader();
+				//SAMFileHeader header  = new SAMFileHeader();
+				//header.setSortOrder(SortOrder.unsorted);
 				
-				this.bfw =  new SAMTextWriter(outputBAM);//sfw.makeSAMWriter(header, false, outputBAM);
+				this.bfw = // (SAMTextWriter) sfw.makeSAMWriter(header, false, outputBAM);
+						new SAMTextWriter(outputBAM);//sfw.makeSAMWriter(header, false, outputBAM);
 				this.bfw.setSortOrder(SortOrder.unsorted, false);
-			}else{
-				this.bfw = null;
+				this.log = Log.getInstance(this.getClass());
+				this.pl = new ProgressLogger(log);
 			}
 		 }
 		
@@ -642,51 +693,33 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		public boolean hasNext() {
 			// if its null it has not been initialised
 			boolean res = this.curr_index< this.input.length || iterator.hasNext();
-			try{
 			if(!res) {
-				System.err.println("analysed "+count+" records");
-				reader.close();
-				if(bfw!=null) {
-					this.bfw.close();
-				}
-			}
-			
-			}catch(IOException exc){
-				exc.printStackTrace();
+				this.close();
 			}
 			return res;
 		}
 
 		int curr_index=0;
 		
+		
+		
 		@Override
 		public SAMRecord next() {
 			if(iterator !=null && !iterator.hasNext()){
-				try{
-					System.err.println("analysed "+count+" records");
-					iterator.close();
-				reader.close();
-				iterator=null;
-				}catch(IOException exc){
-					exc.printStackTrace();
-				}
+				refresh();
 			}
-			if(iterator==null && curr_index < this.input.length) try{
+			if(iterator==null && curr_index < this.input.length) {
 				init(curr_index);
 				curr_index++;
-			}catch(IOException exc){
-				exc.printStackTrace();
 			}
 			//System.err.println(iterator.hasNext());
-			 SAMRecord nxt =   iterator.hasNext() ? iterator.next() : null ;
+			 SAMRecord nxt =  iterator==null ? null :  iterator.next() ;
 			 if(this.bfw!=null && nxt!=null){
+				 this.cntsAdded++;
 				 bfw.addAlignment(nxt);
 			 }
-		//	System.err.println(nxt.getReadName());
-		//	 System.err.println(nxt.getReadString());
 			 count++;
-				if(nxt==null && bfw!=null) bfw.close();
-
+			 if(nxt==null) this.close();
 			 return nxt;
 		}
 		 

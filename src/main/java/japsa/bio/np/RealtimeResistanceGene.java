@@ -257,6 +257,7 @@ this.outdir = new File("./");
 		if(!realtimeAnalysis){
 			resistFinder.run();
 		}
+		resistFinder.closeStream();
 		//samIter.close();
 		//samReader.close();
 
@@ -345,6 +346,13 @@ this.outdir = new File("./");
 		private RealtimeResistanceGene resistGene;
 		private SequenceOutputStream sequenceOutputStream;
 
+		public void  closeStream(){
+			try{
+			sequenceOutputStream.close();
+			}catch(Exception exc){
+				exc.printStackTrace();
+			}
+		}
 	    public ResistanceGeneFinder(RealtimeResistanceGene resistGene, String outputFile, String resDB, String recordPrefix) throws IOException {
 	    	this(resistGene, new FileOutputStream(outputFile), resDB, recordPrefix);
 	    }
@@ -531,7 +539,7 @@ this.outdir = new File("./");
 		}
 
 		
-
+		
 
 		/* (non-Javadoc)
 		 * @see japsa.bio.np.RealtimeAnalysis#close()
@@ -539,7 +547,7 @@ this.outdir = new File("./");
 		@Override
 		protected void close() {
 			try {
-				sequenceOutputStream.close();
+				//sequenceOutputStream.close();
 				if(consensus_output!=null) consensus_output.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
