@@ -752,7 +752,7 @@ public class RealtimeSpeciesTyping {
 
 public static boolean hierarchical = false;
 public static boolean separateIntoContigs = true;//false; // whether to do separate file for each contig
-public static boolean alignedOnly = false; // whether just to output the aligned component in the output fastq
+public static boolean alignedOnly = true; // whether just to output the aligned component in the output fastq
 public static int minCoverage = 2;
 public static boolean fastaOutput = true;
 
