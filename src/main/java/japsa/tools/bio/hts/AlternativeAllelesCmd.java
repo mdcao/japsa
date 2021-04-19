@@ -36,8 +36,9 @@ package japsa.tools.bio.hts;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -348,8 +350,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 		prevVar = fVar;
 
 		final String myChrom = fVar.chrom;
-		PrintWriter vcf_out = new PrintWriter(new FileWriter(new File(vcfFile+".out.vcf")));
-		PrintWriter ls = new PrintWriter(new FileWriter(new File("unmatched_reads.txt")));
+		PrintWriter vcf_out = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(vcfFile+".out.vcf.gz"))));
+		PrintWriter ls = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(vcfFile+".unmatched_reads.txt.gz"))));
 
 		
 		header.addAll(Arrays.asList(VarRecord.extra));
