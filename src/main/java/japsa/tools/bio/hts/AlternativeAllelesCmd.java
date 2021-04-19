@@ -40,6 +40,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -113,9 +114,24 @@ public class AlternativeAllelesCmd extends CommandLine{
 		int pos;
 		int base; //Alphabet.DNA.A, Alphabet.DNA.C, Alphabet.DNA.G, Alphabet.DNA.T;
 
+		
+		
 		double sumDiff=0;
 		double sumSq=0;
 		int count=0;
+		int count1 =0;
+		
+		int[][] vals = new int[4][2];
+		
+		
+		public void add(int[] b) {
+			for(int i=0; i<b.length; i++){
+				vals[i][0] += b[i];
+				vals[i][1] += (int) Math.pow(b[i], 2);
+			}
+			count1++;
+		}
+		
 		
 		String in;
 		public String toString(){
@@ -127,6 +143,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 			pos = p;
 			base = b;			
 		}
+		static String[] extra = new String[] {"meanLen", "sdLen","fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
 		void print(PrintWriter pw, String left, String right){
 			double mean = (double)sumDiff/(double) count;
 			double sd = Math.sqrt(sumSq/(double)count - Math.pow(mean,2));
@@ -139,6 +156,22 @@ public class AlternativeAllelesCmd extends CommandLine{
 			pw.print(count);
 			pw.print("\t");
 			pw.print(left+"\t"+right);
+			for(int i=0; i<vals.length; i++){
+				double mean1 = (double)vals[i][0]/(double) count1;
+				double sd1 = Math.sqrt((double) vals[i][1]/(double)count1 - Math.pow(mean1,2));
+				pw.print("\t");
+				pw.print(mean1);
+				pw.print("\t");
+				pw.print(sd1);
+			}
+			pw.print("\t");
+			pw.print(count1);
+			pw.print("\t");
+			pw.print((double)count/(double)count1);
+			pw.print("\t");
+			pw.print(this.diff_prev);
+			pw.print("\t");
+			pw.print(this.diff_nxt);
 			pw.println();
 		}
 
@@ -188,14 +221,38 @@ public class AlternativeAllelesCmd extends CommandLine{
 			// TODO Auto-generated method stub
 			
 		}
+		
+		int diff_nxt=-1;
+		int diff_prev=-1;
+		
+		public void setNext(VarRecord nxt) {
+			if(nxt.chrom.equals(chrom)){
+				diff_nxt = nxt.pos-pos;
+			}
+			// TODO Auto-generated method stub
+			
+		}
+		public void setPrevious(VarRecord prev) {
+			if(prev.chrom.equals(chrom)){
+				diff_prev = pos - prev.pos;
+			}
+			
+		}
+		
+		
 	}
 
-	static VarRecord nextRecord(BufferedReader br) throws IOException{
+	static VarRecord nextRecord(BufferedReader br, VarRecord previous) throws IOException{
 		String line = br.readLine();
 		if (line == null)
 			return null;
-
-		return  VarRecord.parseLine(line);
+		
+		VarRecord nxt =  VarRecord.parseLine(line);
+		if(previous!=null){
+			previous.setNext(nxt);
+			nxt.setPrevious(previous);
+		}
+		return nxt;
 
 	}
 
@@ -265,6 +322,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 		}
 	}
 	
+	static List<String> header = new ArrayList<String>();
+	
 	static void addSequence(String inFile, String vcfFile, String reference, String outFile, int threshold) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
 		//int countGood = 0, countBad = 0, countUgly = 0;
@@ -279,18 +338,23 @@ public class AlternativeAllelesCmd extends CommandLine{
 
 		BufferedReader bf =  SequenceReader.openFile(vcfFile);
 		
-		bf.readLine();//dont care the first line
+		header.addAll(Arrays.asList(bf.readLine().split("\t")));//dont care the first line
 
 		LinkedList<VarRecord> varList = new  LinkedList<VarRecord>();
-
-		VarRecord fVar = nextRecord(bf);
-
+		VarRecord prevVar = null;
+		VarRecord fVar = nextRecord(bf, prevVar);
+		
 		varList.add(fVar);
+		prevVar = fVar;
 
 		final String myChrom = fVar.chrom;
 		PrintWriter vcf_out = new PrintWriter(new FileWriter(new File(vcfFile+".out.vcf")));
 		PrintWriter ls = new PrintWriter(new FileWriter(new File("unmatched_reads.txt")));
 
+		
+		header.addAll(Arrays.asList(VarRecord.extra));
+		vcf_out.println(combine(header));
+		
 		Sequence refSeq = null;
 		{
 			LOG.info("Read reference started");
@@ -389,6 +453,11 @@ public class AlternativeAllelesCmd extends CommandLine{
 			
 			int readPos = 0;//start from 0					
 			int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index
+			byte[] baseQ = sam.getBaseQualities();
+			int mapQ = sam.getMappingQuality();
+		//	int st = sam.getReadPositionAtReferencePosition(sam.getAlignmentStart());
+		//	int end = sam.getReadLength()-sam.getReadPositionAtReferencePosition(sam.getAlignmentEnd()); 
+			int[] array = new int[2];
 			for (final CigarElement e : sam.getCigar().getCigarElements()) {
 				final int  length = e.getLength();
 				switch (e.getOperator()) {
@@ -433,6 +502,9 @@ public class AlternativeAllelesCmd extends CommandLine{
 									//yay
 									support = true;
 									pairedPos.addSNP(var);
+									array[0] = baseQ[readPos+i]; array[1]= mapQ; //array[2] = st; array[3] = end;
+									var.add(array);
+									
 									break;//for									
 								}
 
@@ -444,7 +516,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 								break;//for i
 
 							while (currentVarPos < refPos + i && hasVar){
-								VarRecord var = nextRecord(bf);
+								VarRecord var = nextRecord(bf, prevVar);
+								prevVar = var;
 								if (var == null){
 									hasVar = false;
 									break;
@@ -455,6 +528,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 									//yay
 									support = true;
 									pairedPos.addSNP(var);
+									array[0] = baseQ[readPos+i]; array[1]= mapQ; //array[2] = st; array[3] = end;
+									var.add(array);
 									break;//for									
 								}
 
@@ -551,6 +626,14 @@ public class AlternativeAllelesCmd extends CommandLine{
 		System.out.printf("Ungly insert fragments (insert=0): %d\n", countUgly);
 		
 		/**********************************************************************/
+	}
+	private static String combine(List<String> header2) {
+		StringBuffer sb = new StringBuffer(header2.get(0));
+		for(int i=1; i<header2.size(); i++){
+			sb.append("\t");
+			sb.append(header2.get(i));
+		}
+		return sb.toString();
 	}
 
 
