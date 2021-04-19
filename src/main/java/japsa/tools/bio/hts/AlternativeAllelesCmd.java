@@ -38,6 +38,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -93,6 +94,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 		addString("vcf", null, "Name of the vcf file",true);
 		addString("output", "-", "Name of the output file");
 		addInt("threshold", 500, "Maximum concordant insert size");
+		addInt("maxIns", 10000, "Maximum concordant insert size");
 
 		addStdHelp();
 	}
@@ -106,8 +108,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 		String output = cmdTool.getStringVal("output");
 		String vcf = cmdTool.getStringVal("vcf");
 		int threshold = cmdTool.getIntVal("threshold");
-
-		addSequence(input, vcf, ref, output,threshold);
+		int maxIns = cmdTool.getIntVal("maxIns");
+		addSequence(input, vcf, ref, output,threshold, maxIns);
 
 	}
 
@@ -326,7 +328,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 	
 	static List<String> header = new ArrayList<String>();
 	
-	static void addSequence(String inFile, String vcfFile, String reference, String outFile, int threshold) throws IOException{		
+	static void addSequence(String inFile, String vcfFile, String reference, String outFile, int threshold, int maxInsert) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
 		//int countGood = 0, countBad = 0, countUgly = 0;
 		//int countALLGood = 0, countALLBad = 0, countALLUgly = 0;
@@ -350,7 +352,9 @@ public class AlternativeAllelesCmd extends CommandLine{
 		prevVar = fVar;
 
 		final String myChrom = fVar.chrom;
-		PrintWriter vcf_out = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(vcfFile+".out.vcf.gz"))));
+		OutputStream os = new FileOutputStream(vcfFile+".out.vcf");
+		
+		PrintWriter vcf_out = new PrintWriter(new OutputStreamWriter(os));
 		PrintWriter ls = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(vcfFile+".unmatched_reads.txt.gz"))));
 
 		
@@ -415,8 +419,8 @@ public class AlternativeAllelesCmd extends CommandLine{
 				break;//while
 			
 			
-			clearUpTo(vcf_out,varList,sam.getAlignmentStart()-10000, myChrom , refSeq); // clear up varlist up to 10,000 bases before current
-			clearUpTo(readToPos, sam.getAlignmentStart()-10000, myChrom, ls);
+			clearUpTo(vcf_out,varList,sam.getAlignmentStart()-maxInsert, myChrom , refSeq); // clear up varlist up to 10,000 bases before current
+			clearUpTo(readToPos, sam.getAlignmentStart()-maxInsert, myChrom, ls);
 			//assert samRefIndex == myChromIndex
 			
 			//int insertSize = Math.abs(sam.getInferredInsertSize());
