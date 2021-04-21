@@ -95,10 +95,12 @@ public class ReferenceDB{
 		this(dbdir,new File(dbdir.getParentFile()+"/taxdump"),refFileNme, mkTree, ".index.txt.gz");
 	}
 	File taxaDir;
+	String suffix;
 	
 	public ReferenceDB(File dbdir, File taxaDir, File refFile,  boolean makeTree, String suffix)  throws IOException{
 		this.dbs  = dbdir.getName();
 		this.taxaDir = taxaDir;
+		this.suffix = suffix;
 		//File dbPath = dbdir.getParentFile();
 		//File dbdir = new File(dbPath+"/"+dbs);
 		// refFile = new File(dbdir, refFileNme);
@@ -119,6 +121,10 @@ public class ReferenceDB{
 	}
 	
 	
+	public ReferenceDB(File file) throws IOException{
+		this(file,new File(file, "genomeDB.fna.gz"),false);
+	}
+
 	public ReferenceDB update(File speciesFile)  throws IOException{
 		//long last_m = speciesFile.lastModified();
 		boolean mkTree = tree!=null;
@@ -172,7 +178,7 @@ public class ReferenceDB{
 
 				sos.close();
 				pw.close();
-				return new ReferenceDB(newDB, this.taxaDir, this.refFile,mkTree);
+				return new ReferenceDB(newDB, this.taxaDir, this.refFile,mkTree, this.suffix);
 	}
 
 	public Node getNode(String sp) {
