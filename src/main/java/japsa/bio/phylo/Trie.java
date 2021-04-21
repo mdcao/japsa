@@ -74,10 +74,11 @@ public class Trie {
 		return in.toLowerCase().replace("\"", "").toCharArray();
 	}
 	//new File("genomeDB.fna.gz")
-	public static File getIndexFile(File taxaDir, File fastaFile) throws IOException{
-		if(!fastaFile.exists()) throw new IOException("File does not exist");
-		File outF = new File(fastaFile.getAbsolutePath()+".index.txt.gz");
+	public static File getIndexFile(File taxaDir, File fastaFile, String suffix) throws IOException{
+		File outF = new File(fastaFile.getAbsolutePath()+suffix);
 		if(!outF.exists()){
+			if(!fastaFile.exists()) throw new IOException("File does not exist");
+
 			Trie tr = new Trie(new File(taxaDir,"names.dmp"));
 			 tr.getIndex(fastaFile, outF);
 		}

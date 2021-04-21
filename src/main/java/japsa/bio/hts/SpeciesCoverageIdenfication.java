@@ -133,8 +133,10 @@ public class SpeciesCoverageIdenfication {
 			String sp =  toks[0];
 			String seq = toks[1].substring(1);
 
-			if (seq2Species.put(seq, sp) != null)
-				throw new RuntimeException("sequence " + seq +" presents multiple time");
+			//if (
+					seq2Species.put(seq, sp);
+					//!= null)
+			//	throw new RuntimeException("sequence " + seq +" presents multiple time");
 
 			if (species2Count.get(sp) == null){
 				species2Count.put(sp,new SpeciesCount(sp));

@@ -78,8 +78,10 @@ public class ReferenceDB{
 			seq=toks[1].split("\\s+")[0];
 			seq2Len.put(seq,Integer.parseInt(toks[3]));
 			//System.err.println("putting: "+sp);
-			if (seq2Species1.put(seq, sp) != null)
-				throw new RuntimeException("sequence " + seq +" presents multiple time");
+		//	if (
+					seq2Species1.put(seq, sp);
+					//!= null)
+				//System.err.println("warning sequence " + seq +" presents multiple time");
 //			else
 //				LOG.info("==>adding " + seq + " to " + sp);
 			
@@ -89,22 +91,25 @@ public class ReferenceDB{
 	
 	String treef;
 	
-	public ReferenceDB(File dbdir)  throws IOException{
-		this(dbdir,new File(dbdir.getParentFile()+"/taxdump"));
+	public ReferenceDB(File dbdir,File refFileNme, boolean mkTree)  throws IOException{
+		this(dbdir,new File(dbdir.getParentFile()+"/taxdump"),refFileNme, mkTree, ".index.txt.gz");
 	}
 	File taxaDir;
-	public ReferenceDB(File dbdir, File taxaDir)  throws IOException{
+	
+	public ReferenceDB(File dbdir, File taxaDir, File refFile,  boolean makeTree, String suffix)  throws IOException{
 		this.dbs  = dbdir.getName();
 		this.taxaDir = taxaDir;
 		//File dbPath = dbdir.getParentFile();
 		//File dbdir = new File(dbPath+"/"+dbs);
-		 refFile = new File(dbdir, "genomeDB.fna.gz");
-		speciesIndex=Trie.getIndexFile(taxaDir, refFile);
+		// refFile = new File(dbdir, refFileNme);
+		speciesIndex=Trie.getIndexFile(taxaDir, refFile, suffix);
+		if(makeTree && taxaDir.exists()){
 		 treef = CSSProcessCommand.getTree(taxaDir,dbdir, speciesIndex, false).getAbsolutePath();
 		boolean useTaxaAsSlug=false;
 	//	String treef_mod = treef+".mod";
 		tree = new NCBITree(new File(treef), useTaxaAsSlug);
 		tree.addSpeciesIndex(speciesIndex);
+		}
 		//tree.print(new File(treef_mod)); // this prints out to tree
 //		if(true)System.exit(0);
 		// treef = dbPath+"/"+dbs+"/"+ "commontree.txt.css.mod";
@@ -116,6 +121,7 @@ public class ReferenceDB{
 	
 	public ReferenceDB update(File speciesFile)  throws IOException{
 		//long last_m = speciesFile.lastModified();
+		boolean mkTree = tree!=null;
 		Collection<String> targetSpecies = SequenceUtils.getReadList(speciesFile.getAbsolutePath(),false);
 			 File newDB = new File(modDB, dbs+"_"+speciesFile.getName());//+"."+last_m);
 			 newDB.mkdirs();
@@ -166,7 +172,11 @@ public class ReferenceDB{
 
 				sos.close();
 				pw.close();
-				return new ReferenceDB(newDB, this.taxaDir);
+				return new ReferenceDB(newDB, this.taxaDir, this.refFile,mkTree);
+	}
+
+	public Node getNode(String sp) {
+		return tree==null ? null : tree.getNode(sp);
 	}
 	
 }

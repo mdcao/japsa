@@ -375,6 +375,11 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 	 
 	 static Iterator<FastqRecord> getFastaIterator(InputStream ins) throws IOException {
 		 final BufferedReader br = new BufferedReader(new InputStreamReader(ins));//FastaReader fr = new FastaReader(ins);
+		 String nxtLine1 = br.readLine();
+		 if(nxtLine1==null){
+			 System.err.println("warning, no entries");
+			 return null;
+		 }
 		/* if(!br.hasNext()) {
 			 throw new RuntimeException ("!!");
 			 //
@@ -382,10 +387,8 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 			 return null;
 		 }*/
 		return new Iterator<FastqRecord>(){
-			String nxtLine = br.readLine();
-			{
-			if(nxtLine==null) System.err.println("warning, no entries");
-			}
+			String nxtLine = nxtLine1;
+			
 			@Override
 			public boolean hasNext() {
 					boolean hasNext =  nxtLine!=null;
@@ -780,8 +783,9 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		//	System.err.println(q);
 			return q;
 	 }
-	 public static Iterator<SAMRecord> getFilteredIterator(Iterator<SAMRecord> samIter, Collection<String> reads, int max_reads, double q_thresh){
-		 return new FilteredIterator(samIter, reads,max_reads, q_thresh);
+	 public static Iterator<SAMRecord> getFilteredIterator(Iterator<SAMRecord> samIter, Collection<String> reads, int max_reads, double q_thresh, 
+			 boolean flipName){
+		 return new FilteredIterator(samIter, reads,max_reads, q_thresh, flipName);
 	 }
 	 
 	 public static class FilteredIterator implements Iterator<SAMRecord>{
@@ -791,8 +795,10 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		 SAMRecord nxt;
 		 final double qual_thresh;
 		 int cnt=0;
-		 public FilteredIterator(Iterator<SAMRecord>sam , Collection<String> reads, int max_reads, double qual_thresh){
+		 boolean flipname;
+		 public FilteredIterator(Iterator<SAMRecord>sam , Collection<String> reads, int max_reads, double qual_thresh, boolean flipname){
 			 this.samIter= sam;
+			 this.flipname = flipname;
 			 this.reads = reads;
 			 this.qual_thresh= qual_thresh;
 			 this.max_reads = max_reads;
@@ -810,6 +816,13 @@ public SAMRecord next(){
 	SAMRecord nxt1 = nxt;
 	cnt++;
 	nxt = getNext();
+	if(flipname){
+		String refname = nxt1.getReferenceName();
+		String readname = nxt1.getReadName();
+		nxt1.setReferenceName(readname);
+		nxt1.setReadName(refname);
+		
+	}
 	return nxt1;
 }
 		

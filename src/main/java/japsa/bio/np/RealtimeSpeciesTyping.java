@@ -54,7 +54,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.Stack;
@@ -79,12 +78,12 @@ import htsjdk.samtools.ValidationStringency;
 import japsa.bio.phylo.NCBITree;
 import japsa.bio.phylo.Slug;
 import japsa.seq.SequenceOutputStream;
+import japsa.tools.bio.np.RealtimeSpeciesTypingCmd;
 import japsa.tools.bio.np.ReferenceDB;
 import japsa.tools.seq.CachedFastqWriter;
 import japsa.tools.seq.CachedOutput;
 import japsa.tools.seq.CachedSequenceOutputStream;
-import japsa.tools.seq.SequenceUtils;
-import japsa.tools.seq.SparseVector;
+import japsa.tools.seq.SparseVectorCollection;
 import japsa.util.DoubleArray;
 import pal.misc.Identifier;
 import pal.tree.Node;
@@ -561,8 +560,12 @@ public class RealtimeSpeciesTyping {
 					if(alignedOnly || i==0)  fqw.write(sam, this.species);
 					
 				}
-			
+		/*	if(RealtimeSpeciesTypingCmd.flipName){
+				this.addInterval(sam.getReferenceName(),sam.getReadPositionAtReferencePosition(sam.getAlignmentStart()), 
+							sam.getReadPositionAtReferencePosition(sam.getAlignmentEnd()));
+			}else{*/
 			this.addInterval(sam.getReferenceName(),sam.getAlignmentStart(), sam.getAlignmentEnd());
+//			}
 			//System.err.println(this.species);
 			int q = sam.getMappingQuality();
 			int st = sam.getReadPositionAtReferencePosition(sam.getAlignmentStart());
@@ -771,7 +774,7 @@ public static List<String> speciesToIgnore = null;
 			boolean writeSep1 = writeSep !=null
 					&& (speciesToIgnore==null || ! speciesToIgnore.contains(sp))
 					&& writeSep.matcher(sp).find();
-				Node n =refDB.tree.getNode(sp);
+				Node n =refDB.getNode(sp);
 				species2ReadList.add(new Coverage(sp,n, 	fastqdir, writeSep1, hierarchical, fastaOutput, separateIntoContigs));			
 		}
 	//	tree.makeTrees();
@@ -830,251 +833,7 @@ public static List<String> speciesToIgnore = null;
 		samReader.close();
 	}
 	public static boolean realtimeAnalysis = false;
-	class SparseVectorCollection{
-		// each entry in svs represents a multimapping read
-		final double[] abundance;
-		int len;
-		SparseVectorCollection(int numSpecies){
-			this.len = numSpecies;
-			this.abundance = new double[numSpecies];
-			double val = 1.0/(double) numSpecies;
-			Arrays.fill(abundance, val);
-		}
-		List<SparseVector> svs = new ArrayList<SparseVector>();
-	//	List<Integer> single = new ArrayList<Integer>();
-		public void add(SparseVector all_species) {
-			Set<Integer> keys = all_species.keySet();
-			if(keys.size()==1 && false){
-		//		single.add(keys.iterator().next());
-			}else{
-				svs.add(all_species);
-			}
-		}
-		
-		public double logLike(){
-			double sc =0;
-			for(int i=0; i<this.svs.size(); i++){
-				SparseVector sv = svs.get(i); // this represents a read
-				double pr = 0;
-				for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
-					Integer j = it.next();
-					pr+= abundance[j] * sv.get(j).doubleValue();
-				}
-				sc+=Math.log(pr);
-			}
-			return sc;
-		}
-		
-		
-		//update abundance
-		//one round of normalisation
-		public void maximisation(double[] v, double pseudo){
-			double[] abund = new double[len];
-			Arrays.fill(abund, pseudo);
-			if(svs.size()==0){// && single.size()==0){
-			//	System.err.println("no matches");
-				return;//throw new RuntimeException("nothing");
-			}
-			double tot = pseudo*len;//+svs.size()+single.size();
-			tot+=svs.size();//+ single.size();//  add 
-			double score =0;
-			for(int i=0; i<this.svs.size(); i++){
-				SparseVector sv = svs.get(i);
-				
-				double totj = 0;
-				double scorej=0;
-				//split the read count according to the quality scores
-				for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
-					Integer j = it.next();
-					double sc = abundance[j] * sv.get(j).doubleValue();
-					totj+=sc;
-					scorej+=sc;
-				}
-				if(totj>0){
-					for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
-						Integer j = it.next();
-						double sc = abundance[j] * sv.get(j).doubleValue()/totj;
-						abund[j] += sc;
-					}
-					score+=Math.log(scorej);
-				}else{
-					tot = tot -1;
-					System.err.println("warning totj is zero "+i+" "+sv.toString());
-				}
-				
-			}
-			double diff = 0;
-			for(int j=0; j<abund.length; j++){
-				double newv = abund[j]/tot;
-				diff += Math.abs(abundance[j] - newv);
-				this.abundance[j] =newv ;
-			}
-			
-			v[0] = score; v[1] = diff;
-			if(zerovs.size()>0){ // if we keeping anything zero
-				Iterator<Integer> iter = zerovs.iterator();
-				while( iter.hasNext()){
-					Integer nxt = iter.next();
-					this.abundance[nxt] = epsilon;
-					
-				}
-				this.renormalise();
-			}
-			
-		}
-		
-		public double setZero(int i, double v1){
-			double v = abundance[i];
-			abundance[i] =v1;
-			this.renormalise();
-			return v;
-		}
-		
-		public void renormalise() {
-			double tot = 0;
-			for(int i =0; i<this.abundance.length; i++){
-				tot+=abundance[i];
-			}
-			for(int i =0; i<this.abundance.length; i++){
-				abundance[i] = abundance[i]/tot;
-			}
-			this.check();
-			
-		}
-
-		public Integer[] nonZero(double d) {
-			List<Integer> l = new ArrayList<Integer>();
-			for(int i=0; i<this.len; i++){
-				if(abundance[i]>d && ! this.zerovs.contains(i)) l.add(i);
-			}
-			return l.toArray(new Integer[0]);
-		}
-Stack<Integer> zerovs = new Stack<Integer>();
-		
-		public void maximisation(double[] v, double pseudo, int numrep, Integer j) {
-			if(j!=null) zerovs.push(j);
-			for(int i=0; i<numrep; i++){
-				this.maximisation(v, pseudo);
-			}
-			if(j!=null) zerovs.pop();
-		}
-
-		public void check() {
-			double tot =0;
-			for(int i=0; i<this.abundance.length; i++){
-				tot+=abundance[i];
-			}
-			if(Math.abs(tot-1.0)>1e-5){
-				throw new RuntimeException("!!! "+tot);
-			}
-			
-		}
-
-		
-	}
 	SparseVectorCollection all_reads = null ;
-	 class AllRecords{
-		String readnme = null;
-		List<SAMRecord> records = new ArrayList<SAMRecord>();
-		List<String> refs = new ArrayList<String>();
-		List<Integer> species = new ArrayList<Integer>(); //specesIndex
-		SparseVector all_species = new SparseVector();
-		//SparseVector all_speciesLen = new SparseVector(); // for capturing number of bases
-
-		//List<Integer> quality = new ArrayList<Integer>();
-		public void clear(){
-			readnme=null;
-			records.clear();
-			refs.clear();
-			all_species.clear();
-			species.clear();
-		//	quality.clear();
-		}
-		
-		//return 
-		public int  getAll(Integer species2,List<SAMRecord> out) {
-			int q = -1;
-			int best =-1;
-			for(int i=0; i<records.size(); i++){
-				if(species.get(i).equals(species2)){
-					int q1 = records.get(i).getMappingQuality();
-					if(q1>q){
-						best = out.size();
-						q = q1;
-					}
-					out.add(records.get(i));
-				}
-			}
-			return best;
-			//return out;
-		}
-		
-		public void add(SAMRecord sam, int spec){
-			if(!SequenceUtils.secondary  && sam.isSecondaryOrSupplementary()){
-				//only include supplementary alignments to same species
-				if(species.size()==0 || species.get(0)!=spec){
-					return;
-				}
-			}
-			if(readnme==null){
-				//if(sam.isSecondaryOrSupplementary()){
-				//	throw new RuntimeException("@!!");
-				//}
-				readnme=sam.getReadName();
-			}
-			else if(!readnme.equals(sam.getReadName())) {
-				throw new RuntimeException("!!");
-			}
-			this.records.add(sam);
-			this.refs.add(sam.getReferenceName());
-			this.species.add(spec);
-			this.all_species.addToEntry(spec, 0); // set as placemarker
-		
-			
-//			this.quality.add(sam.getMappingQuality());
-		}
-		public int size() {
-			// TODO Auto-generated method stub
-			return records.size();
-		}
-		public void transferReads() {
-			if(this.size()>0) {
-			//	if(this.all_species.size()>1){
-				//	System.err.println("h");
-				//}
-				Iterator<Integer> specs = this.all_species.keySet().iterator();
-				List<SAMRecord> sams= new ArrayList<SAMRecord>();
-				List<SAMRecord> filtered  = new ArrayList<SAMRecord>();
-				while(specs.hasNext()){
-					Integer spec = specs.next();
-				//	sv.addToEntry(spec,all_species.get(spec));
-				//			-1*Math.pow(10, -1*all_species.get(spec).doubleValue()));
-					Coverage coverage = species2ReadList.get(spec);
-					
-					
-					
-					
-					sams.clear();filtered.clear();
-					int besti = getAll(spec,sams);
-					int q = sams.get(besti).getMappingQuality();
-					boolean primary = !sams.get(besti).isSecondaryOrSupplementary();
-					filter(sams, filtered, besti);
-					if(primary) coverage.addRead(filtered);
-					// we use 0.1 as minimum to avoid zero probability for mq=0 reads
-					this.all_species.update(spec,Math.max(0.1, 1-Math.pow(base_,-1.0*(double)q)));
-				//	this.all_speciesLen.update(spec,getBases(filtered));
-					
-				}
-				if(all_reads !=null) all_reads.add(this.all_species);
-
-				}
-			all_species = new SparseVector();
-			this.clear();
-		}
-
-		
-	}
-	 
 	public void typing(Iterator<SAMRecord> samIter, int readNumber, int timeNumber, List<String> species, boolean runAnalysis) throws IOException, InterruptedException{
 		//if (readNumber <= 0)
 		//	readNumber = 1;		
@@ -1100,6 +859,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 		outer: while (samIter.hasNext()){
 			try{
 			SAMRecord sam = samIter.next();
+			//System.err.println(sam.getReadName());
 		//	interval.start = sam.getAlignmentStart();
 		//	interval.end = sam.getAlignmentEnd();
 			
@@ -1124,7 +884,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 			if (!sam.getReadName().equals(readName)){
 				readName = sam.getReadName();
 				synchronized(this){
-					records.transferReads();
+					records.transferReads(species2ReadList, all_reads);
 					currentReadCount ++;
 					currentBaseCount += sam.getReadLength();
 				}
@@ -1192,9 +952,11 @@ Stack<Integer> zerovs = new Stack<Integer>();
 					/*if(tree!=null){
 						tree.addRead(this.seq2Species.get(sam.getReferenceName()));
 					}*/
-					Integer specI = refDB.seq2Species.get(sam.getReferenceName());
+					String refname = sam.getReferenceName();
+					//String readname = sam.getReadName()
+					Integer specI = refDB.seq2Species.get(refname);
 				
-					records.add(sam, specI);
+					if(specI!=null) records.add(sam, specI);
 				//	readList.addRead(sam);
 					//readList.add(readName);
 	
@@ -1204,7 +966,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 			}
 		}//while
 		
-			records.transferReads();
+			records.transferReads(species2ReadList, all_reads);
 		
 	//	if(true)System.exit(0);;
 		//final run
@@ -1246,12 +1008,14 @@ Stack<Integer> zerovs = new Stack<Integer>();
 					int min_index = findMinAbs(vals);
 					 minv = Math.abs(vals[min_index]);
 					if(minv < removeLikelihoodThresh){
+						//System.err.println("setting to zero in EM "+)
 						all_reads.zerovs.push(nonZero[min_index]);
 						
-					}
+					
 					//System.err.println(Arrays.asList(vals));
-					System.err.println("Can remove "+ refDB.speciesList.get(nonZero[min_index])+ " "+minv+" "+orig[nonZero[min_index]]);
-	//				System.err.println("h");
+						System.err.println("Can remove "+ refDB.speciesList.get(nonZero[min_index])+ " "+minv+" "+orig[nonZero[min_index]]);
+				}
+					//System.err.println("h");
 					}
 				}
 				}//if(removeLikelihoodThresh>0.00001)
@@ -1368,7 +1132,7 @@ Stack<Integer> zerovs = new Stack<Integer>();
 		public void initOutput() throws IOException{
 			countsOS = SequenceOutputStream.makeOutputStream(outputFile.getAbsolutePath());
 			if(!JSON)
-				countsOS.print("sampleID\ttime\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\tbases_covered\tfraction_covered\tlength_best_contig\tcoverage_percentiles\tmapQ\tlength\talignFrac\tprop_to_most_cov_contig\thighest_cov_contig\n");
+				countsOS.print("sampleID\ttime\tstep\treads\tbases\tspecies\tprob\terr\ttAligned\tsAligned\tbases_covered\tfraction_covered\tlength_best_contig\tcoverage_percentiles\tmapQ\tlength\talignFrac\tprop_to_most_cov_contig\thighest_cov_contig\tE_M_estimate\tlog_EM_estimate\n");
 		}
 		
 		public RealtimeSpeciesTyper(RealtimeSpeciesTyping t,  String sampleID) throws IOException {
@@ -1526,10 +1290,11 @@ this.sampleID = sampleID;
 						 String st2 = combine(percL,valsL);
 						 cov.medianQ(percL, valsL, cov.mapAlign);
 						 String st3 = combine(percL,valsL);
-						 String adj_res = all_reads==null ? "":""+all_reads.abundance[i];
+						 String adj_res = all_reads==null ? "":""+String.format("%5.3g",all_reads.abundance[i]).trim();
+						 String adj_res_log =all_reads==null ? "": ""+String.format("%5.2g",Math.log10(all_reads.abundance[i])).trim();
 						 medianArray.add(String.format("%5.3g", stats[0]).trim()+"\t"+String.format("%5.3g",stats[1]).trim()+"\t"+String.format("%5.3g",stats[2]).trim()
 						 +"\t"+st+"\t"+st1+"\t"+st2+"\t"+st3
-								 +"\t"+nme+":"+String.format("%5.3g",proportion).trim()+"\t"+nme1+":"+max1+"\t"+adj_res);
+								 +"\t"+nme+":"+String.format("%5.3g",proportion).trim()+"\t"+nme1+":"+max1+"\t"+adj_res+"\t"+adj_res_log);
 				/*	if(count[i]>10 * vals[vals.length-1]){
 						System.err.println(count[i]+" vs "+st);
 						if(covHist!=null) System.err.println(covHist);
@@ -1559,7 +1324,7 @@ this.sampleID = sampleID;
 		@Override
 		protected void writeFinalResults() {
 			try{
-			typing.refDB.tree.zeroCounts(0, 1);; // add arrays to nodes for recording counts, or reset to zero
+			if(typing.refDB.tree!=null) typing.refDB.tree.zeroCounts(0, 1);; // add arrays to nodes for recording counts, or reset to zero
 			Iterator<Coverage> it = typing.species2ReadList.iterator();
 			while(it.hasNext()){
 				Coverage cov = it.next();
@@ -1568,8 +1333,8 @@ this.sampleID = sampleID;
 				}
 				
 			}
-			typing.refDB.tree.trim(1e-16);
-			typing.refDB.tree.print(this.krakenResults, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
+			if(typing.refDB.tree!=null)  typing.refDB.tree.trim(1e-16);
+			if(typing.refDB.tree!=null)  typing.refDB.tree.print(this.krakenResults, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
 			}catch(Exception exc){
 				exc.printStackTrace();
 			}
