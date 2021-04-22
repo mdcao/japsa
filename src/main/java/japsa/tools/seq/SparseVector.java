@@ -2,9 +2,11 @@ package japsa.tools.seq;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -101,6 +103,26 @@ public class SparseVector{
 
 	public int size() {
 		return this.keySet().size();
+	}
+
+	public Map<Integer, Number> getMax() {
+		Iterator<Map.Entry<Integer, Number>> it = this.m.entrySet().iterator();
+		Entry<Integer, Number>  v = it.next();
+		while( it.hasNext()){
+			Entry<Integer, Number> nxt = it.next();
+			if(nxt.getValue().doubleValue()>v.getValue().doubleValue()) v = nxt;
+		}
+		Map<Integer, Number> m1 = new HashMap<Integer, Number>();
+		it = this.m.entrySet().iterator();
+		while( it.hasNext()){
+			Entry<Integer, Number> nxt = it.next();
+			if(nxt.getValue().doubleValue()>=v.getValue().doubleValue()){
+				m1.put(nxt.getKey(), nxt.getValue());
+			}
+			
+		}
+		return m1;
+		
 	}
 
 	

@@ -79,6 +79,7 @@ public  class AllRecords{
 		}
 		public void transferReads(List<Coverage>species2ReadList ,SparseVectorCollection all_reads) {
 			if(this.size()>0) {
+				;
 			//	if(this.all_species.size()>1){
 				//	System.err.println("h");
 				//}

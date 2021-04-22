@@ -26,7 +26,7 @@ public abstract class CommonTree {
 	 * @see japsadev.bio.phylo.CommonTree#print(java.io.File)
 	 */
 
-	public void printKraken(Node node, PrintStream pw, int total){
+	public void printKraken(Node node, PrintStream pw, double total){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName().replaceAll("\\+-","");
 	//	 System.err.println(nme);
@@ -39,13 +39,13 @@ public abstract class CommonTree {
 		 if(taxon==null || taxon <0) return;
 		 double height = node.getNodeHeight();
 		
-		 Integer[] nt = (Integer[] ) id.getAttribute(NCBITree.count_tag);
-		 Integer[] nt1 = (Integer[] ) id.getAttribute(NCBITree.count_tag1);
-		 String perc = nt==null ? "null": String.format("%5.3g", 100*(double)nt[0]/ (double) total).trim();
+		 Number[] nt = (Number[] ) id.getAttribute(NCBITree.count_tag);
+		 Number[] nt1 = (Number[] ) id.getAttribute(NCBITree.count_tag1);
+		 String perc = nt==null ? "null": String.format("%5.3g", 100*nt[0].doubleValue()/ (double) total).trim();
 		/* if(taxon==null){
 			 taxon=0; nme="root";
 		 }*/
-		 String cntString = nt==null ? "NA\tNA": nt[0]+"\t"+nt1[0];
+		 String cntString = nt==null ? "NA\tNA": String.format("%5.3g", nt[0].doubleValue()).trim()+"\t"+String.format("%5.3g", nt1[0].doubleValue()).trim();
 		 Double coverage = (Double) id.getAttribute(RealtimeSpeciesTyping.fraction_covered);
 		 if(coverage==null) coverage =Double.NaN;
 		 pw.print(perc+"\t"+cntString+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+String.format("%5.3g",coverage).trim());
@@ -103,12 +103,12 @@ public abstract class CommonTree {
 		//   PrintWriter pw = new PrintWriter(new FileWriter(out));
 		 
 		   if(!kraken_style) pw.println(header);
-		   int total =0;
+		   double  total =0;
 			for(int i=roots.size()-1;i>=0; i--){
 				Object cnts =  roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
 				if(cnts!=null){
-					if(cnts instanceof Integer[] )	for(int j=0; j<((Integer[])cnts).length; j++) total+=((Integer[]) cnts)[j];
-					else if(cnts instanceof Integer )	total+=((Integer) cnts);
+					if(cnts instanceof Number[] )	for(int j=0; j<((Number[])cnts).length; j++) total+=((Number[]) cnts)[j].doubleValue();
+					else if(cnts instanceof Number )	total+=( ((Number) cnts).doubleValue());
 					
 				}
 			}

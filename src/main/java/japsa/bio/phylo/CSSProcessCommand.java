@@ -28,7 +28,7 @@ import pal.tree.Tree;
 public class CSSProcessCommand {
 	  private static final Logger LOG = LoggerFactory.getLogger(CSSProcessCommand.class);
 
-	public static File getTree(File taxdir, File db, File speciesIndex, boolean addExtraNodes){
+	public static File getTree(File taxdir, File db, File speciesIndex, boolean addExtraNodes, int col_ind, File name_dmp2, boolean expand){
 		 File resistant_gene_list = new File(taxdir,"resistant_genes_list.txt");
 		//  File taxdir = new File("taxdump");
 		 
@@ -57,7 +57,7 @@ public class CSSProcessCommand {
 		  // Find the list of taxon to include
 		  Set<Integer> taxon_set1 = new HashSet<Integer>();
 		  try{
-			  int col_ind = 2;
+			 // int col_ind = 2;
 				  BufferedReader br1 = GetTaxonID.getBR(speciesIndex);
 				  String st1;
 				  while((st1 = br1.readLine())!=null){
@@ -81,11 +81,16 @@ public class CSSProcessCommand {
 		  }*/
 		//  if(true) return;
 		  /*step -3 read tree */
+		//	  File name_dmp2 = null;
 		  if( !treein.exists() && !treeout.exists()){
 			  LOG.info("making tree");
-			int col_ind = 2;
-			  GetTaxonID gid  = new GetTaxonID(taxdump, nodesdmp, taxon_set1);
+		
+			  GetTaxonID gid  = new GetTaxonID(taxdump, nodesdmp, taxon_set1, name_dmp2, expand);
 			NCBITree trees = new NCBITree(gid);
+			/*Node n1 = trees.getNode(232523);
+			Node n3 = trees.getNode(80864);		
+			Node n2 = n1.getParent();*/
+			Integer i1 = gid.nodeToParent.get(232523);
 			trees.print(treeout);
 			 
 		  }
@@ -101,7 +106,8 @@ public class CSSProcessCommand {
 		  if(treeout.exists() && ! treeout_mod.exists() && addExtraNodes){
 			  
 			  LOG.info("adding extra nodes from speciesIndex");
-			 addExtraNodesFromSpeciesIndex( treeout,  speciesIndex, treeout_mod);
+			  addExtraNodesFromSpeciesIndex( treeout,  speciesIndex, treeout_mod, col_ind, name_dmp2==null ? null : new Trie(name_dmp2));
+			 
 		  } 
 		  
 		  }catch(Exception exc){
@@ -255,14 +261,14 @@ public class CSSProcessCommand {
 		return null;
 	}
 	
-	public static NCBITree addExtraNodesFromSpeciesIndex( File treein,  File speciesIndex, File treeout){
+	public static NCBITree addExtraNodesFromSpeciesIndex( File treein,  File speciesIndex, File treeout, int col_ind, Trie trie){
 		NCBITree t  = null;
 		try{
 		//	System.err.println(gid1.getTaxa("Sclerophthora macrospora virus A"));
 			   t = new NCBITree(treein, true) ;
 			 //  t.gid  = gid1;//, new File(args[1]));
 			   
-				t.addSpeciesIndex(speciesIndex);
+				t.addSpeciesIndex(speciesIndex, col_ind, trie);
 				if(treeout!=null) t.print(treeout);
 		   }catch(Exception exc){
 			   exc.printStackTrace();

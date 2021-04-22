@@ -97,6 +97,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
 		addString("resdir", "japsa_species_typing", "Results directory");
+		addInt("max_EM_iterations",5000, "How many max iterations of E-M");
 		addString("output", "output.dat",  "Output file, - for standard output");		
 		addString("bamFile", null,  "The bam file",false);
 		addString("consensusFile", null,  "consensus file",false);
@@ -248,6 +249,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		SequenceUtils.apboa_path = cmdLine.getStringVal("abpoa_path");
 		SequenceUtils.secondary = true;
 		RealtimeSpeciesTyping.removeLikelihoodThresh= cmdLine.getDoubleVal("removeLikelihoodThresh");
+		RealtimeSpeciesTyping.EMiterations = cmdLine.getIntVal("max_EM_iterations");
 		RealtimeSpeciesTypingCmd.q_thresh = cmdLine.getDoubleVal("fail_thresh");
 		RealtimeSpeciesTypingCmd.filter = cmdLine.getStringVal("filter");
 		RealtimeSpeciesTypingCmd.maxReads = cmdLine.getIntVal("maxReads");
@@ -335,7 +337,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 			if(refDB==null && dbs[i]==null){
 				File db_dir = bamFiles[i].getParentFile();
 				if(db_dir==null) db_dir = new File("./");
-				refDB = new ReferenceDB(db_dir, taxdmp,new File(bamFiles[i].getAbsolutePath()+".fa"), mkTree, ".index");
+				refDB = new ReferenceDB(db_dir, taxdmp,new File(bamFiles[i].getAbsolutePath()+".fa"), mkTree, ".index",3, true);
 			}
 			
 			

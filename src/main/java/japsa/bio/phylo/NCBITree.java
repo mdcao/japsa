@@ -58,9 +58,9 @@ public  class NCBITree extends CommonTree {
 						for(int j=0; j<tags.length; j++)
 						{
 							String count_tag2 = tags[j];
-							Integer[] cnt = (Integer[]) id.getAttribute(count_tag2);
-							if(cnt==null) cnt=new Integer[] {0};
-							Integer[] v = new Integer[len];
+							Number[] cnt = (Number[]) id.getAttribute(count_tag2);
+							if(cnt==null) cnt=new Number[] {0.0};
+							Number[] v = new Number[len];
 							v[i] = cnt[0];
 							id.setAttribute(count_tag2, v);
 						}
@@ -82,7 +82,7 @@ public  class NCBITree extends CommonTree {
 							String count_tag2 = tags[j];
 							//Integer cnt = (Integer) id.getAttribute(count_tag2);
 							//if(cnt==null) cnt=0;
-							Integer[] v = new Integer[len];
+							Number[] v = new Number[len];
 							v[i] = 0;
 							id.setAttribute(count_tag2, v);
 						}
@@ -119,14 +119,19 @@ public Node getNode(Integer taxa) {
 	 
 	
 	 /*str is a line from species index */
-	 private void updateTree(String st, int lineno, double bl, PrintWriter missing){
+	 private void updateTree(String st, int lineno, double bl, PrintWriter missing, int col_ind, Trie trie){
 		 String[] str = st.split("\t");
 		// String specName = str[0];
-		Integer taxa = Integer.parseInt(str[2]); //gid.processAlias(str,st);
+		Integer taxa = Integer.parseInt(str[col_ind]); //gid.processAlias(str,st);
 //	  String alias1 = GetTaxonID.collapse(str[1].split("\\s+"), 1);
 		//String sciname = taxa==null ? null : gid.taxa2Sci.get(taxa);
 		 Node	n = this.slugToNode1.get(taxa);//getNode( taxa);
-			this.createFromSpeciesFile(str, n, lineno, bl);
+		 if(n==null){
+			 taxa =  trie.find(str[0]);
+			// System.err.println("putting at root "+st);
+			 n = this.slugToNode1.get(taxa);
+		 }
+			 this.createFromSpeciesFile(str, n, lineno, bl);
 			//System.err.println(n.getIdentifier().getName());
 	
 		
@@ -448,6 +453,10 @@ public NCBITree(GetTaxonID gid) throws IOException {
 		for(Iterator<Integer> it = gid.taxon_set.iterator();it.hasNext();){
 			Integer nxt = it.next();
 			Integer parent= gid.nodeToParent.get(nxt);
+			if(parent==null) {
+				System.err.println("warning did not contain taxa "+nxt);
+				continue;
+			}
 			Node   n = make( nxt, null);
 			List<Node>l = new ArrayList<Node>();
 			l.add(n);
@@ -460,7 +469,7 @@ public NCBITree(GetTaxonID gid) throws IOException {
 					l.add(p);
 					n = p;
 				}
-				if(nextparent.equals("1")){
+				if(nextparent==null || nextparent.equals("1")){
 					nxt = null;
 					parent = null;
 				}else{
@@ -618,14 +627,15 @@ public  static String count_tag1 = "count1";
 public static double thresh=0.0001;
 //static String count_below_tag = "count_below";
 public void trim(double thresh_perc){
-	int total =0;
+	double total =0;
 	for(int i=roots.size()-1;i>=0; i--){
-		Integer[] cnts = (Integer[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
-		for(int j=0; j<cnts.length; j++) total+=cnts[j];
+		Number[] cnts = (Number[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
+		for(int j=0; j<cnts.length; j++) total+=cnts[j].doubleValue();
 	}
-	int thresh = Math.max(1, (int) Math.round(thresh_perc*total));
+	double thresh = Math.round(thresh_perc*total);
+	//int thresh = Math.max(1, (int) );
 	for(int i=roots.size()-1;i>=0; i--){
-		if(trimNode(roots.get(i), thresh)){
+		if(trimNode(roots.get(i), thresh_perc)){
 			roots.remove(i);
 		}
 	}
@@ -649,12 +659,12 @@ public void removeDupl(Node node){
 		removeDupl(node.getChild(j));
 	}
 }
-public boolean  trimNode(Node node, int thresh){
+public boolean  trimNode(Node node, double thresh){
 	String count_tag2 = NCBITree.count_tag;
-	Integer[] v = (Integer[])node.getIdentifier().getAttribute(count_tag2);
-	int sum =0; 
+	Number[] v = (Number[])node.getIdentifier().getAttribute(count_tag2);
+	double sum =0; 
 	for(int i=0; i<v.length; i++){
-		sum +=v[i];
+		sum +=v[i].doubleValue();
 	}
 	if(sum<thresh){
 	//	System.err.println("removing "+node.getIdentifier().getName()+" "+sum);
@@ -681,16 +691,16 @@ public void merge(Node n, int pos){
 		//this is adding in new samples
 		{
 			String count_tag2 = NCBITree.count_tag;
-			Integer[] v = (Integer[])node.getIdentifier().getAttribute(count_tag2);
-			Integer[] v1 = (Integer[])n.getIdentifier().getAttribute(count_tag2);
+			Double[] v = (Double[])node.getIdentifier().getAttribute(count_tag2);
+			Double[] v1 = (Double[])n.getIdentifier().getAttribute(count_tag2);
 			for(int i=0; i<v.length; i++){
 				v[i] +=v1[i];
 			}
 		}
 		{
 			String count_tag2 = NCBITree.count_tag1;
-			Integer[] v = (Integer[])node.getIdentifier().getAttribute(count_tag2);
-			Integer[] v1 = (Integer[])n.getIdentifier().getAttribute(count_tag2);
+			Double[] v = (Double[])node.getIdentifier().getAttribute(count_tag2);
+			Double[] v1 = (Double[])n.getIdentifier().getAttribute(count_tag2);
 			for(int i=0; i<v.length; i++){
 				v[i] +=v1[i];
 			}
@@ -756,13 +766,13 @@ public void merge(NCBITree tree1, int pos){
 
 
 
-	public void addSpeciesIndex(File speciesIndex) throws  IOException{
+	public void addSpeciesIndex(File speciesIndex, int col_ind, Trie trie) throws  IOException{
 		if(speciesIndex!=null && speciesIndex.exists()){
 			PrintWriter missing = new PrintWriter(new FileWriter("missing.txt"));
 				 BufferedReader br1 = GetTaxonID.getBR(speciesIndex);
 				 String st = "";
 				for(int i=0; (st = br1.readLine())!=null; i++){
-					updateTree(st, i, 0.0, missing);
+					updateTree(st, i, 0.0, missing, col_ind, trie);
 				 }
 				br1.close();
 				missing.close();

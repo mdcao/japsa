@@ -796,6 +796,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		 final double qual_thresh;
 		 int cnt=0;
 		 boolean flipname;
+		 String readnme = "";
 		 public FilteredIterator(Iterator<SAMRecord>sam , Collection<String> reads, int max_reads, double qual_thresh, boolean flipname){
 			 this.samIter= sam;
 			 this.flipname = flipname;
@@ -810,11 +811,11 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		@Override
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
-			return  nxt!=null && cnt < max_reads;
+			return  nxt!=null && cnt <= max_reads;
 		}
 public SAMRecord next(){
 	SAMRecord nxt1 = nxt;
-	cnt++;
+
 	nxt = getNext();
 	if(flipname){
 		String refname = nxt1.getReferenceName();
@@ -822,6 +823,14 @@ public SAMRecord next(){
 		nxt1.setReferenceName(readname);
 		nxt1.setReadName(refname);
 		
+	}
+	String nme = nxt1.getReadName();
+	if(!nme.equals(this.readnme)){
+		readnme = nme;
+		cnt++;
+		if(cnt >this.max_reads){
+			return null;
+		}
 	}
 	return nxt1;
 }

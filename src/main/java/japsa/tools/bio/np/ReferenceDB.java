@@ -92,31 +92,40 @@ public class ReferenceDB{
 	String treef;
 	
 	public ReferenceDB(File dbdir,File refFileNme, boolean mkTree)  throws IOException{
-		this(dbdir,new File(dbdir.getParentFile()+"/taxdump"),refFileNme, mkTree, ".index.txt.gz");
+		this(dbdir,new File(dbdir.getParentFile()+"/taxdump"),refFileNme, mkTree, ".index.txt.gz", 2, false);
 	}
 	File taxaDir;
 	String suffix;
+	int col_ind;
 	
-	public ReferenceDB(File dbdir, File taxaDir, File refFile,  boolean makeTree, String suffix)  throws IOException{
+	public ReferenceDB(File dbdir, File taxaDir, File refFile,  boolean makeTree, String suffix, int col_ind, boolean fromBlast)  throws IOException{
 		this.dbs  = dbdir.getName();
+		this.col_ind = col_ind;
 		this.taxaDir = taxaDir;
 		this.suffix = suffix;
 		//File dbPath = dbdir.getParentFile();
 		//File dbdir = new File(dbPath+"/"+dbs);
 		// refFile = new File(dbdir, refFileNme);
-		speciesIndex=Trie.getIndexFile(taxaDir, refFile, suffix);
+		speciesIndex = new File(refFile.getAbsolutePath()+suffix);
+		
+		if(!speciesIndex.exists()){
+			Trie trie = Trie.getIndexFile(taxaDir, refFile, suffix, speciesIndex);
+		}
+	//	  File treeout = new File(db,"commontree.txt.css");
+		 File name_dmp2 = fromBlast ? new File(dbdir,"names.dmp.gz") : null;
 		if(makeTree && taxaDir.exists()){
-		 treef = CSSProcessCommand.getTree(taxaDir,dbdir, speciesIndex, false).getAbsolutePath();
+		 treef = CSSProcessCommand.getTree(taxaDir,dbdir, speciesIndex, false, col_ind, name_dmp2, fromBlast).getAbsolutePath();
 		boolean useTaxaAsSlug=false;
 	//	String treef_mod = treef+".mod";
 		tree = new NCBITree(new File(treef), useTaxaAsSlug);
-		tree.addSpeciesIndex(speciesIndex);
+		Trie trie = ( name_dmp2!=null ) ? new Trie(name_dmp2) : null;
+		tree.addSpeciesIndex(speciesIndex, col_ind, trie);
 		}
 		//tree.print(new File(treef_mod)); // this prints out to tree
 //		if(true)System.exit(0);
 		// treef = dbPath+"/"+dbs+"/"+ "commontree.txt.css.mod";
 		 modDB = new File("./db");
-		
+		if(tree!=null) tree.zeroCounts(0, 1);
 		this.pretyping();
 	}
 	
@@ -178,7 +187,7 @@ public class ReferenceDB{
 
 				sos.close();
 				pw.close();
-				return new ReferenceDB(newDB, this.taxaDir, this.refFile,mkTree, this.suffix);
+				return new ReferenceDB(newDB, this.taxaDir, this.refFile,mkTree, this.suffix, this.col_ind, false);
 	}
 
 	public Node getNode(String sp) {

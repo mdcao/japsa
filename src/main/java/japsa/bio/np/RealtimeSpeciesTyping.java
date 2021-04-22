@@ -93,9 +93,14 @@ import pal.tree.Node;
  *
  */
 public class RealtimeSpeciesTyping {
+	
+	//int int total_reads =0;
+	
+	public static double krakenTrimThreshPerc = 1e-5;
 	public static double targetOverlap =0.95;
 	public static double 	 epsilon = 0.001;
 	public static double removeLikelihoodThresh=0.0; // 
+	public static int EMiterations = 5000;
 //	public static boolean exclude = false; //whether to use exclude file to exclude reads
 //	public static boolean writeConsensus = false;
 	public static boolean reestimate = true;
@@ -103,7 +108,7 @@ public class RealtimeSpeciesTyping {
 	public static int mincount=2; // this for designing regions for MSA
 	public static int minlength =500; // min length for MSA
 	//public static boolean useBases = true;
-	public static double pseudo = 0.001;
+	public static double pseudo = 0.0;
 	public static double maxOverlap = .1; // maximum overlap with excl region to remove read
 	public static double base_=2; // lower numbers spread out the probability distribution, however it should be base10
 	public static String bases_covered = "bases_covered";
@@ -357,17 +362,27 @@ public class RealtimeSpeciesTyping {
 		CachedOutput fqw= null;
 		boolean lock = false;
 		
-		public void updateNodeAndParents(){
+		public void updateNodeAndParents(double readCount){
 			if(node!=null){
-				Integer[] cnts = (Integer[]) this.node.getIdentifier().getAttribute(NCBITree.count_tag);
+				Number[] cnts = (Number[]) this.node.getIdentifier().getAttribute(NCBITree.count_tag);
+				Number[] cnts1 = (Number[]) this.node.getIdentifier().getAttribute(NCBITree.count_tag1);
+			/*	if(cnts==null){
+					this.node.getIdentifier().setAttribute(NCBITree.count_tag, cnts = new Number[] {0} );
+					this.node.getIdentifier().setAttribute(NCBITree.count_tag1, cnts1 = new Number[] {0} );
+
+				}*/
 				cnts[0]=readCount;
-				Integer[] cnts1 = (Integer[]) this.node.getIdentifier().getAttribute(NCBITree.count_tag1);
 				cnts1[0] = readCount;
 				Node parent = node.getParent();
 				while(parent!=null ){
 				//adds counts to the tree
-					Integer[] cnts1_p = (Integer[]) parent.getIdentifier().getAttribute(NCBITree.count_tag);
-					cnts1_p[0] = cnts1_p[0] + readCount;
+					Number[] cnts1_p = (Number[]) parent.getIdentifier().getAttribute(NCBITree.count_tag);
+					/*if(cnts1_p==null){
+						parent.getIdentifier().setAttribute(NCBITree.count_tag, cnts1_p = new Number[] {0} );
+						parent.getIdentifier().setAttribute(NCBITree.count_tag1,  new Number[] {0} );
+
+					}*/
+					cnts1_p[0] = cnts1_p[0].doubleValue() + readCount;
 					parent = parent.getParent();
 				}
 			}
@@ -1019,7 +1034,7 @@ public static List<String> speciesToIgnore = null;
 					}
 				}
 				}//if(removeLikelihoodThresh>0.00001)
-				this.all_reads.maximisation(v, pseudo,10, null);
+				this.all_reads.maximisation(v, pseudo,RealtimeSpeciesTyping.EMiterations, null);
 				all_reads.check();
 			}
 				
@@ -1128,6 +1143,7 @@ public static List<String> speciesToIgnore = null;
 		final String sampleID;
 		//File coverageOutput;
 		File outdir; 
+		
 		
 		public void initOutput() throws IOException{
 			countsOS = SequenceOutputStream.makeOutputStream(outputFile.getAbsolutePath());
@@ -1290,6 +1306,7 @@ this.sampleID = sampleID;
 						 String st2 = combine(percL,valsL);
 						 cov.medianQ(percL, valsL, cov.mapAlign);
 						 String st3 = combine(percL,valsL);
+						 cov.updateNodeAndParents(all_reads.abundance[i]*currentReadCount);
 						 String adj_res = all_reads==null ? "":""+String.format("%5.3g",all_reads.abundance[i]).trim();
 						 String adj_res_log =all_reads==null ? "": ""+String.format("%5.2g",Math.log10(all_reads.abundance[i])).trim();
 						 medianArray.add(String.format("%5.3g", stats[0]).trim()+"\t"+String.format("%5.3g",stats[1]).trim()+"\t"+String.format("%5.3g",stats[2]).trim()
@@ -1324,16 +1341,16 @@ this.sampleID = sampleID;
 		@Override
 		protected void writeFinalResults() {
 			try{
-			if(typing.refDB.tree!=null) typing.refDB.tree.zeroCounts(0, 1);; // add arrays to nodes for recording counts, or reset to zero
-			Iterator<Coverage> it = typing.species2ReadList.iterator();
-			while(it.hasNext()){
+		//	if(typing.refDB.tree!=null) typing.refDB.tree.zeroCounts(0, 1);; // add arrays to nodes for recording counts, or reset to zero
+		//	Iterator<Coverage> it = typing.species2ReadList.iterator();
+			/*while(it.hasNext()){
 				Coverage cov = it.next();
 				if(cov.readCount()> 0){		
 					cov.updateNodeAndParents();
 				}
 				
-			}
-			if(typing.refDB.tree!=null)  typing.refDB.tree.trim(1e-16);
+			}*/
+			if(typing.refDB.tree!=null)  typing.refDB.tree.trim(krakenTrimThreshPerc);
 			if(typing.refDB.tree!=null)  typing.refDB.tree.print(this.krakenResults, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
 			}catch(Exception exc){
 				exc.printStackTrace();

@@ -1,8 +1,9 @@
 package japsa.bio.phylo;
-
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -14,6 +15,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import org.apache.commons.io.input.ReversedLinesFileReader;
 /** extract taxon ids matching speciesIndex from a list of assembly summary files */
 public class GetTaxonID {
   Set<Integer> taxon_set = new HashSet<Integer>();
@@ -79,15 +83,85 @@ public class GetTaxonID {
   }
   
  
+  private File  expand(Set<Integer> taxon_set2, File node_dmp, Set<Integer> set) throws IOException {
+	  Set<Integer> todo = new HashSet<Integer>();
+	todo.addAll(set);
+	 // new in this run
+	Set<Integer> done = new HashSet<Integer>();
+	//newS.addAll(todo);
+	Set<Integer> notP = new HashSet<Integer>();
+	String st = "";
+	String tme = System.currentTimeMillis()+"";
+	File node_dmp1 = new File(node_dmp.getAbsolutePath()+"."+tme+".1");
+	PrintWriter pw1 = new PrintWriter(new FileWriter(node_dmp1));
+	//String prev = "";
+	int ps = todo.size();
+	for(int i=0; todo.size()>0; i++){
+		//todo.clear();
+		//todo.addAll(newS);
+		Set<Integer> newS = new HashSet<Integer>();
+		System.err.println("round "+i+" "+todo.size());
+		System.err.println(todo);
+		boolean reverse = i==0;
+		Closeable br = reverse ? new ReversedLinesFileReader(node_dmp) : new BufferedReader(new FileReader(node_dmp));
+		while((st = reverse ?  ((ReversedLinesFileReader)br).readLine(): ((BufferedReader)br).readLine())!=null){
+			String[] str = st.split("\\|");
+			Integer child = Integer.parseInt(str[0].trim());
+			Integer parent =Integer.parseInt( str[1].trim());
+		//	if(parent.intValue()==5439574){
+			//	System.err.println(st);
+			//}
+			if(todo.contains(child) && ! done.contains(child)){
+				todo.add(parent);
+				set.add(parent);
+				todo.remove(child);
+				if(!done.contains(parent)) newS.add(parent);
+				//todo.remove(child);
+				done.add(child);
+				pw1.println(st);
+			}
+			//prev = st;
+		}
+		br.close();
+		notP.addAll(todo);
+		todo.clear();
+		todo.addAll(newS);
+		if(todo.size()==ps) break;
+		ps = todo.size();
+	}
+	//pw1.println(prev);
+	
+		pw1.close();
+		ReversedLinesFileReader br1 = new ReversedLinesFileReader(node_dmp1);
+		File node_dmp2 = new File(node_dmp.getAbsolutePath()+"."+tme+".2");
+		PrintWriter pw2 = new PrintWriter(new FileWriter(node_dmp2));
+		while((st = br1.readLine())!=null){
+			pw2.println(st);
+		}
+		br1.close();
+		pw2.close();
+		node_dmp1.delete();
+		node_dmp2.deleteOnExit();
+		return node_dmp2;
+	}
+ 
+
+public  File name_dmp2;
   
-  public GetTaxonID( File names_dmp, File node_dmp, Set<Integer>taxon_set)  throws IOException{
-	  this.taxon_set = taxon_set;
+  public GetTaxonID( File names_dmp, File node_dmp_, Set<Integer>taxon_set, File name_dmp2, boolean expand)  throws IOException{
+		this.taxon_set = taxon_set;
+		
+	File node_dmp =   expand ? expand(taxon_set, node_dmp_, this.taxon_set) : node_dmp_;
+	
+	PrintWriter pw_2 = expand ?   new PrintWriter(new GZIPOutputStream(new FileOutputStream(name_dmp2))) : null;
+	
 		  BufferedReader br = getBR(names_dmp);
 		  String st = "";
 		  while((st = br.readLine())!=null){
 			  String[] str = st.split("\t");
 			  Integer taxa = Integer.parseInt(str[0]);
-			  //if(taxon_set.contains(taxa)){
+			  if(taxon_set.contains(taxa)){
+				  if(pw_2!=null) pw_2.println(st);
 				  	String nme = str[2];;
 				  	String type = str[6];
 				 putTaxa(nme, taxa);
@@ -95,16 +169,18 @@ public class GetTaxonID {
 				  if(type.startsWith("scientific")){
 					  taxa2Sci.put(taxa, nme);
 				  }
-			  //}
+			  }
 			
 		  }
 		  br.close();
-	 
+	if(pw_2!=null)  pw_2.close();
 	  this.addNodeDmp(node_dmp);
 		// TODO Auto-generated constructor stub
 	}
   
-  public void print(File out) throws IOException{
+ 
+
+public void print(File out) throws IOException{
 	  PrintWriter pw = new PrintWriter(new FileWriter(out));
 	  for(Iterator<Integer> it = taxon_set.iterator(); it.hasNext();){
 		  pw.println(it.next());

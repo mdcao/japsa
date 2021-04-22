@@ -2,14 +2,17 @@ package japsa.bio.phylo;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import japsa.seq.Alphabet;
@@ -58,7 +61,9 @@ public class Trie {
 	int MAX_CNT = Integer.MAX_VALUE;
 	public Trie(File in) throws FileNotFoundException, IOException{
 		this.root = new TrieNode();
-		BufferedReader br = new BufferedReader(new FileReader(in));
+		InputStream is = new FileInputStream(in);
+		InputStream is1 = in.getName().endsWith(".gz") ? new GZIPInputStream(is) : is;
+		BufferedReader br = new BufferedReader(new InputStreamReader(is1));
 		String st = "";
 		int cnt=0;
 		while(cnt < MAX_CNT && (st = br.readLine())!=null){
@@ -67,6 +72,7 @@ public class Trie {
 			cnt=cnt+1;
 		//	System.err.println(cnt);
 		}
+		br.close();
 		System.err.println("finished");
 	}
 	
@@ -74,15 +80,16 @@ public class Trie {
 		return in.toLowerCase().replace("\"", "").toCharArray();
 	}
 	//new File("genomeDB.fna.gz")
-	public static File getIndexFile(File taxaDir, File fastaFile, String suffix) throws IOException{
-		File outF = new File(fastaFile.getAbsolutePath()+suffix);
-		if(!outF.exists()){
+	public static Trie getIndexFile(File taxaDir, File fastaFile, String suffix, File outF) throws IOException{
+		
+		Trie tr = null;
+		
 			if(!fastaFile.exists()) throw new IOException("File does not exist");
 
-			Trie tr = new Trie(new File(taxaDir,"names.dmp"));
+			 tr = new Trie(new File(taxaDir,"names.dmp"));
 			 tr.getIndex(fastaFile, outF);
-		}
-			return outF;
+		
+			return tr;
 	
 	}
 	public static int max_depth = 60;
@@ -115,7 +122,7 @@ public class Trie {
 	    
 
 	    String foundString = "";
-	    private Integer find(String string) {
+	   public Integer find(String string) {
 			char[] c = slug(string);
 			  TrieNode current = root;
 			  int i=0;

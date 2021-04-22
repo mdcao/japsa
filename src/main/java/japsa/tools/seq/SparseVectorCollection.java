@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -54,8 +55,10 @@ public class SparseVectorCollection{
 			//	System.err.println("no matches");
 				return;//throw new RuntimeException("nothing");
 			}
-			double tot = pseudo*len;//+svs.size()+single.size();
-			tot+=svs.size();//+ single.size();//  add 
+			//double tot = pseudo*len;//+svs.size()+single.size();
+			//tot+=svs.size();//+ single.size();//  add 
+			Map <Integer, Number> max = svs.get(0).getMax();
+			int sze = max.size();
 			double score =0;
 			for(int i=0; i<this.svs.size(); i++){
 				SparseVector sv = svs.get(i);
@@ -77,19 +80,16 @@ public class SparseVectorCollection{
 					}
 					score+=Math.log(scorej);
 				}else{
-					tot = tot -1;
+				//	tot = tot -1;
 					System.err.println("warning totj is zero "+i+" "+sv.toString());
 				}
 				
 			}
-			double diff = 0;
-			for(int j=0; j<abund.length; j++){
-				double newv = abund[j]/tot;
-				diff += Math.abs(abundance[j] - newv);
-				this.abundance[j] =newv ;
-			}
+	
+			System.arraycopy(abund, 0, abundance, 0, abundance.length);
 			
-			v[0] = score; v[1] = diff;
+			
+			v[0] = score; 
 			if(zerovs.size()>0){ // if we keeping anything zero
 				Iterator<Integer> iter = zerovs.iterator();
 				while( iter.hasNext()){
@@ -98,7 +98,17 @@ public class SparseVectorCollection{
 					
 				}
 				this.renormalise();
+			}else{
+				this.renormalise();
 			}
+			/*	double diff = 0;
+				for(int j=0; j<abund.length; j++){
+				double newv = abund[j]/tot;
+				diff += Math.abs(abundance[j] - newv);
+				this.abundance[j] =newv ;
+				}	
+				
+				v[1] = diff;*/
 			
 		}
 		
@@ -132,10 +142,41 @@ public Stack<Integer> zerovs = new Stack<Integer>();
 		
 		public void maximisation(double[] v, double pseudo, int numrep, Integer j) {
 			if(j!=null) zerovs.push(j);
-			for(int i=0; i<numrep; i++){
+		//	double prev=0;
+			double[] abund = new double[this.abundance.length];
+			inner: for(int i=0; i<numrep; i++){
 				this.maximisation(v, pseudo);
+				v[1] = diffAndTransfer(abund, abundance);
+				if(j==null){
+					//int max_ind = ;
+					//System.arraycopy(abundance, 0, abund, 0, abund.length);
+					//System.err.println(i+" "+v[0]+" "+v[1]+" "+this.abundance[max_ind(abundance)]);
+					//double diff = 
+					//prev = v[0];
+				}
+				if(v[1]<1e-5 && i>1)  break inner;
 			}
 			if(j!=null) zerovs.pop();
+		}
+
+		private double diffAndTransfer(double[] abund, double[] abundance) {
+			double diff = 0;
+			for(int i=0; i<abund.length; i++){
+				diff+= Math.abs(abundance[i] - abund[i]);
+				abund[i] = abundance[i];
+			}
+			return diff;
+		}
+
+		private int max_ind(double[] a) {
+			 int ind =0;
+			 for(int i=1; i<a.length;i++){
+				 if(a[i]>=a[ind]){
+					
+					 ind = i;
+				 }
+			 }
+			 return ind;
 		}
 
 		public void check() {
