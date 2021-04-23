@@ -319,7 +319,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		//	System.err.println(dbs[i]);
 			ReferenceDB refDB = null;
 			 File taxdmp = new File(dbPath+"/taxdump");
-			if(speciesFile!=null){
+			 if(speciesFile!=null){
 				 File modDB = new File("./db");
 				 File newDB = new File(modDB, dbs[i]+"_"+speciesFile);//+"."+last_m);
 				 if(newDB.exists()){

@@ -103,6 +103,7 @@ public class ReferenceDB{
 		this.col_ind = col_ind;
 		this.taxaDir = taxaDir;
 		this.suffix = suffix;
+		this.refFile = refFile;
 		//File dbPath = dbdir.getParentFile();
 		//File dbdir = new File(dbPath+"/"+dbs);
 		// refFile = new File(dbdir, refFileNme);
