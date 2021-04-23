@@ -995,7 +995,7 @@ public static List<String> speciesToIgnore = null;
 			double[]v = new double[2];
 			if( all_reads!=null){
 				double minv = 0.0;
-				if(removeLikelihoodThresh>0.00001){
+				if(removeLikelihoodThresh>0.00001 && false){
 				for(int cnt=0; minv < removeLikelihoodThresh && cnt < 10; cnt++){
 					this.all_reads.maximisation(v, pseudo,10, null);
 					//this.all_reads.check();

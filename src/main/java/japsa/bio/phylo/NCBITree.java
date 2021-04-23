@@ -405,8 +405,8 @@ private Node make(String line_, int  level, Node parent, int index){
 		 //  this.taxa2Node.put(taxon, n);
 		   n.getIdentifier().setAttribute("taxon",taxon);
 		  // Integer[] l1 = new Integer[] {Integer.parseInt(lines[1]), Integer.parseInt(lines[2])};
-		   n.getIdentifier().setAttribute(NCBITree.count_tag,new Integer[] {Integer.parseInt(lines[1])});
-		   n.getIdentifier().setAttribute(NCBITree.count_tag1,new Integer[] {Integer.parseInt(lines[2])});
+		   n.getIdentifier().setAttribute(NCBITree.count_tag,new Number[] {Double.parseDouble(lines[1])});
+		   n.getIdentifier().setAttribute(NCBITree.count_tag1,new Number[] {Double.parseDouble(lines[2])});
 
 	   }else{
 	  for(int i=1; i<lines.length; i++){
