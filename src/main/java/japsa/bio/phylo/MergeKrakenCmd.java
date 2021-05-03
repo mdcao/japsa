@@ -32,7 +32,7 @@ public class MergeKrakenCmd extends CommandLine{
 		addString("output0", "cumul.css", "output file for sum of all depths below", false);
 		addString("output1", "sep.css", "output file for node specific", false);
 		addBoolean("trim",false,"whether to trim the species name");
-		addString("pattern", ".outreport", "input pattern", false);
+		addString("pattern", null, "input pattern", false);//".outreport"
 		addString("extra", null, "extra_input", false);
 		addString("dirs", ".", "input directories", false);
 		addString("todo",null, "path to file with list of input files",false);
@@ -50,6 +50,7 @@ public class MergeKrakenCmd extends CommandLine{
 		String todo = cmdLine.getStringVal("todo");
 		NCBITree.trim = cmdLine.getBooleanVal("trim");
 		NCBITree.thresh = cmdLine.getDoubleVal("thresh");
+	
 		String ext = cmdLine.getStringVal("extra");
 		
 		String[] extra = ext!=null ? ext.split(":") : new String[0];
@@ -184,8 +185,8 @@ public class MergeKrakenCmd extends CommandLine{
 			//	CSSProcessCommand.colorEachLevel(combined.tree);
 				CSSProcessCommand.colorRecursive(combined.tree, true);
 			}
-			combined.print(new File(outfile),"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%d"}, false);
-			combined.print(new File(outfile1),"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%d"}, false);
+			combined.print(new File(outfile),"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false);
+			combined.print(new File(outfile1),"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false);
 
 			//System.err.println(combined);
 		} catch (IOException e) {

@@ -88,8 +88,13 @@ public  class KrakenTree extends NCBITree {
 		 String prefix = ((String)id.getAttribute("prefix"));	
 		Integer taxon = ((Integer)id.getAttribute("taxon"));
 		double[] cssvals = (double[])id.getAttribute("cssvals");
-		String[] cssvals1 = new String[cssvals.length];
+		String[] cssvals1;
+		if(cssvals!=null){
+		cssvals1 = new String[cssvals.length];
 		for(int i=0; i<cssvals.length; i++) cssvals1[i] = String.format("%5.3g",cssvals[i]).trim();
+		}else{
+			 cssvals1 = "0:0:0".split(":");
+		}
 		StringBuffer sb = new StringBuffer();
 		StringBuffer sb1 = new StringBuffer();
 		Stack<String> l = new Stack<String>();
@@ -124,7 +129,14 @@ public  class KrakenTree extends NCBITree {
 		 pw.print(nme+"\t"+hex+"\t"+taxon+"\t"+height+"\t"+level+"\t"+Arrays.asList(cssvals1)+"\t"+sb.toString()+"\t"+sb1.toString());
 		 if(count_tag!=null){
 			 for(int i=0; i<count_tag.length; i++){
-				 pw.print(String.format(format[i],  id.getAttribute(count_tag[i])).replaceAll("\\s+",""));
+				 Number[] num = (Number[])id.getAttribute(count_tag[i]);
+				 double[] d = new double[num.length];
+				 for(int k=0; k<d.length; k++){
+					 d[k] = num[k].doubleValue();
+					 pw.print("\t"+String.format(format[i],  d[k]).replaceAll("\\s+",""));
+					 
+				 }
+				
 			 }
 		 }
 		 //if(true) pw.print("\theight="+String.format("%5.3g", height).trim());

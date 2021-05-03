@@ -344,6 +344,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 			if(blast){
 				File[] outDs = speciesTyping(refDB, i==0 ? resdir : null, readList,  bamFiles, fastqFiles, output,
 						out_fastq, i==dbs.length-1 ? null : unmapped_reads, exclfile, null, null, true, null, null);
+				System.err.println(Arrays.asList(outDs));
 				return;
 			}
 			

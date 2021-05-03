@@ -3,16 +3,13 @@ package japsa.bio.phylo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -20,15 +17,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import japsa.seq.Alphabet;
-import japsa.seq.Sequence;
-import japsa.seq.SequenceReader;
-import japsa.tools.seq.SequenceUtils;
 import pal.misc.Identifier;
 import pal.tree.Node;
 import pal.tree.NodeUtils;
@@ -61,6 +53,7 @@ public  class NCBITree extends CommonTree {
 							Number[] cnt = (Number[]) id.getAttribute(count_tag2);
 							if(cnt==null) cnt=new Number[] {0.0};
 							Number[] v = new Number[len];
+							Arrays.fill(v, 0);
 							v[i] = cnt[0];
 							id.setAttribute(count_tag2, v);
 						}
@@ -691,18 +684,18 @@ public void merge(Node n, int pos){
 		//this is adding in new samples
 		{
 			String count_tag2 = NCBITree.count_tag;
-			Double[] v = (Double[])node.getIdentifier().getAttribute(count_tag2);
-			Double[] v1 = (Double[])n.getIdentifier().getAttribute(count_tag2);
+			Number[] v = (Number[])node.getIdentifier().getAttribute(count_tag2);
+			Number[] v1 = (Number[])n.getIdentifier().getAttribute(count_tag2);
 			for(int i=0; i<v.length; i++){
-				v[i] +=v1[i];
+				v[i] = (v[i].doubleValue() +v1[i].doubleValue());
 			}
 		}
 		{
 			String count_tag2 = NCBITree.count_tag1;
-			Double[] v = (Double[])node.getIdentifier().getAttribute(count_tag2);
-			Double[] v1 = (Double[])n.getIdentifier().getAttribute(count_tag2);
+			Number[] v = (Number[])node.getIdentifier().getAttribute(count_tag2);
+			Number[] v1 = (Number[])n.getIdentifier().getAttribute(count_tag2);
 			for(int i=0; i<v.length; i++){
-				v[i] +=v1[i];
+				v[i] =v[i].doubleValue()+v1[i].doubleValue();
 			}
 		}
 	}else{
