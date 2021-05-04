@@ -622,19 +622,24 @@ public static double thresh=0.0001;
 public void trim(double thresh_perc){
 	double total =0;
 	for(int i=roots.size()-1;i>=0; i--){
+		if(roots.get(i)!=null){
 		Number[] cnts = (Number[]) roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
 		for(int j=0; j<cnts.length; j++) total+=cnts[j].doubleValue();
+		}
 	}
 	double thresh = Math.round(thresh_perc*total);
 	//int thresh = Math.max(1, (int) );
 	for(int i=roots.size()-1;i>=0; i--){
+		if(roots.get(i)!=null){
 		if(trimNode(roots.get(i), thresh_perc)){
 			roots.remove(i);
+		}
 		}
 	}
 }
 public void removeDupl(){
 	for(int i=roots.size()-1;i>=0; i--){
+		if(roots.get(i)!=null)
 		removeDupl(roots.get(i));
 	}
 }
@@ -723,7 +728,8 @@ public void merge(NCBITree tree1, int pos){
 		String nme = root.getIdentifier().getName();
 		Node mtch = null;
 		for(int ij=0; ij<roots.size(); ij++){
-			if(roots.get(ij).getIdentifier().getName().equals(nme)){
+			Node root_ij = roots.get(ij);
+			if(root_ij!=null && root_ij.getIdentifier().getName().equals(nme)){
 				mtch = roots.get(ij);
 			}
 		}
@@ -786,6 +792,7 @@ public void merge(NCBITree tree1, int pos){
 		for(int i=0;i<len; i++){
 			
 			Node n = roots.get(i);
+			if(roots.get(i)==null) continue;
 			String nme  = slug(n.getIdentifier().getName().trim(),false);
 			System.err.println(nme+" "+mtch.contains(nme));
 			if(mtch.contains(nme)){
