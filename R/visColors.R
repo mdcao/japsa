@@ -23,7 +23,7 @@ library(RColorBrewer)
 hm2 = TRUE   ## whether to use heatmap2
 
 ###############################
-path ="/home/lachlan/bitbucket/bashscripts/bacterial"   ## NEED TO CHANGE 
+path ="/home/lachlan/github/japsa_coverage/R"   ## NEED TO CHANGE 
 source(paste(path, "visColorsFuncts.R", sep="/"))
 
 args = commandArgs(trailingOnly=TRUE)
@@ -39,9 +39,10 @@ resdir = "resdir"
 resdir1j = resdir
 indsj = 1:length(samples)
 grps = rep(1, length(samples))
+grps[grep("aqip", samples)] = 2
 
 dir.create(resdir)
-	matrices = lapply(args, .readCSS,samples = design$Name, names_index =1)
+	matrices = lapply(args, .readCSS,samples = samples, names_index =1)
 	names(matrices) = args
 	
 #sums = attr(matrices[[grep("cumul", args, inv=T)[1]]] ,"sums")

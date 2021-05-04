@@ -726,16 +726,17 @@ public void merge(NCBITree tree1, int pos){
 	for(int i=0; i<tree1.roots.size(); i++){
 		Node root  = tree1.roots.get(i);
 		String nme = root.getIdentifier().getName();
-		Node mtch = null;
-		for(int ij=0; ij<roots.size(); ij++){
+		if(nme.equals("unclassified")) continue;
+		Node mtch = this.getSlug(nme);
+		/*for(int ij=0; ij<roots.size(); ij++){
 			Node root_ij = roots.get(ij);
 			if(root_ij!=null && root_ij.getIdentifier().getName().equals(nme)){
 				mtch = roots.get(ij);
 			}
-		}
+		}*/
 		
 		if(mtch==null){
-			roots.add(mtch); // add new root
+			roots.add(root); // add new root
 		}else if(root.getChildCount()>0){
 			merge(root, pos);
 		}
