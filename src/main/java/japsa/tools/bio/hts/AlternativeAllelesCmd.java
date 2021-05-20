@@ -43,13 +43,13 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
@@ -286,7 +286,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 			}
 		}
 	}
-	static ConcurrentMap<String, FragInfo> readToPos = new ConcurrentHashMap<String, FragInfo>();// maps read pair to position
+	static Map<String, FragInfo> readToPos = new HashMap<String, FragInfo>();// maps read pair to position
 	
 	
 	/*static class Fragments{
@@ -313,17 +313,19 @@ public class AlternativeAllelesCmd extends CommandLine{
 		
 		
 	}
-	static void clearUpTo(ConcurrentMap<String, FragInfo> readToPos2,int pos ,String chrom, PrintWriter ls){
-	//	Set<String> torem = new HashSet<String>();
+	static void clearUpTo(Map<String, FragInfo> readToPos2,int pos ,String chrom, PrintWriter ls){
+		Set<String> torem = new HashSet<String>();
 		for(Iterator<String> it = readToPos2.keySet().iterator(); it.hasNext();){
 			String key = it.next();
 			FragInfo val = readToPos2.get(key);
 			if(val.start < pos){
 			//	System.err.println("removing "+key+" "+val);
 				ls.println(key);
-				readToPos2.remove(key);
+				torem.add(key);
+//				readToPos2.remove(key);
 			}
 		}
+		torem.removeAll(torem);
 	}
 	
 	static List<String> header = new ArrayList<String>();
