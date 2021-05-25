@@ -516,6 +516,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		final double q_thresh;
 		final String[] input;
 		int max_per_file;
+		int src_index=0;
 		final Collection<String> readsToInclude;
 		 SAMTextWriter bfw = null;
 		Log log = null;
@@ -557,6 +558,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		}
 	//	final boolean deleteFile;
 		private void init(int k) {
+			this.src_index = k;
 			reader=null; iterator = null;
 			try{
 			ProcessBuilder pb;
@@ -612,7 +614,6 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 				if(deleteErr) minimaperr.deleteOnExit();
 				Redirect error = ProcessBuilder.Redirect.to(minimaperr);//Redirect.INHERIT
 				Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.PIPE).redirectError(error).start();
-			//	Process mm2Process =  pb.redirectInput(ProcessBuilder.Redirect.from(tmp)).redirectError(error).start();
 				PipeConnector pc = new PipeConnector(fastqIt1, mm2Process.getOutputStream(), max_per_file, readsToInclude,q_thresh, fasta);
 				Thread th = new Thread(pc);
 				th.start();
@@ -728,7 +729,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 				curr_index++;
 			}
 			//System.err.println(iterator.hasNext());
-			 SAMRecord nxt =  iterator==null ? null :  iterator.next() ;
+			 SAMRecord nxt =  iterator==null || !iterator.hasNext() ? null :  iterator.next() ;
 		//		System.err.println(nxt.getReadName()+" "+bfw==null);
 
 			 if(this.bfw!=null && nxt!=null){
@@ -737,6 +738,9 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 			 }
 			 count++;
 			 if(nxt==null) this.close();
+			 else{
+				 nxt.setAttribute(SequenceUtils.src_tag, src_index);
+			 }
 			 return nxt;
 		}
 		 

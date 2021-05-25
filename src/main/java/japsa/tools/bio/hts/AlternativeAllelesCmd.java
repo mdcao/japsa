@@ -314,18 +314,19 @@ public class AlternativeAllelesCmd extends CommandLine{
 		
 	}
 	static void clearUpTo(Map<String, FragInfo> readToPos2,int pos ,String chrom, PrintWriter ls){
-		Set<String> torem = new HashSet<String>();
+		//Set<String> torem = new HashSet<String>();
 		for(Iterator<String> it = readToPos2.keySet().iterator(); it.hasNext();){
 			String key = it.next();
 			FragInfo val = readToPos2.get(key);
 			if(val.start < pos){
 			//	System.err.println("removing "+key+" "+val);
 				ls.println(key);
-				torem.add(key);
+				//torem.add(key);
+				it.remove();
 //				readToPos2.remove(key);
 			}
 		}
-		torem.removeAll(torem);
+		//readToPos2
 	}
 	
 	static List<String> header = new ArrayList<String>();
