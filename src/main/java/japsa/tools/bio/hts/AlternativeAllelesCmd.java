@@ -37,6 +37,7 @@ package japsa.tools.bio.hts;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -45,7 +46,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -92,8 +92,10 @@ public static boolean partial=true;
 		addString("input", null, "Name of the input bam file",true);
 		addString("reference", null, "Reference file",true);
 		addBoolean("writeSAM",false, "write sam output",false);
-		addString("vcf", null, "Name of the vcf file",true);
+		addString("vcf_plasma", null, "Name of the vcf file",true);
+		addString("vcf_tumor", null, "Name of the vcf file tumor",true);
 		addString("output", "-", "Name of the output file");
+		addString("chrom", "chr1", "which chromosome",true);
 		addInt("threshold", 2000, "Maximum concordant insert size");
 		//addInt("maxIns", 10000, "Maximum concordant insert size");
 
@@ -107,11 +109,13 @@ public static boolean partial=true;
 		String input = cmdTool.getStringVal("input");
 		String ref = cmdTool.getStringVal("reference");
 		String output = cmdTool.getStringVal("output");
-		String vcf = cmdTool.getStringVal("vcf");
+		String vcf = cmdTool.getStringVal("vcf_plasma");
+		String vcf1 = cmdTool.getStringVal("vcf_tumor");
+		String myChrom = cmdTool.getStringVal("chrom");
 		writeSAM = cmdTool.getBooleanVal("writeSAM");
 		int threshold = cmdTool.getIntVal("threshold");
 		int maxIns = threshold * 2;
-		addSequence(input, vcf, ref, output,threshold, maxIns);
+		addSequence(input, vcf, vcf1,ref, output,threshold, maxIns, myChrom);
 
 	}
 
@@ -149,11 +153,13 @@ public static boolean partial=true;
 			pos = p;
 			base = b;			
 		}
-		static String[] extra = new String[] {"meanLen", "sdLen","fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
+		static String[] extra = new String[] {"tumor", "meanLen", "sdLen","fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
 		void print(PrintWriter pw, String left, String right){
 			double mean = (double)sumDiff/(double) count;
 			double sd = Math.sqrt(sumSq/(double)count - Math.pow(mean,2));
 			pw.print(in);
+			pw.print("\t");
+			pw.print(this.tumor!=null);
 			pw.print("\t");
 			pw.print(mean);
 			pw.print("\t");
@@ -178,6 +184,10 @@ public static boolean partial=true;
 			pw.print(this.diff_prev);
 			pw.print("\t");
 			pw.print(this.diff_nxt);
+			if(this.tumor!=null){
+				pw.print("\t");
+				pw.print(this.tumor.in);
+			}
 			pw.println();
 		}
 
@@ -244,16 +254,30 @@ public static boolean partial=true;
 			}
 			
 		}
+		VarRecord tumor = null;
+		public void setMatchedTumour(VarRecord varRecord) {
+			tumor = varRecord;
+			
+		}
 		
 		
 	}
 
-	static VarRecord nextRecord(BufferedReader br, VarRecord previous) throws IOException{
+	static VarRecord nextRecord(BufferedReader br, VarRecord previous, String myChrom) throws IOException{
 		String line = br.readLine();
 		if (line == null)
 			return null;
 		
 		VarRecord nxt =  VarRecord.parseLine(line);
+		if(previous==null){
+			while(!nxt.chrom.equals(myChrom)){
+				line = br.readLine();
+				nxt =  VarRecord.parseLine(line);
+			}
+		}
+		if(!nxt.chrom.equals(myChrom)){
+			return null;
+		}
 		if(previous!=null){
 			previous.setNext(nxt);
 			nxt.setPrevious(previous);
@@ -340,8 +364,10 @@ public static boolean partial=true;
 	}*/
 	
 	static List<String> header = new ArrayList<String>();
+	static List<String> headerT = new ArrayList<String>();
 	
-	static void addSequence(String inFile, String vcfFile, String reference, String outFile, int threshold, int maxInsert) throws IOException{		
+	static void addSequence(String inFile, String vcfFile, String vcfFile1, String reference, String outFile, int threshold, int maxInsert, 
+			String myChrom) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
 		//int countGood = 0, countBad = 0, countUgly = 0;
 		//int countALLGood = 0, countALLBad = 0, countALLUgly = 0;
@@ -354,25 +380,45 @@ public static boolean partial=true;
 
 
 		BufferedReader bf =  SequenceReader.openFile(vcfFile);
+		BufferedReader bf_T =  vcfFile1!=null && (new File(vcfFile1)).exists() ? SequenceReader.openFile(vcfFile1) : null;
+
+		
 		
 		header.addAll(Arrays.asList(bf.readLine().split("\t")));//dont care the first line
+		if(bf_T!=null) 		headerT.addAll(Arrays.asList(bf_T.readLine().split("\t")));//dont care the first line
 
+	
+		
 		List<VarRecord> varList = new  ArrayList<VarRecord>();
+		Map<Integer, VarRecord> varList_tumour = new  HashMap<Integer, VarRecord>();
+		
+		if(bf_T!=null){
+			VarRecord prevVar_T = null;
+			VarRecord fVar_T = nextRecord(bf_T, prevVar_T, myChrom);
+			while(fVar_T!=null){
+	//		System.err.println("adding "+fVar_T);
+				varList_tumour.put(fVar_T.pos, fVar_T);
+				prevVar_T = fVar_T;
+				fVar_T = nextRecord(bf_T, prevVar_T, myChrom);
+			}
+		}
+		
 		VarRecord prevVar = null;
-		VarRecord fVar = nextRecord(bf, prevVar);
+		VarRecord fVar = nextRecord(bf, prevVar, myChrom);
+		fVar.setMatchedTumour(varList_tumour.get(fVar.pos));
 		System.err.println("adding "+fVar);
 		varList.add(fVar);
 		prevVar = fVar;
-
-		final String myChrom = fVar.chrom;
-		OutputStream os = new FileOutputStream(vcfFile+".out.vcf");
 		
+	//	final String myChrom = fVar.chrom;
+		OutputStream os = new FileOutputStream(vcfFile+"."+myChrom+".out.vcf");
 		PrintWriter vcf_out = new PrintWriter(new OutputStreamWriter(os));
 		PrintWriter ls = null;
 		if(printUnmatched) ls = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(vcfFile+".unmatched_reads.txt.gz"))));
 
 		
 		header.addAll(Arrays.asList(VarRecord.extra));
+		header.addAll(headerT);
 		vcf_out.println(combine(header));
 		
 		Sequence refSeq = null;
@@ -426,7 +472,10 @@ public static boolean partial=true;
 		long totalDiff=0;
 		long totalDiffCount=0;
 		int variantReads=0;
-		
+		int[] counts_shared = new int[threshold+1];
+		int[] counts_unique = new int[threshold+1];
+		int[] counts_filtered = new int[threshold+1];
+		int[] counts = new int[threshold+1];
 		for (int count=0; samIter.hasNext(); count++){
 			SAMRecord sam = samIter.next();
 		
@@ -435,11 +484,11 @@ public static boolean partial=true;
 			if(count % 1000000==0){
 				
 				long time1 = System.currentTimeMillis();
-				long diff = time1 - time0;
+				double diff = time1 - time0;
 				double time = ((double)diff)/(double)10000;
 				time0 = time1;
 				double avgLen = ((double)totalDiff/(double)totalDiffCount);
-				System.err.println("processed "+count+" reads. Currently at "+sam.getAlignmentStart()/1e6+ " of "+len/1e6+" millis per read: "+time);
+				System.err.println("processed "+count+" reads. Currently at "+sam.getAlignmentStart()/1e6+ " of "+len/1e6+" "+time+ "millis per read  "+diff/1000.0+"secs per million");
 				System.err.println("percentage progress: "+ (double)sam.getAlignmentStart()/(double)len);
 				System.err.println("total variant supporting reads "+variantReads+" of "+count);
 				System.err.println("Unmatched: "+unMatchedCount+" matched: "+totalDiffCount+" frag length "+avgLen);
@@ -501,6 +550,7 @@ public static boolean partial=true;
 			//	System.err.println("paired pos is null");
 				continue;
 			}
+			counts[insertSize]++;
 			totalDiff +=insertSize;
 			totalDiffCount+=1;
 		//	if (somaticSet.contains(readName))
@@ -508,6 +558,8 @@ public static boolean partial=true;
 
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			boolean support = false;
+			boolean shared=false;
+			boolean unique = false;
 			
 			int readPos = 0;//start from 0					
 			int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index
@@ -561,6 +613,11 @@ public static boolean partial=true;
 									variantReads+=1;
 									//System.err.println("found read with variant "+refPos+" "+sam.getReadName());
 									support = true;
+									if(var.tumor!=null){
+										shared=true;
+									}else{
+										unique= true;
+									}
 									var.add(insertSize);
 								//	pairedPos.addSNP(var);
 									array[0] = baseQ[readPos+i]; array[1]= mapQ; //array[2] = st; array[3] = end;
@@ -577,12 +634,13 @@ public static boolean partial=true;
 								break;//for i
 
 							while (currentVarPos < refPos + i && hasVar){
-								VarRecord var = nextRecord(bf, prevVar);
+								VarRecord var = nextRecord(bf, prevVar, myChrom);
 								prevVar = var;
 								if (var == null){
 									hasVar = false;
 									break;
 								}
+								var.setMatchedTumour(varList_tumour.get(var.pos));
 								System.err.println("adding "+var.toString());
 								varList.add(var);
 
@@ -591,6 +649,11 @@ public static boolean partial=true;
 								//	System.err.println("found read with variant "+refPos+" "+sam.getReadName());
 									variantReads+=1;
 									support = true;
+									if(var.tumor!=null){
+										shared=true;
+									}else{
+										unique= true;
+									}
 									var.add(insertSize);
 //									pairedPos.addSNP(var);
 									array[0] = baseQ[readPos+i]; array[1]= mapQ; //array[2] = st; array[3] = end;
@@ -626,7 +689,11 @@ public static boolean partial=true;
 			//	if (support)	break;
 				
 			}//for
-
+			if(support){
+				if(shared) counts_shared[insertSize]++;
+				if(unique)counts_unique[insertSize]++;
+				counts_filtered[insertSize]++;
+			}
 			if (support && somaticSet!=null){
 				//samWriter.writeAlignment(sca$240am);				
 				//if (insertSize == 0){
@@ -643,6 +710,7 @@ public static boolean partial=true;
 			}
 
 		}//while
+		
 		
 		samIter.close();
 		
@@ -667,6 +735,13 @@ public static boolean partial=true;
 		vcf_out.close();
 		if(ls!=null) ls.close();
 		
+		
+		PrintWriter cnts_out = new PrintWriter(new FileWriter(vcfFile+"."+myChrom+".out.cnts"));
+		cnts_out.println("len,filtered,shared,unique,all");
+		for(int i=0; i<counts.length; i++){
+			cnts_out.println(i+","+counts_filtered[i]+","+counts_shared[i]+","+counts_unique[i]+","+counts[i]);
+		}
+		cnts_out.close();
 		
 		/**********************************************************************
 		
