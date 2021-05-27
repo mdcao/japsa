@@ -115,7 +115,7 @@ public static boolean partial=true;
 		writeSAM = cmdTool.getBooleanVal("writeSAM");
 		int threshold = cmdTool.getIntVal("threshold");
 		int maxIns = threshold * 2;
-		addSequence(input, vcf, vcf1,ref, output,threshold, maxIns, myChrom);
+		addSequence(input, new File(vcf), vcf1==null ? null : new File(vcf1),ref, output,threshold, maxIns, myChrom);
 
 	}
 
