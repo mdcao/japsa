@@ -414,7 +414,7 @@ public static boolean partial=true;
 		prevVar = fVar;
 		
 	//	final String myChrom = fVar.chrom;
-		OutputStream os = new FileOutputStream(new File(outDir, vcfFile.getName()+"."+myChrom+".out.vcf"));
+		OutputStream os = new GZIPOutputStream(new FileOutputStream(new File(outDir, vcfFile.getName()+"."+myChrom+".out.vcf.gz")));
 		PrintWriter vcf_out = new PrintWriter(new OutputStreamWriter(os));
 		PrintWriter ls = null;
 		if(printUnmatched) ls = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(new File(outDir, vcfFile.getName()+".unmatched_reads.txt.gz")))));
@@ -740,7 +740,8 @@ public static boolean partial=true;
 		if(ls!=null) ls.close();
 		
 		
-		PrintWriter cnts_out = new PrintWriter(new FileWriter(new File(outDir, vcfFile.getName()+"."+myChrom+".out.cnts")));
+		PrintWriter cnts_out = new PrintWriter(
+				new GZIPOutputStream(new FileOutputStream(new File(outDir, vcfFile.getName()+"."+myChrom+".out.cnts.gz"))));
 		cnts_out.println("len,filtered,shared,unique,all");
 		for(int i=0; i<counts.length; i++){
 			cnts_out.println(i+","+counts_filtered[i]+","+counts_shared[i]+","+counts_unique[i]+","+counts[i]);
