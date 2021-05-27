@@ -94,7 +94,7 @@ public static boolean partial=true;
 		addBoolean("writeSAM",false, "write sam output",false);
 		addString("vcf_plasma", null, "Name of the vcf file",true);
 		addString("vcf_tumor", null, "Name of the vcf file tumor",true);
-		addString("output", "-", "Name of the output file");
+		addString("output", "results", "Name of the output directory");
 		addString("chrom", "chr1", "which chromosome",true);
 		addInt("threshold", 2000, "Maximum concordant insert size");
 		//addInt("maxIns", 10000, "Maximum concordant insert size");
@@ -366,7 +366,7 @@ public static boolean partial=true;
 	static List<String> header = new ArrayList<String>();
 	static List<String> headerT = new ArrayList<String>();
 	
-	static void addSequence(String inFile, String vcfFile, String vcfFile1, String reference, String outFile, int threshold, int maxInsert, 
+	static void addSequence(String inFile, File vcfFile, File vcfFile1, String reference, String outFile, int threshold, int maxInsert, 
 			String myChrom) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
 		//int countGood = 0, countBad = 0, countUgly = 0;
@@ -376,11 +376,14 @@ public static boolean partial=true;
 		//Bad:  insertSize >SIZE_THRESHOLD
 		//Ugly: insertSize=0
 		
+		File outDir = new File(outFile);
+		outDir.mkdir();
+		
 		Set<String> somaticSet = writeSAM ?  new HashSet<String>() : null;
 
 
-		BufferedReader bf =  SequenceReader.openFile(vcfFile);
-		BufferedReader bf_T =  vcfFile1!=null && (new File(vcfFile1)).exists() ? SequenceReader.openFile(vcfFile1) : null;
+		BufferedReader bf =  SequenceReader.openFile(vcfFile.getAbsolutePath());
+		BufferedReader bf_T =  vcfFile1!=null && vcfFile1.exists() ? SequenceReader.openFile(vcfFile1.getAbsolutePath()) : null;
 
 		
 		
@@ -411,10 +414,10 @@ public static boolean partial=true;
 		prevVar = fVar;
 		
 	//	final String myChrom = fVar.chrom;
-		OutputStream os = new FileOutputStream(vcfFile+"."+myChrom+".out.vcf");
+		OutputStream os = new FileOutputStream(new File(outDir, vcfFile.getName()+"."+myChrom+".out.vcf"));
 		PrintWriter vcf_out = new PrintWriter(new OutputStreamWriter(os));
 		PrintWriter ls = null;
-		if(printUnmatched) ls = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(vcfFile+".unmatched_reads.txt.gz"))));
+		if(printUnmatched) ls = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(new File(outDir, vcfFile.getName()+".unmatched_reads.txt.gz")))));
 
 		
 		header.addAll(Arrays.asList(VarRecord.extra));
@@ -449,7 +452,8 @@ public static boolean partial=true;
 		SAMFileHeader samHeader = samReader.getFileHeader();		
 		SAMTextWriter samWriter = null;
 		if(writeSAM){
-			samWriter = outFile.equals("-")?	(new SAMTextWriter(System.out))	:(new SAMTextWriter(new File(outFile)));
+		//	samWriter = outFile.equals("-")?	(new SAMTextWriter(System.out))	:(new SAMTextWriter(new File(outFile)));
+			samWriter =new SAMTextWriter(new File(outDir, myChrom+".sam"));
 			samWriter.setSortOrder(SortOrder.unsorted, false);		
 			samWriter.writeHeader( samHeader.getTextHeader());	
 		}
@@ -736,7 +740,7 @@ public static boolean partial=true;
 		if(ls!=null) ls.close();
 		
 		
-		PrintWriter cnts_out = new PrintWriter(new FileWriter(vcfFile+"."+myChrom+".out.cnts"));
+		PrintWriter cnts_out = new PrintWriter(new FileWriter(new File(outDir, vcfFile.getName()+"."+myChrom+".out.cnts")));
 		cnts_out.println("len,filtered,shared,unique,all");
 		for(int i=0; i<counts.length; i++){
 			cnts_out.println(i+","+counts_filtered[i]+","+counts_shared[i]+","+counts_unique[i]+","+counts[i]);
