@@ -131,7 +131,7 @@ public static boolean partial=true;
 		int count=0;
 		int count1 =0;
 		
-		int[][] vals = new int[4][2];
+		int[][] vals = new int[2][2];
 		
 		
 		public void add(int[] b) {
@@ -153,42 +153,39 @@ public static boolean partial=true;
 			pos = p;
 			base = b;			
 		}
-		static String[] extra = new String[] {"tumor", "meanLen", "sdLen","fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
-		void print(PrintWriter pw, String left, String right){
+		static String[] extra = 
+				new String[] {"tumor", 
+				"meanLen", "sdLen","fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
+		String print( String left, String right){
+			StringBuffer sb = new StringBuffer();
 			double mean = (double)sumDiff/(double) count;
 			double sd = Math.sqrt(sumSq/(double)count - Math.pow(mean,2));
-			pw.print(in);
-			pw.print("\t");
-			pw.print(this.tumor!=null);
-			pw.print("\t");
-			pw.print(mean);
-			pw.print("\t");
-			pw.print(sd);
-			pw.print("\t");
-			pw.print(count);
-			pw.print("\t");
-			pw.print(left+"\t"+right);
+			sb.append(in);sb.append("\t");
+			sb.append(this.tumor!=null);sb.append("\t");
+			sb.append(mean);sb.append("\t");
+			sb.append(sd);sb.append("\t");
+			sb.append(count);	sb.append("\t");
+			sb.append(left+"\t"+right);
 			for(int i=0; i<vals.length; i++){
 				double mean1 = (double)vals[i][0]/(double) count1;
 				double sd1 = Math.sqrt((double) vals[i][1]/(double)count1 - Math.pow(mean1,2));
-				pw.print("\t");
-				pw.print(mean1);
-				pw.print("\t");
-				pw.print(sd1);
+				sb.append("\t");
+				sb.append(mean1);
+				sb.append("\t");
+				sb.append(sd1);
 			}
-			pw.print("\t");
-			pw.print(count1);
-			pw.print("\t");
-			pw.print((double)count/(double)count1);
-			pw.print("\t");
-			pw.print(this.diff_prev);
-			pw.print("\t");
-			pw.print(this.diff_nxt);
-			if(this.tumor!=null){
-				pw.print("\t");
-				pw.print(this.tumor.in);
-			}
-			pw.println();
+			sb.append("\t");
+			sb.append(count1);sb.append("\t");
+			sb.append((double)count/(double)count1);sb.append("\t");
+			sb.append(this.diff_prev);	sb.append("\t");
+			sb.append(this.diff_nxt);
+
+//			if(this.tumor!=null){
+//				sb.append("\t");
+//				sb.append(this.tumor.in);
+//			}
+			return sb.toString();
+			//pw.println();
 		}
 
 		static VarRecord parseLine(String line){
@@ -334,7 +331,12 @@ public static boolean partial=true;
 			VarRecord var = varList.get(i);
 			if(!var.chrom.equals(chrom)) throw new RuntimeException("!!");
 			if(var.pos>pos) break;
-			var.print(pw, ref.subSequence(var.pos-10, var.pos).toString(), ref.subSequence(var.pos, var.pos+10).toString());
+			String st = var.print(ref.subSequence(var.pos-10, var.pos).toString(), ref.subSequence(var.pos, var.pos+10).toString());
+			if(CHECK){
+				String[] str = st.split("\t");
+				if(str.length!=no_cols) throw new RuntimeException("wrong number cols "+str.length+" "+no_cols);
+			}
+			pw.print(st);
 		}
 		pw.flush();
 		for(int j=i-1; j>=0;j--){
@@ -365,7 +367,8 @@ public static boolean partial=true;
 	
 	static List<String> header = new ArrayList<String>();
 	static List<String> headerT = new ArrayList<String>();
-	
+	static int no_cols;
+	static boolean CHECK=false;
 	static void addSequence(String inFile, File vcfFile, File vcfFile1, String reference, String outFile, int threshold, int maxInsert, 
 			String myChrom) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
@@ -421,8 +424,10 @@ public static boolean partial=true;
 
 		
 		header.addAll(Arrays.asList(VarRecord.extra));
-		header.addAll(headerT);
-		vcf_out.println(combine(header));
+	//	header.addAll(headerT);
+		String header_st = combine(header);
+		no_cols = header_st.split("\t").length;
+		vcf_out.println(header_st);
 		
 		Sequence refSeq = null;
 		{
