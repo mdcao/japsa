@@ -89,7 +89,7 @@ public static boolean partial=true;
 		setDesc(annotation.scriptDesc()); 
 
 
-		addString("input", null, "Name of the input bam file",true);
+		addString("input", null, "Name of the input bam file",false);
 		addString("reference", null, "Reference file",true);
 		addBoolean("writeSAM",false, "write sam output",false);
 		addString("vcf_plasma", null, "Name of the vcf file",true);
@@ -115,10 +115,12 @@ public static boolean partial=true;
 		writeSAM = cmdTool.getBooleanVal("writeSAM");
 		int threshold = cmdTool.getIntVal("threshold");
 		int maxIns = threshold * 2;
-		addSequence(input, new File(vcf), vcf1==null ? null : new File(vcf1),ref, output,threshold, maxIns, myChrom);
+		File vcf1_ = vcf1==null ? null : new File(vcf1);
+		if(!vcf1_.exists()) vcf1_ = null;
+		addSequence(input, new File(vcf), vcf1_,ref, output,threshold, maxIns, myChrom);
 
 	}
-
+static boolean noBAM = false;
 	public static class VarRecord{
 		String chrom;
 		int pos;
@@ -157,6 +159,7 @@ public static boolean partial=true;
 				new String[] {"tumor", 
 				"meanLen", "sdLen","fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
 		String print( String left, String right){
+			//if(noBAM) return in;
 			StringBuffer sb = new StringBuffer();
 			double mean = (double)sumDiff/(double) count;
 			double sd = Math.sqrt(sumSq/(double)count - Math.pow(mean,2));
@@ -241,6 +244,7 @@ public static boolean partial=true;
 		public void setNext(VarRecord nxt) {
 			if(nxt.chrom.equals(chrom)){
 				diff_nxt = nxt.pos-pos;
+				System.err.println(diff_nxt);
 			}
 			// TODO Auto-generated method stub
 			
@@ -248,6 +252,7 @@ public static boolean partial=true;
 		public void setPrevious(VarRecord prev) {
 			if(prev.chrom.equals(chrom)){
 				diff_prev = pos - prev.pos;
+				System.err.println(diff_prev);
 			}
 			
 		}
@@ -336,7 +341,7 @@ public static boolean partial=true;
 				String[] str = st.split("\t");
 				if(str.length!=no_cols) throw new RuntimeException("wrong number cols "+str.length+" "+no_cols);
 			}
-			pw.print(st);
+			pw.println(st);
 		}
 		pw.flush();
 		for(int j=i-1; j>=0;j--){
@@ -409,12 +414,7 @@ public static boolean partial=true;
 			}
 		}
 		
-		VarRecord prevVar = null;
-		VarRecord fVar = nextRecord(bf, prevVar, myChrom);
-		fVar.setMatchedTumour(varList_tumour.get(fVar.pos));
-		System.err.println("adding "+fVar);
-		varList.add(fVar);
-		prevVar = fVar;
+		
 		
 	//	final String myChrom = fVar.chrom;
 		OutputStream os = new GZIPOutputStream(new FileOutputStream(new File(outDir, vcfFile.getName()+"."+myChrom+".out.vcf.gz")));
@@ -423,11 +423,7 @@ public static boolean partial=true;
 		if(printUnmatched) ls = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(new File(outDir, vcfFile.getName()+".unmatched_reads.txt.gz")))));
 
 		
-		header.addAll(Arrays.asList(VarRecord.extra));
-	//	header.addAll(headerT);
-		String header_st = combine(header);
-		no_cols = header_st.split("\t").length;
-		vcf_out.println(header_st);
+		
 		
 		Sequence refSeq = null;
 		{
@@ -450,31 +446,68 @@ public static boolean partial=true;
 		boolean hasVar = true;
 
 		///////////////////////////////////////////////////////////
-		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SamReader samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
-
-
-		SAMFileHeader samHeader = samReader.getFileHeader();		
+		
+		File sFile = inFile==null ? null : new File(inFile);
+		noBAM = sFile==null || !sFile.exists();
+	
+		header.addAll(Arrays.asList(VarRecord.extra));
+		String header_st = combine(header);
+		no_cols = header_st.split("\t").length;
+		vcf_out.println(header_st);
+			
+		VarRecord prevVar = null;
+		VarRecord fVar = nextRecord(bf, prevVar, myChrom);
+		if(noBAM){
+			while(fVar!=null){
+	//		System.err.println("adding "+fVar_T);
+				fVar.setMatchedTumour(varList_tumour.get(fVar.pos));
+				varList.add(fVar);
+				prevVar = fVar;
+				fVar = nextRecord(bf, prevVar, myChrom);
+			}
+			
+			
+			clearUpTo(vcf_out,varList,refSeq.length()+10, myChrom , refSeq); // clear up varlist up to 10,000 bases before current
+			if(varList.size()>0) throw new RuntimeException("did not clear all");
+			vcf_out.close();
+			if(ls!=null) ls.close();
+			return;
+		}else{
+			fVar.setMatchedTumour(varList_tumour.get(fVar.pos));
+			varList.add(fVar);
+			prevVar = fVar;
+		}
+		SAMRecordIterator samIter = null;
+		SamReader samReader = null;
 		SAMTextWriter samWriter = null;
-		if(writeSAM){
-		//	samWriter = outFile.equals("-")?	(new SAMTextWriter(System.out))	:(new SAMTextWriter(new File(outFile)));
-			samWriter =new SAMTextWriter(new File(outDir, myChrom+".sam"));
-			samWriter.setSortOrder(SortOrder.unsorted, false);		
-			samWriter.writeHeader( samHeader.getTextHeader());	
-		}
-		///////////////////////////////////////////////////////////
+		int myChromIndex= -1;
+		
+			SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
+			 samReader = SamReaderFactory.makeDefault().open(new File(inFile));						
+	
+	
+			SAMFileHeader samHeader = samReader.getFileHeader();		
+			 samWriter = null;
+			if(writeSAM){
+			//	samWriter = outFile.equals("-")?	(new SAMTextWriter(System.out))	:(new SAMTextWriter(new File(outFile)));
+				samWriter =new SAMTextWriter(new File(outDir, myChrom+".sam"));
+				samWriter.setSortOrder(SortOrder.unsorted, false);		
+				samWriter.writeHeader( samHeader.getTextHeader());	
+			}
+			///////////////////////////////////////////////////////////
+	
+			myChromIndex = samHeader.getSequenceIndex(myChrom);
+			if(myChromIndex < 0){
+				if(writeSAM) samWriter.close();
+				samReader.close();
+				bf.close();
+				throw new RuntimeException("Chrom " + myChrom + " not found in bam file!!");
+			}
+			 samIter = samReader.query(refSeq.getName(),0,0,false);
+				LOG.info(" " + samIter.hasNext());
 
-		int myChromIndex = samHeader.getSequenceIndex(myChrom);
-		if(myChromIndex < 0){
-			if(writeSAM) samWriter.close();
-			samReader.close();
-			bf.close();
-			throw new RuntimeException("Chrom " + myChrom + " not found in bam file!!");
-		}
-
-		SAMRecordIterator samIter = samReader.query(refSeq.getName(),0,0,false);
-		LOG.info(" " + samIter.hasNext());
-
+		
+		
 		LOG.info("Chrom = " + myChrom + " RefName = " + refSeq.getName() + " chromIndex = " + myChromIndex);
 		long time0=System.currentTimeMillis();
 		int len = refSeq.length();
@@ -485,6 +518,9 @@ public static boolean partial=true;
 		int[] counts_unique = new int[threshold+1];
 		int[] counts_filtered = new int[threshold+1];
 		int[] counts = new int[threshold+1];
+		
+		
+		
 		for (int count=0; samIter.hasNext(); count++){
 			SAMRecord sam = samIter.next();
 		
@@ -519,52 +555,16 @@ public static boolean partial=true;
 			
 			
 			if(clear && partial) clearUpTo(vcf_out,varList,sam.getAlignmentStart()-maxInsert, myChrom , refSeq); // clear up varlist up to 10,000 bases before current
-		//	clearUpTo(readToPos, sam.getAlignmentStart()-maxInsert, myChrom, ls);
-			//assert samRefIndex == myChromIndex
-			
-			//int insertSize = Math.abs(sam.getInferredInsertSize());
-			
-			//if (insertSize == 0){
-			//	countALLUgly ++;
-			//}else if (insertSize <= threshold){
-			//	countALLGood ++;
-			//	sumALLIZ += insertSize;
-			//	sumALLSq += insertSize * insertSize;					
-			//}else{
-			//	countALLBad ++;
-			//}
 			
 			String readName = sam.getReadName();	
 			int insertSize = Math.abs(sam.getInferredInsertSize());
-		
-		//	FragInfo pairedPos = readToPos.remove(readName);
-		//	boolean firstPair = sam.getFirstOfPairFlag();
-		//	boolean secondPair = sam.getSecondOfPairFlag();
-		//	boolean neg = sam.getReadNegativeStrandFlag();
-		/*
-			if(sam.getPairedReadName()!=null){
-				if(pairedPos==null){
-					readToPos.put(readName, pairedPos=new FragInfo(sam.getAlignmentStart()));
-				}
-				else{
-					pairedPos.setEnd(sam.getAlignmentEnd());
-					pairedPos.complete();
-					totalDiffCount+=1;
-					totalDiff += pairedPos.fraglength();
-					//System.err.println("DIFFF "+ diff);
-				}
-			} */
 			if(insertSize==0 || insertSize > threshold){
 				AlternativeAllelesCmd.unMatchedCount+=1;
-			//	System.err.println("paired pos is null");
 				continue;
 			}
 			counts[insertSize]++;
 			totalDiff +=insertSize;
 			totalDiffCount+=1;
-		//	if (somaticSet.contains(readName))
-		//		continue;
-
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			boolean support = false;
 			boolean shared=false;
@@ -574,8 +574,6 @@ public static boolean partial=true;
 			int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index
 			byte[] baseQ = sam.getBaseQualities();
 			int mapQ = sam.getMappingQuality();
-		//	int st = sam.getReadPositionAtReferencePosition(sam.getAlignmentStart());
-		//	int end = sam.getReadLength()-sam.getReadPositionAtReferencePosition(sam.getAlignmentEnd()); 
 			int[] array = new int[2];
 			for (final CigarElement e : sam.getCigar().getCigarElements()) {
 				final int  length = e.getLength();

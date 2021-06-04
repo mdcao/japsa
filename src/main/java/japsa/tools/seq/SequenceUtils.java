@@ -148,7 +148,8 @@ public class SequenceUtils {
 				try{
 		 FastqRecord nxt = null;
 		   boolean process = true;
-		   for(int i =0; i<max; i++) {
+		   int done=0;
+		   for(int i =0; done<max; i++) {
 		        nxt= _process1Output.next();
 		        if (nxt == null){
 		        	break;  // end of input stream
@@ -165,6 +166,7 @@ public class SequenceUtils {
 			        if(q<q_thresh) process = false;
 		        }
 		        if(process){
+		        	done++;
 		        	if(fasta){
 		        		String nme=">"+nxt.getReadName();
 		        		this.sos.print(nme);sos.println();
@@ -176,8 +178,13 @@ public class SequenceUtils {
 
 		        	}
 		        	//_process2Input.println();
+		       
+		        if(readsToInclude!=null){
+		        	System.err.println("left reads "+readsToInclude.size());
+		        	if(readsToInclude.size()==0) break;
 		        }
-		        if(readsToInclude!=null && readsToInclude.size()==0) break; // no more reads to include
+		        }
+//		        if(readsToInclude!=null && readsToInclude.size()==0) break; // no more reads to include
 		    }
 		   
 		System.err.println("finished piping input data "+fasta);
@@ -801,6 +808,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		 int cnt=0;
 		 boolean flipname;
 		 String readnme = "";
+		// boolean readNmeSorted=true;
 		 public FilteredIterator(Iterator<SAMRecord>sam , Collection<String> reads, int max_reads, double qual_thresh, boolean flipname){
 			 this.samIter= sam;
 			 this.flipname = flipname;
@@ -811,10 +819,13 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 			 if(nxt==null){
 				 throw new RuntimeException(" iterator is empty");
 			 }
+			 readnme = nxt.getReadName();
+			 if(reads!=null) reads.remove(readnme); // assumes once see readnme, wont see again
 		 }
 		@Override
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
+		//	if(reads.size()==0) return false;
 			return  nxt!=null && cnt <= max_reads;
 		}
 public SAMRecord next(){
@@ -836,6 +847,8 @@ public SAMRecord next(){
 			return null;
 		}
 	}
+	if(reads!=null) reads.remove(readnme); 
+//	boolean supp = nxt1.isSecondaryOrSupplementary();
 	return nxt1;
 }
 		
@@ -844,11 +857,14 @@ public SAMRecord next(){
 			while(samIter.hasNext()){
 				SAMRecord nxt = samIter.next();
 				String nme = nxt.getReadName();
-				if(reads==null || reads.contains(nme)){
+				if(reads==null || nme.equals(readnme) || reads.contains(nme)){
 					byte[] b = nxt.getBaseQualities();
 					if(b.length==0 || getQual(b)>=qual_thresh) {
 						return nxt;
 					}
+				}
+				if(reads==null && reads.size()==0 && !nme.equals(readnme)){
+					return null;
 				}
 				//nxt=null;
 			}
