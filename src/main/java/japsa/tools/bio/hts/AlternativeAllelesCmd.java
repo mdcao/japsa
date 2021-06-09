@@ -177,8 +177,10 @@ static boolean noBAM = false;
 		public void calcFeatures(){
 			//Collections.sort(lens);
 			this.count = lens.size();
-			minLength = lens.firstKey();
-			maxLength = lens.lastKey();
+			if(count>0){
+				minLength = lens.firstKey();
+				maxLength = lens.lastKey();
+			}
 			if(lens.size()>0){
 				medianQ(percentiles, percVals, this.lens);
 			}else{
