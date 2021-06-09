@@ -37,18 +37,21 @@ package japsa.tools.bio.hts;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
@@ -80,6 +83,7 @@ import japsa.util.deploy.Deployable;
 public class AlternativeAllelesCmd extends CommandLine{
 	private static final Logger LOG = LoggerFactory.getLogger(AlternativeAllelesCmd.class);
 static boolean writeSAM=false;
+static int extraLength=20;
 public static boolean partial=true;
 	//CommandLine cmdLine;
 	public AlternativeAllelesCmd(){
@@ -113,13 +117,23 @@ public static boolean partial=true;
 		String vcf1 = cmdTool.getStringVal("vcf_tumor");
 		String myChrom = cmdTool.getStringVal("chrom");
 		writeSAM = cmdTool.getBooleanVal("writeSAM");
-		int threshold = cmdTool.getIntVal("threshold");
-		int maxIns = threshold * 2;
+		 sizeThreshold = cmdTool.getIntVal("threshold");
+		maxIns = sizeThreshold * 2;
+		String percentiles_ = "0.1:0.25:0.5:0.75:0.9";
+		String[] percs = percentiles_.split(":");
+		percentiles = new double[percs.length];
+		for(int i=0; i<percentiles.length; i++){
+			percentiles[i] = Double.parseDouble(percs[i]);
+		}
 		File vcf1_ = vcf1==null ? null : new File(vcf1);
 		if(!vcf1_.exists()) vcf1_ = null;
-		addSequence(input, new File(vcf), vcf1_,ref, output,threshold, maxIns, myChrom);
+		addSequence(input, new File(vcf), vcf1_,ref, output, myChrom);
 
 	}
+	
+	static int sizeThreshold = 2000;
+	static int maxIns = 4000;
+	static double[] percentiles =null;// new double[] {0.25, 0.5, 0.75};
 static boolean noBAM = false;
 	public static class VarRecord{
 		String chrom;
@@ -127,7 +141,8 @@ static boolean noBAM = false;
 		int base; //Alphabet.DNA.A, Alphabet.DNA.C, Alphabet.DNA.G, Alphabet.DNA.T;
 
 		
-		
+		double minLength = Double.NaN;
+		double maxLength = Double.NaN;
 		double sumDiff=0;
 		double sumSq=0;
 		int count=0;
@@ -149,16 +164,42 @@ static boolean noBAM = false;
 		public String toString(){
 			return in+"\t"+(double)sumDiff/(double) count;
 		}
+		
+		double[] percVals;
 		VarRecord(String s, int p, int b, String line){
 			this.in = line;
+			this.percVals = new double[percentiles.length];
 			chrom = s;
 			pos = p;
 			base = b;			
 		}
-		static String[] extra = 
-				new String[] {"tumor", 
-				"meanLen", "sdLen","fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
+		
+		public void calcFeatures(){
+			//Collections.sort(lens);
+			this.count = lens.size();
+			minLength = lens.firstKey();
+			maxLength = lens.lastKey();
+			if(lens.size()>0){
+				medianQ(percentiles, percVals, this.lens);
+			}else{
+				Arrays.fill(percVals, Double.NaN);
+			}
+		}
+		
+		
+		static String[] extra;
+		{
+			String[] extra1 = 	new String[] {"tumor", 
+				"meanLen", "sdLen","lenMin", "lenMax", "fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
+			String[] extra2 = new String[percentiles.length];
+			for(int i=0; i<extra2.length; i++){
+				extra2[i] = "lenQ_"+percentiles[i];
+			}
+			String extra3 = combine(extra1,":")+":"+combine(extra2,":");
+			extra = extra3.split(":");
+		}
 		String print( String left, String right){
+			this.calcFeatures();
 			//if(noBAM) return in;
 			StringBuffer sb = new StringBuffer();
 			double mean = (double)sumDiff/(double) count;
@@ -167,6 +208,8 @@ static boolean noBAM = false;
 			sb.append(this.tumor!=null);sb.append("\t");
 			sb.append(mean);sb.append("\t");
 			sb.append(sd);sb.append("\t");
+			sb.append(minLength); sb.append("\t");
+			sb.append(maxLength); sb.append("\t");
 			sb.append(count);	sb.append("\t");
 			sb.append(left+"\t"+right);
 			for(int i=0; i<vals.length; i++){
@@ -181,7 +224,10 @@ static boolean noBAM = false;
 			sb.append(count1);sb.append("\t");
 			sb.append((double)count/(double)count1);sb.append("\t");
 			sb.append(this.diff_prev);	sb.append("\t");
-			sb.append(this.diff_nxt);
+			sb.append(this.diff_nxt);  
+			for(int i=0; i<percentiles.length; i++){
+			sb.append("\t");sb.append(this.percVals[i]);
+			}
 
 //			if(this.tumor!=null){
 //				sb.append("\t");
@@ -229,14 +275,64 @@ static boolean noBAM = false;
 			return new VarRecord(toks[0], p, b, line);
 
 		}
-
-		public void add(int diff) {
+		SortedMap<Integer, Integer> lens = new TreeMap<Integer,Integer>();
+		
+		
+		int zeroCount=0;
+		int aboveThreshCnt=0;
+		public void add(Integer diff) {
+			if(diff==0){
+				zeroCount++;
+			}else if(diff>sizeThreshold){
+				aboveThreshCnt++;
+			}
+			Integer v  = lens.get(diff);
+			lens.put(diff, v==null ? 1 : v+1);
 			this.sumDiff+=diff;
 			this.sumSq+=Math.pow((double) diff, 2);
 			this.count++;
+			/*
+			if(count==0){
+				minLength = diff;
+				maxLength=diff;
+			}else{
+				minLength = Math.min(diff, minLength);
+				maxLength = Math.max(diff, minLength);
+			}
+			
+			this.count++;
+			*/
 			// TODO Auto-generated method stub
 			
 		}
+		private static double interpolate(int cov0, int cov, double perc0, double perc, double d) {
+			// TODO Auto-generated method stub
+			return (double) cov0 + ((d-perc0)/ (perc-perc0)) * ((double)cov-(double) cov0);
+		}
+		
+		public static void medianQ(double[] percentiles, double[] vals, SortedMap<Integer, Integer>map){
+			double cumul0=0;
+			double cumul1 =0;
+			double total = map.values().stream().mapToInt(Integer::intValue).sum();
+			 int mapq0=0;
+			Iterator<Integer> it = map.keySet().iterator();
+			while(it.hasNext()){
+				Integer key = it.next();
+				Integer cnt = map.get(key);
+				int mapq1= key;
+				cumul1 = cumul0+cnt;
+				double perc0 = cumul0/total;
+				double perc = cumul1/total;
+				for(int j=0; j<percentiles.length; j++){
+					if(percentiles[j] >= perc0  && percentiles[j] <=perc){
+						vals[j]  = interpolate(mapq0, mapq1, perc0, perc, percentiles[j]);
+					}
+				}
+				mapq0 = mapq1;
+				cumul0 = cumul1;
+			}
+		}
+		
 		
 		int diff_nxt=-1;
 		int diff_prev=-1;
@@ -336,7 +432,7 @@ static boolean noBAM = false;
 			VarRecord var = varList.get(i);
 			if(!var.chrom.equals(chrom)) throw new RuntimeException("!!");
 			if(var.pos>pos) break;
-			String st = var.print(ref.subSequence(var.pos-10, var.pos).toString(), ref.subSequence(var.pos, var.pos+10).toString());
+			String st = var.print(ref.subSequence(var.pos-extraLength, var.pos).toString(), ref.subSequence(var.pos, var.pos+extraLength).toString());
 			if(CHECK){
 				String[] str = st.split("\t");
 				if(str.length!=no_cols) throw new RuntimeException("wrong number cols "+str.length+" "+no_cols);
@@ -374,7 +470,7 @@ static boolean noBAM = false;
 	static List<String> headerT = new ArrayList<String>();
 	static int no_cols;
 	static boolean CHECK=false;
-	static void addSequence(String inFile, File vcfFile, File vcfFile1, String reference, String outFile, int threshold, int maxInsert, 
+	static void addSequence(String inFile, File vcfFile, File vcfFile1, String reference, String outFile, 
 			String myChrom) throws IOException{		
 		//double sumIZ = 0, sumSq = 0;
 		//int countGood = 0, countBad = 0, countUgly = 0;
@@ -451,7 +547,7 @@ static boolean noBAM = false;
 		noBAM = sFile==null || !sFile.exists();
 	
 		header.addAll(Arrays.asList(VarRecord.extra));
-		String header_st = combine(header);
+		String header_st = combine(header,"\t");
 		no_cols = header_st.split("\t").length;
 		vcf_out.println(header_st);
 			
@@ -514,10 +610,10 @@ static boolean noBAM = false;
 		long totalDiff=0;
 		long totalDiffCount=0;
 		int variantReads=0;
-		int[] counts_shared = new int[threshold+1];
-		int[] counts_unique = new int[threshold+1];
-		int[] counts_filtered = new int[threshold+1];
-		int[] counts = new int[threshold+1];
+		int[] counts_shared = new int[sizeThreshold+1];
+		int[] counts_unique = new int[sizeThreshold+1];
+		int[] counts_filtered = new int[sizeThreshold+1];
+		int[] counts = new int[sizeThreshold+1];
 		
 		
 		
@@ -554,17 +650,18 @@ static boolean noBAM = false;
 			}
 			
 			
-			if(clear && partial) clearUpTo(vcf_out,varList,sam.getAlignmentStart()-maxInsert, myChrom , refSeq); // clear up varlist up to 10,000 bases before current
+			if(clear && partial) clearUpTo(vcf_out,varList,sam.getAlignmentStart()-maxIns, myChrom , refSeq); // clear up varlist up to 10,000 bases before current
 			
 			String readName = sam.getReadName();	
 			int insertSize = Math.abs(sam.getInferredInsertSize());
-			if(insertSize==0 || insertSize > threshold){
+			if(insertSize==0 || insertSize > sizeThreshold){
 				AlternativeAllelesCmd.unMatchedCount+=1;
-				continue;
+				//continue;
+			}else{
+				counts[insertSize]++;
+				totalDiff +=insertSize;
+				totalDiffCount+=1;
 			}
-			counts[insertSize]++;
-			totalDiff +=insertSize;
-			totalDiffCount+=1;
 			Sequence readSeq = new Sequence(Alphabet.DNA(), sam.getReadString(), sam.getReadName());
 			boolean support = false;
 			boolean shared=false;
@@ -696,7 +793,7 @@ static boolean noBAM = false;
 			//	if (support)	break;
 				
 			}//for
-			if(support){
+			if(support && insertSize < sizeThreshold){
 				if(shared) counts_shared[insertSize]++;
 				if(unique)counts_unique[insertSize]++;
 				counts_filtered[insertSize]++;
@@ -776,10 +873,13 @@ static boolean noBAM = false;
 		
 		/**********************************************************************/
 	}
-	private static String combine(List<String> header2) {
+	 static String combine(String[] header2, String join) {
+		 return combine(Arrays.asList(header2),join);
+	 }
+	 static String combine(List<String> header2, String join) {
 		StringBuffer sb = new StringBuffer(header2.get(0));
 		for(int i=1; i<header2.size(); i++){
-			sb.append("\t");
+			sb.append(join);
 			sb.append(header2.get(i));
 		}
 		return sb.toString();
