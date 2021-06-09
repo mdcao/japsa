@@ -342,7 +342,7 @@ static boolean noBAM = false;
 		public void setNext(VarRecord nxt) {
 			if(nxt.chrom.equals(chrom)){
 				diff_nxt = nxt.pos-pos;
-				System.err.println(diff_nxt);
+				//System.err.println(diff_nxt);
 			}
 			// TODO Auto-generated method stub
 			
@@ -350,7 +350,7 @@ static boolean noBAM = false;
 		public void setPrevious(VarRecord prev) {
 			if(prev.chrom.equals(chrom)){
 				diff_prev = pos - prev.pos;
-				System.err.println(diff_prev);
+		//		System.err.println(diff_prev);
 			}
 			
 		}
@@ -443,7 +443,7 @@ static boolean noBAM = false;
 		}
 		pw.flush();
 		for(int j=i-1; j>=0;j--){
-			System.err.println("removing up to "+pos+"  -> "+varList.get(j));
+		//	System.err.println("removing up to "+pos+"  -> "+varList.get(j));
 			varList.remove(j);
 		}
 		
@@ -631,10 +631,10 @@ static boolean noBAM = false;
 				double time = ((double)diff)/(double)10000;
 				time0 = time1;
 				double avgLen = ((double)totalDiff/(double)totalDiffCount);
-				System.err.println("processed "+count+" reads. Currently at "+sam.getAlignmentStart()/1e6+ " of "+len/1e6+" "+time+ "millis per read  "+diff/1000.0+"secs per million");
-				System.err.println("percentage progress: "+ (double)sam.getAlignmentStart()/(double)len);
-				System.err.println("total variant supporting reads "+variantReads+" of "+count);
-				System.err.println("Unmatched: "+unMatchedCount+" matched: "+totalDiffCount+" frag length "+avgLen);
+		//		System.err.println("processed "+count+" reads. Currently at "+sam.getAlignmentStart()/1e6+ " of "+len/1e6+" "+time+ "millis per read  "+diff/1000.0+"secs per million");
+		//		System.err.println("percentage progress: "+ (double)sam.getAlignmentStart()/(double)len);
+			//	System.err.println("total variant supporting reads "+variantReads+" of "+count);
+			//	System.err.println("Unmatched: "+unMatchedCount+" matched: "+totalDiffCount+" frag length "+avgLen);
 				 totalDiff=0;
 				 totalDiffCount=0;
 				 unMatchedCount=0;
@@ -642,12 +642,12 @@ static boolean noBAM = false;
 			boolean clear = count % 10000==0; // clear every 10000
 			int samRefIndex = sam.getReferenceIndex(); 
 			if (samRefIndex < myChromIndex){
-				System.err.println("continue");
+			//	System.err.println("continue");
 				continue;
 			}
 
 			if (samRefIndex > myChromIndex){
-				System.err.println("break");
+				//System.err.println("break");
 				break;//while
 			}
 			
@@ -747,7 +747,7 @@ static boolean noBAM = false;
 									break;
 								}
 								var.setMatchedTumour(varList_tumour.get(var.pos));
-								System.err.println("adding "+var.toString());
+							//	System.err.println("adding "+var.toString());
 								varList.add(var);
 
 								if (var.pos == refPos + i && var.base == readBase){
