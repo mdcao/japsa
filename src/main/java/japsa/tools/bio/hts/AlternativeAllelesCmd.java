@@ -189,8 +189,9 @@ static boolean noBAM = false;
 		}
 		
 		
-		static String[] extra;
-		{
+		static String[] extra = null;
+		public static String[] extra() {
+			if(extra!=null) return extra;
 			String[] extra1 = 	new String[] {"tumor", 
 				"meanLen", "sdLen","lenMin", "lenMax", "fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt", "zeroCount",
 				"aboveThreshCount"};
@@ -200,6 +201,7 @@ static boolean noBAM = false;
 			}
 			String extra3 = combine(extra1,":")+":"+combine(extra2,":");
 			extra = extra3.split(":");
+			return extra;
 		}
 		String print( String left, String right){
 			this.calcFeatures();
@@ -365,6 +367,8 @@ static boolean noBAM = false;
 			tumor = varRecord;
 			
 		}
+
+		
 		
 		
 	}
@@ -556,7 +560,7 @@ static boolean noBAM = false;
 		File sFile = inFile==null ? null : new File(inFile);
 		noBAM = sFile==null || !sFile.exists();
 	
-		header.addAll(Arrays.asList(VarRecord.extra));
+		header.addAll(Arrays.asList(VarRecord.extra()));
 		String header_st = combine(header,"\t");
 		no_cols = header_st.split("\t").length;
 		vcf_out.println(header_st);
