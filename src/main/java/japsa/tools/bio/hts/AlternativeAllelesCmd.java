@@ -192,7 +192,8 @@ static boolean noBAM = false;
 		static String[] extra;
 		{
 			String[] extra1 = 	new String[] {"tumor", 
-				"meanLen", "sdLen","lenMin", "lenMax", "fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt"};
+				"meanLen", "sdLen","lenMin", "lenMax", "fragCount","left","right","meanBaseQ", "sdBaseQ", "meanMapQ","sdMapQ", "count","count_frac","diff_prev","diff_nxt", "zeroCount",
+				"aboveThreshCount"};
 			String[] extra2 = new String[percentiles.length];
 			for(int i=0; i<extra2.length; i++){
 				extra2[i] = "lenQ_"+percentiles[i];
@@ -226,7 +227,10 @@ static boolean noBAM = false;
 			sb.append(count1);sb.append("\t");
 			sb.append((double)count/(double)count1);sb.append("\t");
 			sb.append(this.diff_prev);	sb.append("\t");
-			sb.append(this.diff_nxt);  
+			sb.append(this.diff_nxt); sb.append("\t");
+			sb.append(this.zeroCount); sb.append("\t");
+			sb.append(this.aboveThreshCnt); sb.append("\t");
+			
 			for(int i=0; i<percentiles.length; i++){
 			sb.append("\t");sb.append(this.percVals[i]);
 			}
@@ -285,8 +289,10 @@ static boolean noBAM = false;
 		public void add(Integer diff) {
 			if(diff==0){
 				zeroCount++;
+				return ;
 			}else if(diff>sizeThreshold){
 				aboveThreshCnt++;
+				return ;
 			}
 			Integer v  = lens.get(diff);
 			lens.put(diff, v==null ? 1 : v+1);
@@ -434,12 +440,14 @@ static boolean noBAM = false;
 			VarRecord var = varList.get(i);
 			if(!var.chrom.equals(chrom)) throw new RuntimeException("!!");
 			if(var.pos>pos) break;
-			String st = var.print(ref.subSequence(var.pos-extraLength, var.pos).toString(), ref.subSequence(var.pos, var.pos+extraLength).toString());
-			if(CHECK){
-				String[] str = st.split("\t");
-				if(str.length!=no_cols) throw new RuntimeException("wrong number cols "+str.length+" "+no_cols);
+			if(var.count>0){
+				String st = var.print(ref.subSequence(var.pos-extraLength, var.pos).toString(), ref.subSequence(var.pos, var.pos+extraLength).toString());
+				if(CHECK){
+					String[] str = st.split("\t");
+					if(str.length!=no_cols) throw new RuntimeException("wrong number cols "+str.length+" "+no_cols);
+				}
+				pw.println(st);
 			}
-			pw.println(st);
 		}
 		pw.flush();
 		for(int j=i-1; j>=0;j--){
