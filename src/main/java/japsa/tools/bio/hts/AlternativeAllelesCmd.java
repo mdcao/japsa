@@ -85,6 +85,7 @@ public class AlternativeAllelesCmd extends CommandLine{
 static boolean writeSAM=false;
 static int extraLength=20;
 public static boolean partial=true;
+public static boolean exclude_count_zero = false;
 	//CommandLine cmdLine;
 	public AlternativeAllelesCmd(){
 		super();
@@ -100,6 +101,7 @@ public static boolean partial=true;
 		addString("vcf_tumor", null, "Name of the vcf file tumor",true);
 		addString("output", "results", "Name of the output directory");
 		addString("chrom", "chr1", "which chromosome",true);
+		addBoolean("exclude_count_zero",false, "exclude snps with no spanning reads", false);
 		addInt("threshold", 2000, "Maximum concordant insert size");
 		//addInt("maxIns", 10000, "Maximum concordant insert size");
 
@@ -117,6 +119,7 @@ public static boolean partial=true;
 		String vcf1 = cmdTool.getStringVal("vcf_tumor");
 		String myChrom = cmdTool.getStringVal("chrom");
 		writeSAM = cmdTool.getBooleanVal("writeSAM");
+		exclude_count_zero = cmdTool.getBooleanVal("exclude_count_zero");
 		 sizeThreshold = cmdTool.getIntVal("threshold");
 		maxIns = sizeThreshold * 2;
 		String percentiles_ = "0.1:0.25:0.5:0.75:0.9";
@@ -444,7 +447,7 @@ static boolean noBAM = false;
 			VarRecord var = varList.get(i);
 			if(!var.chrom.equals(chrom)) throw new RuntimeException("!!");
 			if(var.pos>pos) break;
-			if(var.count>0){
+			if(!exclude_count_zero ||  var.count>0){
 				String st = var.print(ref.subSequence(var.pos-extraLength, var.pos).toString(), ref.subSequence(var.pos, var.pos+extraLength).toString());
 				if(CHECK){
 					String[] str = st.split("\t");
