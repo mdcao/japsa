@@ -863,7 +863,7 @@ public SAMRecord next(){
 						return nxt;
 					}
 				}
-				if(reads==null && reads.size()==0 && !nme.equals(readnme)){
+				if(reads==null || reads.size()==0 || !nme.equals(readnme)){
 					return null;
 				}
 				//nxt=null;
