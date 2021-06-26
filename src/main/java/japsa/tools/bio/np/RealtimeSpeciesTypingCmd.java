@@ -75,8 +75,9 @@ import japsa.util.deploy.Deployable;
 	seeAlso = "jsa.np.npreader, jsa.np.rtStrainTyping, jsa.np.rtResistGenes, jsa.util.streamServer, jsa.util.streamClient"
 	)
 public class RealtimeSpeciesTypingCmd extends CommandLine {
-static boolean reduceToSpecies = false;// whether to re-run after reducing db to identified species
+//static boolean reduceToSpecies = false;// whether to re-run after reducing db to identified species
 static boolean buildConsensus = false;// this re-runs analysis and builds consensus;
+static boolean saveSAM= true;
 	static double q_thresh=7; 
 	static double qual=1;
 	static boolean deleteUnmappedIntermediates = true;
@@ -111,7 +112,7 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		addBoolean("realtimeAnalysis", false, "whether to run analysis in realtime");
 		addBoolean("alignedOnly", false, "whether to output only the aligned portion of a read in fasta file");
 		//addDouble("removeLikelihoodThresh", 0.0, "likelihood proportion to remove");
-		addBoolean("reduceToSpecies",false, "whether to re-run alignment on reduced set of species, after E-M training and trimming");
+		//addBoolean("reduceToSpecies",false, "whether to re-run alignment on reduced set of species, after E-M training and trimming");
 	//	addString("reference", null, "Reference db if fastq is presented", false);
 	//	addString("indexFile", null,  "indexFile ",true);
 		addString("mm2Preset", "map-ont",  "mm2Preset ",false);
@@ -184,9 +185,9 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 		if(files.length==0) {
 			throw new RuntimeException("no files match input request");
 		}
-		boolean saveSeqs=true;
+	//
 		
-		String mm2_index = SequenceUtils.minimapIndex(refFile,  false,saveSeqs);
+		String mm2_index = SequenceUtils.minimapIndex(refFile,  false,saveSAM);
 		//sample_name.add (new File(files[0]));
 		return  SequenceUtils.getSAMIteratorFromFastq(getStringVal(files), mm2_index, maxReads, readList, q_thresh, keepBAM);
 	}
@@ -296,8 +297,8 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 	    String output    = cmdLine.getStringVal("output");
 		String bamFile   = cmdLine.getStringVal("bamFile");		
 		String fastqFile = cmdLine.getStringVal("fastqFile");
-		reduceToSpecies = cmdLine.getBooleanVal("reduceToSpecies");
-		if(RealtimeSpeciesTyping.removeLikelihoodThresh<=0.00001) reduceToSpecies=false;
+	//	reduceToSpecies = cmdLine.getBooleanVal("reduceToSpecies");
+		//if(RealtimeSpeciesTyping.removeLikelihoodThresh<=0.00001) reduceToSpecies=false;
 		String resDB = cmdLine.getStringVal("resdb");
 		if(bamFile==null && fastqFile==null) throw new RuntimeException("must define fastqFile or bam file");
 		String dbPath = cmdLine.getStringVal("dbPath");
@@ -372,33 +373,6 @@ static boolean buildConsensus = false;// this re-runs analysis and builds consen
 				speciesTyping(refDB, null, null, null, new File[] {consensus}, "output.dat",
 						null, null, null, null, null, true, null, new File(consensus.getAbsolutePath()+".jST"));
 			
-			}
-			if(speciesFile ==null && species.size()>0 &&  reduceToSpecies && !dbs[i].equals("Human") ){
-				File specFile1 = new File(resdir, dbs[i]+"."+System.currentTimeMillis()+".txt");
-				PrintWriter pw = new PrintWriter(new FileWriter(specFile1));
-				for(int k=0; k<species.size(); k++){
-					pw.println(species.get(k));
-				}
-				pw.close();
-				List<String> species1 = new ArrayList<String>();
-				refDB = refDB.update(specFile1);
-			//	consensusFile = cmdLine.getStringVal("consensusFile");
-				File[] fastqFiles1 = fastqFiles;
-				System.err.println("running on subset");
-				outDs = speciesTyping(refDB, i==0 ? resdir : null, readList,  null, fastqFiles1, output,
-						out_fastq,  null , exclfile, consensusFile, species1, true, bamOut, null);
-				System.err.println(species1.size());
-				if(buildConsensus && consensusFile==null){
-					String consensusFile1 = consensusFile==null ? outDs[1].getAbsolutePath(): consensusFile;
-					System.err.println("rerunning to build consensus");
-					File[] bamFiles1 = bamFiles;
-					File bamO = bamOut.pop();
-					if(bamFiles1==null)bamFiles1 = new File[] {bamO};
-					outDs = speciesTyping(refDB, i==0 ? resdir : null, readList,  bamFiles1, null, output,
-							null,  null , exclfile, consensusFile1,null, false, null, outDs[0]);
-					bamO.delete();
-					File consensus = SequenceUtils.makeConsensus(new File(outDs[0], "fastqs"),2, true);
-				}
 			}
 			if(outdirTop==null && !dbs[i].equals("Human")) outdirTop = outDs[0];
 			bamFiles = null;

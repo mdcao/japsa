@@ -784,7 +784,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		// byte[] b = nxt.getBaseQualities();
 			double sump = 0;
 			for(int i=0; i<b.length; i++){
-				sump+= Math.pow(10, -b[i]/10.0);
+				sump+= Math.pow(10.0, -b[i]/10.0);
 			}
 			sump = sump/(double) b.length;
 			double q = -10.0*Math.log10(sump);
@@ -859,9 +859,18 @@ public SAMRecord next(){
 				String nme = nxt.getReadName();
 				if(reads==null || nme.equals(readnme) || reads.contains(nme)){
 					byte[] b = nxt.getBaseQualities();
-					if(b.length==0 || getQual(b)>=qual_thresh) {
+					if(b.length>0){
+						double q = getQual(b);
+						//System.err.println(this.cnt+" "+q);
+						if(q>=qual_thresh){
+							return nxt;
+						}
+					}else{
 						return nxt;
 					}
+				//	if(b.length==0 || getQual(b)>=qual_thresh) {
+				///		return nxt;
+				//	}
 				}
 				if(reads==null || reads.size()==0 || !nme.equals(readnme)){
 					return null;

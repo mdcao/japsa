@@ -293,6 +293,10 @@ public class CommandLine {
 		return ((Double) options.get(o).value);
 	}
 
+	public String getStringVal(String opt, String def) {
+		String str = getStringVal(opt);
+		return str==null ? def : str;
+	}
 	public String getStringVal(String opt) {
 		int o = isOption(opt, 1);
 		if (o < 0) {

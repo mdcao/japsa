@@ -95,7 +95,7 @@ import pal.tree.Node;
 public class RealtimeSpeciesTyping {
 	
 	//int int total_reads =0;
-	
+	public static boolean writeExcludeFile = false;
 	public static double krakenTrimThreshPerc = 1e-5;
 	public static double targetOverlap =0.95;
 	public static double 	 epsilon = 0.001;
@@ -1200,14 +1200,16 @@ this.sampleID = sampleID;
 			SortedMap<Integer,Integer> segsMap = null;
 
 			SortedMap<Integer,Interval> intervalMap = null;
-			PrintWriter  coverage_out = null; PrintWriter  regions_to_exclude = null; PrintWriter regions_to_use= null;
+			PrintWriter  coverage_out = null; 
+			PrintWriter  regions_to_exclude = null; 
+			PrintWriter regions_to_use= null;
 			if(final_analysis){
 				covMap = new TreeMap<Integer, Integer>();// this can capture the distribution of bases against depth
 				intervalMap = new TreeMap<Integer, Interval>();
 				segsMap = new TreeMap<Integer, Integer>();// this can capture the distribution of bases against depth
 				try{
 				coverage_out = new PrintWriter(new FileWriter(new File(outdir, "coverage.txt")));
-				regions_to_exclude = new PrintWriter(new FileWriter(exclude_file_out));
+				if(writeExcludeFile) regions_to_exclude = new PrintWriter(new FileWriter(exclude_file_out));
 				regions_to_use=  new PrintWriter(new FileWriter(consensus_file_out));
 				}catch(IOException exc){
 					exc.printStackTrace();
@@ -1250,7 +1252,7 @@ this.sampleID = sampleID;
 										 );
 							  }
 							  ;
-							  if(thresh!=null){
+							  if(thresh!=null && regions_to_exclude!=null){
 								 List<Interval> exclusions =  cov.getRegions(thresh,j, -100);
 								 for(int jk=0; jk<exclusions.size(); jk++){
 									 Interval iv = exclusions.get(jk);

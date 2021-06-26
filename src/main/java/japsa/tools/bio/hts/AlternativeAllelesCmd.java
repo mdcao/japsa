@@ -234,7 +234,7 @@ static boolean noBAM = false;
 			sb.append(this.diff_prev);	sb.append("\t");
 			sb.append(this.diff_nxt); sb.append("\t");
 			sb.append(this.zeroCount); sb.append("\t");
-			sb.append(this.aboveThreshCnt); sb.append("\t");
+			sb.append(this.aboveThreshCnt); 
 			
 			for(int i=0; i<percentiles.length; i++){
 			sb.append("\t");sb.append(this.percVals[i]);
