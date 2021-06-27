@@ -33,7 +33,7 @@ then
 
 #need index for java part
 if [ -e hits.index.txt ]; then mv hits.index.txt blastn_sam.out.fa.index; fi
-
+bash ~/github/japsa_coverage/scripts/get_details_cmd.sh 
 #run java
 echo creating results in $found
 bash ~/github/japsa_coverage/scripts/run_blastspecies.sh --bamFile=blastn_sam.out
