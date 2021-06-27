@@ -1,4 +1,4 @@
---merge=false
+#--merge=false
 --dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping/
 #--dbs=clinicaldb:viral_2019Jan
 --dbs=Human:plasmids:Bacteria:archaea_2019Feb:viral_2019Jan:fungi_2019feb:invertebrate_2019Feb:protozoa_2019Feb
@@ -21,7 +21,7 @@
 --alignedOnly=true   
 --minCoverage=4 
 --minLength=1000 
---reduceToSpecies=false  
+#--reduceToSpecies=false  
 --buildConsensus=true
  --deleteUnmapped=true 
 # --abpoa_path=/home/lachlan/abPOA-v1.0.1/bin/abpoa

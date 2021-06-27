@@ -1,13 +1,13 @@
 #!/bin/sh
 
-#SBATCH --job-name=jRT
+#SBATCH --job-name=jST
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem=31800 # mb
+#SBATCH --mem=25000 # mb
 #SBATCH --time=100:00:00
-#SBATCH --output=jrt.stdout
-#SBATCH --error=jrt.stderr
+#SBATCH --output=jst.stdout
+#SBATCH --error=jst.stderr
 #SBATCH --cpus-per-task=16
 
 
@@ -21,19 +21,21 @@
 ##tip - use symbolic link to put this in the directory with bam files
 #run as sbatch run_slurm.sh species --bamFile=file.bam 
 #  sbatch run_slurm_combined.sh human combined --RNA=false
-export JSA_MEM=31200m
+if [ ! $JSA_MEM ]; then	
+export JSA_MEM=62800m
+fi
 
 export japsa_coverage="${HOME}/github/japsa_coverage"
 echo ${japsa_coverage}
 
 bamfiles=$1
 
-	mainclass="japsa.tools.bio.np.RealtimeResistanceGeneCmd"
-	optsfile="opts_resistance.txt"
-echo $mainclass
+	mainclass="japsa.tools.bio.np.RealtimeSpeciesTypingCmd"
+	optsfile="opts_blastspecies.txt"
+#echo $mainclass
 
 if [ ! -f $optsfile ]; then
-	optsfile="${japsa_coverage}/scripts/opts_resistance.txt"
+ optsfile="${japsa_coverage}/scripts/opts_blastspecies.txt"
 fi
 
 if [ ! $bamfiles ];then
@@ -44,7 +46,7 @@ dat=$(date +%Y%m%d%H%M%S)
 resdir="results_${dat}"
 
 opts=$(grep -v '^#' ${optsfile})
-echo $bamfiles
-echo $typ
-bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts} $@
+#echo $bamfiles
+#echo $typ
+time bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts}
 

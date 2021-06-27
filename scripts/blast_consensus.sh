@@ -5,14 +5,15 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=60000 #mb
+#SBATCH --mem=64000 #mb
 #SBATCH --time=100:00:00
 #SBATCH --cpus-per-task=16
 
 #find output consensus fasta
-files=$(find jST/ -name consensus_output.fa)
+export JSA_MEM=62800m
+files=$(find jST/ -name consensus_output.fa -size +1b)
 echo found `echo ${files} | wc -w` files
-
+blastdb="/DataOnline/Data/dbs/Blast/nt/nt"
 #run blast in loop
 for found in ${files}; do
 echo running blast for ${found};	
@@ -20,7 +21,7 @@ echo running blast for ${found};
 cd $(dirname ${found});	
 	#check it contains output
 	if [ -s consensus_output.fa ]; then
-	/sw/blast/current/bin/blastn -num_threads 16 -outfmt 17 -query consensus_output.fa -db /DataOnline/Data/Blast/nt/nt -out blastn_sam.out;
+	/sw/blast/current/bin/blastn -num_threads 16 -outfmt 17 -query consensus_output.fa -db ${blastdb} -out blastn_sam.out;
 	fi
 #check blast output contains data
 if [ -s blastn_sam.out ];
@@ -35,7 +36,7 @@ if [ -e hits.index.txt ]; then mv hits.index.txt blastn_sam.out.fa.index; fi
 
 #run java
 echo creating results in $found
-sbatch ~/github/japsa_coverage/scripts/run_blastspecies.sh --bamFile=blastn_sam.out
+bash ~/github/japsa_coverage/scripts/run_blastspecies.sh --bamFile=blastn_sam.out
 fi
 
 #change back to root directory
