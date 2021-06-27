@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem=32800 # mb
+#SBATCH --mem=64000 # mb
 #SBATCH --time=100:00:00
 #SBATCH --output=jst.stdout
 #SBATCH --error=jst.stderr
@@ -21,7 +21,7 @@
 ##tip - use symbolic link to put this in the directory with bam files
 #run as sbatch run_slurm.sh species --bamFile=file.bam 
 #  sbatch run_slurm_combined.sh human combined --RNA=false
-export JSA_MEM=31800m
+export JSA_MEM=61800m
 
 export japsa_coverage="${HOME}/github/japsa_coverage"
 echo ${japsa_coverage}
@@ -53,5 +53,7 @@ resdir="results_${dat}"
 opts=$(grep -v '^#' ${optsfile})
 echo $bamfiles
 echo $typ
-#bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts}
+bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts}
+#echo $cmd
+
 
