@@ -9,10 +9,24 @@
 #SBATCH --time=100:00:00
 #SBATCH --cpus-per-task=16
 
+
+## example:
+# sbatch blast_consensus.sh jST
+# sbatch blast_consensus.sh jRT
+
 #find output consensus fasta
 export JSA_MEM=62800m
-files=$(find jST/ -name consensus_output.fa -size +1b)
+jST=$1
+if [ ! $jST ]; then 
+  jST="jST"
+else
+	jST=$(echo $jST | sed 's/\///g')
+fi
+files=$(find ${jST}/ -name consensus_output.fa -size +1b)
+echo $files
+
 echo found `echo ${files} | wc -w` files
+
 blastdb="/DataOnline/Data/dbs/Blast/nt/nt"
 #run blast in loop
 for found in ${files}; do
