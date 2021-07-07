@@ -46,5 +46,5 @@ resdir="results_${dat}"
 opts=$(grep -v '^#' ${optsfile})
 echo $bamfiles
 echo $typ
-bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts}
+bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts} $@
 

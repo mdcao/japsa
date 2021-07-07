@@ -1,4 +1,4 @@
---resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceGenes/resFinder
+--resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceGenes/resFinder-latest
 #--writeABX=aminoglycoside|beta-lactamase|colistin|fosfomycin|fusidicacid|macrolide|nitroimidazole|phenicol|quinolone|rifampicin|sulphonamide|tetracycline|trimethoprim|vancomycin
 #--resDB=/DataOnline/Data/Bacterial_Genome/Eskape/ResistanceGenes/resFinder-latest
 --dbpath=/DataOnline/Data/Bacterial_Genome/Eskape/SpeciesTyping
@@ -8,8 +8,8 @@
 --log=true
 --writeABX=[a-z]
 --resdir=jRT
---minCountResistance=2
---minCountSpecies=2
+--minCountResistance=0
+--minCountSpecies=0
 --mm2_path=/sw/minimap2/current/minimap2
 #--readList=readList_fos1.txt 
 #--time=1 
