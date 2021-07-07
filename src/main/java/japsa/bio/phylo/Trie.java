@@ -84,7 +84,7 @@ public class Trie {
 		
 		Trie tr = null;
 		
-			if(!fastaFile.exists()) throw new IOException("File does not exist");
+			if(!fastaFile.exists()) throw new IOException("File does not exist "+fastaFile.getAbsolutePath());
 
 			 tr = new Trie(new File(taxaDir,"names.dmp"));
 			 tr.getIndex(fastaFile, outF);

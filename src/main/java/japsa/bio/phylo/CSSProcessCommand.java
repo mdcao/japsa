@@ -86,6 +86,7 @@ public class CSSProcessCommand {
 			  LOG.info("making tree");
 		
 			  GetTaxonID gid  = new GetTaxonID(taxdump, nodesdmp, taxon_set1, name_dmp2, expand);
+			// path =   gid.getPathToRoot(33317);
 			NCBITree trees = new NCBITree(gid);
 			/*Node n1 = trees.getNode(232523);
 			Node n3 = trees.getNode(80864);		

@@ -51,6 +51,11 @@ public class MergeKrakenCmd extends CommandLine{
 		NCBITree.trim = cmdLine.getBooleanVal("trim");
 		NCBITree.thresh = cmdLine.getDoubleVal("thresh");
 	
+		File outfileF = new File(outfile);
+		File outfileF1 = new File(outfile1);
+		outfileF.delete();
+		outfileF1.delete();
+		
 		String ext = cmdLine.getStringVal("extra");
 		
 		String[] extra = ext!=null ? ext.split(":") : new String[0];
@@ -61,6 +66,7 @@ public class MergeKrakenCmd extends CommandLine{
 			BufferedReader br = new BufferedReader(new FileReader(todo));
 			String st = "";
 			while((st = br.readLine())!=null){
+				if(st.startsWith("#")) continue;
 				File f1 = new File(st);
 				if(!f1.exists()) throw new RuntimeException(st+ " does not exist");
 				f.add(st);
@@ -89,7 +95,7 @@ public class MergeKrakenCmd extends CommandLine{
 				f.addAll(Arrays.asList((new File(dirs[i])).list(filter)));
 			}
 		}
-		Collections.sort(f);
+		//Collections.sort(f);
 			List<KrakenTree> kt = new ArrayList<KrakenTree>();
 			for(int i=0; i<f.size(); i++){
 				//kt[i] = new KrakenTree(new File(f.get(i)));
@@ -101,12 +107,24 @@ public class MergeKrakenCmd extends CommandLine{
 
 			}
 			
-			
 			NCBITree combined = kt.get(0);
+			String sl = combined.slug("Basidiomycota",false);
+			System.err.println(sl+" "+combined.slugToNode.containsKey(sl));
 			combined.modAll(0, kt.size()+ extra.length);
 			for(int j=1; j<kt.size(); j++){
+				Node contains = kt.get(j).slugToNode.get(sl);
+			//	System.err.println(sl+"  "+contains);
+				
 				kt.get(j).modAll(j, kt.size()+ extra.length);
 				combined.merge(kt.get(j), j);
+				
+				boolean contains1 = combined.slugToNode.containsKey(sl);
+				System.err.println(sl+"  "+contains!=null+ " "+contains1);
+			/*	if(contains1){
+					break;
+				}*/
+				//Node n = combined.getNode(sciName)("Basidiomycota");
+				//System.err.println("h");
 			}
 			int len = kt.size();
 			
@@ -185,8 +203,9 @@ public class MergeKrakenCmd extends CommandLine{
 			//	CSSProcessCommand.colorEachLevel(combined.tree);
 				CSSProcessCommand.colorRecursive(combined.tree, true);
 			}
-			combined.print(new File(outfile),"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false);
-			combined.print(new File(outfile1),"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false);
+			
+			combined.print(outfileF,"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false);
+			combined.print(outfileF1,"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false);
 
 			//System.err.println(combined);
 		} catch (IOException e) {

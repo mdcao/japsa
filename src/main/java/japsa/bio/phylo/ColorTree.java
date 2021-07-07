@@ -392,6 +392,7 @@ Tree tree;
 
 ColorTree(Tree tree_in, boolean clock) throws Exception{
 //	setBL(tree_in.getRoot(), 1000, 0.1);
+	this.tree = tree_in;
 	tree_in.getRoot().getIdentifier().setAttribute("css" ,	"#000000ff");   // for homo sapiens
 	if(tree_in.getExternalNodeCount()==1){
 				tree_in.getExternalNode(0).getIdentifier().setAttribute("css" ,	"#00000000");   // for homo sapiens

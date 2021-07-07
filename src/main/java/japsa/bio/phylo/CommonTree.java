@@ -114,8 +114,10 @@ public abstract class CommonTree {
 			}
 		   for(int i=0; i<this.roots.size(); i++){
 			   System.err.println(roots.get(i).getIdentifier().getName());
-			 Iterator<Node> n = NodeUtils.preOrderIterator(roots.get(i));  
-			
+			 Iterator<Node> n = NodeUtils.preOrderIterator(roots.get(i)); 
+	//		 Node root = roots.get(i);
+	//		 if(kraken_style) printKraken(root, pw, total);
+	//		 else print(root, pw, count_tag, format);
 			inner: while(n.hasNext()){
 				 Node node = n.next();
 				 if(kraken_style) printKraken(node, pw, total);

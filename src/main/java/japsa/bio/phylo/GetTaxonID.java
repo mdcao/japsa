@@ -71,6 +71,20 @@ public class GetTaxonID {
   
   public Map<Integer, Integer> nodeToParent = new HashMap<Integer,Integer >();
   
+	public String getPathToRoot(Integer i) {
+		StringBuffer sb = new StringBuffer();
+		while(i!=null){
+			sb.append(","+i);
+			int i1 = nodeToParent.get(i);
+			if(i1==i) {
+				sb.append(","+i1);
+				break;
+			}
+			i = i1;
+		}
+		return sb.toString();
+	}
+  
   public void addNodeDmp(File file) throws IOException{
 	  BufferedReader br = getBR(file);
 	  String st = "";
@@ -102,20 +116,27 @@ public class GetTaxonID {
 		Set<Integer> newS = new HashSet<Integer>();
 		System.err.println("round "+i+" "+todo.size());
 		System.err.println(todo);
+		boolean contains = 	todo.contains(33317);
 		boolean reverse = i==0;
 		Closeable br = reverse ? new ReversedLinesFileReader(node_dmp) : new BufferedReader(new FileReader(node_dmp));
 		while((st = reverse ?  ((ReversedLinesFileReader)br).readLine(): ((BufferedReader)br).readLine())!=null){
 			String[] str = st.split("\\|");
 			Integer child = Integer.parseInt(str[0].trim());
 			Integer parent =Integer.parseInt( str[1].trim());
-		//	if(parent.intValue()==5439574){
-			//	System.err.println(st);
-			//}
+			
 			if(todo.contains(child) && ! done.contains(child)){
+			/*	if(parent.intValue()==33317){
+					System.err.println(st+ " "+done.contains(parent));
+				}
+				if(child.intValue()==33317){
+					System.err.println(st);
+				}*/
 				todo.add(parent);
 				set.add(parent);
 				todo.remove(child);
-				if(!done.contains(parent)) newS.add(parent);
+				if(!done.contains(parent)){
+					newS.add(parent);
+				}
 				//todo.remove(child);
 				done.add(child);
 				pw1.println(st);
@@ -126,7 +147,7 @@ public class GetTaxonID {
 		notP.addAll(todo);
 		todo.clear();
 		todo.addAll(newS);
-		if(todo.size()==ps) break;
+		//if(todo.size()==ps) break;
 		ps = todo.size();
 	}
 	//pw1.println(prev);
@@ -150,7 +171,7 @@ public  File name_dmp2;
   
   public GetTaxonID( File names_dmp, File node_dmp_, Set<Integer>taxon_set, File name_dmp2, boolean expand)  throws IOException{
 		this.taxon_set = taxon_set;
-		
+
 	File node_dmp =   expand ? expand(taxon_set, node_dmp_, this.taxon_set) : node_dmp_;
 	
 	PrintWriter pw_2 = expand ?   new PrintWriter(new GZIPOutputStream(new FileOutputStream(name_dmp2))) : null;
@@ -267,6 +288,8 @@ public static BufferedReader getBR(File file)throws IOException{
  		}
  		return sb.toString();
  	}
+
+
  
  
 /*Map<String, String> slugToTaxon = new HashMap<String, String>();
