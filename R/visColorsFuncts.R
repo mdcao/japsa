@@ -1,32 +1,51 @@
 
+.readBracken<-function(file="aqip_bracken_combined.tsv", ident="_num"){
+
+tab = read.table(file, sep="\t", head=T)
+
+tab2 = tab[,grep(ident, names(tab))]
+dimnames(tab2)[[1]] = tab[,1]
+
+cols = rep("white", dim(tab)[1])
+taxon =tab[,2]
+pos = rep(5, dim(tab)[1])
+attr(tab2,"sums_") = apply(tab2,2,sum)
+attr(tab2,"cols") = cols
+attr(tab2,"pos") = factor(pos)
+attr(tab2,"taxon") = taxon
+tab2
+}
 
 #.strfunc<-function(string) which(strsplit(string, "")[[1]]=="+")[1]
 .strfunc1<-function(string,patt) regexpr(patt, string)[[1]]
 .readCSS<-function(arg, samples, names_index = 1,patt="[a-zA-Z]" ){
-	 treef = read.table(arg,skip=1, head=F, sep="\t", comment.char='%', fill=T, as.is=T)
+	 treef = read.csv(arg,skip=1, head=F, sep="\t", comment.char='%', fill=T, as.is=T)
 	header =  read.table(arg,nrows=1, head=F, sep="\t", comment.char='%', fill=T, as.is=T)
  	treef = treef[grep('----',treef[,1], inv=T),]
 	treef = treef[nchar(treef[,2])>0,]
+
 	names(treef) = header
+	leaves = treef$level1==0
+	#last_tp = unlist(lapply(treef$taxon_parents, function(x) rev(unlist(strsplit(x,",")[[1]])))
+	#parent_ind = unlist(lapply()[1]), function(x) which(x==treef$taxon)))
+
 		pos = as.factor(unlist(lapply(treef[,1], .strfunc1, patt)))
+#pos = treef$level+1
 	dim_m = dim(treef)
 	if(length(names_index)>1){
 		nmes = apply(treef[,names_index,drop=F],1,paste, collapse=".")
 	}else{
 		nmes = treef[,names_index]
 	}	
+	nmes=gsub("\\s{2,}", "",nmes)
 	dupl = which(duplicated(nmes))
 	if(length(dupl)>0) {
-		print(paste("warning duplicated", nmes[dupl]))
-		treef = treef[-dupl,]
-		nmes = nmes[-dupl]
-		pos = pos[-dupl]
+		stop("duplication")
 }	
-	dimnames(treef)[[1]] = gsub("\\s{2,}", "",nmes)
+	dimnames(treef)[[1]] = nmes
 
-
-if(dim(treef)[[2]]>8){
- matrix = apply(treef[,-(1:8)],c(1,2), as.numeric)
+if(dim(treef)[[2]]>9){
+ matrix = apply(treef[,-(1:9)],c(1,2), as.numeric)
 }else{
 	matrix = array(1, dim = c(dim(treef)[[1]],2))
 	dimnames(matrix)[[1]] = treef[,1]
@@ -34,10 +53,32 @@ if(dim(treef)[[2]]>8){
 }
 indsk = match(samples, dimnames(matrix)[[2]])
 matrix = matrix[,indsk]
+taxon = treef$taxon
+
+ 
+if(arg=="sep.css"){
+leaves1 = which(leaves)
+len1 = dim(matrix)[[2]]
+for(leaf in leaves1){
+	pj = which(treef$taxon ==rev(strsplit(treef$taxon_p[leaf],",")[[1]])[1])
+	matrix[pj,] = matrix[pj,] + matrix[leaf,]
+	matrix[leaf,] = rep(0, len1)
+}
+ 
+}
+ 
+#if(args=="sep.css")
 cols = gsub("css=","",treef[,2])
+cols[cols=="null"] = "white"
+matrix = matrix[!leaves,]
+  cols = cols[!leaves]
+  pos = pos[!leaves]
+  taxon = taxon[!leaves]
 attr(matrix, "cols") <-cols
 attr(matrix,"pos") <-pos
-attr(matrix,"taxon")<-treef$taxon
+attr(matrix,"taxon")<-taxon
+#attr(matrix,"leaves")<- leaves
+#attr(matrix,"parent_ind") <-parent_ind
 matrix
 }
 
@@ -45,8 +86,8 @@ matrix
 norm<-function(tab, cumul, sample_inds = 1:dim(tab)[[2]],  mult=1e6, sums = NULL){
 
 	if(is.null(sums)){
-top_inds = which(attr(tab,"pos")==5)  ## should include everything
-	if(cumul) sums = apply(tab[top_inds,sample_inds],2,sum) else sums = apply(tab[,sample_inds],2,sum)
+top_inds = which(attr(tab,"pos")==1)  ## should include everything
+	if(cumul) sums = apply(tab[top_inds,sample_inds,drop=F],2,sum) else sums = apply(tab[,sample_inds],2,sum)
 	}
 	for(i in 1:length(sample_inds)){
 	  tab[,sample_inds[i]] = mult* (tab[,sample_inds[i]] / sums[[i]])
@@ -60,8 +101,9 @@ getHMCol<-function(len = 128){
   rev(c(rev(colorRampPalette(brewer.pal(9,"Reds"),bias = 0.5)(len)), colorRampPalette(brewer.pal(9,"Blues"), bias = 0.5)(len)))
 }
 
-.plotHeatmap<-function(matrix,todo,log=T, addspace=F, Colv=TRUE, sameDendro=T, hm2=F,grps = grps, epsilon=1e-4, offsetRow=0,margins=c(15,5)){
-	cols = attr(matrix,"cols") 
+.plotHeatmap<-function(matrix,todo,log=T, addspace=F, Colv=TRUE,basec = 0.3, sameDendro=T, hm2=F,grps = grps, epsilon=1e-4, offsetRow=0,margins=c(15,5) ){
+	cols = attr(matrix,"cols")
+	cols[cols=="null"] = "white"
 	pos = attr(matrix, "pos")
 	nr = nrow(matrix)
     	#colinds = list()
@@ -92,7 +134,7 @@ if(hm2){
 		ncol=dim(matrix)[2]
 		nr  = dim(matrix)[1]
 		dendro = heatmap.2(matrix[row_inds,],   offsetRow=offsetRow, margins = margins,Rowv=NA, main=paste(todo[[i]], collapse=","),Colv=Colv, RowSideColors=cols[row_inds], dendrogram="column", scale="none", trace="none",  col=getHMCol(),ColSideColors=cols2, keysize=1,
-			cexRow = 0.2 + 1/log10(nr),cexCol = 0.2 + 1/log10(nr)
+			cexRow = basec + 1/log10(nr),cexCol = basec + 1/log10(nr)
 )
 }else{
 		dendro = heatmap(matrix[row_inds,],main=paste(todo[[i]], collapse=","),Colv=Colv,Rowv = NA,ColSideColors=cols2, RowSideColors=cols[row_inds], dendrogram="column", scale="none", trace="none",  cexCol = 0.5 ,cexRow = 0.5, margins = margins)
@@ -106,16 +148,16 @@ if(hm2){
 }
 
 .plotBarchart<-function(matrix, 
-		todo, thresh = 10,add.text=T,
-		show.legend=F,legsize = 10, colInd=1:(dim(matrix)[2])
+		todo, thresh = 10,add.text=F,
+		show.legend=F,legsize = 10, textsize=legsize, colInd=1:(dim(matrix)[2])
 			){
 	ggps = list()
 if(is.null(colInd)) colInd=1:(dim(matrix)[2])
 	for(i in 1:length(todo)){
 		print(todo[[i]])
 		row_inds =  which(pos %in% todo[[i]])
-		if(length(row_inds)>2){
-		ggps[[i]]=try(.barChart(matrix, row_inds ,colInd =colInd,  customCols = T, legsize = legsize, show.legend=show.legend, add.text=add.text, thresh = thresh,  main = paste(todo[[i]], collapse=",")))
+		if(length(row_inds)>1){
+		ggps[[i]]=try(.barChart(matrix, row_inds ,colInd =colInd,  customCols = T, legsize = legsize, show.legend=show.legend, add.text=add.text, textsize=textsize, thresh = thresh,  main = paste(todo[[i]], collapse=",")))
 		}
 	}
 	
@@ -176,8 +218,10 @@ tab2
 }
 
 
-.barChart<-function(matrix, row_inds,  customCols = T,colInd=1:(dim(matrix)[2]), thresh = thresh, show.legend=F, add.text=T,legsize=5,main= ""){
+.barChart<-function(matrix, row_inds,  customCols = T,colInd=1:(dim(matrix)[2]), thresh = thresh, show.legend=F, add.text=F,legsize=5,main= "", textsize = 5){
 	tab2 = .convertForBarChart(matrix,  row_inds, colInd, thresh = thresh)
+	numcats = length(levels(tab2$taxon))
+	if(is.null(legsize)) legsize = 15/log(numcats+1)
 	#samp1 = which(tab2$sample==tab2$sample[dim(tab2)[1]])
 	#tab22  = tab2[samp1,]
   #geom_bar(aes(y = percentage, x = year, fill = product), data = charts.data, stat="identity") +
@@ -186,8 +230,9 @@ tab2
 	if(customCols){	
 		ggp<-ggp+scale_fill_manual("Legend", values=attr(tab2,"color"))
 	}
-	ggp<-ggp+theme(axis.text.x = element_text(size=legsize, angle=45, hjust=1), legend.text=element_text(size=legsize), legend.key.size = unit(2.5,"line"),
-		legend.box.just = "top")   +ggtitle(main)
+	ggp<-ggp+theme(panel.background = element_rect(fill = 'white', colour = 'white'), axis.text.x = element_text(size=textsize, angle=45, hjust=1), legend.text=element_text(size=legsize), legend.position="bottom", legend.key.size = unit(legsize/2,"line"),
+		legend.box.just = "bottom")   +ggtitle(main)
+
 	#if(add.text) ggp<-ggp+geom_text(data=tab2, aes(x = sample, y = count, label = taxon), colour="white", family="OfficinaSanITC-Book", size=4)
 	invisible(ggp)
 }

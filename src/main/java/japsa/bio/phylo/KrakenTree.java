@@ -80,6 +80,7 @@ public  class KrakenTree extends NCBITree {
 		 String nme =id.getName();
 		// Integer[] counts = (Integer[]) id.getAttribute(count_tag);
 		 Integer level = (int) Math.round((((Integer)id.getAttribute("level")).doubleValue()+1.0)/2.0);
+		 int level1 =getDistToLeaf(node);
 		 if(node.isRoot()) level =0;
 		String height = String.format("%5.3g", NodeUtils.getMinimumPathLengthLengthToLeaf(node)/bl).trim();
 		 String hex = ((String)id.getAttribute("css"));		
@@ -126,7 +127,7 @@ public  class KrakenTree extends NCBITree {
 		//			header.append("name\tcolor\ttaxon\theight\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
 		//header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
 
-		 pw.print(nme+"\t"+hex+"\t"+taxon+"\t"+height+"\t"+level+"\t"+Arrays.asList(cssvals1)+"\t"+sb.toString()+"\t"+sb1.toString());
+		 pw.print(nme+"\t"+hex+"\t"+taxon+"\t"+height+"\t"+level+"\t"+level1+"\t"+Arrays.asList(cssvals1)+"\t"+sb.toString()+"\t"+sb1.toString());
 		 if(count_tag!=null){
 			 for(int i=0; i<count_tag.length; i++){
 				 Number[] num = (Number[])id.getAttribute(count_tag[i]);
@@ -144,6 +145,20 @@ public  class KrakenTree extends NCBITree {
 		 pw.println();
 	}
 	
+	private int getDistToLeaf(Node node) {
+		if(node.isLeaf()) return 0;
+		else{
+			int val = Integer.MAX_VALUE;
+			for(int i=0; i<node.getChildCount(); i++){
+				int dist = 1+getDistToLeaf(node.getChild(i));
+				if(dist < val) val = dist;
+			}
+			return val;
+		}
+	}
+
+
+
 	static Pattern p = Pattern.compile("[a-zA-Z]");
 	 int getLevel(String line){
 		 for(int i=0; i<line.length(); i++){

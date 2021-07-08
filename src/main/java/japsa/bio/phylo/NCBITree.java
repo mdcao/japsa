@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -412,6 +413,7 @@ private Node make(String line_, int  level, Node parent, int index){
 		   this.name2Taxa.put(name, taxon);
 		 //  this.taxa2Node.put(taxon, n);
 		   n.getIdentifier().setAttribute("taxon",taxon);
+		  
 		  // Integer[] l1 = new Integer[] {Integer.parseInt(lines[1]), Integer.parseInt(lines[2])};
 		   n.getIdentifier().setAttribute(NCBITree.count_tag,new Number[] {Double.parseDouble(lines[1])});
 		   n.getIdentifier().setAttribute(NCBITree.count_tag1,new Number[] {Double.parseDouble(lines[2])});
@@ -437,6 +439,8 @@ private Node make(String line_, int  level, Node parent, int index){
 	   putSlug1(n);
 	   if(parent!=null){
 		   parent.addChild(n);
+		   MergeKrakenCmd.checkDupl(parent);
+
 	   }
 	   return n;
    }
@@ -586,6 +590,9 @@ public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOE
 		parent = root;
 		parentlevel =0;
 		inner: while((nextLine = br.readLine())!=null){
+		/*	if(nextLine.indexOf("Viruses")>=0){
+				System.err.println(nextLine);
+			}*/
 			nextLines = nextLine.split("\t");
 			if(nextLine.startsWith("--")){
 				nextLine=br.readLine();
@@ -594,20 +601,23 @@ public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOE
 			}
 			
 			int level = getLevel(nextLines[index]);
+			Node n = null;
 			//System.err.println(level+"->"+nextLine);
-			while(level<=parentlevel){
+		inner2:	while(level<=parentlevel){
 				if(parent==root) {
-					Node n = make(nextLine, 2, unclassified, index);
-					System.err.println("excluding  " +nextLine);
-					continue inner;
+					n = make(nextLine, 2, root, index);
+				//	System.err.println("excluding  " +nextLine);
+					
+					break inner2;
+//					continue inner;
 				}
 				parent = parent.getParent();
 				parentlevel = ((Integer) parent.getIdentifier().getAttribute("level")).intValue();
 			}
-			Node n = make(nextLine, level, parent, index);
+			if(n==null) n = make(nextLine, level, parent, index);
 		
 			
-			//System.err.println(n+ "--->  "+parent);
+		//	System.err.println(n.getIdentifier()+ "--->  "+parent.getIdentifier());
 			parentlevel = level;
 			parent = n;
 		}
@@ -624,11 +634,11 @@ public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOE
 		//		throw new RuntimeException("unclassified should be first entry, if it exists");
 		//	}
 		//}
-		if(!kraken)makeTrees();
+		if(!kraken)makeTrees(false);
 	}
 		
-public static String count_tag = "count";
-public  static String count_tag1 = "count1";
+public static String count_tag = "cumulative"; // this is cumulative
+public  static String count_tag1 = "sep"; // this is for sep
 
 
 
@@ -702,6 +712,15 @@ public void merge(Node n, int pos){
 	System.err.println(n.getIdentifier());
 	final Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
 	Node node = this.slugToNode1.get(taxon);
+	if(taxon==68887){
+		System.err.println("h");
+	}
+	if(taxon==687329){
+		System.err.println("h");
+	}
+	if(taxon==10239){
+		System.err.println("h");
+	}
 	/*if(node==null){
 		String sl = slug(n.getIdentifier().getName(),false);
 		node = this.slugToNode.get(sl);
@@ -709,6 +728,7 @@ public void merge(Node n, int pos){
 	}*/
 	//System.err.println(n.getIdentifier());
 	if(node!=null){
+		checkInTree(node);
 		//System.err.println("already has "+n.getIdentifier());
 		//this is adding in new samples
 		{
@@ -732,17 +752,14 @@ public void merge(Node n, int pos){
 		Integer tax = (Integer) old_parent.getIdentifier().getAttribute("taxon");
 		Node new_parent = this.slugToNode1.get(tax);
 		if(new_parent==null){
-			String sl = slug(n.getParent().getIdentifier().getName(),false);
-			new_parent = this.slugToNode.get(sl);
-			if( true){
 				throw new RuntimeException("!!");
-			}
-			
 		}
 		boolean contains = false;
 		for(int i=0; i<new_parent.getChildCount(); i++){
 			if(new_parent.getChild(i).equals(n)){
 				contains =true;
+			}else if(new_parent.getChild(i).getIdentifier().toString().equals(n.getIdentifier().toString())){
+				throw new RuntimeException("!!");
 			}
 		}
 		if(!contains) {
@@ -753,14 +770,24 @@ public void merge(Node n, int pos){
 				added.add(id);
 			}
 			System.err.println("added "+id+"->"+new_parent.getIdentifier().getName());
+			if(new_parent.isRoot()){
+				if(new_parent!= this.roots.get(0)){
+					System.err.println("problem");
+				}
+				System.err.println("h");
+			}
+			if(old_parent.isRoot()){
+				System.err.println("h");
+			}
+			
 			new_parent.addChild(n);
 		//	this.putChildren(n);
 		}
-		n.setParent(new_parent);
+	//	n.setParent(new_parent);
 		this.slugToNode1.put(taxon,n);
 		String sl = this.slug(n.getIdentifier().getName(), false);
 		if(slugToNode.containsKey(sl)){
-	//		throw new RuntimeException ("!!!");
+			throw new RuntimeException ("!!!");
 		}
 		else{
 			this.slugToNode.put(sl, n);
@@ -772,9 +799,22 @@ public void merge(Node n, int pos){
 	
 }
 
+private void checkInTree(Node node) {
+	while(!node.isRoot()){
+		node = node.getParent();
+	}
+	if(node!=this.roots.get(0)){
+		throw new RuntimeException("!!");
+	}
+	
+}
 public void merge(NCBITree tree1, int pos){
 	this.name2Taxa.putAll(tree1.name2Taxa);
-	//first check to see if the roots are actually sub nodes in this new tree
+	if(tree1.roots.size()>1) {
+		
+		throw new RuntimeException(roots.size()+" roots : "+roots.get(0).getIdentifier()+ " vs "+roots.get(1).getIdentifier());
+	}
+	/*first check to see if the roots are actually sub nodes in this new tree
 	for(int i=this.roots.size()-1;  i>=0; i--){
 		Node root = this.roots.get(i);
 		String id1 = root.getIdentifier().getName();
@@ -784,6 +824,7 @@ public void merge(NCBITree tree1, int pos){
 		System.err.println("root "+nme);
 		if(nme.equals("unclassified")) continue;
 		Node mtch = tree1.getSlug(nme);
+		if(mtch==null || mtch.isRoot()) continue;
 		boolean remove=false;
 		if(mtch!=null ){
 			inner: while(!mtch.isRoot()){
@@ -811,12 +852,12 @@ public void merge(NCBITree tree1, int pos){
 			if(remove) roots.remove(i);
 			else this.roots.set(i, root);
 		}
-	}
+	}*/
 	for(int i=0; i<tree1.roots.size(); i++){
 		Node root  = tree1.roots.get(i);
-		String nme = root.getIdentifier().getName();
-		if(nme.equals("unclassified")) continue;
-		Node mtch = this.getSlug(nme);
+		//String nme = root.getIdentifier().getName();
+		//if(nme.equals("unclassified")) continue;
+		//Node mtch = this.getSlug(nme);
 		/*for(int ij=0; ij<roots.size(); ij++){
 			Node root_ij = roots.get(ij);
 			if(root_ij!=null && root_ij.getIdentifier().getName().equals(nme)){
@@ -824,7 +865,7 @@ public void merge(NCBITree tree1, int pos){
 			}
 		}*/
 		
-		if(mtch==null){
+		/*if(mtch==null){
 			String id = root.getIdentifier().getName().trim();
 			if(added.contains(id)) {
 				throw new RuntimeException("!!" + id);
@@ -832,10 +873,7 @@ public void merge(NCBITree tree1, int pos){
 			System.err.println("added "+id);
 			added.add(id);
 			Node n = root;
-			/*Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
-			this.slugToNode1.put(taxon,n);
-			String sl = this.slug(n.getIdentifier().getName(), false);
-			this.slugToNode.put(sl, n);*/
+			
 			putChildren(n, false);
 			mtch = n;
 //			this.slugToNode.put(slug(id,false), root);
@@ -843,8 +881,10 @@ public void merge(NCBITree tree1, int pos){
 			roots.add(root); // add new root
 		}
 		else{
+		*/
 			merge(root, pos);
-		}
+			MergeKrakenCmd.checkDupl(root);
+		//}
 		/*	for(int j=0; j<root.getChildCount(); j++){
 				merge(root.getChild(j), pos);
 			}*/
@@ -852,7 +892,7 @@ public void merge(NCBITree tree1, int pos){
 }
 	
 	
-	private void putChildren(Node n, boolean recursive) {
+	/*private void putChildren(Node n, boolean recursive) {
 		Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
 		if(slugToNode1.containsKey(taxon)){
 			throw new RuntimeException("!!");
@@ -867,12 +907,12 @@ public void merge(NCBITree tree1, int pos){
 			putChildren(n.getChild(i), recursive);
 		}
 		}
-}
+}*/
 	public NCBITree(File treein, boolean b) throws IOException{
 		this(treein, b, false);
 }
 
-	public void makeTrees(){
+	public void makeTrees(boolean restrict){
 		System.err.println("making trees");
 		this.tree = new Tree[roots.size()];
 		System.err.println(tree.length);
@@ -880,7 +920,9 @@ public void merge(NCBITree tree1, int pos){
 		for(int i=0; i<tree.length; i++){
 			Node root = roots.get(i);
 			if(root.getParent()!=null) throw new RuntimeException("!!");
-			while(root.getChildCount()==1){
+			if(restrict){
+				while(root.getChildCount()==1){
+		
 				Node root1 = root.getChild(0);
 				String id = root.getIdentifier().getName();
 				String id1 = root1.getIdentifier().getName();
@@ -889,6 +931,7 @@ public void merge(NCBITree tree1, int pos){
 				}
 				System.err.println(id+" "+id1);
 				root = root1;
+			}
 			}
 			System.err.println("making "+root.getIdentifier()+" "+root.getChildCount());
 		//	System.err.println(root.getChild(0).getIdentifier()+", "+ root.getChild(1).getIdentifier());
@@ -957,6 +1000,34 @@ public void merge(NCBITree tree1, int pos){
 			if(cnt==0 || cnt1==1) { //|| !target.contains(roots.get(i).getIdentifier().getAttribute("taxon"))){
 		//		System.err.println("removing "+roots.get(i).getIdentifier());
 				roots.remove(i);
+			}
+		}
+		
+	}
+	public void removeLeafNodes(String count_tag_, boolean add) {
+		Node root = roots.get(0);
+		Vector<Node> store = new Vector<Node>();
+		NodeUtils.getExternalNodes(root, store);
+		for(Iterator<Node> it = store.iterator(); it.hasNext();){
+			Node n = it.next();
+//			n.getIdentifier().getAttribute(count_tag);
+			Number[] n1 = (Number[]) n.getIdentifier().getAttribute(count_tag_); // should be the sep tag
+			Node p = n.getParent();
+			Number[] p1 = (Number[]) n.getIdentifier().getAttribute(count_tag_); 
+		//	System.err.println(Arrays.asList(n1));
+	//		System.err.println(Arrays.asList(p1));
+		//	System.err.println("....");
+			if(add){
+			for(int i=0; i<p1.length; i++){
+				p1[i]=new Double(p1[i].doubleValue()+n1[i].doubleValue());
+			}
+			}
+			
+			inner: for(int j=0; j<p.getChildCount(); j++){
+				if(p.getChild(j)==n){
+					p.removeChild(j);
+					break inner;
+				}
 			}
 		}
 		

@@ -9,12 +9,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 import pal.tree.Node;
+import pal.tree.NodeUtils;
 
 /**
  * @author lachlancoin
@@ -40,6 +42,8 @@ public class MergeKrakenCmd extends CommandLine{
 
 		addStdHelp();
 	}
+	
+	static boolean removeLeafNodes = false;
 	
 	public static void main(String[] args){
 		CommandLine cmdLine = new MergeKrakenCmd();		
@@ -96,37 +100,44 @@ public class MergeKrakenCmd extends CommandLine{
 			}
 		}
 		//Collections.sort(f);
-			List<KrakenTree> kt = new ArrayList<KrakenTree>();
-			for(int i=0; i<f.size(); i++){
-				//kt[i] = new KrakenTree(new File(f.get(i)));
-				KrakenTree kti = new KrakenTree(new File(f.get(i)),regex);
-				kt.add(kti);
-			//	kt[i].print(new File(i+".combined.txt"),"",
-				//		header.toString()
-					//	);
+			NCBITree combined = new KrakenTree(new File(f.get(0)),regex);
+			MergeKrakenCmd.checkDupl(combined.roots.get(0));
+			combined.modAll(0, f.size()+ extra.length);
+			String sl = combined.slug("Torque teno virus",false);
+			int sze = combined.roots.get(0).getChildCount();
+			Node virus = combined.slugToNode.get(sl);
+			for(int i=1; i<f.size(); i++){
+				KrakenTree kt = new KrakenTree(new File(f.get(i)),regex);
+				MergeKrakenCmd.checkDupl(kt.roots.get(0));
 
+				if(!kt.roots.get(0).getIdentifier().toString().equals("root")){
+					System.err.println("excluding "+f.get(i));
+					continue;
+				}
+					kt.modAll(i, f.size()+ extra.length);
+					try{
+					combined.merge(kt, i);
+					checkDupl(combined.roots.get(0));
+					int sze1 = combined.roots.get(0).getChildCount();
+					System.err.println(sze1);
+					}catch (Exception exc){
+						
+						System.err.println("problem with "+f.get(i));
+						exc.printStackTrace();
+						
+					}
+				//	Node contains = kt.slugToNode.get(sl);
+				//	boolean contains1 = combined.slugToNode.containsKey(sl);
+				//	System.err.println(sl+"  "+contains!=null+ " "+contains1);
 			}
+			Node virus1 = combined.slugToNode.get(sl);
+
+			int sze1 = combined.roots.get(0).getChildCount();
+		
 			
-			NCBITree combined = kt.get(0);
-			String sl = combined.slug("Basidiomycota",false);
-			System.err.println(sl+" "+combined.slugToNode.containsKey(sl));
-			combined.modAll(0, kt.size()+ extra.length);
-			for(int j=1; j<kt.size(); j++){
-				Node contains = kt.get(j).slugToNode.get(sl);
-			//	System.err.println(sl+"  "+contains);
-				
-				kt.get(j).modAll(j, kt.size()+ extra.length);
-				combined.merge(kt.get(j), j);
-				
-				boolean contains1 = combined.slugToNode.containsKey(sl);
-				System.err.println(sl+"  "+contains!=null+ " "+contains1);
-			/*	if(contains1){
-					break;
-				}*/
-				//Node n = combined.getNode(sciName)("Basidiomycota");
-				//System.err.println("h");
-			}
-			int len = kt.size();
+			//System.err.println(sl+" "+combined.slugToNode.containsKey(sl));
+		
+			int len = f.size();
 			
 			for(int i=0; i<extra.length; i++){
 				BufferedReader br = new BufferedReader(new FileReader(extra[i]));
@@ -159,17 +170,17 @@ public class MergeKrakenCmd extends CommandLine{
 				
 			}
 		
-			combined.trim(NCBITree.thresh);
-			combined.removeDupl();
-			combined.split(); combined.split();
+			//combined.trim(NCBITree.thresh);
+			//combined.removeDupl();
+			//combined.split(); combined.split();
 			
-			combined.removeSingleNodes(); //Arrays.asList(new Integer[] {2}));
+			//combined.removeSingleNodes(); //Arrays.asList(new Integer[] {2}));
 		//	combined.roots;
 			System.err.println(combined.roots.size());
 
 			StringBuffer header = new StringBuffer();
 			File currDir = new File(".");
-			header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon_parents");
+			header.append("name\tcolor\ttaxon\theight\tlevel\tlevel1\tcssvals\tparents\ttaxon_parents");
 			PrintWriter designF = new PrintWriter(new FileWriter(new File("design.csv")));
 			designF.println("Name,Grp1,Grp2");
 		
@@ -197,7 +208,12 @@ public class MergeKrakenCmd extends CommandLine{
 				File extraf = new File(extra[i]);
 				header.append("\t");header.append(extraf.getName());
 			}
-			combined.makeTrees();
+			
+			if(removeLeafNodes) combined.removeLeafNodes(NCBITree.count_tag1, true); /// this should really be true I think, but reflects a problem with generating the original kraken files
+			
+			combined.makeTrees(false);
+		//	Node virus1_ = combined.slugToNode.get(sl);
+			System.err.println("h");
 			for(int i=0; i<combined.tree.length; i++){
 				//CSSProcessCommand.color(combined.tree);
 			//	CSSProcessCommand.colorEachLevel(combined.tree);
@@ -212,5 +228,21 @@ public class MergeKrakenCmd extends CommandLine{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	static void checkDupl(Node node) {
+		Set<String> s = new HashSet<String>();
+		
+		
+		for(int i=0; i<node.getChildCount(); i++){
+			String str1 = node.getChild(i).getIdentifier().getName();
+			if(s.contains(str1)) {
+				throw new RuntimeException("!!"+str1);
+			}else{
+				s.add(str1);
+			}
+			
+		}
+		
 	}
 }
