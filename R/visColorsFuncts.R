@@ -16,9 +16,18 @@ attr(tab2,"taxon") = taxon
 tab2
 }
 
+.subinds<-function(tab, samp_inds, transf=c("cols"   ,  "pos" ,     "taxon") ){
+	tab1 = tab[,samp_inds,drop=F]
+	for(i in transf){
+	attr(tab1,i) = attr(tab,i)
+	}
+	tab1
+}
+
 #.strfunc<-function(string) which(strsplit(string, "")[[1]]=="+")[1]
 .strfunc1<-function(string,patt) regexpr(patt, string)[[1]]
-.readCSS<-function(arg, samples, names_index = 1,patt="[a-zA-Z]" ){
+.readCSS<-function(arg, samples, names_index = 1,patt="[a-zA-Z]" , thresh = NULL){
+
 	 treef = read.csv(arg,skip=1, head=F, sep="\t", comment.char='%', fill=T, as.is=T)
 	header =  read.table(arg,nrows=1, head=F, sep="\t", comment.char='%', fill=T, as.is=T)
  	treef = treef[grep('----',treef[,1], inv=T),]
@@ -38,29 +47,35 @@ tab2
 		nmes = treef[,names_index]
 	}	
 	nmes=gsub("\\s{2,}", "",nmes)
+	
 	dupl = which(duplicated(nmes))
-	if(length(dupl)>0) {
-		stop("duplication")
-}	
+ if(length(dupl)>0) {
+                print(paste("warning duplicated", nmes[dupl]))
+              
+}      
+nmes = make.unique(nmes)
+	#if(length(dupl)>0) {
+	#	print(nmes[dupl])
+	#	stop("duplication")
+#}	
 	dimnames(treef)[[1]] = nmes
 
-if(dim(treef)[[2]]>9){
  matrix = apply(treef[,-(1:9)],c(1,2), as.numeric)
-}else{
-	matrix = array(1, dim = c(dim(treef)[[1]],2))
-	dimnames(matrix)[[1]] = treef[,1]
-	dimnames(matrx)[[2]] = 1:2
-}
-indsk = match(samples, dimnames(matrix)[[2]])
-matrix = matrix[,indsk]
-taxon = treef$taxon
-
- 
+ taxon=treef$taxon
+if(!is.null(thresh)){
+	inds_r = apply(matrix,1,sum)>thresh
+	 indsk = match(samples, dimnames(matrix)[[2]])
+	 matrix = matrix[inds_r,indsk]
+	pos =pos[inds_r]
+	leaves = leaves[inds_r]
+	nmes = nmes[inds_r]
+	taxon =taxon[inds_r]
+} 
 if(arg=="sep.css"){
 leaves1 = which(leaves)
 len1 = dim(matrix)[[2]]
 for(leaf in leaves1){
-	pj = which(treef$taxon ==rev(strsplit(treef$taxon_p[leaf],",")[[1]])[1])
+	pj = which(taxon ==rev(strsplit(treef$taxon_p[leaf],",")[[1]])[1])
 	matrix[pj,] = matrix[pj,] + matrix[leaf,]
 	matrix[leaf,] = rep(0, len1)
 }
@@ -74,6 +89,8 @@ matrix = matrix[!leaves,]
   cols = cols[!leaves]
   pos = pos[!leaves]
   taxon = taxon[!leaves]
+
+
 attr(matrix, "cols") <-cols
 attr(matrix,"pos") <-pos
 attr(matrix,"taxon")<-taxon
@@ -101,7 +118,8 @@ getHMCol<-function(len = 128){
   rev(c(rev(colorRampPalette(brewer.pal(9,"Reds"),bias = 0.5)(len)), colorRampPalette(brewer.pal(9,"Blues"), bias = 0.5)(len)))
 }
 
-.plotHeatmap<-function(matrix,todo,log=T, addspace=F, Colv=TRUE,basec = 0.3, sameDendro=T, hm2=F,grps = grps, epsilon=1e-4, offsetRow=0,margins=c(15,5) ){
+.plotHeatmap<-function(matrix,todo,log=T,main="", addspace=F, Colv=TRUE,basec = 0.3, sameDendro=T, hm2=F,grps = 
+rep(0, ncol(matrix)), epsilon=1e-4, offsetRow=0,margins=c(15,5) ){
 	cols = attr(matrix,"cols")
 	cols[cols=="null"] = "white"
 	pos = attr(matrix, "pos")
@@ -133,11 +151,12 @@ cols2 = cols1[grpsn]
 if(hm2){
 		ncol=dim(matrix)[2]
 		nr  = dim(matrix)[1]
-		dendro = heatmap.2(matrix[row_inds,],   offsetRow=offsetRow, margins = margins,Rowv=NA, main=paste(todo[[i]], collapse=","),Colv=Colv, RowSideColors=cols[row_inds], dendrogram="column", scale="none", trace="none",  col=getHMCol(),ColSideColors=cols2, keysize=1,
+cols2 = NULL
+		dendro = heatmap.2(matrix[row_inds,],   offsetRow=offsetRow, margins = margins,Rowv=NA, main=paste(main,paste(todo[[i]], collapse=",")),Colv=Colv, RowSideColors=cols[row_inds], dendrogram="column", scale="none", trace="none",  col=getHMCol(), keysize=1,
 			cexRow = basec + 1/log10(nr),cexCol = basec + 1/log10(nr)
 )
 }else{
-		dendro = heatmap(matrix[row_inds,],main=paste(todo[[i]], collapse=","),Colv=Colv,Rowv = NA,ColSideColors=cols2, RowSideColors=cols[row_inds], dendrogram="column", scale="none", trace="none",  cexCol = 0.5 ,cexRow = 0.5, margins = margins)
+		dendro = heatmap(matrix[row_inds,],main=paste(main,paste(todo[[i]], collapse=",")),Colv=Colv,Rowv = NA,ColSideColors=cols2, RowSideColors=cols[row_inds], dendrogram="column", scale="none", trace="none",  cexCol = 0.5 ,cexRow = 0.5, margins = margins)
 }
 		if(sameDendro) Colv = dendro$colDendrogram
 		#colinds[[i]] = dendro$colInd
@@ -147,21 +166,65 @@ if(hm2){
 	invisible(dendro)
 }
 
-.plotBarchart<-function(matrix, 
-		todo, thresh = 10,add.text=F,
-		show.legend=F,legsize = 10, textsize=legsize, colInd=1:(dim(matrix)[2])
+
+
+getlev<-function(x1, isnumeric=FALSE,todo = NULL){ 
+  if(length(which(is.na(x1)))==length(x1)) return(NULL)
+  x = if(is.null(dim(x1))) x1 else apply(x1, 1,paste, collapse=".")
+  lev = levels(as.factor(as.character(x)))
+  cnts = rep(0, length(lev))
+  for(i in 1:length(lev)){
+    cnts[i] = length(which(x==lev[i]))
+  }
+  res = data.frame(lev,cnts)[order(cnts, decreasing = T),, drop=F]
+  if(isnumeric) res = data.frame(apply(res,c(1,2),as.numeric))
+  if(is.null(todo)) return(res)
+  
+  matr = data.frame(lev=todo, cnts=rep(0,length(todo)))
+  # print(dim(matr))
+  # print(dim(res))
+  if(dim(res)[1]>1){
+    matr[match(res[,1], matr[,1]),2] = res[res[,1] %in% matr[,1],2]
+    dimnames(matr)[[2]] = dimnames(res)[[2]]
+  }else{
+    #print(todo)
+    matr[match(res[,1], matr[,1]),2] =res
+  }
+  if(isnumeric) matr = data.frame(apply(matr,c(1,2), as.numeric))
+  matr
+}
+
+.plotBarchart<-function(matrix, main="",
+		todo, thresh = 10,
+		 colInd=1:(dim(matrix)[2])
 			){
-	ggps = list()
+	ggps = NULL
+	cols = NULL
 if(is.null(colInd)) colInd=1:(dim(matrix)[2])
 	for(i in 1:length(todo)){
 		print(todo[[i]])
 		row_inds =  which(pos %in% todo[[i]])
 		if(length(row_inds)>1){
-		ggps[[i]]=try(.barChart(matrix, row_inds ,colInd =colInd,  customCols = T, legsize = legsize, show.legend=show.legend, add.text=add.text, textsize=textsize, thresh = thresh,  main = paste(todo[[i]], collapse=",")))
+		tab2 = .convertForBarChart(matrix,  row_inds, colInd, thresh = thresh)
+		cols2 = attr(tab2,"color")
+		if(is.null(cols2)) stop("error")
+		main1 = rep(main, dim(tab2)[[1]])
+		todo1 = rep(paste(todo[[i]],collapse=","),  dim(tab2)[[1]])
+		tab2 = cbind(tab2, main1, todo1 )
+		
+		if(is.null(ggps)) {
+			ggps=tab2 
+			cols  = cols2
+		}else{
+			 ggps = cbind(ggps, tab2)
+			cols = c(cols, cols2)
+		}
+		
+#try(.barChart(matrix, row_inds ,colInd =colInd,  customCols = T, legsize = legsize, show.legend=show.legend, add.text=add.text, textsize=textsize, thresh = thresh,  main = paste(main,paste(todo[[i]], collapse=","))))
 		}
 	}
-	
-	invisible(ggps[!is.null(ggps)])
+	attr(ggps,"color") = cols
+	ggps
 }
 
 
@@ -218,8 +281,7 @@ tab2
 }
 
 
-.barChart<-function(matrix, row_inds,  customCols = T,colInd=1:(dim(matrix)[2]), thresh = thresh, show.legend=F, add.text=F,legsize=5,main= "", textsize = 5){
-	tab2 = .convertForBarChart(matrix,  row_inds, colInd, thresh = thresh)
+.barChart<-function(tab2,  customCols = T,  show.legend=F, add.text=F,legsize=5,main= "", textsize = 5, facet=T){
 	numcats = length(levels(tab2$taxon))
 	if(is.null(legsize)) legsize = 15/log(numcats+1)
 	#samp1 = which(tab2$sample==tab2$sample[dim(tab2)[1]])
@@ -232,8 +294,8 @@ tab2
 	}
 	ggp<-ggp+theme(panel.background = element_rect(fill = 'white', colour = 'white'), axis.text.x = element_text(size=textsize, angle=45, hjust=1), legend.text=element_text(size=legsize), legend.position="bottom", legend.key.size = unit(legsize/2,"line"),
 		legend.box.just = "bottom")   +ggtitle(main)
-
+	if(facet) ggp<-ggp+facet_grid(main1~todo1,scales= "free")
 	#if(add.text) ggp<-ggp+geom_text(data=tab2, aes(x = sample, y = count, label = taxon), colour="white", family="OfficinaSanITC-Book", size=4)
-	invisible(ggp)
+	ggp
 }
 

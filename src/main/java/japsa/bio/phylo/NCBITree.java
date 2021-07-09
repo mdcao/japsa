@@ -712,7 +712,7 @@ public void merge(Node n, int pos){
 	System.err.println(n.getIdentifier());
 	final Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
 	Node node = this.slugToNode1.get(taxon);
-	if(taxon==68887){
+	if(taxon==1224){
 		System.err.println("h");
 	}
 	if(taxon==687329){
@@ -779,10 +779,11 @@ public void merge(Node n, int pos){
 			if(old_parent.isRoot()){
 				System.err.println("h");
 			}
-			
+			checkInTree(new_parent);
 			new_parent.addChild(n);
 		//	this.putChildren(n);
 		}
+		checkInTree(n);
 	//	n.setParent(new_parent);
 		this.slugToNode1.put(taxon,n);
 		String sl = this.slug(n.getIdentifier().getName(), false);
@@ -799,14 +800,19 @@ public void merge(Node n, int pos){
 	
 }
 
-private void checkInTree(Node node) {
+public List<Node> checkInTree(Node node) {
+	Node node1 = node;
+	List<Node> l = new ArrayList<Node>();
+	l.add(node);
 	while(!node.isRoot()){
 		node = node.getParent();
+		l.add(node);
 	}
 	if(node!=this.roots.get(0)){
-		throw new RuntimeException("!!");
+		System.err.println("problem for "+node1.getIdentifier());
+		throw new RuntimeException("different root!! "+node.getIdentifier()+" "+node.getIdentifier());
 	}
-	
+	return l;
 }
 public void merge(NCBITree tree1, int pos){
 	this.name2Taxa.putAll(tree1.name2Taxa);

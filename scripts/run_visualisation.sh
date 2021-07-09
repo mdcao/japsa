@@ -26,8 +26,6 @@ export JSA_MEM=7800m
 export japsa_coverage="${HOME}/github/japsa_coverage"
 echo ${japsa_coverage}
 
-species=$1
-bamfiles=$2
 
 mainclass="japsa.bio.phylo.MergeKrakenCmd"
 echo $mainclass
@@ -37,9 +35,23 @@ resdir="results_${dat}"
 
 opts="--todo=todo.txt --output0=cumul.css --output1=sep.css   --thresh=0"
 
-bash ${japsa_coverage}/scripts/run.sh ${mainclass} ${bamfiles} ${opts}
 
-R CMD batch  ${japsa_coverage}/R/visColors.R
+if [ $1 ]; then
+		find . -name results.krkn | grep blast  | grep $1 > todo.txt
+else
+	        find . -name results.krkn | grep blast > todo.txt
+fi
+if [ ! -s cumul.css ]; then 
+bash ${japsa_coverage}/scripts/run.sh ${mainclass}  ${opts}
+fi
+echo "R CMD BATCH ${japsa_coverage}/R/visColors.R"
+R CMD BATCH  ${japsa_coverage}/R/visColors.R
 #echo $cmd
-
+#pwd=$(pwd)
+#for i in resdir/*; do
+#	cd $i
+#	nme=$(pwd | rev | cut -f 1 -d / | rev)
+#	ls | xargs -I {} mv {} ${nme}.{}
+#	cd $pwd
+#done
 

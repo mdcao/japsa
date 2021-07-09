@@ -75,7 +75,7 @@ public  class KrakenTree extends NCBITree {
 	
 	static double bl = 0.04;
 	@Override
-	public void print(Node node, PrintStream pw, String[] count_tag, String[] format){
+	public void print(Node node, PrintStream pw, String[] count_tag, String[] format, boolean recursive){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
 		// Integer[] counts = (Integer[]) id.getAttribute(count_tag);
@@ -143,6 +143,11 @@ public  class KrakenTree extends NCBITree {
 		 //if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
 
 		 pw.println();
+		 if(recursive){
+			 for(int i=0; i<node.getChildCount(); i++){
+				 print(node.getChild(i), pw, count_tag,  format, recursive);
+			 }
+		 }
 	}
 	
 	private int getDistToLeaf(Node node) {

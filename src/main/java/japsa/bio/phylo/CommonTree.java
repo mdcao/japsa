@@ -26,7 +26,7 @@ public abstract class CommonTree {
 	 * @see japsadev.bio.phylo.CommonTree#print(java.io.File)
 	 */
 
-	public void printKraken(Node node, PrintStream pw, double total){
+	public void printKraken(Node node, PrintStream pw, double total, boolean recursive){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName().replaceAll("\\+-","");
 	//	 System.err.println(nme);
@@ -50,8 +50,13 @@ public abstract class CommonTree {
 		 if(coverage==null) coverage =Double.NaN;
 		 pw.print(perc+"\t"+cntString+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+String.format("%5.3g",coverage).trim());
 		 pw.println();
+		 if(recursive){
+			 for(int i=0; i<node.getChildCount(); i++){
+				 printKraken(node.getChild(i), pw, total, recursive);
+			 }
+		 }
 	}
-	public void print(Node node, PrintStream pw, String[] attributes, String[] format){
+	public void print(Node node, PrintStream pw, String[] attributes, String[] format, boolean recursive){
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
 		//if(nme.indexOf("unclassified ssRNA")>=0){
@@ -82,6 +87,11 @@ public abstract class CommonTree {
         	}
         }
 		 pw.println();
+		 if(recursive){
+			 for(int i=0; i<node.getChildCount(); i++){
+				 print(node.getChild(i), pw, attributes, format, recursive);
+			 }
+		 }
 	}
 	public void print(File out) throws IOException{
 		this.print(out, null, null, false);
@@ -113,17 +123,18 @@ public abstract class CommonTree {
 				}
 			}
 		   for(int i=0; i<this.roots.size(); i++){
-			   System.err.println(roots.get(i).getIdentifier().getName());
-			 Iterator<Node> n = NodeUtils.preOrderIterator(roots.get(i)); 
+			   //System.err.println(roots.get(i).getIdentifier().getName());
+			// Iterator<Node> n = NodeUtils.preOrderIterator(roots.get(i)); 
 	//		 Node root = roots.get(i);
 	//		 if(kraken_style) printKraken(root, pw, total);
 	//		 else print(root, pw, count_tag, format);
-			inner: while(n.hasNext()){
-				 Node node = n.next();
-				 if(kraken_style) printKraken(node, pw, total);
-				 else print(node, pw, count_tag, format);
+			   
+		//	inner: while(n.hasNext()){
+				 Node node = roots.get(i);
+				 if(kraken_style) printKraken(node, pw, total, true);
+				 else print(node, pw, count_tag, format, true);
 				
-			 }
+			// }
 			// pw.print(sep);
 		   }
 		   

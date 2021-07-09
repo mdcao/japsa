@@ -103,11 +103,16 @@ public class MergeKrakenCmd extends CommandLine{
 			NCBITree combined = new KrakenTree(new File(f.get(0)),regex);
 			MergeKrakenCmd.checkDupl(combined.roots.get(0));
 			combined.modAll(0, f.size()+ extra.length);
-			String sl = combined.slug("Torque teno virus",false);
+			String tocheck = "Proteobacteria";
+			String sl = combined.slug(tocheck,false);
 			int sze = combined.roots.get(0).getChildCount();
 			Node virus = combined.slugToNode.get(sl);
 			for(int i=1; i<f.size(); i++){
 				KrakenTree kt = new KrakenTree(new File(f.get(i)),regex);
+				if(kt.slugToNode.get(sl)!=null){
+					String file = f.get(i);
+					System.err.println(file);
+				}
 				MergeKrakenCmd.checkDupl(kt.roots.get(0));
 
 				if(!kt.roots.get(0).getIdentifier().toString().equals("root")){
@@ -117,6 +122,13 @@ public class MergeKrakenCmd extends CommandLine{
 					kt.modAll(i, f.size()+ extra.length);
 					try{
 					combined.merge(kt, i);
+					Node node=combined.slugToNode.get(sl); 
+					if(node!=null){
+						combined.checkInTree(node);
+						String file = f.get(i);
+						System.err.println("found "+tocheck+"in "+file);
+					}
+					
 					checkDupl(combined.roots.get(0));
 					int sze1 = combined.roots.get(0).getChildCount();
 					System.err.println(sze1);
@@ -219,7 +231,14 @@ public class MergeKrakenCmd extends CommandLine{
 			//	CSSProcessCommand.colorEachLevel(combined.tree);
 				CSSProcessCommand.colorRecursive(combined.tree, true);
 			}
-			
+			Node node=combined.slugToNode.get(sl); 
+			if(node!=null){
+				List<Node>n = combined.checkInTree(node);
+			//	String file = f.get(i);
+				System.err.println("found "+tocheck);
+			}else{
+				throw new RuntimeException("!!");
+			}
 			combined.print(outfileF,"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false);
 			combined.print(outfileF1,"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false);
 
