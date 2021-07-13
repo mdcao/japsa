@@ -241,7 +241,7 @@ public class MergeKrakenCmd extends CommandLine{
 					//nmei = nmei+fi.getName();
 				//}
 				nmei = nmei.replace("results.krkn", "");
-				osw.write(nmei+","+(i+1)+","+grp);
+				osw.write(nmei+","+(i+1)+","+grp);osw.write("\n");
 				header.append(nmei);
 			}
 			osw.flush();
