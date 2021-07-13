@@ -18,9 +18,8 @@
 #module load java
 
 ##script for running 
-##tip - use symbolic link to put this in the directory with bam files
-#run as sbatch run_slurm.sh species --bamFile=file.bam 
-#  sbatch run_slurm_combined.sh human combined --RNA=false
+#bash run_visualisation.sh 
+## you can already provide a todo.txt in the director
 export JSA_MEM=7800m
 
 export japsa_coverage="${HOME}/github/japsa_coverage"
@@ -35,11 +34,13 @@ resdir="results_${dat}"
 
 opts="--todo=todo.txt --output0=cumul.css --output1=sep.css   --thresh=0"
 
+if [ ! -s todo.txt ]; then
 
 if [ $1 ]; then
 		find . -name results.krkn | grep blast  | grep $1 > todo.txt
 else
 	        find . -name results.krkn | grep blast > todo.txt
+fi
 fi
 if [ ! -s cumul.css ]; then 
 bash ${japsa_coverage}/scripts/run.sh ${mainclass}  ${opts}

@@ -3,22 +3,21 @@ package japsa.bio.phylo;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.zip.GZIPOutputStream;
 
 import japsa.bio.np.RealtimeSpeciesTyping;
 import pal.misc.Identifier;
 import pal.tree.Node;
-import pal.tree.NodeUtils;
 import pal.tree.Tree;
 
 public abstract class CommonTree {
 
 	/**Returns String[][] res where res[0] is an array of taxonomy and res[1] is an array of css colors 
 	  * includes current node all the way up to the root
+	 * @throws IOException 
 	  * */
 	
 
@@ -26,7 +25,7 @@ public abstract class CommonTree {
 	 * @see japsadev.bio.phylo.CommonTree#print(java.io.File)
 	 */
 
-	public void printKraken(Node node, PrintStream pw, double total, boolean recursive){
+	public void printKraken(Node node, OutputStreamWriter pw, double total, boolean recursive) throws IOException{
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName().replaceAll("\\+-","");
 	//	 System.err.println(nme);
@@ -48,15 +47,15 @@ public abstract class CommonTree {
 		 String cntString = nt==null ? "NA\tNA": String.format("%5.3g", nt[0].doubleValue()).trim()+"\t"+String.format("%5.3g", nt1[0].doubleValue()).trim();
 		 Double coverage = (Double) id.getAttribute(RealtimeSpeciesTyping.fraction_covered);
 		 if(coverage==null) coverage =Double.NaN;
-		 pw.print(perc+"\t"+cntString+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+String.format("%5.3g",coverage).trim());
-		 pw.println();
+		 pw.write(perc+"\t"+cntString+"\t"+level+"\t"+taxon+"\t"+nme+"\t"+String.format("%5.3g",coverage).trim());
+		 pw.write("\n");
 		 if(recursive){
 			 for(int i=0; i<node.getChildCount(); i++){
 				 printKraken(node.getChild(i), pw, total, recursive);
 			 }
 		 }
 	}
-	public void print(Node node, PrintStream pw, String[] attributes, String[] format, boolean recursive){
+	public void print(Node node, OutputStreamWriter pw, String[] attributes, String[] format, boolean recursive) throws IOException{
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
 		//if(nme.indexOf("unclassified ssRNA")>=0){
@@ -69,12 +68,12 @@ public abstract class CommonTree {
 		 String prefix = ((String)id.getAttribute("prefix"));	
 		Integer taxon = ((Integer)id.getAttribute("taxon"));	
 		 double height = node.getNodeHeight();
-		 pw.print(prefix+nme);
-		 if(hex!=null) pw.print("\tcss="+hex);
-		 if(alias!=null) pw.print("\talias="+alias);
-		 if(alias1!=null) pw.print("\talias1="+alias1);
-		 if(taxon!=null) pw.print("\ttaxon="+taxon);
-		 if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
+		 pw.write(prefix+nme);
+		 if(hex!=null) pw.write("\tcss="+hex);
+		 if(alias!=null) pw.write("\talias="+alias);
+		 if(alias1!=null) pw.write("\talias1="+alias1);
+		 if(taxon!=null) pw.write("\ttaxon="+taxon);
+		 if(true) pw.write("\theight="+String.format("%5.3g", height).trim());
         if(attributes!=null){
         	for(int i=0; i<attributes.length; i++){
         		//System.err.println(format[i]);
@@ -82,11 +81,11 @@ public abstract class CommonTree {
         		//System.err.println(Arrays);
         		if(nt!=null){
         		String fmt =String.format(format[i],  nt[0]);//id.getAttribute(attributes[i])); 
-        		pw.print("\t"+fmt.replaceAll("\\s+",""));
+        		pw.write("\t"+fmt.replaceAll("\\s+",""));
         		}
         	}
         }
-		 pw.println();
+		 pw.write("\n");
 		 if(recursive){
 			 for(int i=0; i<node.getChildCount(); i++){
 				 print(node.getChild(i), pw, attributes, format, recursive);
@@ -94,25 +93,26 @@ public abstract class CommonTree {
 		 }
 	}
 	public void print(File out) throws IOException{
-		this.print(out, null, null, false);
+		OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(out));
+		this.print(osw, null, null, false);
+		osw.close();
 	}
-	public void print(File out, String[] attributes, String[] format, boolean krkn) throws IOException{
+	public void print(OutputStreamWriter out, String[] attributes, String[] format, boolean krkn) throws IOException{
 		print(out, "------------------------------------\n", null, attributes, format, krkn);
 	}
 	
 	
 	
-	 public  void print(File out, String sep, String header, String[] count_tag, String[] format, boolean kraken_style) throws IOException{
-		   PrintStream pw ;
-		   
-		   if(out.getName().endsWith(".gz")){
+	 public  void print(OutputStreamWriter pw, String sep, String header, String[] count_tag, String[] format, boolean kraken_style) throws IOException{
+		  // PrintStream pw 
+/*		   if(out.getName().endsWith(".gz")){
 			  pw = new PrintStream(new GZIPOutputStream(new FileOutputStream(out)));
 		   }else{
 			   pw = new PrintStream((new FileOutputStream(out)));
-		   }
+		   }*/
 		//   PrintWriter pw = new PrintWriter(new FileWriter(out));
 		 
-		   if(!kraken_style) pw.println(header);
+		   if(!kraken_style) pw.write(header);pw.write("\n");
 		   double  total =0;
 			for(int i=roots.size()-1;i>=0; i--){
 				Object cnts =  roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
@@ -138,7 +138,7 @@ public abstract class CommonTree {
 			// pw.print(sep);
 		   }
 		   
-		   pw.close();
+		  // pw.close();
 	   }   
 	
 	abstract public Node getNode(String specName);

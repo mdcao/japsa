@@ -35,7 +35,9 @@
 package japsa.tools.bio.np;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -228,8 +230,10 @@ public static Pattern writeABX = null;
 				if(outdirTop!=null){
 					KrakenTree overall = new  KrakenTree(outdirTop, "results.krkn");
 					//overa.trim(1e-16);
-					overall.print(new File(outdirTop,"results_combined.krkn"), new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
-					}
+					OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(new File(outdirTop,"results_combined.krkn")));
+					overall.print(osw, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
+					osw.close();
+				}
 			}
 			}
 		}

@@ -3,6 +3,7 @@ package japsa.bio.phylo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -538,31 +539,31 @@ Map<String, Integer> name2Taxa= new HashMap<String, Integer>();
 final int index;
 
 public NCBITree(File file, boolean useTaxaAsAsslug, boolean kraken) throws IOException {
-this(new File[] {file}, useTaxaAsAsslug, kraken);
+this(getBR(file), useTaxaAsAsslug, kraken);
 }
 
+static BufferedReader getBR(File file) throws IOException{
+	BufferedReader br;
+	if(file.getName().endsWith(".gz")){
+		br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
+	}
+	else{
+		br = new BufferedReader(new FileReader(file));
+	}
+return br;
+}
 
-
-public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOException {
+public NCBITree(BufferedReader br, boolean useTaxaAsAsslug, boolean kraken) throws IOException {
 //	this(f, null);
 	index = kraken ? 5 : 0;
 	this.kraken = kraken;
 	    this.useTaxaAsSlug = useTaxaAsAsslug;
 		err= new PrintWriter(new FileWriter(new File("error.txt")));
-		BufferedReader br;
-		inner1: for(int i=0; i<file.length; i++){
-		if(file[i].getName().endsWith(".gz")){
-			br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file[i]))));
-		}
-		else{
-			br = new BufferedReader(new FileReader(file[i]));
-		}
+	//	BufferedReader br;
+		//inner1: for(int i=0; i<file.length; i++){
+		
 		String nextLine = br.readLine();
-		if(nextLine==null) {
-			System.err.println("input file was empty "+file[i].getName());
-			br.close();
-			continue inner1;
-		}
+		
 		if(nextLine.indexOf("unclassified")>=0 || nextLine.equals("null")){
 			nextLine = br.readLine();
 		}
@@ -623,8 +624,7 @@ public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOE
 		}
 		
 		}
-		br.close();
-		}
+		
 	   if(err!=null){
 		   err.close();
 	   }
@@ -635,10 +635,12 @@ public NCBITree(File[] file, boolean useTaxaAsAsslug, boolean kraken) throws IOE
 		//	}
 		//}
 		if(!kraken)makeTrees(false);
+		br.close();
+		
 	}
 		
-public static String count_tag = "cumulative"; // this is cumulative
-public  static String count_tag1 = "sep"; // this is for sep
+public static String count_tag = "cumul.css"; // this is cumulative
+public  static String count_tag1 = "sep.css"; // this is for sep
 
 
 

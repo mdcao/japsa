@@ -1,22 +1,30 @@
 package japsa.bio.phylo;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.Adler32;
+import java.util.zip.CheckedOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import japsa.util.CommandLine;
 import japsa.util.deploy.Deployable;
 import pal.tree.Node;
-import pal.tree.NodeUtils;
 
 /**
  * @author lachlancoin
@@ -31,8 +39,8 @@ public class MergeKrakenCmd extends CommandLine{
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		addString("output0", "cumul.css", "output file for sum of all depths below", false);
-		addString("output1", "sep.css", "output file for node specific", false);
+		addString("output", "out.zip", "output file f", false);
+		addString("input", "in.zip", "output file for node specific", false);
 		addBoolean("trim",false,"whether to trim the species name");
 		addString("pattern", null, "input pattern", false);//".outreport"
 		addString("extra", null, "extra_input", false);
@@ -48,24 +56,45 @@ public class MergeKrakenCmd extends CommandLine{
 	public static void main(String[] args){
 		CommandLine cmdLine = new MergeKrakenCmd();		
 		args = cmdLine.stdParseLine(args);	
-		String outfile = cmdLine.getStringVal("output");
-		String outfile1 = cmdLine.getStringVal("output1");
+		File outfile = new File(cmdLine.getStringVal("output"));
+		outfile.delete();
+		//String outfile1 = cmdLine.getStringVal("output1");
 		String regex= cmdLine.getStringVal("pattern");
 		String todo = cmdLine.getStringVal("todo");
 		NCBITree.trim = cmdLine.getBooleanVal("trim");
 		NCBITree.thresh = cmdLine.getDoubleVal("thresh");
-	
-		File outfileF = new File(outfile);
-		File outfileF1 = new File(outfile1);
-		outfileF.delete();
-		outfileF1.delete();
+		File input = new File(cmdLine.getStringVal("input"));
+		ZipFile zf = null;
+		try{
+			
+			
+		
+		FileOutputStream dest = new FileOutputStream(outfile);
+		CheckedOutputStream checksum = new   CheckedOutputStream(dest, new Adler32());
+        ZipOutputStream outS = new 
+         ZipOutputStream(new 
+           BufferedOutputStream(checksum));
+        OutputStreamWriter osw = new OutputStreamWriter(outS);
+         outS.setMethod(ZipOutputStream.DEFLATED);
+		
+        // OutputStream outfileF = new File(outfile);
+		//File outfileF1 = new File(outfile1);
+		//outfileF.delete();
+		//outfileF1.delete();
 		
 		String ext = cmdLine.getStringVal("extra");
 		
 		String[] extra = ext!=null ? ext.split(":") : new String[0];
 		List<String>f = new ArrayList<String>();
 		try {
-		if(todo!=null){
+		if(input.exists()){
+			 zf = new ZipFile(input);
+			Enumeration en =  zf.entries();
+			while(en.hasMoreElements()){
+				f.add(((ZipEntry)en.nextElement()).getName());
+			}
+		}
+		else if(todo!=null){
 			try{
 			BufferedReader br = new BufferedReader(new FileReader(todo));
 			String st = "";
@@ -80,12 +109,7 @@ public class MergeKrakenCmd extends CommandLine{
 			}
 		}else{
 		String[] dirs = cmdLine.getStringVal("dirs").split(":");
-		
-
-
-		
 			FilenameFilter filter = new FilenameFilter(){
-
 				@Override
 				public boolean accept(File fir, String pathname) {
 //					return Pattern.matches(regex, pathname.getName());
@@ -100,7 +124,8 @@ public class MergeKrakenCmd extends CommandLine{
 			}
 		}
 		//Collections.sort(f);
-			NCBITree combined = new KrakenTree(new File(f.get(0)),regex);
+		BufferedReader br1 =zf==null ? NCBITree.getBR(new File(f.get(0))): new BufferedReader(new InputStreamReader( zf.getInputStream(zf.getEntry(f.get(0)))));
+			NCBITree combined = new KrakenTree(br1,regex);
 			MergeKrakenCmd.checkDupl(combined.roots.get(0));
 			combined.modAll(0, f.size()+ extra.length);
 			String tocheck = "Proteobacteria";
@@ -108,7 +133,8 @@ public class MergeKrakenCmd extends CommandLine{
 			int sze = combined.roots.get(0).getChildCount();
 			Node virus = combined.slugToNode.get(sl);
 			for(int i=1; i<f.size(); i++){
-				KrakenTree kt = new KrakenTree(new File(f.get(i)),regex);
+				 br1 =zf==null ? NCBITree.getBR(new File(f.get(i))): new BufferedReader(new InputStreamReader( zf.getInputStream(zf.getEntry(f.get(i)))));
+				KrakenTree kt = new KrakenTree(br1,regex);
 				if(kt.slugToNode.get(sl)!=null){
 					String file = f.get(i);
 					System.err.println(file);
@@ -142,6 +168,7 @@ public class MergeKrakenCmd extends CommandLine{
 				//	boolean contains1 = combined.slugToNode.containsKey(sl);
 				//	System.err.println(sl+"  "+contains!=null+ " "+contains1);
 			}
+			if(zf!=null) zf.close();
 			Node virus1 = combined.slugToNode.get(sl);
 
 			int sze1 = combined.roots.get(0).getChildCount();
@@ -193,8 +220,10 @@ public class MergeKrakenCmd extends CommandLine{
 			StringBuffer header = new StringBuffer();
 			File currDir = new File(".");
 			header.append("name\tcolor\ttaxon\theight\tlevel\tlevel1\tcssvals\tparents\ttaxon_parents");
-			PrintWriter designF = new PrintWriter(new FileWriter(new File("design.csv")));
-			designF.println("Name,Grp1,Grp2");
+			ZipEntry headings = new ZipEntry("design.csv");
+		    outS.putNextEntry(headings);
+			//PrintWriter designF = new PrintWriter(new FileWriter(new File("design.csv")));
+			osw.write("Name,Grp1,Grp2");osw.write("\n");
 		
 			for(int i=0; i<f.size(); i++){
 				String nmei = f.get(i).replaceAll("./", "");
@@ -212,10 +241,11 @@ public class MergeKrakenCmd extends CommandLine{
 					//nmei = nmei+fi.getName();
 				//}
 				nmei = nmei.replace("results.krkn", "");
-				designF.println(nmei+","+(i+1)+","+grp);
+				osw.write(nmei+","+(i+1)+","+grp);
 				header.append(nmei);
 			}
-			designF.close();
+			osw.flush();
+	        outS.closeEntry();
 			for(int i=0; i<extra.length; i++){
 				File extraf = new File(extra[i]);
 				header.append("\t");header.append(extraf.getName());
@@ -239,13 +269,25 @@ public class MergeKrakenCmd extends CommandLine{
 			}else{
 				throw new RuntimeException("!!");
 			}
-			combined.print(outfileF,"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false);
-			combined.print(outfileF1,"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false);
-
+			 headings = new ZipEntry(NCBITree.count_tag);
+		    outS.putNextEntry(headings);
+			
+			combined.print(osw,"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false);
+			osw.flush();
+	        outS.closeEntry();
+			headings = new ZipEntry(NCBITree.count_tag1);
+		    outS.putNextEntry(headings);
+			combined.print(osw,"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false);
+			osw.flush();
+	         outS.closeEntry();
+	         osw.close();
 			//System.err.println(combined);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		}catch(Exception exc){
+			exc.printStackTrace();
 		}
 	}
 

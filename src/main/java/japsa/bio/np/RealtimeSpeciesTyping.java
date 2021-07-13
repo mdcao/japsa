@@ -37,11 +37,13 @@ package japsa.bio.np;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +62,7 @@ import java.util.Stack;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +81,6 @@ import htsjdk.samtools.ValidationStringency;
 import japsa.bio.phylo.NCBITree;
 import japsa.bio.phylo.Slug;
 import japsa.seq.SequenceOutputStream;
-import japsa.tools.bio.np.RealtimeSpeciesTypingCmd;
 import japsa.tools.bio.np.ReferenceDB;
 import japsa.tools.seq.CachedFastqWriter;
 import japsa.tools.seq.CachedOutput;
@@ -1353,7 +1355,14 @@ this.sampleID = sampleID;
 				
 			}*/
 			if(typing.refDB.tree!=null)  typing.refDB.tree.trim(krakenTrimThreshPerc);
-			if(typing.refDB.tree!=null)  typing.refDB.tree.print(this.krakenResults, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
+			if(typing.refDB.tree!=null) {
+			//	OutputStreamWriter osw = new OutputStreamWriter(
+				OutputStream os = 		new FileOutputStream(this.krakenResults);
+				if(krakenResults.getName().endsWith(".gz") ) os  = new GZIPOutputStream(os);
+				OutputStreamWriter osw = new OutputStreamWriter(os);
+				typing.refDB.tree.print(osw, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
+				osw.close();
+			}
 			}catch(Exception exc){
 				exc.printStackTrace();
 			}

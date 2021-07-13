@@ -1,12 +1,12 @@
 package japsa.bio.phylo;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
 import java.util.regex.Pattern;
@@ -19,9 +19,15 @@ import pal.tree.NodeUtils;
 public  class KrakenTree extends NCBITree {
 
 	public KrakenTree(File file, String str) throws IOException {
-		super(find(file,str), true, true);
+		super(file, true, true);
 		// TODO Auto-generated constructor stub
 	}
+	
+	public KrakenTree(BufferedReader file, String str) throws IOException {
+		super(file, true, true);
+		// TODO Auto-generated constructor stub
+	}
+	
 	
 	
 
@@ -49,10 +55,7 @@ public  class KrakenTree extends NCBITree {
 			}
 		}
 	}
-	public KrakenTree(File[] file) throws IOException {
-		super(file, true, true);
-		// TODO Auto-generated constructor stub
-	}
+	
 	
 	
 	
@@ -75,7 +78,7 @@ public  class KrakenTree extends NCBITree {
 	
 	static double bl = 0.04;
 	@Override
-	public void print(Node node, PrintStream pw, String[] count_tag, String[] format, boolean recursive){
+	public void print(Node node, OutputStreamWriter pw, String[] count_tag, String[] format, boolean recursive) throws IOException{
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
 		// Integer[] counts = (Integer[]) id.getAttribute(count_tag);
@@ -127,14 +130,14 @@ public  class KrakenTree extends NCBITree {
 		//			header.append("name\tcolor\ttaxon\theight\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
 		//header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
 
-		 pw.print(nme+"\t"+hex+"\t"+taxon+"\t"+height+"\t"+level+"\t"+level1+"\t"+Arrays.asList(cssvals1)+"\t"+sb.toString()+"\t"+sb1.toString());
+		 pw.write(nme+"\t"+hex+"\t"+taxon+"\t"+height+"\t"+level+"\t"+level1+"\t"+Arrays.asList(cssvals1)+"\t"+sb.toString()+"\t"+sb1.toString());
 		 if(count_tag!=null){
 			 for(int i=0; i<count_tag.length; i++){
 				 Number[] num = (Number[])id.getAttribute(count_tag[i]);
 				 double[] d = new double[num.length];
 				 for(int k=0; k<d.length; k++){
 					 d[k] = num[k].doubleValue();
-					 pw.print("\t"+String.format(format[i],  d[k]).replaceAll("\\s+",""));
+					 pw.write("\t"+String.format(format[i],  d[k]).replaceAll("\\s+",""));
 					 
 				 }
 				
@@ -142,7 +145,7 @@ public  class KrakenTree extends NCBITree {
 		 }
 		 //if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
 
-		 pw.println();
+		 pw.write("\n");
 		 if(recursive){
 			 for(int i=0; i<node.getChildCount(); i++){
 				 print(node.getChild(i), pw, count_tag,  format, recursive);
