@@ -339,7 +339,7 @@ private Node getNode(TreePos tp) {
 	 }
 	 return n;
  }
-PrintWriter err;
+//PrintWriter err;
 
 	final boolean kraken;
 	
@@ -382,7 +382,7 @@ private Node make(String line_, int  level, Node parent, int index){
 	   String name = line;
 	   int j=0;
 	 
-	   err.println(name);err.flush();
+	 //  err.println(name);err.flush();
 	   String prefix = "";
 	  // if(line_.indexOf("Sclerophthora macrospora virus A")>=0){
 	//	   System.err.println("h");
@@ -558,7 +558,7 @@ public NCBITree(BufferedReader br, boolean useTaxaAsAsslug, boolean kraken) thro
 	index = kraken ? 5 : 0;
 	this.kraken = kraken;
 	    this.useTaxaAsSlug = useTaxaAsAsslug;
-		err= new PrintWriter(new FileWriter(new File("error.txt")));
+	//	err= new PrintWriter(new FileWriter(new File("error.txt")));
 	//	BufferedReader br;
 		//inner1: for(int i=0; i<file.length; i++){
 		
@@ -625,9 +625,9 @@ public NCBITree(BufferedReader br, boolean useTaxaAsAsslug, boolean kraken) thro
 		
 		}
 		
-	   if(err!=null){
-		   err.close();
-	   }
+	//   if(err!=null){
+	//	   err.close();
+	 //  }
 		//for(int i=1; i<roots.size(); i++){
 		//	Node root = roots.get(i);
 		//	if(root.getIdentifier().getName().equals("unclassified")){

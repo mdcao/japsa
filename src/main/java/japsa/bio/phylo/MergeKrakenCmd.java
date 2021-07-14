@@ -7,8 +7,8 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +39,7 @@ public class MergeKrakenCmd extends CommandLine{
 		Deployable annotation = getClass().getAnnotation(Deployable.class);		
 		setUsage(annotation.scriptName() + " [options]");
 		setDesc(annotation.scriptDesc());
-		addString("output", "out.zip", "output file f", false);
+		addString("output", "-", "output file f, if not specified writes to System.out and should be piped to zip", false);
 		addString("input", "in.zip", "output file for node specific", false);
 		addBoolean("trim",false,"whether to trim the species name");
 		addString("pattern", null, "input pattern", false);//".outreport"
@@ -56,8 +56,7 @@ public class MergeKrakenCmd extends CommandLine{
 	public static void main(String[] args){
 		CommandLine cmdLine = new MergeKrakenCmd();		
 		args = cmdLine.stdParseLine(args);	
-		File outfile = new File(cmdLine.getStringVal("output"));
-		outfile.delete();
+		
 		//String outfile1 = cmdLine.getStringVal("output1");
 		String regex= cmdLine.getStringVal("pattern");
 		String todo = cmdLine.getStringVal("todo");
@@ -67,9 +66,10 @@ public class MergeKrakenCmd extends CommandLine{
 		ZipFile zf = null;
 		try{
 			
-			
+			File outfile = cmdLine.getStringVal("output")=="-" ? null : new File(cmdLine.getStringVal("output"));
+			if(outfile!=null) outfile.delete();
 		
-		FileOutputStream dest = new FileOutputStream(outfile);
+		OutputStream dest =outfile==null ? System.out :  new FileOutputStream(outfile);
 		CheckedOutputStream checksum = new   CheckedOutputStream(dest, new Adler32());
         ZipOutputStream outS = new 
          ZipOutputStream(new 
