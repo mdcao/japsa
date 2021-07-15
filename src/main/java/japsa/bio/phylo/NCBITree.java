@@ -710,6 +710,20 @@ public boolean  trimNode(Node node, double thresh){
 
 Set<String > added = new HashSet<String>();
 
+private void checkPathToRoot(Node node, Node root) {
+	// TODO Auto-generated method stub
+	Node p = node;
+	List<Identifier> n = new ArrayList<Identifier>();
+	while(p!=null){
+		if(p.equals(root)) return;
+		n.add(p.getIdentifier());
+		p = p.getParent();
+	}
+	System.err.println(n);
+	throw new RuntimeException("did not get to root");
+	
+}
+
 public void merge(Node n, int pos){
 	System.err.println(n.getIdentifier());
 	final Integer taxon = (Integer) n.getIdentifier().getAttribute("taxon");
@@ -729,6 +743,8 @@ public void merge(Node n, int pos){
 		if(true) throw new RuntimeException("!!");
 	}*/
 	//System.err.println(n.getIdentifier());
+	if(node!=null) checkPathToRoot(node, roots.get(0));
+
 	if(node!=null){
 		checkInTree(node);
 		//System.err.println("already has "+n.getIdentifier());
@@ -783,6 +799,14 @@ public void merge(Node n, int pos){
 			}
 			checkInTree(new_parent);
 			new_parent.addChild(n);
+			checkPathToRoot(n, roots.get(0));
+			//checkPathToRoot(n);
+		/*	Node p = n;
+			while(p!=null){
+				checkInconsist(p);
+				p = p.getParent();
+			}*/
+			
 		//	this.putChildren(n);
 		}
 		checkInTree(n);
@@ -802,6 +826,14 @@ public void merge(Node n, int pos){
 	
 }
 
+private void checkInconsist(Node n) {
+	Node p = n.getParent();
+	while(p!=null){
+		if(n.equals(p) || n.getIdentifier().getName().equals(p.getIdentifier().getName())) throw new RuntimeException("!!");
+		p = p.getParent();
+	}
+	
+}
 public List<Node> checkInTree(Node node) {
 	Node node1 = node;
 	List<Node> l = new ArrayList<Node>();
@@ -945,9 +977,10 @@ public void merge(NCBITree tree1, int pos){
 		//	System.err.println(root.getChild(0).getIdentifier()+", "+ root.getChild(1).getIdentifier());
 		//	System.err.println(root);
 			//Node following = NodeUtils.postorderSuccessor(root);
-			tree[i] = new SimpleTree(root);
+			tree[i] = new SimpleTree();
+			((SimpleTree)tree[i]).setRoot(root);
 			System.err.println("done");
-			int cnt1 =tree[i].getExternalNodeCount();
+		//	int cnt1 =tree[i].getExternalNodeCount();
 			//System.err.println(cnt+" "+cnt1);
 		}
 		
