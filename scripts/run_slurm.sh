@@ -32,7 +32,7 @@ if [ ! -s 'todo.txt' ];then
 fi
 dat=$(date +%Y%m%d%H%M)
 
-resdir="results_${dat}"
+resdir="results"
 
 
 n=$SLURM_ARRAY_TASK_ID
@@ -48,7 +48,7 @@ if [ 'resistance' == $1 ]; then
 	optsfile="opts_resistance.txt"
 else
 	mainclass="japsa.tools.bio.np.RealtimeSpeciesTypingCmd"
-	optsfile="opts_species1.txt"
+	optsfile="opts_species.txt"
 fi
 resdir="${resdir}/${fastqname}"
 mkdir -p ${resdir}
