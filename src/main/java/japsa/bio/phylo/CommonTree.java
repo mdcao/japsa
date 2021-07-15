@@ -112,7 +112,7 @@ public abstract class CommonTree {
 		   }*/
 		//   PrintWriter pw = new PrintWriter(new FileWriter(out));
 		 
-		   if(!kraken_style) pw.write(header);pw.write("\n");
+		   if(!kraken_style && header!=null) pw.write(header);pw.write("\n");
 		   double  total =0;
 			for(int i=roots.size()-1;i>=0; i--){
 				Object cnts =  roots.get(i).getIdentifier().getAttribute(NCBITree.count_tag);
