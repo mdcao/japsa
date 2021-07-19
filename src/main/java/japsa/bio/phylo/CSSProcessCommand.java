@@ -3,7 +3,6 @@ package japsa.bio.phylo;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,6 +16,7 @@ import japsadev.bio.phylo.GetTaxonID;
 import japsadev.bio.phylo.NCBITree;
 */
 import pal.tree.Node;
+import pal.tree.SimpleTree;
 import pal.tree.Tree;
 
 /** commands for making CSS tree */
@@ -28,7 +28,7 @@ import pal.tree.Tree;
 public class CSSProcessCommand {
 	  private static final Logger LOG = LoggerFactory.getLogger(CSSProcessCommand.class);
 
-	public static File getTree(File taxdir, File db, File speciesIndex, boolean addExtraNodes, int col_ind, File name_dmp2, boolean expand){
+	public static File getTree(File taxdir, File db, File speciesIndex, boolean addExtraNodes, int col_ind, File name_dmp2, File node_dmp2, boolean expand){
 		 File resistant_gene_list = new File(taxdir,"resistant_genes_list.txt");
 		//  File taxdir = new File("taxdump");
 		 
@@ -42,6 +42,11 @@ public class CSSProcessCommand {
 		  File taxdump = new File(taxdir,"names.dmp");
 		  File nodesdmp= new File(taxdir,"nodes.dmp");
 		//  File speciesIndex = new File("speciesIndex");
+		  if(name_dmp2.exists() && node_dmp2.exists()){
+			  taxdump = name_dmp2;
+			  nodesdmp = node_dmp2;
+			  expand = false;
+		  }
 		  
 		  //output files
 		  File treein = new File(db,"commontree.txt");  //obtained from Step 3
@@ -68,6 +73,7 @@ public class CSSProcessCommand {
 			  }catch(Exception exc){
 				  exc.printStackTrace();
 			  }
+		  
 		 
 		  try{  
 		  
@@ -83,15 +89,20 @@ public class CSSProcessCommand {
 		  /*step -3 read tree */
 		//	  File name_dmp2 = null;
 		  if( !treein.exists() && !treeout.exists()){
-			  LOG.info("making tree");
-		
-			  GetTaxonID gid  = new GetTaxonID(taxdump, nodesdmp, taxon_set1, name_dmp2, expand);
+			  LOG.info("making tree");  
+			  if(!name_dmp2.exists() || !node_dmp2.exists()){
+				  GetTaxonID.expand1(taxdump, nodesdmp, taxon_set1, name_dmp2, node_dmp2);
+			  }
+			  GetTaxonID gid  = new GetTaxonID(name_dmp2, node_dmp2);
 			// path =   gid.getPathToRoot(33317);
 			NCBITree trees = new NCBITree(gid);
+			System.err.println(trees.slugToNode.size());
+			SimpleTree tree = new SimpleTree(trees.roots.get(0));
+			System.err.println(tree.getExternalNodeCount());
 			/*Node n1 = trees.getNode(232523);
 			Node n3 = trees.getNode(80864);		
 			Node n2 = n1.getParent();*/
-			Integer i1 = gid.nodeToParent.get(232523);
+		//	Integer i1 = gid.nodeToParent.get(232523);
 			trees.print(treeout);
 			 
 		  }

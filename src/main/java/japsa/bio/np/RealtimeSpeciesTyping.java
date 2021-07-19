@@ -708,7 +708,7 @@ public class RealtimeSpeciesTyping {
 	//* referenceFile is to get the length map */
 	public RealtimeSpeciesTyping(ReferenceDB refDB, String exclFile, String consensusFile, 
 			String outputFile, File outdir, File referenceFile, 
-			boolean unmapped_reads) throws IOException{
+			boolean unmapped_reads, boolean keepNames) throws IOException{
 		this(outdir, refDB, exclFile,consensusFile, unmapped_reads, outputFile);
 		//this.referenceFile = referenceFile;
 	//	boolean useTaxaAsSlug=false;
@@ -718,7 +718,7 @@ public class RealtimeSpeciesTyping {
 		//this.indexBufferedReader = SequenceReader.openFile(indexFile);
 		typer = new RealtimeSpeciesTyper(this,outdir.getName());
 		preTyping();
-		if(reestimate) this.all_reads = new SparseVectorCollection(refDB.speciesList.size());
+		if(reestimate) this.all_reads = new SparseVectorCollection(refDB.speciesList, keepNames);
 	
 	}
 
@@ -993,53 +993,15 @@ public static List<String> speciesToIgnore = null;
 			this.fqw_unmapped.close();
 		}
 		typer.stopWaiting();//Tell typer to stop
-		if(runAnalysis){
+		if(runAnalysis){ // This is the E-M step
 			double[]v = new double[2];
 			if( all_reads!=null){
-				double minv = 0.0;
-				if(removeLikelihoodThresh>0.00001 && false){
-				for(int cnt=0; minv < removeLikelihoodThresh && cnt < 10; cnt++){
-					this.all_reads.maximisation(v, pseudo,10, null);
-					//this.all_reads.check();
-					double[] orig = all_reads.abundance.clone();
-					Integer[] nonZero = all_reads.nonZero(0.01);
-					if(nonZero.length==0) break;
-					double[] v1 = new double[2];
-					Double[] vals = new Double[nonZero.length];
-					Double[] new_a = new Double[nonZero.length];
-					Double[] existing_a = new Double[nonZero.length];
-					for(int i=0; i<nonZero.length; i++){
-						Arrays.fill(v1,0);
-						int j = nonZero[i];
-						double a_j = all_reads.setZero(j,epsilon);
-						existing_a[i] = a_j;
-						this.all_reads.maximisation(v1, pseudo,10,j);
-						this.all_reads.check();
-						all_reads.abundance[j] = a_j;
-						new_a[i] = all_reads.abundance[j];
-					//	System.err.println(a_j+" vs "+all_reads.abundance[j]);
-						vals[i] = (v1[0]-v[0])/v[0];
-					}
-					
-					if(vals.length>0){
-					int min_index = findMinAbs(vals);
-					 minv = Math.abs(vals[min_index]);
-					if(minv < removeLikelihoodThresh){
-						//System.err.println("setting to zero in EM "+)
-						all_reads.zerovs.push(nonZero[min_index]);
-						
-					
-					//System.err.println(Arrays.asList(vals));
-						System.err.println("Can remove "+ refDB.speciesList.get(nonZero[min_index])+ " "+minv+" "+orig[nonZero[min_index]]);
-				}
-					//System.err.println("h");
-					}
-				}
-				}//if(removeLikelihoodThresh>0.00001)
+				//double minv = 0.0;
+				
 				this.all_reads.maximisation(v, pseudo,RealtimeSpeciesTyping.EMiterations, null);
 				all_reads.check();
 			}
-				
+			this.all_reads.printMostLikely(refDB.speciesList, new File(this.outdir,"mostLikely.txt"));	
 			Integer[] nonZero = all_reads.nonZero(0.01);
 			//String[] species = new String[nonZero.length];
 			if(species!=null){
@@ -1362,6 +1324,7 @@ this.sampleID = sampleID;
 				OutputStreamWriter osw = new OutputStreamWriter(os);
 				typing.refDB.tree.print(osw, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
 				osw.close();
+				os.close();
 			}
 			}catch(Exception exc){
 				exc.printStackTrace();

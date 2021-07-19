@@ -303,9 +303,9 @@ private Node getNode(TreePos tp) {
 		if(!contains) {
 			slugToNode1.put(taxon, n);
 		}
-	//	else{
-		//	System.err.println("already contains "+taxon);
-	//	}
+		else{
+			System.err.println("already contains "+taxon);
+		}
 	// }else{
 		 String name = slug(n.getIdentifier().getName(), false);
 		    contains = slugToNode.containsKey(name);
@@ -325,17 +325,24 @@ private Node getNode(TreePos tp) {
 	Node n =  getNode(taxon);
 
 	 if(n==null) {
+		 if(sci==null){
+			 throw new RuntimeException("no name for "+taxon);
+		 }
 		 n = new SimpleNode(sci, 0.1);
 		 n.getIdentifier().setAttribute("taxon", taxon);
 		 putSlug1(n);
 	 }
 	 if(child!=null){
-		// String name = child.getIdentifier().getName();
-		 //if(name.indexOf("Sclerophthora macrospora virus A")>=0){
-			//   System.err.println("h");
-		   //}
-		 n.addChild(child);
-		 child.setParent(n);
+		Node existP = child.getParent();
+		if(existP!=null){
+			if(existP!=n){
+				throw new RuntimeException("!!");
+			}
+			System.err.println("already in tree");
+		}else{
+			n.addChild(child);
+		}
+		// child.setParent(n);
 	 }
 	 return n;
  }
@@ -472,15 +479,15 @@ public NCBITree(GetTaxonID gid) throws IOException {
 				continue;
 			}
 			Node   n = make( nxt,null,  null);
-			List<Node>l = new ArrayList<Node>();
-			l.add(n);
+			List<Identifier>l = new ArrayList<Identifier>();
+			l.add(n.getIdentifier());
 			inner: while(nxt!=null){
 				Integer nextparent = gid.nodeToParent.get(parent);
 				if(parent.equals(nxt)) parent = null;
 				
 				if(parent!=null){
 					Node p = make(parent, null, n);
-					l.add(p);
+					l.add(p.getIdentifier());
 					n = p;
 				}
 				if(nextparent==null ){//|| nextparent.equals("1")){
@@ -492,8 +499,8 @@ public NCBITree(GetTaxonID gid) throws IOException {
 				}
 			}
 			for(int i=0;  i<l.size(); i++){
-				Node no = l.get(i);
-				Identifier id = no.getIdentifier();
+				Identifier id = l.get(i);
+			//	Identifier id = no.getIdentifier();
 				if(id.getAttribute("level")==null){
 					int level = l.size()-1-i;
 					String prefix ; 
@@ -510,7 +517,8 @@ public NCBITree(GetTaxonID gid) throws IOException {
 					id.setAttribute("prefix", prefix);
 				}
 			}
-			Integer i0= (Integer) l.get(0).getIdentifier().getAttribute("taxon");
+			System.err.println(l);
+			Integer i0= (Integer) l.get(0).getAttribute("taxon");
 			//System.err.println(i0);;
 			
 			//System.err.println(l.get(0).getIdentifier());
@@ -518,19 +526,6 @@ public NCBITree(GetTaxonID gid) throws IOException {
 				System.err.println("new root "+n.getIdentifier());;
 				roots.add(n);
 			}
-			if(i0!=null){
-			/*	if(i0.equals(new Integer(191289))){
-				//	Node n1 = this.slugToNode.get(l.get(0).getIdentifier().getName());
-					Node n2 = this.slugToNode1.get(i0);
-					for(int i=0; i<l.size(); i++){
-						System.err.println(l.get(i).getIdentifier());
-					}
-					System.err.println("roots");
-					for(int i=0; i<roots.size(); i++){
-						System.err.println(roots.get(i).getIdentifier());
-					}
-					System.err.println('h');
-				}*/}
 		}
 	//}
 }

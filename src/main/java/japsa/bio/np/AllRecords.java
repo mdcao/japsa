@@ -118,12 +118,12 @@ public  class AllRecords{
 						System.err.println(attr.get(i).tag+" "+attr.get(i).value);
 					}*/
 					
-					
+				//	this.readnme = sam.getReadName();
 					this.all_species.update(spec,v);
 				//	this.all_speciesLen.update(spec,getBases(filtered));
 					
 				}
-				if(all_reads !=null) all_reads.add(this.all_species);
+				if(all_reads !=null) all_reads.add(this.all_species, readnme);
 
 				}
 			all_species = new SparseVector();

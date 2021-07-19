@@ -8,6 +8,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,8 +98,8 @@ public class GetTaxonID {
 	  br.close();
   }
   
- 
-  private File  expand(Set<Integer> taxon_set2, File node_dmp, Set<Integer> set) throws IOException {
+ /** gets expanded list of taxon */
+  private static void  expand(File node_dmp, Set<Integer> set, File node_dmp2) throws IOException {
 	  Set<Integer> todo = new HashSet<Integer>();
 	todo.addAll(set);
 	 // new in this run
@@ -111,12 +113,7 @@ public class GetTaxonID {
 	//String prev = "";
 	int ps = todo.size();
 	for(int i=0; todo.size()>0; i++){
-		//todo.clear();
-		//todo.addAll(newS);
 		Set<Integer> newS = new HashSet<Integer>();
-		System.err.println("round "+i+" "+todo.size());
-		System.err.println(todo);
-		boolean contains = 	todo.contains(33317);
 		boolean reverse = i==0;
 		Closeable br = reverse ? new ReversedLinesFileReader(node_dmp) : new BufferedReader(new FileReader(node_dmp));
 		while((st = reverse ?  ((ReversedLinesFileReader)br).readLine(): ((BufferedReader)br).readLine())!=null){
@@ -125,12 +122,7 @@ public class GetTaxonID {
 			Integer parent =Integer.parseInt( str[1].trim());
 			
 			if(todo.contains(child) && ! done.contains(child)){
-			/*	if(parent.intValue()==33317){
-					System.err.println(st+ " "+done.contains(parent));
-				}
-				if(child.intValue()==33317){
-					System.err.println(st);
-				}*/
+			
 				todo.add(parent);
 				set.add(parent);
 				todo.remove(child);
@@ -153,29 +145,47 @@ public class GetTaxonID {
 	//pw1.println(prev);
 	
 		pw1.close();
+		
 		ReversedLinesFileReader br1 = new ReversedLinesFileReader(node_dmp1);
-		File node_dmp2 = new File(node_dmp.getAbsolutePath()+"."+tme+".2");
-		PrintWriter pw2 = new PrintWriter(new FileWriter(node_dmp2));
+	//	File node_dmp2 = new File(node_dmp.getAbsolutePath()+"."+tme+".2");
+		OutputStream fos = new FileOutputStream(node_dmp2);
+		if(node_dmp2.getName().endsWith(".gz")) fos = new GZIPOutputStream(fos);
+		PrintWriter pw2 = new PrintWriter(new OutputStreamWriter(fos));
 		while((st = br1.readLine())!=null){
 			pw2.println(st);
 		}
 		br1.close();
 		pw2.close();
 		node_dmp1.delete();
-		node_dmp2.deleteOnExit();
-		return node_dmp2;
+	//	node_dmp2.deleteOnExit();
+		//return node_dmp2;
 	}
  
 
 public  File name_dmp2;
   
-  public GetTaxonID( File names_dmp, File node_dmp_, Set<Integer>taxon_set, File name_dmp2, boolean expand)  throws IOException{
-		this.taxon_set = taxon_set;
-
-	File node_dmp =   expand ? expand(taxon_set, node_dmp_, this.taxon_set) : node_dmp_;
-	
-	PrintWriter pw_2 = expand ?   new PrintWriter(new GZIPOutputStream(new FileOutputStream(name_dmp2))) : null;
-	
+public GetTaxonID(File names_dmp, File node_dmp) throws IOException{
+	  BufferedReader br = getBR(names_dmp);
+	  String st = "";
+	 
+	  while((st = br.readLine())!=null){
+		  String[] str = st.split("\t");
+		  Integer taxa = Integer.parseInt(str[0]);
+			  	String nme = str[2];;
+			  	String type = str[6];
+			 putTaxa(nme, taxa);
+			  if(type.startsWith("scientific")){
+				  taxa2Sci.put(taxa, nme);
+			  }
+		
+		
+	  }
+	  this.taxon_set = taxa2Sci.keySet();
+	  this.addNodeDmp(node_dmp);
+}
+  static void expand1( File names_dmp, File node_dmp_, Set<Integer>taxon_set, File name_dmp2, File node_dmp2)  throws IOException{
+				expand(node_dmp_, taxon_set,node_dmp2);
+	PrintWriter pw_2 =    new PrintWriter(new GZIPOutputStream(new FileOutputStream(name_dmp2))) ;
 		  BufferedReader br = getBR(names_dmp);
 		  String st = "";
 		  while((st = br.readLine())!=null){
@@ -183,20 +193,11 @@ public  File name_dmp2;
 			  Integer taxa = Integer.parseInt(str[0]);
 			  if(taxon_set.contains(taxa)){
 				  if(pw_2!=null) pw_2.println(st);
-				  	String nme = str[2];;
-				  	String type = str[6];
-				 putTaxa(nme, taxa);
-				
-				  if(type.startsWith("scientific")){
-					  taxa2Sci.put(taxa, nme);
-				  }
 			  }
 			
 		  }
 		  br.close();
 	if(pw_2!=null)  pw_2.close();
-	  this.addNodeDmp(node_dmp);
-		// TODO Auto-generated constructor stub
 	}
   
  

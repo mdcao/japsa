@@ -35,7 +35,7 @@ public abstract class CommonTree {
 		 String alias1 = ((String)id.getAttribute("alias1"));	
 		 String prefix = ((String)id.getAttribute("prefix"));	
 		 Integer taxon = ((Integer)id.getAttribute("taxon"));	
-		 if(taxon==null || taxon <0) return;
+		// if(taxon==null || taxon <0) return;
 		 double height = node.getNodeHeight();
 		
 		 Number[] nt = (Number[] ) id.getAttribute(NCBITree.count_tag);
