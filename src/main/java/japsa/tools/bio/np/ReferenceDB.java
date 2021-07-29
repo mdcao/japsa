@@ -303,14 +303,16 @@ public class ReferenceDB{
 		        			 FastqRecord st = it.next();
 		        			 String nme = "Query_"+cnt;
 		        			String assignment =  this.mostLikely[i].get(nme);
-		        			 osw.write(">"+nme);
+		        			 
 		        			 if(assignment!=null){
-		        			 osw.write(" "+assignment);
+		        				 osw.write(">"+nme);
+		        				 osw.write(" "+assignment);
+		        				 osw.write("\n");
+		        				 osw.write(st.getReadString());
+		        				 osw.write("\n");
+		        			 }else{
+		        				 System.err.println("no result for "+nme);
 		        			 }
-		        			// osw.write(st.getReadName());
-		        			 osw.write("\n");
-		        			 osw.write(st.getReadString());
-		        			 if(it.hasNext())osw.write("\n");
 		        		 }
 		        		 osw.flush();
 		        		 outS.closeEntry();

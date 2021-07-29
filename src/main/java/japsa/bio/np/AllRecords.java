@@ -82,7 +82,9 @@ public  class AllRecords{
 			// TODO Auto-generated method stub
 			return records.size();
 		}
-		public void transferReads(List<Coverage[]>species2ReadList ,SparseVectorCollection all_reads) {
+		/* returns the src_index */
+		public int transferReads(List<Coverage[]>species2ReadList ,SparseVectorCollection all_reads) {
+			int src_i = this.src_index;
 			if(this.size()>0) {
 				Iterator<Integer> specs = this.all_species.keySet().iterator();
 				List<SAMRecord> sams= new ArrayList<SAMRecord>();
@@ -128,6 +130,7 @@ public  class AllRecords{
 				}
 			all_species = new SparseVector();
 			this.clear();
+			return src_i;
 		}
 
 		

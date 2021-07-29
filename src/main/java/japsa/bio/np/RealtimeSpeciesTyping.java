@@ -155,9 +155,10 @@ public class RealtimeSpeciesTyping {
 	File exclFile;
 	File[] consensusFile;
 	ReferenceDB refDB = null;
-	Integer currentReadCount = 0;
-	Integer currentReadAligned = 0;
-	Long currentBaseCount = 0L;
+	final int[] currentReadCount;
+//	Integer currentReadCount = 0;
+	int[] currentReadAligned;// = 0;
+	int[] currentBaseCount;// = 0L;
 	 File[] fastqdir, outdir; // one for each sample
 	public final 	File[] exclude_file_out;
 	public final	File[] consensus_file_out;
@@ -705,6 +706,9 @@ public class RealtimeSpeciesTyping {
 		this.outdir = outdir;
 		this.sampleID =  getNames(outdir);
 		this.num_sources = outdir.length;
+		this.currentBaseCount = new int[num_sources];
+		this.currentReadAligned = new int[num_sources];
+		this.currentReadCount = new int[num_sources];
 			exclude_file_out =newF(outdir, "exclude.txt", false);
 			consensus_file_out =newF(outdir, "consensus_regions.txt", false);
 			this.outputFile = newF(outdir,outputFile, false);
@@ -936,9 +940,14 @@ public static List<String> speciesToIgnore = null;
 				readName = sam.getReadName();
 				
 				synchronized(this){
-					records.transferReads(species2ReadList, all_reads);
-					currentReadCount ++;
-					currentBaseCount += sam.getReadLength();
+					if(records.size()>0){
+						int src_index = records.transferReads(species2ReadList, all_reads);
+						//int  records.src_index;
+						//if(src_index>=0){
+						currentReadCount[src_index] ++;
+						currentBaseCount[src_index] += sam.getReadLength();
+					}
+					//}
 				}
 			} 
 			Integer src_index = (Integer)sam.getAttribute(SequenceUtils.src_tag);
@@ -1000,7 +1009,7 @@ public static List<String> speciesToIgnore = null;
 
 			//if(readList.readList.size()==0 || !readList.readList.contains(readName))
 				synchronized(this) {
-					currentReadAligned ++;	
+					currentReadAligned[src_index] ++;	
 					/*if(tree!=null){
 						tree.addRead(this.seq2Species.get(sam.getReferenceName()));
 					}*/
@@ -1325,7 +1334,9 @@ public static List<String> speciesToIgnore = null;
 						 cov.medianQ(percL, valsL, cov.mapAlign);
 						 String st3 = combine(percL,valsL);
 						 
-						if(abund_i>0)						 cov.updateNodeAndParents(src_index, abund_i*currentReadCount);
+						if(abund_i>0)						 {
+							cov.updateNodeAndParents(src_index, abund_i*currentReadCount[src_index]);
+						}
 
 						 String adj_res = all_reads==null ? "":""+String.format("%5.3g",abund_i).trim();
 						 String adj_res_log =all_reads==null ? "": ""+String.format("%5.2g",Math.log10(abund_i)).trim();
@@ -1384,8 +1395,7 @@ public static List<String> speciesToIgnore = null;
 		
 		
 		
-		private void writeResults(double min_thresh ) throws IOException {
-          for(int src_index=0; src_index < num_sources; src_index++){
+		private void writeResults(double min_thresh , int src_index) throws IOException {
 			Gson gson = new GsonBuilder().serializeNulls().create();
 			List<JsonObject> data = new ArrayList<JsonObject>();
 			if(countsOS==null) this.initOutput();
@@ -1427,7 +1437,6 @@ public static List<String> speciesToIgnore = null;
 			}
 			countsOS[src_index].flush();
 			LOG.info(step+"  " + countArray.size());
-          }
 		}
 
 		private String combine(double[] perc2, double[] vals) {
@@ -1465,7 +1474,7 @@ public static List<String> speciesToIgnore = null;
 			simpleAnalysisCurrent(i);
 			try{
 				
-				this.writeResults( 0.000001);
+				this.writeResults( 0.000001, i);
 			}catch (IOException e){
 				LOG.warn(e.getMessage());
 			}
@@ -1479,7 +1488,7 @@ public static List<String> speciesToIgnore = null;
 			
 			try{
 				
-				this.writeResults(-1);//to write all results
+				this.writeResults(-1, i);//to write all results
 			}catch (IOException e){
 				LOG.warn(e.getMessage());
 			}
@@ -1490,7 +1499,13 @@ public static List<String> speciesToIgnore = null;
 		 */
 		@Override
 		protected int getCurrentRead() {
-			return typing.currentReadCount;
+			int cnt =0;
+			for(int i=0; i<currentReadCount.length; i++){
+				cnt+= typing.currentReadCount[i];
+			}
+			
+			return cnt;
+//			return typing.currentReadCount.as
 		}
 
 		
