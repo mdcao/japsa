@@ -57,8 +57,8 @@ public  class NCBITree extends CommonTree {
 							Number[] cnt = (Number[]) id.getAttribute(count_tag2);
 							if(cnt==null) cnt=new Number[] {0.0};
 							Number[] v = new Number[len];
-							Arrays.fill(v, 0);
-							v[i] = cnt[0];
+							Arrays.fill(v, 0.0);
+							v[i] = cnt[0].doubleValue();
 							id.setAttribute(count_tag2, v);
 						}
 					}

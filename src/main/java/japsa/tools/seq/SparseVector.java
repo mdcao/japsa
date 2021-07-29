@@ -124,6 +124,46 @@ public class SparseVector{
 		return m1;
 		
 	}
+	
+	public Map.Entry<Integer, Number> getMaxEntry() {
+		Iterator<Map.Entry<Integer, Number>> it = this.m.entrySet().iterator();
+		Entry<Integer, Number>  v = it.next();
+		while( it.hasNext()){
+			Entry<Integer, Number> nxt = it.next();
+			if(nxt.getValue().doubleValue()>v.getValue().doubleValue()) v = nxt;
+		}
+		return v;
+		
+	}
+
+	public void normalise() {
+			double thresh = 1e-5;
+			double tot = this.valsum;
+			Iterator<Map.Entry<Integer, Number>> it = this.m.entrySet().iterator();
+			double tot1 =0;
+			while( it.hasNext()){
+				Entry<Integer, Number> nxt = it.next();
+				double v = nxt.getValue().doubleValue()/tot;
+				if(v>thresh){
+					nxt.setValue(v);
+					tot1+=v;
+				}else{
+					it.remove();
+				}
+			}
+			valsum = tot1;
+			
+			tot = this.valsum;
+			 it = this.m.entrySet().iterator();
+			
+			while( it.hasNext()){
+				Entry<Integer, Number> nxt = it.next();
+				double v = nxt.getValue().doubleValue()/tot;
+					nxt.setValue(v);
+			}
+			valsum = 1.0;
+		
+	}
 
 	
 

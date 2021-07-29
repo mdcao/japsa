@@ -380,7 +380,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 	}
 	
 	 
-	 static Iterator<FastqRecord> getFastaIterator(InputStream ins) throws IOException {
+	public static Iterator<FastqRecord> getFastaIterator(InputStream ins) throws IOException {
 		 final BufferedReader br = new BufferedReader(new InputStreamReader(ins));//FastaReader fr = new FastaReader(ins);
 		 String nxtLine1 = br.readLine();
 		 if(nxtLine1==null){
@@ -430,7 +430,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 			}};
 		}
 	
- static Iterator<FastqRecord> getFastqIterator(BufferedReader br) throws IOException {
+ public static Iterator<FastqRecord> getFastqIterator(BufferedReader br) throws IOException {
 	 String st0_ = br.readLine();
 	 if(st0_==null) return null; // if file is empty
 	Iterator<FastqRecord> it1 = new Iterator<FastqRecord>(){

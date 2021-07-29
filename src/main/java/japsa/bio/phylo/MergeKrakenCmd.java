@@ -240,8 +240,9 @@ public class MergeKrakenCmd extends CommandLine{
 		//	combined.roots;
 			System.err.println(combined.roots.size());
 
-			StringBuffer header = new StringBuffer();
+			
 			File currDir = new File(".");
+			StringBuffer header = new StringBuffer();
 			header.append("name\tcolor\ttaxon\theight\tlevel\tlevel1\tcssvals\tparents\ttaxon_parents");
 			ZipEntry headings = new ZipEntry("design.csv");
 		    outS.putNextEntry(headings);
@@ -288,12 +289,12 @@ public class MergeKrakenCmd extends CommandLine{
 			 headings = new ZipEntry(NCBITree.count_tag);
 		    outS.putNextEntry(headings);
 			
-			combined.print(osw,"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false);
+			combined.print(osw,"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false, true);
 			osw.flush();
 	        outS.closeEntry();
 			headings = new ZipEntry(NCBITree.count_tag1);
 		    outS.putNextEntry(headings);
-			combined.print(osw,"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false);
+			combined.print(osw,"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false, true);
 			osw.flush();
 	         outS.closeEntry();
 	         osw.close();

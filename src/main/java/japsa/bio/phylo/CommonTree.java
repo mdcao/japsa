@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 
 import japsa.bio.np.RealtimeSpeciesTyping;
 import pal.misc.Identifier;
 import pal.tree.Node;
+import pal.tree.NodeUtils;
 import pal.tree.Tree;
 
 public abstract class CommonTree {
@@ -55,7 +58,108 @@ public abstract class CommonTree {
 			 }
 		 }
 	}
-	public void print(Node node, OutputStreamWriter pw, String[] attributes, String[] format, boolean recursive) throws IOException{
+	
+	int getDistToLeaf(Node node) {
+		if(node.isLeaf()) return 0;
+		else{
+			int val = Integer.MAX_VALUE;
+			for(int i=0; i<node.getChildCount(); i++){
+				int dist = 1+getDistToLeaf(node.getChild(i));
+				if(dist < val) val = dist;
+			}
+			return val;
+		}
+	}
+	
+	public void print(Node node, OutputStreamWriter pw, String[] count_tag, String[] format, boolean recursive, boolean combined) throws IOException{
+		if(combined) printCombined(node, pw, count_tag, format, recursive);
+		else print1(node, pw, count_tag, format, recursive);
+		
+	}
+	static double bl = 0.04;
+	
+	private void printCombined(Node node, OutputStreamWriter pw, String[] count_tag, String[] format, boolean recursive) throws IOException{
+		 Identifier id  = node.getIdentifier();
+		 String nme =id.getName();
+
+		 if(nme.trim().startsWith("+-")){
+			 nme = id.getName().replace("+-", "");
+			 id.setName(nme);
+		 }
+		// Integer[] counts = (Integer[]) id.getAttribute(count_tag);
+		 Integer level = (int) Math.round((((Integer)id.getAttribute("level")).doubleValue()+1.0)/2.0);
+		 int level1 =getDistToLeaf(node);
+		 if(node.isRoot()) level =0;
+		String height = String.format("%5.3g", NodeUtils.getMinimumPathLengthLengthToLeaf(node)/bl).trim();
+		 String hex = ((String)id.getAttribute("css"));		
+		 String alias = ((String)id.getAttribute("alias"));	
+		 String alias1 = ((String)id.getAttribute("alias1"));	
+		 String prefix = ((String)id.getAttribute("prefix"));	
+		Integer taxon = ((Integer)id.getAttribute("taxon"));
+		double[] cssvals = (double[])id.getAttribute("cssvals");
+		String[] cssvals1;
+		if(cssvals!=null){
+		cssvals1 = new String[cssvals.length];
+		for(int i=0; i<cssvals.length; i++) cssvals1[i] = String.format("%5.3g",cssvals[i]).trim();
+		}else{
+			 cssvals1 = "0:0:0".split(":");
+		}
+		StringBuffer sb = new StringBuffer();
+		StringBuffer sb1 = new StringBuffer();
+		Stack<String> l = new Stack<String>();
+		Stack<String> l1 = new Stack<String>();
+		if(!node.isRoot()){
+			Node parent = node.getParent();
+			while(!parent.isRoot()){
+				l.push(parent.getIdentifier().getName());
+				l1.push(parent.getIdentifier().getAttribute("taxon")+"");
+				//l.push(p)
+				//sb.append("->"+parent.getIdentifier().getName());
+				parent = parent.getParent();
+			}
+			while(l.size()>0){
+				sb.append(l.pop());
+				sb1.append(l1.pop());
+				if(l.size()>0){
+					sb.append("->");
+					sb1.append(",");
+				}
+			}
+		}
+		
+		 //double height = node.getNodeHeight();
+	//	 if(hex!=null) pw.print("\tcss="+hex);
+		// if(alias!=null) pw.print("\talias="+alias);
+		// if(alias1!=null) pw.print("\talias1="+alias1);
+		//root    css=#000000ff   taxon=1 height=1.24
+		//			header.append("name\tcolor\ttaxon\theight\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
+		//header.append("name\tcolor\ttaxon\theight\tlevel\tcssvals\tparents\ttaxon1\ttaxon2\ttaxon3\ttaxon4\ttaxon5");
+if(nme.length()>0){
+		 pw.write(nme+"\t"+hex+"\t"+taxon+"\t"+height+"\t"+level+"\t"+level1+"\t"+Arrays.asList(cssvals1)+"\t"+sb.toString()+"\t"+sb1.toString());
+		 if(count_tag!=null){
+			 for(int i=0; i<count_tag.length; i++){
+				 Number[] num = (Number[])id.getAttribute(count_tag[i]);
+				 double[] d = new double[num.length];
+				 for(int k=0; k<d.length; k++){
+					 d[k] = num[k].doubleValue();
+					 pw.write("\t"+String.format(format[i],  d[k]).replaceAll("\\s+",""));
+					 
+				 }
+				
+			 }
+		 }
+		 //if(true) pw.print("\theight="+String.format("%5.3g", height).trim());
+
+		 pw.write("\n");
+}
+		 if(recursive){
+			 for(int i=0; i<node.getChildCount(); i++){
+				 printCombined(node.getChild(i), pw, count_tag,  format, recursive);
+			 }
+		 }
+	}
+	
+	private void print1(Node node, OutputStreamWriter pw, String[] attributes, String[] format, boolean recursive) throws IOException{
 		 Identifier id  = node.getIdentifier();
 		 String nme =id.getName();
 		//if(nme.indexOf("unclassified ssRNA")>=0){
@@ -77,8 +181,9 @@ public abstract class CommonTree {
         if(attributes!=null){
         	for(int i=0; i<attributes.length; i++){
         		//System.err.println(format[i]);
-        		Integer[] nt = (Integer[] ) id.getAttribute(attributes[i]);
+        		Number[] nt = (Number[] ) id.getAttribute(attributes[i]);
         		//System.err.println(Arrays);
+        		//do we go here? 
         		if(nt!=null){
         		String fmt =String.format(format[i],  nt[0]);//id.getAttribute(attributes[i])); 
         		pw.write("\t"+fmt.replaceAll("\\s+",""));
@@ -88,22 +193,22 @@ public abstract class CommonTree {
 		 pw.write("\n");
 		 if(recursive){
 			 for(int i=0; i<node.getChildCount(); i++){
-				 print(node.getChild(i), pw, attributes, format, recursive);
+				 print1(node.getChild(i), pw, attributes, format, recursive);
 			 }
 		 }
 	}
 	public void print(File out) throws IOException{
 		OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(out));
-		this.print(osw, null, null, false);
+		this.print(osw, null, null, false, false);
 		osw.close();
 	}
-	public void print(OutputStreamWriter out, String[] attributes, String[] format, boolean krkn) throws IOException{
-		print(out, "------------------------------------\n", null, attributes, format, krkn);
+	public void print(OutputStreamWriter out, String[] attributes, String[] format, boolean krkn, boolean combined) throws IOException{
+		print(out, "------------------------------------\n", null, attributes, format, krkn, combined);
 	}
 	
 	
 	
-	 public  void print(OutputStreamWriter pw, String sep, String header, String[] count_tag, String[] format, boolean kraken_style) throws IOException{
+	 public  void print(OutputStreamWriter pw, String sep, String header, String[] count_tag, String[] format, boolean kraken_style, boolean combined) throws IOException{
 		  // PrintStream pw 
 /*		   if(out.getName().endsWith(".gz")){
 			  pw = new PrintStream(new GZIPOutputStream(new FileOutputStream(out)));
@@ -132,7 +237,7 @@ public abstract class CommonTree {
 		//	inner: while(n.hasNext()){
 				 Node node = roots.get(i);
 				 if(kraken_style) printKraken(node, pw, total, true);
-				 else print(node, pw, count_tag, format, true);
+				 else print(node, pw, count_tag, format, true, combined);
 				
 			// }
 			// pw.print(sep);

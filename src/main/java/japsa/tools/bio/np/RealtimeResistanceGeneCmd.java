@@ -197,7 +197,7 @@ public static Pattern writeABX = null;
 					Stack<File> bamOut = buildConsensus ?new Stack<File>() : null;
 
 					File[] outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null, fqFiles,  "output.dat", species_output_files,
-							i==dbs.length-1 ? null : unmapped_reads, excl, null, species, true,  bamOut, null);
+							i==dbs.length-1 ? null : unmapped_reads, excl, null, species, true,  bamOut, null, false);
 					System.err.println("..done");
 					if(buildConsensus && consensusFile==null && !dbs[i].equals("Human") ){
 						String consensusFile1 = consensusFile==null ? outD[1].getAbsolutePath(): consensusFile;
@@ -206,7 +206,7 @@ public static Pattern writeABX = null;
 						System.err.println("re-typing for consensus "+bamO.getName()+" "+dbs[i]);
 
 						outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, i==0 ? resdir : null, readList,  bamFiles1, null, "output.dat",
-								null, null, excl, consensusFile1, null, false, null, outD[0]);
+								null, null, excl, consensusFile1, null, false, null, outD[0],false);
 						System.err.println("..done");
 
 						bamO.delete();
@@ -215,7 +215,7 @@ public static Pattern writeABX = null;
 						System.err.println("done  "+consensus.getName());
 					//	System.err.println("re typing for consensus "+consensus.getAbsolutePath()+" "+dbs[i]);
 						RealtimeSpeciesTypingCmd.speciesTyping(refDB, null, null, null, new File[] {consensus}, "output.dat",
-							null, null, null, null, null, true, null, new File(consensus.getAbsolutePath()+".jST"));
+							null, null, null, null, null, true, null, new File(consensus.getAbsolutePath()+".jST"), false);
 					
 					}
 					

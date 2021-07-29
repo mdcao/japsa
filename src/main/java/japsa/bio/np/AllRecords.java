@@ -14,6 +14,8 @@ import japsa.tools.seq.SparseVectorCollection;
 public  class AllRecords{
 	public static String tag = null;//	String tag = "BS"; //AS PI
 		String readnme = null;
+		String sequence = null;
+		int src_index=-1;
 		List<SAMRecord> records = new ArrayList<SAMRecord>();
 		List<String> refs = new ArrayList<String>();
 		List<Integer> species = new ArrayList<Integer>(); //specesIndex
@@ -27,6 +29,7 @@ public  class AllRecords{
 			refs.clear();
 			all_species.clear();
 			species.clear();
+			src_index=-1;
 		//	quality.clear();
 		}
 		
@@ -61,6 +64,8 @@ public  class AllRecords{
 				//	throw new RuntimeException("@!!");
 				//}
 				readnme=sam.getReadName();
+				sequence = sam.getReadString();
+				src_index = (Integer) sam.getAttribute(SequenceUtils.src_tag);
 			}
 			else if(!readnme.equals(sam.getReadName())) {
 				throw new RuntimeException("!!");
@@ -77,20 +82,14 @@ public  class AllRecords{
 			// TODO Auto-generated method stub
 			return records.size();
 		}
-		public void transferReads(List<Coverage>species2ReadList ,SparseVectorCollection all_reads) {
+		public void transferReads(List<Coverage[]>species2ReadList ,SparseVectorCollection all_reads) {
 			if(this.size()>0) {
-				;
-			//	if(this.all_species.size()>1){
-				//	System.err.println("h");
-				//}
 				Iterator<Integer> specs = this.all_species.keySet().iterator();
 				List<SAMRecord> sams= new ArrayList<SAMRecord>();
 				List<SAMRecord> filtered  = new ArrayList<SAMRecord>();
 				while(specs.hasNext()){
 					Integer spec = specs.next();
-				//	sv.addToEntry(spec,all_species.get(spec));
-				//			-1*Math.pow(10, -1*all_species.get(spec).doubleValue()));
-					Coverage coverage = species2ReadList.get(spec);
+					Coverage coverage = species2ReadList.get(spec)[src_index];
 					
 					
 					
@@ -108,6 +107,7 @@ public  class AllRecords{
 				
 				//	List<SAMTagAndValue> attr = sams.get(besti).getAttributes();
 					if(tag!=null ){
+						
 						Number attr1 = (Number) sam.getAttribute(tag);
 						if(attr1==null) throw new RuntimeException ("tag not available");
 						v = attr1.doubleValue();///100.0;
@@ -123,7 +123,7 @@ public  class AllRecords{
 				//	this.all_speciesLen.update(spec,getBases(filtered));
 					
 				}
-				if(all_reads !=null) all_reads.add(this.all_species, readnme);
+				if(all_reads !=null) all_reads.add(this.all_species, readnme, src_index);
 
 				}
 			all_species = new SparseVector();

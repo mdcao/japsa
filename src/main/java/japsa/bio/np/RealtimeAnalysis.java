@@ -58,6 +58,8 @@ public abstract class RealtimeAnalysis implements Runnable {
 	}
 
 	private boolean waiting = true;
+	
+	abstract int numSources();
 
 	protected Long lastTime = 0L;//The last time an analysis is done
 	protected Long startTime;
@@ -105,7 +107,9 @@ public abstract class RealtimeAnalysis implements Runnable {
 			lastTime = System.currentTimeMillis();
 			//assert: read number satisfied
 			//timeNow = (new Date(lastTime)).getTime();
-			analysis();
+			for(int i=0; i<this.numSources(); i++){
+			analysis(i);
+			}
 			LOG.info("RUNTIME\t" + lastTime + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		}//while
 		
@@ -113,8 +117,11 @@ public abstract class RealtimeAnalysis implements Runnable {
 		lastTime = System.currentTimeMillis();
 		lastReadNumber =  getCurrentRead();
 	//	timeNow = lastTime;//(new Date(lastTime)).getTime();
-		this.lastAnalysis();
-		this.writeFinalResults();
+		for(int i=0; i<this.numSources(); i++){
+			this.lastAnalysis(i);
+			this.writeFinalResults(i);
+		}
+		
 		LOG.info("RUNTIME\t" + lastTime  + "\t" + (this.lastTime - this.startTime)/1000.0 + "\t" + this.lastReadNumber + "\t" + (System.currentTimeMillis() - lastTime)/1000.0);
 		//.. and close it
 		
@@ -122,12 +129,12 @@ public abstract class RealtimeAnalysis implements Runnable {
 	}
 
 	abstract protected void close();
-	abstract protected void analysis();
-	protected void lastAnalysis(){
-		this.analysis();
+	abstract protected void analysis(int i);
+	protected void lastAnalysis(int i){
+		this.analysis(i);
 	}
 	
-	protected void writeFinalResults(){
+	protected void writeFinalResults(int src_index){
 		
 	}
 	abstract protected int getCurrentRead();	

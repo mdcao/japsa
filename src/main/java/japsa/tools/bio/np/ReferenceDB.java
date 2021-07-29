@@ -1,9 +1,15 @@
 package japsa.tools.bio.np;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -13,8 +19,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.Adler32;
+import java.util.zip.CheckedOutputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+import htsjdk.samtools.fastq.FastqRecord;
 import japsa.bio.phylo.CSSProcessCommand;
 import japsa.bio.phylo.GetTaxonID;
 import japsa.bio.phylo.NCBITree;
@@ -97,6 +108,10 @@ public class ReferenceDB{
 	File taxaDir;
 	String suffix;
 	int col_ind;
+
+	public Map<String, String>[] mostLikely; // maps the read name to the most likely species;
+	
+	
 	
 	public ReferenceDB(File dbdir, File taxaDir, File refFile,  boolean makeTree, String suffix, int col_ind, boolean fromBlast)  throws IOException{
 		this.dbs  = dbdir.getName();
@@ -110,14 +125,18 @@ public class ReferenceDB{
 		speciesIndex = new File(refFile.getAbsolutePath()+suffix);
 		
 		if(!speciesIndex.exists()){
+			System.err.println("species Index does not exist "+speciesIndex);
 			Trie trie = Trie.getIndexFile(taxaDir, refFile, suffix, speciesIndex);
 		}
 	//	  File treeout = new File(db,"commontree.txt.css");
 		 File name_dmp2 = fromBlast ? new File(dbdir,"names.dmp.gz") : null;
+		 File node_dmp2 = fromBlast ? new File(dbdir, "nodes.dmp.gz") : null;
 		if(makeTree && taxaDir.exists()){
-		 treef = CSSProcessCommand.getTree(taxaDir,dbdir, speciesIndex, false, col_ind, name_dmp2, fromBlast).getAbsolutePath();
+			System.err.println("making tree");
+		 treef = CSSProcessCommand.getTree(taxaDir,dbdir, speciesIndex, false, col_ind, name_dmp2,node_dmp2, fromBlast).getAbsolutePath();
 		boolean useTaxaAsSlug=false;
 	//	String treef_mod = treef+".mod";
+		System.err.println("made tree "+treef);
 		tree = new NCBITree(new File(treef), useTaxaAsSlug);
 		Trie trie = ( name_dmp2!=null ) ? new Trie(name_dmp2) : null;
 		tree.addSpeciesIndex(speciesIndex, col_ind, trie);
@@ -193,6 +212,124 @@ public class ReferenceDB{
 
 	public Node getNode(String sp) {
 		return tree==null ? null : tree.getNode(sp);
+	}
+
+	public static void  combineIndex(File[] bamFiles, String suffix, File output) throws IOException {
+		if(output.exists()) {
+			System.err.println("combined index exists");
+			return;
+		}
+		PrintWriter outputFile = new PrintWriter(new FileWriter(output));
+		Set<String> s = new HashSet<String>();
+		for(int i=0; i<bamFiles.length; i++){
+			File f = new File(bamFiles[i].getAbsolutePath()+suffix);
+			BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+			String st = "";
+			while((st = br.readLine())!=null){
+				s.add(st);
+				//outputFile.println(st);
+			}
+			br.close();
+		}
+		for(Iterator<String> it = s.iterator(); it.hasNext();){
+			outputFile.println(it.next());
+		}
+		outputFile.close();
+	//	ProcessTools.
+	}
+
+	public static double krakenTrimThreshPerc = 1e-5;
+	
+	
+	public String getHeader() {
+		StringBuffer header = new StringBuffer();
+		
+		
+		return header.toString();
+	}
+	
+	public void printKrakenFormat(File resdir,  String[] sample, File[] fasta) throws IOException {
+		// TODO Auto-generated method stub
+		
+		if(tree!=null) {
+			StringBuffer header = new StringBuffer();
+			header.append("name\tcolor\ttaxon\theight\tlevel\tlevel1\tcssvals\tparents\ttaxon_parents");
+			  tree.trim(krakenTrimThreshPerc);
+		//	OutputStreamWriter osw = new OutputStreamWriter(
+			File outfile = new File(resdir, "results.krkn.zip");
+			OutputStream dest = new FileOutputStream(outfile);
+			CheckedOutputStream checksum = new   CheckedOutputStream(dest, new Adler32());
+	        ZipOutputStream outS = new 
+	         ZipOutputStream(new 
+	           BufferedOutputStream(checksum));
+	        OutputStreamWriter osw = new OutputStreamWriter(outS);
+	         outS.setMethod(ZipOutputStream.DEFLATED);
+	         ZipEntry headings = new ZipEntry("design.csv");
+			  outS.putNextEntry(headings);
+				osw.write("Name,Grp1,Grp2");osw.write("\n");
+			
+				for(int i=0; i<sample.length; i++){
+					String grp = "all";
+					String nmei = sample[i];
+					osw.write(nmei+","+(i+1)+","+grp);osw.write("\n");
+					header.append("\t");
+					header.append(nmei);
+				}
+				osw.flush();
+		        outS.closeEntry();
+			 headings = new ZipEntry(NCBITree.count_tag);
+			    outS.putNextEntry(headings);
+				CSSProcessCommand.colorRecursive(tree.tree, true);
+
+				tree.print(osw,"", header.toString(), new String[] {NCBITree.count_tag}, new String[] {"%5.3g"}, false, true);
+				osw.flush();
+		        outS.closeEntry();
+				headings = new ZipEntry(NCBITree.count_tag1);
+			    outS.putNextEntry(headings);
+				tree.print(osw,"", header.toString(),new String[] {NCBITree.count_tag1}, new String[] {"%5.3g"}, false, true);
+				osw.flush();
+		         outS.closeEntry();
+		         //add in the consensus output files
+		         if(fasta!=null){
+		         for(int i=0; i<fasta.length; i++){
+		        	 if(fasta[i].exists()){
+		        		 headings = new ZipEntry(sample[i]+".fa");
+		 			    outS.putNextEntry(headings);
+		 			  
+		        		InputStream  is = new FileInputStream(fasta[i]);
+		        		Iterator<FastqRecord> it =  fasta[i].getName().endsWith(".fastq") ? SequenceUtils.getFastqIterator(new BufferedReader(new InputStreamReader(is))):
+		        			SequenceUtils.getFastaIterator(is);
+		        		 for(int cnt=1; it.hasNext(); cnt++){
+		        			 FastqRecord st = it.next();
+		        			 String nme = "Query_"+cnt;
+		        			String assignment =  this.mostLikely[i].get(nme);
+		        			 osw.write(">"+nme);
+		        			 if(assignment!=null){
+		        			 osw.write(" "+assignment);
+		        			 }
+		        			// osw.write(st.getReadName());
+		        			 osw.write("\n");
+		        			 osw.write(st.getReadString());
+		        			 if(it.hasNext())osw.write("\n");
+		        		 }
+		        		 osw.flush();
+		        		 outS.closeEntry();
+		        		 is.close();
+		        	 }
+		         }
+		         }
+		         osw.close();
+			
+		}
+		
+	}
+
+	public void makeMostLikely(int num_sources) {
+		mostLikely = new Map[num_sources];
+		for(int i=0; i<num_sources; i++){
+			mostLikely[i] = new HashMap<String, String>();
+		}
+		
 	}
 	
 }
