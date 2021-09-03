@@ -18,6 +18,9 @@ import java.util.zip.GZIPOutputStream;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
 import japsa.seq.SequenceReader;
+import pal.misc.Identifier;
+import pal.tree.Node;
+import pal.tree.Tree;
 
 public class Trie {
 	
@@ -73,6 +76,20 @@ public class Trie {
 		//	System.err.println(cnt);
 		}
 		br.close();
+		System.err.println("finished");
+	}
+	
+	public Trie(Tree t) throws FileNotFoundException, IOException{
+		this.root = new TrieNode();
+		int cnt=0;
+		int len = t.getExternalNodeCount();
+		for(int i=0; i<len; i++){
+			Node n = t.getExternalNode(i);
+			Identifier id = n.getIdentifier();
+			insert(id.getName().replace("+-", "").trim(),(Integer) id.getAttribute("taxon"));
+			cnt=cnt+1;
+		//	System.err.println(cnt);
+		}
 		System.err.println("finished");
 	}
 	

@@ -22,6 +22,8 @@ public class SparseVector{
 	
 	SortedMap<Integer, Number> m = new TreeMap<Integer,Number>();
 	private double valsum=0;
+	
+	private double max=0;
 	//double valsumByKey=0;
 	
 	public void addZero(int pos){
@@ -31,8 +33,12 @@ public class SparseVector{
 	public void addToEntry(Integer position, double i) {
 		Number val = m.get(position);
 		valsum+=i;
+		Number val1 = val==null ? i : val.doubleValue() + i;
 		//valsumByKey+=position.doubleValue()* (double) i;
-		m.put(position, val==null ? i : val.doubleValue() + i);
+		m.put(position, val1);
+		if(val1.doubleValue() > max){
+			max = val1.doubleValue();
+		}
 	}
 	public String toString(){
 		return m.toString();
@@ -70,6 +76,7 @@ public class SparseVector{
 	public void clear() {
 		m.clear();
 		this.valsum=0;
+		this.max=0;
 		
 	}
 	
@@ -85,6 +92,7 @@ public class SparseVector{
 	public void update(Integer spec, double q) {
 		Number qual = this.m.get(spec);
 		if(qual==null  || q > qual.doubleValue()){
+			if(q>max) max = q;
 			this.m.put(spec,q);
 		}
 	}
@@ -163,6 +171,13 @@ public class SparseVector{
 			}
 			valsum = 1.0;
 		
+	}
+
+	public double score(Integer j) {
+		// TODO Auto-generated method stub
+		double d = this.get(j).doubleValue();
+		double sc =  Math.pow(2,d-max);
+		return sc;
 	}
 
 	

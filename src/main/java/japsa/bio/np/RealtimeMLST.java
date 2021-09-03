@@ -230,9 +230,10 @@ public class RealtimeMLST{
 
 		/* (non-Javadoc)
 		 * @see japsa.bio.np.RealtimeAnalysis#analysis()
+		 * i is the source
 		 */
 		@Override
-		protected void analysis() {
+		protected void analysis(int i) {
 			try {
 				makeTypingConsensus();
 				makeTypingMLwithFSM(top);
@@ -293,6 +294,15 @@ public class RealtimeMLST{
 				countsOS.print(profile.getST() + "\t" + profile.getScore());
 				countsOS.println();
 			}
+		}
+
+
+		@Override
+		protected int numSources() {
+			// need to fix this to deal with multiple sources
+			return 1;
+			// TODO Auto-generated method stub
+//			return 0;
 		}
 	}
 

@@ -754,7 +754,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 	 }
 	
 	
-	public static String src_tag = "SC";
+	public static String src_tag = "BS";
 	public static String pool_tag = "PT";
 	
 	 static class SamR implements Comparable{

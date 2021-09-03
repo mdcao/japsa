@@ -36,6 +36,7 @@ import japsa.seq.SequenceOutputStream;
 import japsa.seq.SequenceReader;
 import japsa.tools.seq.SequenceUtils;
 import pal.tree.Node;
+import pal.tree.NodeUtils;
 
 public class ReferenceDB{
 	// this class encapsulates everything required for a referenceDB
@@ -49,21 +50,98 @@ public class ReferenceDB{
 	public HashMap<String, Integer> species2Index = new HashMap<String, Integer>();
 	//HashMap<String, SpeciesCount> species2Count = new HashMap<String, SpeciesCount>();
 	public ArrayList<String> speciesList = new ArrayList<String>(); 
+
+
+	public ReferenceDB(ReferenceDB db, int num, String[] nodes_ , int[] num_){
+		this.tree = db.tree;
+		this.dbs = db.dbs;
+		Node[] nodes = new Node[nodes_.length];
+		for(int i=0; i<nodes.length; i++){
+			nodes[i] = tree.getNode(nodes_[i]);
+		}
+	//	Node viruses = tree.getNode("Viruses");
+		
+		Map<Integer, Integer> remap = new HashMap<Integer, Integer>(); // maps old index to new index
+		for(int i=0; i<db.speciesList.size(); i++){
+			String species = db.speciesList.get(i);
+			Node n = tree.getNode(species);
+			int num1 = num;
+			inner: for(int j=0; j<num_.length; j++){
+				if(NodeUtils.isAncestor(nodes[j], n)){
+					num1 = num_[j];
+					break inner;
+				}
+			}
+			Node parent = n;
+			for(int j=0; j<num1;j++){
+				parent = parent.getParent();
+			}
+			String specp =parent.getIdentifier().getName(); 
+			Integer index = species2Index.get(specp);
+			if(index==null){
+				index = speciesList.size();
+				speciesList.add(specp);
+				
+				species2Len.put(specp, db.species2Len.get(species));
+				species2Index.put(specp, index);
+			}
+			remap.put(i, index);//
+		}
+		for(Iterator<String> it =db.seq2Species.keySet().iterator(); it.hasNext();){
+			String seq = it.next();
+			Integer val = remap.get(db.seq2Species.get(seq)) ;
+			this.seq2Species.put(seq, val);
+		}
+	/*	String key = "MH648969.1";
+		key = "NC_038341.1";
+
+		Integer p1 = this.seq2Species.get(key);
+		Integer p = db.seq2Species.get(key);
+		System.err.println(db.speciesList.get(p));
+		System.err.println(this.speciesList.get(p1));
+		int prev = db.speciesList.size();
+		int curr = this.speciesList.size();
+		System.err.println("done "+prev+" -> "+curr);*/
+	}
+	
 	//speciesFile should be local
-	public void pretyping() throws IOException{
+	public void pretyping(Trie tr) throws IOException{
+		
+
 		Map<String, String> seq2Species1 = new HashMap<String, String>();
 		readSpeciesIndex(speciesIndex.getAbsolutePath(), seq2Species1, species2Len, true);
+		if(tr!=null){
+		for(Iterator<String> it = seq2Species1.keySet().iterator(); it.hasNext();){
+			
+			String seq = it.next();
+			String spec = seq2Species1.get(seq);
+			Node n = tree.getNode(spec);
+			if(n==null){
+				Integer taxon = tr.find(spec);
+				Node n1 = tree.getNode(taxon);
+				System.err.println("replace "+spec + " "+n1.getIdentifier().getName());
+				seq2Species1.put(seq, n1.getIdentifier().getName());
+				//System.err.println(spec+" -> "+ n1.getIdentifier().getName());
+				//throw new RuntimeException("!!");
+			}
+		}
+		}
+		
 		for(Iterator<String> it = seq2Species1.keySet().iterator(); it.hasNext();){
 			String seq = it.next();
 			String spec = seq2Species1.get(seq);
 			Integer index = species2Index.get(spec);
 			if(index==null){
+				
+				
 				index = speciesList.size();
 				speciesList.add(spec);
 				species2Index.put(spec,index);
 			}
 			seq2Species.put(seq, index);
 		}
+		
+		
 	}
 	
 	public static void readSpeciesIndex(String indexFile, Map<String, String> seq2Species1, Map<String, Integer> seq2Len, boolean splitPlasmids)throws IOException{
@@ -126,7 +204,7 @@ public class ReferenceDB{
 		
 		if(!speciesIndex.exists()){
 			System.err.println("species Index does not exist "+speciesIndex);
-			Trie trie = Trie.getIndexFile(taxaDir, refFile, suffix, speciesIndex);
+			//Trie trie = Trie.getIndexFile(taxaDir, refFile, suffix, speciesIndex);
 		}
 	//	  File treeout = new File(db,"commontree.txt.css");
 		 File name_dmp2 = fromBlast ? new File(dbdir,"names.dmp.gz") : null;
@@ -138,15 +216,20 @@ public class ReferenceDB{
 	//	String treef_mod = treef+".mod";
 		System.err.println("made tree "+treef);
 		tree = new NCBITree(new File(treef), useTaxaAsSlug);
-		Trie trie = ( name_dmp2!=null ) ? new Trie(name_dmp2) : null;
-		tree.addSpeciesIndex(speciesIndex, col_ind, trie);
+		
+		//tree.addSpeciesIndex(speciesIndex, col_ind, trie);
 		}
 		//tree.print(new File(treef_mod)); // this prints out to tree
 //		if(true)System.exit(0);
 		// treef = dbPath+"/"+dbs+"/"+ "commontree.txt.css.mod";
 		 modDB = new File("./db");
 		if(tree!=null) tree.zeroCounts(0, 1);
-		this.pretyping();
+		Trie trie = null;
+		if(makeTree){
+			trie = new Trie(tree.tree[0]);
+//			trie = ( name_dmp2!=null ) ? new Trie(name_dmp2) : null;
+		}
+		this.pretyping(trie);
 	}
 	
 	

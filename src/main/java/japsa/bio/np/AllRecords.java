@@ -14,6 +14,7 @@ import japsa.tools.seq.SparseVectorCollection;
 public  class AllRecords{
 	public static String tag = null;//	String tag = "BS"; //AS PI
 		String readnme = null;
+		int readLen = 0;
 		String sequence = null;
 		int src_index=-1;
 		List<SAMRecord> records = new ArrayList<SAMRecord>();
@@ -65,6 +66,7 @@ public  class AllRecords{
 				//}
 				readnme=sam.getReadName();
 				sequence = sam.getReadString();
+				readLen = sam.getReadLength();
 				src_index = (Integer) sam.getAttribute(SequenceUtils.src_tag);
 			}
 			else if(!readnme.equals(sam.getReadName())) {
@@ -83,9 +85,12 @@ public  class AllRecords{
 			return records.size();
 		}
 		/* returns the src_index */
-		public int transferReads(List<Coverage[]>species2ReadList ,SparseVectorCollection all_reads) {
+		public int transferReads(List<Coverage[]>species2ReadList ,SparseVectorCollection all_reads, int[] currentReadCount, int[] currentBaseCount) {
 			int src_i = this.src_index;
 			if(this.size()>0) {
+				currentReadCount[this.src_index]++;
+				currentBaseCount[this.src_index] += this.readLen;
+				
 				Iterator<Integer> specs = this.all_species.keySet().iterator();
 				List<SAMRecord> sams= new ArrayList<SAMRecord>();
 				List<SAMRecord> filtered  = new ArrayList<SAMRecord>();
@@ -109,7 +114,7 @@ public  class AllRecords{
 				
 				//	List<SAMTagAndValue> attr = sams.get(besti).getAttributes();
 					if(tag!=null ){
-						
+						List l = sam.getAttributes();
 						Number attr1 = (Number) sam.getAttribute(tag);
 						if(attr1==null) throw new RuntimeException ("tag not available");
 						v = attr1.doubleValue();///100.0;
@@ -131,6 +136,11 @@ public  class AllRecords{
 			all_species = new SparseVector();
 			this.clear();
 			return src_i;
+		}
+
+		public int getReadLength() {
+			// TODO Auto-generated method stub
+			return readLen;
 		}
 
 		

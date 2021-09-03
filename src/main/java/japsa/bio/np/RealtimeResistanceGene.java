@@ -577,12 +577,12 @@ this.outdir = new File("./");
 		 * @see japsa.bio.np.RealtimeAnalysis#analysis()
 		 */
 		@Override
-		protected void analysis() {
+		protected void analysis(int i) {
 			//antiBioticAnalysis();
 
 		}
 		@Override
-		protected void lastAnalysis() {
+		protected void lastAnalysis(int i) {
 			if(RealtimeResistanceGene.runKAlign)		antiBioticAnalysis();
 			else{
 				try{
@@ -616,6 +616,11 @@ this.outdir = new File("./");
 		protected int getCurrentRead() {
 			return resistGene.currentReadCount;
 
+		}
+		@Override
+		protected int numSources() {
+			// TODO Auto-generated method stub
+			return 1;
 		}
 	}
 

@@ -337,7 +337,7 @@ public class RealtimeStrainTyping {
 		 * @see japsa.bio.np.RealtimeAnalysis#analysis()
 		 */
 		@Override
-		protected void analysis() {
+		protected void analysis(int i) {
 			// TODO Auto-generated method stub
 			try {
 				makePresenceTyping(10);
@@ -436,6 +436,12 @@ public class RealtimeStrainTyping {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}			
+		}
+
+		@Override
+		protected int numSources() {
+			// TODO Auto-generated method stub
+			return 1;
 		}
 	}
 }

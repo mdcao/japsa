@@ -3,7 +3,6 @@ package japsa.bio.phylo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -116,7 +115,7 @@ public Node getNode(Integer taxa) {
 	 
 	
 	 /*str is a line from species index */
-	 private void updateTree(String st, int lineno, double bl, PrintWriter missing, int col_ind, Trie trie){
+	 private void updateTree(String st, int lineno, double bl, PrintWriter missing, int col_ind, Trie trie, Map<String, Integer> taxaMap){
 		 String[] str = st.split("\t");
 		// String specName = str[0];
 		Integer taxa = Integer.parseInt(str[col_ind]); //gid.processAlias(str,st);
@@ -125,6 +124,7 @@ public Node getNode(Integer taxa) {
 		 Node	n = this.slugToNode1.get(taxa);//getNode( taxa);
 		 if(n==null){
 			 taxa =  trie.find(str[0]);
+			 taxaMap.put(str[col_ind], taxa);
 			// System.err.println("putting at root "+st);
 			 n = this.slugToNode1.get(taxa);
 		 }
@@ -984,12 +984,13 @@ public void merge(NCBITree tree1, int pos){
 
 
 	public void addSpeciesIndex(File speciesIndex, int col_ind, Trie trie) throws  IOException{
+		Map<String, Integer> newSpecies = new HashMap<String, Integer>();
 		if(speciesIndex!=null && speciesIndex.exists()){
 			PrintWriter missing = new PrintWriter(new FileWriter("missing.txt"));
 				 BufferedReader br1 = GetTaxonID.getBR(speciesIndex);
 				 String st = "";
 				for(int i=0; (st = br1.readLine())!=null; i++){
-					updateTree(st, i, 0.0, missing, col_ind, trie);
+					updateTree(st, i, 0.0, missing, col_ind, trie, newSpecies);
 				 }
 				br1.close();
 				missing.close();

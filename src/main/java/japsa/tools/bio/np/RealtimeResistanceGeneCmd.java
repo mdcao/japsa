@@ -168,6 +168,8 @@ public static Pattern writeABX = null;
 		List<File> outfiles = new ArrayList<File>();
 		resistanceTyping(resDB,resdir,  RealtimeSpeciesTypingCmd.getFiles(null, bamFile, ":"), RealtimeSpeciesTypingCmd.getFiles(null, fastqFile, ":"),
 				readList, outdir, output, outfiles);
+		/*
+		 * In new design we do this via a separate run
 		//now do species typing on the resistance genes;
 		String dbPath =  cmdLine.getStringVal("dbPath");
 		String[] dbs = cmdLine.getStringVal("dbs") == null ? null : cmdLine.getStringVal("dbs").split(":");
@@ -207,6 +209,10 @@ public static Pattern writeABX = null;
 
 						outD = RealtimeSpeciesTypingCmd.speciesTyping(refDB, i==0 ? resdir : null, readList,  bamFiles1, null, "output.dat",
 								null, null, excl, consensusFile1, null, false, null, outD[0],false);
+					//	File[][] outDs = RealtimeSpeciesTypingCmd.speciesTyping(refDB, resdir , readList,  bamFiles, fastqFiles, output,
+						//		out_fastq, unmapped_reads, exclfile, consensusFile, species, true, bamOut, null, false);
+				
+						
 						System.err.println("..done");
 
 						bamO.delete();
@@ -231,12 +237,14 @@ public static Pattern writeABX = null;
 					KrakenTree overall = new  KrakenTree(outdirTop, "results.krkn");
 					//overa.trim(1e-16);
 					OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(new File(outdirTop,"results_combined.krkn")));
-					overall.print(osw, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true);
+				
+					overall.print(osw, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%d","%d"}, true, false);
+				//	overall.p
 					osw.close();
 				}
 			}
 			}
-		}
+		}*/
 		
 	}
 

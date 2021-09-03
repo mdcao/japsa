@@ -100,7 +100,7 @@ import pal.tree.Node;
  *
  */
 public class RealtimeSpeciesTyping {
-	
+	public static double start_thresh = 0.0;
 	//int int total_reads =0;
 	public static boolean writeExcludeFile = false;
 	public static double targetOverlap =0.95;
@@ -941,7 +941,7 @@ public static List<String> speciesToIgnore = null;
 				
 				synchronized(this){
 					if(records.size()>0){
-						int src_index = records.transferReads(species2ReadList, all_reads);
+						int src_index = records.transferReads(species2ReadList, all_reads,currentReadCount, currentBaseCount);
 						//int  records.src_index;
 						//if(src_index>=0){
 						currentReadCount[src_index] ++;
@@ -950,6 +950,32 @@ public static List<String> speciesToIgnore = null;
 					//}
 				}
 			} 
+			
+			{
+			/*	List attr = sam.getAttributes();
+			int len = sam.getAlignmentEnd()-sam.getAlignmentStart();
+			int len1 = sam.getLengthOnReference();
+			int st = sam.getAlignmentStart();
+			int end = sam.getAlignmentEnd();
+			int st1 = sam.getReferencePositionAtReadPosition(st);
+			int end1 = sam.getReferencePositionAtReadPosition(end);
+			int readLen = sam.getReadLength();
+			String refnme = sam.getReferenceName();
+			int unc_end = sam.getUnclippedEnd();
+			int unc_start = sam.getUnclippedStart();
+			String read = sam.getReadString();
+		//	sam.getReferen
+			sam.getLengthOnReference();
+			String nme1 = sam.getReferenceName();
+			String nme2 = sam.getReadName();*/
+				if(start_thresh > 0){
+			if(sam.getStart()>start_thresh * sam.getLengthOnReference()){
+				continue ;
+			}
+			}
+/*		System.err.println(len +" "+len1+" "+st+","+end+" "+st1+","+end1+  "   "+readLen+ " "+unc_start+" "+unc_end);
+		System.err.println("h");*/
+			}
 			Integer src_index = (Integer)sam.getAttribute(SequenceUtils.src_tag);
 			 refName = sam.getReferenceName();
 			if (sam.getReadUnmappedFlag()){
@@ -1016,7 +1042,9 @@ public static List<String> speciesToIgnore = null;
 					String refname = sam.getReferenceName();
 					//String readname = sam.getReadName()
 					Integer specI = refDB.seq2Species.get(refname);
-				
+					if(specI==null){
+						System.err.println("WARNING no species for "+refname+" "+this.sampleID[src_index]);
+					}
 					if(specI!=null) records.add(sam, specI);
 				//	readList.addRead(sam);
 					//readList.add(readName);
@@ -1027,7 +1055,9 @@ public static List<String> speciesToIgnore = null;
 			}
 		}//while
 		//
-			records.transferReads(species2ReadList, all_reads);
+			records.transferReads(species2ReadList, all_reads, currentReadCount, currentBaseCount);
+		
+
 			for(int src_index=0; src_index < num_sources; src_index++){
 			if(fqw_filtered!=null) this.fqw_filtered.close();
 			if(fqw_unmapped[src_index]!=null) {

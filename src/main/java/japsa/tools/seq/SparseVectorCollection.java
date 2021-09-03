@@ -1,16 +1,15 @@
 package japsa.tools.seq;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.Stack;
+import java.util.TreeMap;
 
 import japsa.bio.np.RealtimeSpeciesTyping;
 
@@ -20,10 +19,27 @@ public class SparseVectorCollection{
 		public final SparseVector[] abundances;
 		int len;
 		int total_size=0;
+		List<String> species;
 		
+		SortedMap<Number, String> getScores(SparseVector sv){
+		//	SparseVector sv = this.svs[k].get(i);
+			Iterator<Integer> it = sv.keyIt();
+			SortedMap< Number, String> m = new TreeMap<Number, String>();
+			while(it.hasNext()){
+				Integer nxt = it.next();
+				System.err.println(species.get(nxt)+" "+sv.get(nxt));
+				if(species.get(nxt).startsWith("P")){
+					System.err.println("HHH");
+				}
+				Number n =sv.get(nxt); 
+				m.put(n,species.get(nxt) );
+			}
+			return m;
+		}
 		
 		public SparseVectorCollection(List<String> species, boolean keepNames,String[] nmes){
 			int numSpecies = species.size();
+			this.species = species;
 			this.src_names = nmes;
 			this.num_sources =src_names.length;
 			this.len = numSpecies;
@@ -71,7 +87,7 @@ public class SparseVectorCollection{
 				double pr = 0;
 				for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
 					Integer j = it.next();
-					pr+= abundance[j] * sv.get(j).doubleValue();
+					pr+= abundance[j] * sv.score(j);
 				}
 				sc+=Math.log(pr);
 			}
@@ -101,7 +117,7 @@ public class SparseVectorCollection{
 			sv1.clear();
 			for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
 				Integer j = it.next();
-				sv1.addToEntry(j,abundance[j] * sv.get(j).doubleValue());
+				sv1.addToEntry(j,abundance[j] * sv.score(j));
 			}
 			return sv1.getMaxEntry();
 			
@@ -117,7 +133,7 @@ public class SparseVectorCollection{
 				//split the read count according to the quality scores
 				for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
 					Integer j = it.next();
-					double sc = abundance[j] * sv.get(j).doubleValue();
+					double sc = abundance[j] * sv.score(j);
 					totj+=sc;
 				//	scorej+=sc;
 				}
@@ -125,7 +141,7 @@ public class SparseVectorCollection{
 					for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
 						Integer j = it.next();
 						if(abundance[j]>0){
-							double sc = abundance[j] * sv.get(j).doubleValue()/totj;
+							double sc = abundance[j] * sv.score(j)/totj;
 							if(sc>0) abund.addToEntry(j, sc);
 						}
 					}
@@ -137,13 +153,19 @@ public class SparseVectorCollection{
 				abund.normalise();
 			}
 			}
-			System.err.println("calculated abundances");
+			
+			//SortedMap<Number,String > m = this.getScores(this.abundances[1]);
+			//SortedMap<Number,String > m1 = this.getScores(this.svs[1].get(0));
+		//	m1.get(m.lastKey());
+		//	System.err.println(m1);
+		//	System.err.println("calculated abundances");
 		}
 		
 		//update abundance
 		//one round of normalisation
 		public void maximisation(double[] v, double pseudo){
 			double[] abund = new double[len];
+			
 			Arrays.fill(abund, pseudo);
 			if(total_size==0){// && single.size()==0){
 				return;//throw new RuntimeException("nothing");
@@ -160,14 +182,14 @@ public class SparseVectorCollection{
 				//split the read count according to the quality scores
 				for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
 					Integer j = it.next();
-					double sc = abundance[j] * sv.get(j).doubleValue();
+					double sc = abundance[j] * sv.score(j);
 					totj+=sc;
 					scorej+=sc;
 				}
 				if(totj>0){
 					for(Iterator<Integer> it = sv.keyIt();it.hasNext();){
 						Integer j = it.next();
-						double sc = abundance[j] * sv.get(j).doubleValue()/totj;
+						double sc = abundance[j] * sv.score(j)/totj;
 						abund[j] += sc;
 					}
 					score+=Math.log(scorej);

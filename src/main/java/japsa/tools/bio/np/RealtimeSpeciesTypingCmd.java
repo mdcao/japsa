@@ -58,7 +58,6 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import japsa.bio.np.AllRecords;
-import japsa.bio.np.RealtimeResistanceGene;
 import japsa.bio.np.RealtimeSpeciesTyping;
 import japsa.bio.phylo.KrakenTree;
 import japsa.bio.phylo.NCBITree;
@@ -380,6 +379,8 @@ static boolean saveSAM= true;
 			
 			
 			if(blast){
+				RealtimeSpeciesTyping.start_thresh = 0.00;
+				//refDB  = new ReferenceDB(refDB,0, "Viruses".split(":"), new int[] {2});
 				fastqFiles = new File[bamFiles.length];
 				for(int i=0; i<bamFiles.length; i++){
 					fastqFiles[i] = new File(bamFiles[i].getParentFile(), "consensus_output.fa");
@@ -468,10 +469,8 @@ public static File[]  getFiles(File base, String str, String sp) {
 			Iterator<SAMRecord> samIter= 
 					bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(bamFile,  readList, maxReads, q_thresh, readers,  refDB.refFile, flipName) : 
 						RealtimeSpeciesTypingCmd.getSamIteratorsFQ( fastqFile, readList, maxReads, q_thresh, refDB.refFile, keepBAM);
-			String[] src_names =new String[num_sources];
-			for(int i=0; i<src_names.length; i++){
-				src_names[i] =bamFile!=null ? bamFile[i].getName() : fastqFile[i].getName();
-			}
+			String[] src_names =getSourceNames(bamFile!=null ? bamFile: fastqFile);
+				
 			File outdir_new  = null;
 			if(resdir!=null){
 				outdir_new =  new File(resdir,refDB.dbs);
@@ -514,6 +513,24 @@ public static File[]  getFiles(File base, String str, String sp) {
 				refDB.printKrakenFormat(resdir, paTyping.samples(), keepNames ? fastqFile : null);
 				return new File[][] {outdir, paTyping.consensus_file_out};
 		//paTyping.typing(bamFile, number, time);		
+	}
+
+	private static String[] getSourceNames(File[]  bamFile) {
+		int num_sources = bamFile.length;
+		String[] src_names = new String[num_sources];
+		boolean all_equal = true;
+		for(int i=0; i<src_names.length; i++){
+			src_names[i] = bamFile[i].getName();
+			if(i>0 && src_names[i].equals(src_names[0])){
+				all_equal = false;
+			}
+		}
+		if(!all_equal && num_sources>1){
+			for(int i=0; i<src_names.length; i++){
+				src_names[i] = bamFile[i].getParentFile().getName();
+			}
+		}
+		return src_names;
 	}
 }
 

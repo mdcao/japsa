@@ -290,7 +290,7 @@ public class RealtimeScaffolding {
 			//if SPAdes assembly graph is involved
 			if(Contig.hasGraph()){
 				ContigBridge.forceFilling();
-				analysis();
+				analysis(0);
 			}
 
 			try{
@@ -301,7 +301,8 @@ public class RealtimeScaffolding {
 		}
 
 		@Override
-		protected void analysis() {
+		protected void analysis(int j) {
+			if(j>0) throw new RuntimeException("!!");
 			long step = (lastTime - startTime)/1000;//convert to second	
 			scaffolding.graph.connectBridges();
 			int scfCount = 0,
@@ -339,6 +340,11 @@ public class RealtimeScaffolding {
 		protected int getCurrentRead() {
 			// TODO Auto-generated method stub
 			return scaffolding.currentReadCount;
+		}
+
+		@Override
+		protected int numSources() {
+		return 1;
 		}
 
 	}
