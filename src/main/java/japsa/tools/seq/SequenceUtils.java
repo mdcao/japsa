@@ -826,6 +826,8 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
 		//	if(reads.size()==0) return false;
+		//	System.err.println(cnt+"\t"+max_reads);
+			
 			return  nxt!=null && cnt <= max_reads;
 		}
 public SAMRecord next(){
@@ -872,8 +874,10 @@ public SAMRecord next(){
 				///		return nxt;
 				//	}
 				}
+				if(flipname){ // flipname is true for blast
 				if(reads==null || reads.size()==0 || !nme.equals(readnme)){
 					return null;
+				}
 				}
 				//nxt=null;
 			}
@@ -930,7 +934,7 @@ public SAMRecord next(){
 					
 				}
 			}
-			System.err.println("h");
+			//System.err.println("h");
 		}
 		
 		@Override

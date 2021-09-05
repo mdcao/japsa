@@ -151,8 +151,8 @@ public class RealtimeSpeciesTyping {
 	private boolean twoDOnly = false;
 	public CachedOutput[] fqw_unmapped = null;
 	CachedOutput fqw_filtered = null;
-	final public File[] unmapped_reads;
-	File exclFile;
+	//final public File[] unmapped_reads;
+	File[] exclFile;
 	File[] consensusFile;
 	ReferenceDB refDB = null;
 	final int[] currentReadCount;
@@ -693,7 +693,7 @@ public class RealtimeSpeciesTyping {
 		
 	}
 	
-	static  File[] newF(File[] outdir, String nme, boolean mkDir){
+	public static  File[] newF(File[] outdir, String nme, boolean mkDir){
 		File[] f = new File[outdir.length];
 		for(int i=0; i<f.length; i++){
 			f[i] = nme==null ? null : new File(outdir[i], nme);
@@ -702,7 +702,7 @@ public class RealtimeSpeciesTyping {
 		return f;
 	}
 	public RealtimeSpeciesTyping(File[] outdir, ReferenceDB refDB, 
-			String exclFile,String consensusFile,   boolean writeUnmapped, String outputFile) throws IOException{
+			File[] exclFile,File[] consensus_file_in,   boolean writeUnmapped, String outputFile) throws IOException{
 		this.outdir = outdir;
 		this.sampleID =  getNames(outdir);
 		this.num_sources = outdir.length;
@@ -711,19 +711,20 @@ public class RealtimeSpeciesTyping {
 		this.currentReadCount = new int[num_sources];
 			exclude_file_out =newF(outdir, "exclude.txt", false);
 			consensus_file_out =newF(outdir, "consensus_regions.txt", false);
+			
 			this.outputFile = newF(outdir,outputFile, false);
 			this.fastqdir= newF(outdir,"fastqs", writeSep!=null); 
 			this.refDB = refDB;
-			this.unmapped_reads  = newF(outdir, "unmapped", true);
+		//	this.unmapped_reads  = newF(outdir, "unmapped", true);
 		
 	//	this.tree = tree;
 		this.refDB = refDB;
 		//this.indexFile = indexFile;
-		this.exclFile = exclFile==null ? null : new File(exclFile); // this lists regions to exclude from count
-		this.consensusFile =  newF(outdir, consensusFile, false);
+		this.exclFile = exclFile;//==null ? null : new File(exclFile); // this lists regions to exclude from count
+		this.consensusFile =  consensus_file_in;
 		//this.unmapped_reads = (new File(outdir, "unmapped")).getAbsolutePath();
 		if(writeUnmapped){
-			this.fqw_unmapped = new CachedFastqWriter[unmapped_reads.length] ;
+			this.fqw_unmapped = new CachedFastqWriter[outdir.length] ;
 			for(int i=0; i<fqw_unmapped.length ;i++){
 				this.fqw_unmapped[i] = new CachedFastqWriter(outdir[i], "unmapped", false, false);
 			}
@@ -734,7 +735,7 @@ public class RealtimeSpeciesTyping {
 	//final NCBITree tree;
 	
 	//* referenceFile is to get the length map */
-	public RealtimeSpeciesTyping(ReferenceDB refDB, String exclFile, String consensusFile, 
+	public RealtimeSpeciesTyping(ReferenceDB refDB, File[] exclFile, File[] consensusFile, 
 			String outputFile, File[] outdir, File referenceFile, 
 			boolean unmapped_reads, boolean keepNames, String[] src_names) throws IOException{
 		this(outdir, refDB, exclFile,consensusFile, unmapped_reads, outputFile);
@@ -758,9 +759,10 @@ public class RealtimeSpeciesTyping {
 		return res;
 	}
 	final String[] sampleID;
-	public RealtimeSpeciesTyping(ReferenceDB refDB, String exclFile,String consensusFile,   File[] outdir, boolean unmapped_reads) throws IOException {
+	public RealtimeSpeciesTyping(ReferenceDB refDB, File[] exclFile,File[] consensusFile,   File[] outdir, boolean unmapped_reads) throws IOException {
 		this(outdir, refDB, exclFile, consensusFile,  unmapped_reads, "output.data");
 		LOG.debug("string outputstream");
+		
 	//	this.indexBufferedReader = SequenceReader.openFile(indexFile);
 	//	this.outputStream = outputStream;
 		
@@ -813,14 +815,16 @@ public static boolean alignedOnly = true; // whether just to output the aligned 
 public static int minCoverage = 2;
 public static boolean fastaOutput = true;
 
-Map<String, SortedSet< Interval>> exclude_list  = null;
+Map<String, SortedSet< Interval>>[] exclude_list  = null;
 Map<String, SortedSet<Interval>>[] consensus_list  = null;
 
 public static List<String> speciesToIgnore = null;
 	private void preTyping() throws IOException{
-		exclude_list= getIntervals(exclFile, null);
+		
+		exclude_list = new Map[exclFile.length];
 		consensus_list= new Map[consensusFile.length];
 			for(int i=0; i<consensus_list.length; i++){
+				exclude_list[i]= getIntervals(exclFile[i], null);
 				Map<String, List<String>> m =new HashMap<String, List<String>>();
 
 				consensus_list[i] = 	getIntervals(consensusFile[i],m);
@@ -923,7 +927,7 @@ public static List<String> speciesToIgnore = null;
 		HashSet<String> skipList = new HashSet<>();
 		//String prevReadName = "";
 		//String prevRefName= "";
-		AllRecords records = new AllRecords(); // for supplementary alignemnts to same reference
+		AllRecords records = new AllRecords(this.outdir); // for supplementary alignemnts to same reference
 		//Interval interval = new Interval();
 		outer: while (samIter.hasNext()){
 			try{
@@ -986,7 +990,7 @@ public static List<String> speciesToIgnore = null;
 				continue;			
 			}
 			int len = sam.getAlignmentEnd() - sam.getAlignmentStart()+1;
-			SortedSet<Interval>lis = exclude_list.get(refName);
+			SortedSet<Interval>lis = exclude_list[src_index].get(refName);
 			if(lis!=null){
 				for(Iterator<Interval>it1 = lis.iterator(); it1.hasNext();){
 					Interval int1 = it1.next();
@@ -1056,14 +1060,15 @@ public static List<String> speciesToIgnore = null;
 		}//while
 		//
 			records.transferReads(species2ReadList, all_reads, currentReadCount, currentBaseCount);
-		
+		records.close();
 
 			for(int src_index=0; src_index < num_sources; src_index++){
 			if(fqw_filtered!=null) this.fqw_filtered.close();
-			if(fqw_unmapped[src_index]!=null) {
+			if(fqw_unmapped!=null && fqw_unmapped[src_index]!=null) {
 				this.fqw_unmapped[src_index].close();
 			}
 	}
+			//boolean hasnext = samIter.hasNext();
 		typer.stopWaiting();//Tell typer to stop
 		if(runAnalysis){ // This is the E-M step
 			double[]v = new double[2];
@@ -1114,7 +1119,7 @@ public static List<String> speciesToIgnore = null;
 		Map<String, SortedSet<Interval>> m = new HashMap<String, SortedSet<Interval>>();
 		Map<String, String>seq2Species = new HashMap<String, String>();
 		boolean consensus = false;
-		if(excl==null) return m;
+		if(excl==null || !excl.exists()) return m;
 		try{
 			BufferedReader br = new BufferedReader(new FileReader(excl));
 			String st = "";
@@ -1258,9 +1263,17 @@ public static List<String> speciesToIgnore = null;
 				intervalMap = new TreeMap<Integer, Interval>();
 				segsMap = new TreeMap<Integer, Integer>();// this can capture the distribution of bases against depth
 				try{
-				coverage_out = new PrintWriter(new FileWriter(new File(outdir[src_index], "coverage.txt")));
+					File cov_out = new File(outdir[src_index], "coverage.txt");
+					File excl_out = (exclude_file_out[src_index]);
+					if(!cov_out.exists()){
+				coverage_out = new PrintWriter(new FileWriter(cov_out));
+					}
+					if(!excl_out.exists()){
 				if(writeExcludeFile) regions_to_exclude = new PrintWriter(new FileWriter(exclude_file_out[src_index]));
+					}
+					if(!consensus_file_out[src_index].exists()){
 				regions_to_use=  new PrintWriter(new FileWriter(consensus_file_out[src_index]));
+					}
 				}catch(IOException exc){
 					exc.printStackTrace();
 				}
@@ -1286,7 +1299,7 @@ public static List<String> speciesToIgnore = null;
 							
 						  Double[] stats = cov.medianReadCoverage(new double[0], new double[0], j,covMap, intervalMap, segsMap);
 						  
-						  if(covMap!=null){
+						  if(covMap!=null && coverage_out!=null){
 							  Entry<Integer,Integer> prev = null;
 							  Integer thresh = null;
 							  for(Iterator<Entry<Integer, Integer>> covs = covMap.entrySet().iterator();covs.hasNext(); ){

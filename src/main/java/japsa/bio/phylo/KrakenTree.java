@@ -19,7 +19,7 @@ import pal.tree.NodeUtils;
 public  class KrakenTree extends NCBITree {
 
 	public KrakenTree(File file, String str) throws IOException {
-		super(file, true, true);
+		super(new File(file, str), true, true);
 		// TODO Auto-generated constructor stub
 	}
 	

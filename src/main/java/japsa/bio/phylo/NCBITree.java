@@ -350,7 +350,7 @@ private Node getNode(TreePos tp) {
 
 	final boolean kraken;
 	
-	static boolean trim = false;
+	static boolean trim = true;//false;
 
 	
 	public Node make( Node parent, String suffix){
@@ -386,7 +386,7 @@ private Node make(String line_, int  level, Node parent, int index){
 	  
 	   String[] lines = line_.split("\t");
 	   String line = lines[index];
-	   String name = line;
+	   String name = line;//line.replace("+-","").trim();
 	   int j=0;
 	 
 	 //  err.println(name);err.flush();

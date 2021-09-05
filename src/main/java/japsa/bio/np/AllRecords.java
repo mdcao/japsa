@@ -1,11 +1,14 @@
 package japsa.bio.np;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import japsa.bio.np.RealtimeSpeciesTyping.Coverage;
 import japsa.tools.seq.SequenceUtils;
 import japsa.tools.seq.SparseVector;
@@ -84,6 +87,14 @@ public  class AllRecords{
 			// TODO Auto-generated method stub
 			return records.size();
 		}
+		public AllRecords(File[] outdir) throws IOException{
+			 int num_sources = outdir.length;
+			this.reads_info = new PrintWriter[num_sources];
+			for(int i=0; i<num_sources; i++){
+				reads_info[i] = new PrintWriter(new FileWriter(new File(outdir[i], "reads.txt")));
+			}
+		}
+		final PrintWriter[] reads_info;
 		/* returns the src_index */
 		public int transferReads(List<Coverage[]>species2ReadList ,SparseVectorCollection all_reads, int[] currentReadCount, int[] currentBaseCount) {
 			int src_i = this.src_index;
@@ -108,7 +119,10 @@ public  class AllRecords{
 					
 					boolean primary = !sam.isSecondaryOrSupplementary();
 					RealtimeSpeciesTyping.filter(sams, filtered, besti);
-					if(primary) coverage.addRead(filtered);
+					if(primary){
+						this.reads_info[src_i].println(this.readnme+"\t"+q);
+						coverage.addRead(filtered);
+					}
 					// we use 0.1 as minimum to avoid zero probability for mq=0 reads
 					double v; 
 				
@@ -141,6 +155,13 @@ public  class AllRecords{
 		public int getReadLength() {
 			// TODO Auto-generated method stub
 			return readLen;
+		}
+
+		public void close() {
+			for(int i=0; i<reads_info.length; i++){
+		this.reads_info[i].close();
+			}
+			
 		}
 
 		

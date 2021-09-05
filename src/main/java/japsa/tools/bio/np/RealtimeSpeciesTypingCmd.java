@@ -333,7 +333,8 @@ static boolean saveSAM= true;
 		String dbs =cmdLine.getStringVal("dbs");
 		String readList = cmdLine.getStringVal("readList");
 		final String speciesFile=cmdLine.getStringVal("speciesFile");
-		String exclfile = cmdLine.getStringVal("excludeFile");
+		String exclfile_ = cmdLine.getStringVal("excludeFile");
+
 		buildConsensus = cmdLine.getBooleanVal("buildConsensus");
 		//File excl = exclfile==null ? null : new File(exclfile);
 		//File consensus = consensusFile==null ? null : new File(consensusFile);
@@ -343,6 +344,13 @@ static boolean saveSAM= true;
 		List<File>[] unmapped_reads = new List[num_sources];
 		List<File>[] out_fastq = new List[num_sources];
 
+		File[] outdir = new File[num_sources];
+		for(int i=0; i<outdir.length; i++){
+		File sample_namesk = bamFile!=null ?  bamFiles[i]: fastqFiles[i];
+			 outdir[i] =  new File(resdir+"/"+sample_namesk.getName());//.getParentFile().getName());// : new File(sample_namesk.getAbsolutePath()+"."+refDB.dbs+".jST");
+			outdir[i].mkdirs();
+		}
+		
 		for(int i=0; i<num_sources; i++)  {
 			unmapped_reads[i] = new ArrayList<File>();
 			out_fastq[i] = new ArrayList<File>();
@@ -385,59 +393,57 @@ static boolean saveSAM= true;
 				for(int i=0; i<bamFiles.length; i++){
 					fastqFiles[i] = new File(bamFiles[i].getParentFile(), "consensus_output.fa");
 				}
-				File[][] outDs = speciesTyping(refDB,  resdir , readList,  bamFiles, fastqFiles, output,
-						out_fastq,  unmapped_reads, exclfile, null, null, true, null, null, true);
+				File[][] outDs = speciesTyping(refDB,  outdir , readList,  bamFiles, fastqFiles, output,
+						out_fastq,  unmapped_reads, null, null, null, true, null, true);
 				System.err.println(Arrays.asList(outDs));
 				return;
 			}
 			
+		
+			
 			String consensusFile = cmdLine.getStringVal("consensusFile");
 			List<String> species = new ArrayList<String>();
 			Stack<File> bamOut = buildConsensus ?new Stack<File>() : null; //bamOut saves the bam files if created
-			File[][] outDs = speciesTyping(refDB, resdir , readList,  bamFiles, fastqFiles, output,
-							out_fastq, unmapped_reads, exclfile, consensusFile, species, true, bamOut, null, false);
-			if(buildConsensus && consensusFile==null && !dbs.equals("Human")  ){
-				//for(int src_index=0; src_index < num_sources; src_index++){
-				File[] consensusFile1 = 
-						outDs[1];
-				// check what is in consensusFile1
-				System.err.println("rerunning to build consensus");
-				File[] bamFiles1 = bamFiles;
-				File bamO = bamOut.size()>0 ? bamOut.pop() : null;
-				//System.err.println(bamO);
-				if(bamFiles1==null)bamFiles1 = new File[] {bamO};
-				outDs = speciesTyping(refDB, resdir , readList,  bamFiles1, (File[]) null, output,
-						(List[]) null, (List[]) null, exclfile, consensusFile1[0].getName(), (List<String>) null, false, null, outDs[0][0] , false);
-				if(bamO!=null) bamO.delete();
-				
-				File consensus = SequenceUtils.makeConsensus(new File(outDs[0][0], "fastqs"),4, true);
-				speciesTyping(refDB, null, null, null, new File[] {consensus}, "output.dat",
-						null, null, null, null, null, true, null, new File(consensus.getAbsolutePath()+".jST"), false);
 			
-			//}for i in dbs
-			if(outdirTop==null && !dbs.equals("Human")) outdirTop = outDs[0][0];
-			bamFiles = null;
-		//	if(unmapped_reads==null) break inner;
-			fastqFiles = new File[unmapped_reads.length];
-			for(int i=0; i<fastqFiles.length; i++) fastqFiles[i] = unmapped_reads[i].toArray(new File[0])[0];
-					
-			if(deleteUnmappedIntermediates){
-				for(int i=0; i<unmapped_reads.length; i++){
-				for(int j=0; j<unmapped_reads[i].size(); j++){
-							((unmapped_reads[i].get(j))).deleteOnExit();
-				}
-				unmapped_reads[i].clear();
-				}
-			}
-			//if(fastqFiles[0].length==0) break inner;
+		//	if(consensusFile==null ){
+			//if(consensusF)
+			File[][] outDs;
+			
+File[] exclfile = 			RealtimeSpeciesTyping.newF(outdir, exclfile_, false);
+File[] consensus_regions = RealtimeSpeciesTyping.newF(outdir, "consensus_regions.txt", false);
+File[] consensus_output =  RealtimeSpeciesTyping.newF(outdir,"consensus_output.fa", false);
+if(consensus_output[0].exists()){
+	// third step
+	speciesTyping(refDB, outdir, null, null, consensus_output, "output1.dat",
+			null, null, null, null, null, true, null, false);
+}else if (consensus_regions[0].exists()){
+	//this is second setp and it uses coverage.txt to generate consensus
+	
+outDs = speciesTyping(refDB, outdir , readList,  bamFiles, (File[]) null, output,
+		(List[]) null, (List[]) null, exclfile, consensus_regions, (List<String>) null, false, null,  false);
+   File consensus = SequenceUtils.makeConsensus(new File(outDs[0][0], "fastqs"),4, true);
+  System.err.println("consensus "+consensus);
+}else{
+				// this is the first step, and it generates coverage.txt
+				outDs = speciesTyping(refDB, outdir , readList,  bamFiles, fastqFiles, output,
+							out_fastq, unmapped_reads, exclfile, consensus_regions, species, true, bamOut, false);
+				System.err.println(outDs[1][0]);
+				System.err.println(outDs[0][0]);
+				System.err.println("h");
 		}
-		if(outdirTop!=null){
+			
+			
+			
+			
+			//}
+		
+		/*if(outdirTop!=null){
 		KrakenTree overall = new  KrakenTree(outdirTop, "results.krkn");
 		//overa.trim(1e-16);
 		OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(new File(outdirTop,"results_combined.krkn")));
 		overall.print(osw, new String[]{NCBITree.count_tag,NCBITree.count_tag1}, new String[] {"%5.3g","%5.3g"}, true, false);
 		osw.close();
-		}
+		}*/
 		
 	}
 	
@@ -454,12 +460,14 @@ public static File[]  getFiles(File base, String str, String sp) {
 
 	public static File[][] speciesTyping(
 			ReferenceDB refDB, 
-			File resdir, String readList,
+			File[] outdir, String readList,
 		 File [] bamFile, File[] fastqFile, String output,	
 		 List<File>[] out_fastq , 
-		 List<File>[] unmapped_reads, String exclude, String consensus,
-		 List<String> species, boolean runAnalysis, Stack<File> keepBAM, File outdir1, boolean keepNames
+		 List<File>[] unmapped_reads, File[] exclude, File[] consensus_regions,
+		 List<String> species, boolean runAnalysis, Stack<File> keepBAM, boolean keepNames
 			) throws IOException, InterruptedException{
+		if(exclude==null) exclude = new File[outdir.length];
+		if(consensus_regions==null) consensus_regions = new File[outdir.length];
 		int num_sources = bamFile!=null ? bamFile.length : fastqFile.length;
 		File[][] result = new File[num_sources][];
 		if(fastqFile!=null) {
@@ -471,21 +479,20 @@ public static File[]  getFiles(File base, String str, String sp) {
 						RealtimeSpeciesTypingCmd.getSamIteratorsFQ( fastqFile, readList, maxReads, q_thresh, refDB.refFile, keepBAM);
 			String[] src_names =getSourceNames(bamFile!=null ? bamFile: fastqFile);
 				
-			File outdir_new  = null;
-			if(resdir!=null){
+			//if(resdir==null) throw new RuntimeException("resdir is null");
+		//	File outdir_new  = resdir;
+			//resdir.mkdir();
+			
+			/*if(resdir!=null){
 				outdir_new =  new File(resdir,refDB.dbs);
 				outdir_new.mkdir();
-			}
-			File[] outdir = new File[num_sources];
-			for(int i=0; i<outdir.length; i++){
-			File sample_namesk = bamFile!=null ?  bamFile[i]: fastqFile[i];
-				if(outdir[i]==null)  outdir[i] = outdir_new!=null ?  new File(outdir_new+"/"+sample_namesk.getParentFile().getName()) : new File(sample_namesk.getAbsolutePath()+"."+refDB.dbs+".jST");
-				outdir[i].mkdirs();
-			}
+			}*/
+			
+			
 			
 			//	SamReader samReader = readers.size()>0 ? readers.get(k) : null;
 				RealtimeSpeciesTyping paTyping =
-						new RealtimeSpeciesTyping(refDB,	exclude,consensus,
+						new RealtimeSpeciesTyping(refDB,	exclude,consensus_regions,
 								 output,outdir,  refDB.refFile, unmapped_reads!=null, keepNames, src_names);
 				
 				paTyping.setMinQual(qual);

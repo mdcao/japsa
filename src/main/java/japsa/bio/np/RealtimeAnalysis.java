@@ -116,6 +116,7 @@ public abstract class RealtimeAnalysis implements Runnable {
 		//perform the final analysis
 		lastTime = System.currentTimeMillis();
 		lastReadNumber =  getCurrentRead();
+		System.err.println("processed "+lastReadNumber+" "+lastReadNumber);
 	//	timeNow = lastTime;//(new Date(lastTime)).getTime();
 		for(int i=0; i<this.numSources(); i++){
 			this.lastAnalysis(i);

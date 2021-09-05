@@ -42,7 +42,7 @@ public class CSSProcessCommand {
 		  File taxdump = new File(taxdir,"names.dmp");
 		  File nodesdmp= new File(taxdir,"nodes.dmp");
 		//  File speciesIndex = new File("speciesIndex");
-		  if(name_dmp2.exists() && node_dmp2.exists()){
+		  if(name_dmp2!=null && node_dmp2!=null && name_dmp2.exists() && node_dmp2.exists()){
 			  taxdump = name_dmp2;
 			  nodesdmp = node_dmp2;
 			  expand = false;

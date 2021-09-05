@@ -340,6 +340,9 @@ public class ReferenceDB{
 			  tree.trim(krakenTrimThreshPerc);
 		//	OutputStreamWriter osw = new OutputStreamWriter(
 			File outfile = new File(resdir, "results.krkn.zip");
+			for(int i=0; outfile.exists(); i++){
+				 outfile = new File(resdir, "results.krkn."+i+".zip");
+			}
 			OutputStream dest = new FileOutputStream(outfile);
 			CheckedOutputStream checksum = new   CheckedOutputStream(dest, new Adler32());
 	        ZipOutputStream outS = new 

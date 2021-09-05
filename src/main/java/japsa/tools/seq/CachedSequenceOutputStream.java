@@ -81,12 +81,12 @@ public class CachedSequenceOutputStream extends CachedOutput {
 		  
 	  }
 	  List<Inner> l = new ArrayList<Inner>();
-	  final  Inner remainder;
+	//  final  Inner remainder;
 	
 	  public CachedSequenceOutputStream(File outdir, String species, boolean separateIntoContig, boolean alignedOnly) {
 		super(outdir, species, separateIntoContig, alignedOnly);
 		this.l = new ArrayList<Inner>();
-		this.remainder = new Inner("remainder.fa");
+	//	this.remainder = new Inner("remainder.fa");
 	}
 
  static Alphabet alpha = Alphabet.getAlphabet("DNA");
@@ -115,7 +115,7 @@ public class CachedSequenceOutputStream extends CachedOutput {
 		  String desc = sam.getReferenceName()+":"+stA+","+endA;//
 
 	  if(alignedOnly) {
-			 if(primary && st > remainderThresh){
+			 /*if(primary && st > remainderThresh){
 		  		 this.remainder.push(new Sequence(alpha, readSeq.substring(0,st-1), nme+".L."+st));
 			 }
 			  if(primary && end < sam.getReadLength()-remainderThresh){
@@ -123,7 +123,7 @@ public class CachedSequenceOutputStream extends CachedOutput {
 			  }
 			  if(st <0 || end-1 >=readSeq.length()){
 				  throw new RuntimeException("out of bounds");
-			  }
+			  }*/
 		  readSeq =  readSeq.substring(st,end); // because sam is 1-based
 	  		nme = nme+"."+st+"_"+end;
 	 
@@ -158,7 +158,7 @@ public void close(Map<String, Integer> species2Len){
 	for(int i=0; i<l.size(); i++){
 		l.get(i).close();
 	}
-	this.remainder.close();
+//	this.remainder.close();
 //	super.writeAssemblyCommand(species2Len);
 	
 }
