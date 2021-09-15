@@ -345,11 +345,19 @@ static boolean saveSAM= true;
 		List<File>[] out_fastq = new List[num_sources];
 
 		File[] outdir = new File[num_sources];
+		boolean all_equal  = outdir.length>1;
 		for(int i=0; i<outdir.length; i++){
-		File sample_namesk = bamFile!=null ?  bamFiles[i]: fastqFiles[i];
-			 outdir[i] =  new File(resdir+"/"+sample_namesk.getName());//.getParentFile().getName());// : new File(sample_namesk.getAbsolutePath()+"."+refDB.dbs+".jST");
-			outdir[i].mkdirs();
+			File sample_namesk = bamFile!=null ?  bamFiles[i]: fastqFiles[i];
+			 outdir[i] =  new File(resdir+"/"+sample_namesk.getName()+".jST");//.getParentFile().getName());// : new File(sample_namesk.getAbsolutePath()+"."+refDB.dbs+".jST");
+			 if(!outdir[i].getName().equals(outdir[0].getName())) all_equal = false;
 		}
+		if(all_equal){
+			for(int i=0; i<outdir.length; i++){
+				File sample_namesk = bamFile!=null ?  bamFiles[i]: fastqFiles[i];
+				 outdir[i] =  new File(resdir+"/"+sample_namesk.getParentFile().getName()+".jST");// : new File(sample_namesk.getAbsolutePath()+"."+refDB.dbs+".jST");
+			}
+		}
+		for(int i=0; i<outdir.length; i++){outdir[i].mkdirs();}
 		
 		for(int i=0; i<num_sources; i++)  {
 			unmapped_reads[i] = new ArrayList<File>();
@@ -385,8 +393,16 @@ static boolean saveSAM= true;
 				refDB.tree.modAll(0, num_sources);
 			}
 			
-			
+			boolean runAnalysis = true;
+			boolean keepNames = true;
+			File[] exclfile = null;
+			File[] consensus_regions = null;
+			File[] coverage_output = null;
+			File[] reads_output =  RealtimeSpeciesTyping.newF(outdir,"reads.txt.gz", false);
+
+			Stack<File> bamOut = null;
 			if(blast){
+				reads_output =  RealtimeSpeciesTyping.newF(outdir,"reads.blast.txt.gz", false);
 				RealtimeSpeciesTyping.start_thresh = 0.00;
 				//refDB  = new ReferenceDB(refDB,0, "Viruses".split(":"), new int[] {2});
 				fastqFiles = new File[bamFiles.length];
@@ -394,46 +410,69 @@ static boolean saveSAM= true;
 					fastqFiles[i] = new File(bamFiles[i].getParentFile(), "consensus_output.fa");
 				}
 				File[][] outDs = speciesTyping(refDB,  outdir , readList,  bamFiles, fastqFiles, output,
-						out_fastq,  unmapped_reads, null, null, null, true, null, true);
+						out_fastq,  unmapped_reads,  exclfile, consensus_regions, coverage_output, reads_output, runAnalysis, bamOut, keepNames);
 				System.err.println(Arrays.asList(outDs));
 				return;
 			}
 			
 		
 			
-			String consensusFile = cmdLine.getStringVal("consensusFile");
-			List<String> species = new ArrayList<String>();
-			Stack<File> bamOut = buildConsensus ?new Stack<File>() : null; //bamOut saves the bam files if created
-			
-		//	if(consensusFile==null ){
-			//if(consensusF)
+			//String consensusFile = cmdLine.getStringVal("consensusFile");
+			//List<String> species = new ArrayList<String>();
+			bamOut = buildConsensus ?new Stack<File>() : null; //bamOut saves the bam files if created
 			File[][] outDs;
-			
-File[] exclfile = 			RealtimeSpeciesTyping.newF(outdir, exclfile_, false);
-File[] consensus_regions = RealtimeSpeciesTyping.newF(outdir, "consensus_regions.txt", false);
-File[] consensus_output =  RealtimeSpeciesTyping.newF(outdir,"consensus_output.fa", false);
-if(consensus_output[0].exists()){
+			exclfile = 			RealtimeSpeciesTyping.newF(outdir, exclfile_, false);
+			consensus_regions = RealtimeSpeciesTyping.newF(outdir, "consensus_regions.txt", false);
+			File[] consensus_output =  RealtimeSpeciesTyping.newF(outdir,"consensus_output.fa", false);
+			coverage_output =  RealtimeSpeciesTyping.newF(outdir,"coverage.zip", false);
+
+/*if(consensus_output[0].exists()){
 	// third step
 	speciesTyping(refDB, outdir, null, null, consensus_output, "output1.dat",
-			null, null, null, null, null, true, null, false);
+			null, null, null, null, null,  true, null, false);
 }else if (consensus_regions[0].exists()){
 	//this is second setp and it uses coverage.txt to generate consensus
 	
 outDs = speciesTyping(refDB, outdir , readList,  bamFiles, (File[]) null, output,
-		(List[]) null, (List[]) null, exclfile, consensus_regions, (List<String>) null, false, null,  false);
+		(List[]) null, (List[]) null, exclfile, consensus_regions, coverage_output,  false, null,  false);
    File consensus = SequenceUtils.makeConsensus(new File(outDs[0][0], "fastqs"),4, true);
   System.err.println("consensus "+consensus);
 }else{
 				// this is the first step, and it generates coverage.txt
 				outDs = speciesTyping(refDB, outdir , readList,  bamFiles, fastqFiles, output,
-							out_fastq, unmapped_reads, exclfile, consensus_regions, species, true, bamOut, false);
-				System.err.println(outDs[1][0]);
-				System.err.println(outDs[0][0]);
-				System.err.println("h");
-		}
-			
-			
-			
+							out_fastq, unmapped_reads, exclfile, consensus_regions, coverage_output, true, bamOut, false);
+				
+		}*/
+if(consensus_output[0].exists()){
+	//third step
+	fastqFiles = null; 
+	out_fastq = null;
+	unmapped_reads = null;
+	exclfile=null;
+	consensus_regions  = null ; 
+	coverage_output = null;
+	bamOut = null;
+	output = "output1.dat";
+	keepNames = false;
+}else if(consensus_regions[0].exists()){
+	//this is second step and it uses coverage.txt to generate consensus	
+	fastqFiles = null;
+	out_fastq = null; 
+	unmapped_reads = null; 
+   runAnalysis = false; 
+   keepNames = false;
+}else{
+	System.err.println("first step");
+	// this if the first step
+}
+
+
+outDs = speciesTyping(refDB, outdir , readList,  bamFiles, fastqFiles, output,
+		out_fastq, unmapped_reads, exclfile, consensus_regions, coverage_output, reads_output,  runAnalysis, bamOut, keepNames);	
+
+System.err.println(outDs[1][0]);
+System.err.println(outDs[0][0]);
+System.err.println("h");			
 			
 			//}
 		
@@ -463,8 +502,8 @@ public static File[]  getFiles(File base, String str, String sp) {
 			File[] outdir, String readList,
 		 File [] bamFile, File[] fastqFile, String output,	
 		 List<File>[] out_fastq , 
-		 List<File>[] unmapped_reads, File[] exclude, File[] consensus_regions,
-		 List<String> species, boolean runAnalysis, Stack<File> keepBAM, boolean keepNames
+		 List<File>[] unmapped_reads, File[] exclude, File[] consensus_regions,File[] coverage_output,File[] reads_output,
+		 boolean runAnalysis, Stack<File> keepBAM, boolean keepNames
 			) throws IOException, InterruptedException{
 		if(exclude==null) exclude = new File[outdir.length];
 		if(consensus_regions==null) consensus_regions = new File[outdir.length];
@@ -492,14 +531,14 @@ public static File[]  getFiles(File base, String str, String sp) {
 			
 			//	SamReader samReader = readers.size()>0 ? readers.get(k) : null;
 				RealtimeSpeciesTyping paTyping =
-						new RealtimeSpeciesTyping(refDB,	exclude,consensus_regions,
+						new RealtimeSpeciesTyping(refDB,	exclude,consensus_regions,coverage_output, reads_output, 
 								 output,outdir,  refDB.refFile, unmapped_reads!=null, keepNames, src_names);
 				
 				paTyping.setMinQual(qual);
 				paTyping.setTwoOnly(twoOnly);	
 				paTyping.setFilter(filter);
 				try{
-				paTyping.typing(samIter, number, time, species, runAnalysis);
+				paTyping.typing(samIter, number, time, runAnalysis);
 				}catch(InterruptedException exc){
 					exc.printStackTrace();
 				}

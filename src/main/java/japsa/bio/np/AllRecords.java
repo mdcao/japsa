@@ -89,12 +89,12 @@ public  class AllRecords{
 		}
 		public AllRecords(File[] outdir) throws IOException{
 			 int num_sources = outdir.length;
-			this.reads_info = new PrintWriter[num_sources];
-			for(int i=0; i<num_sources; i++){
+			//this.reads_info = new PrintWriter[num_sources];
+			/*for(int i=0; i<num_sources; i++){
 				reads_info[i] = new PrintWriter(new FileWriter(new File(outdir[i], "reads.txt")));
-			}
+			}*/
 		}
-		final PrintWriter[] reads_info;
+	//	final PrintWriter[] reads_info;
 		/* returns the src_index */
 		public int transferReads(List<Coverage[]>species2ReadList ,SparseVectorCollection all_reads, int[] currentReadCount, int[] currentBaseCount) {
 			int src_i = this.src_index;
@@ -120,8 +120,8 @@ public  class AllRecords{
 					boolean primary = !sam.isSecondaryOrSupplementary();
 					RealtimeSpeciesTyping.filter(sams, filtered, besti);
 					if(primary){
-						this.reads_info[src_i].println(this.readnme+"\t"+q);
-						coverage.addRead(filtered);
+						//this.reads_info[src_i].println(this.readnme+"\t"+q);
+						coverage.addRead(filtered, src_index, readnme);
 					}
 					// we use 0.1 as minimum to avoid zero probability for mq=0 reads
 					double v; 
@@ -158,9 +158,9 @@ public  class AllRecords{
 		}
 
 		public void close() {
-			for(int i=0; i<reads_info.length; i++){
-		this.reads_info[i].close();
-			}
+	//		for(int i=0; i<reads_info.length; i++){
+	//	this.reads_info[i].close();
+	//		}
 			
 		}
 

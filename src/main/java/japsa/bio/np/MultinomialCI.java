@@ -1,8 +1,6 @@
 package japsa.bio.np;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.math3.distribution.PoissonDistribution;
@@ -355,6 +353,11 @@ public class MultinomialCI {
 	
 	DoubleInt[] order;
 	public int[] rank(){
+		/*if(l!=null){
+			for(int i=0; i<order.length; i++){
+				order[i].v = l.get(i);
+			}
+		}*/
 		Arrays.sort(order);;
 		int[] res = new int[order.length];
 		for(int i=0; i<res.length; i++){

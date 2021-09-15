@@ -35,11 +35,14 @@ package japsa.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import htsjdk.samtools.AlignmentBlock;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import japsa.seq.Alphabet;
 import japsa.seq.Sequence;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -386,6 +389,147 @@ public class HTSUtilities {
 						profile.match ++;
 					else
 						profile.mismatch ++;
+				}
+				profile.readBase += length;
+				profile.refBase += length;
+
+				readPos += length;
+				refPos  += length;
+				break;
+
+			case EQ :
+				readPos += length;
+				refPos  += length;
+
+				profile.readBase += length;
+				profile.refBase += length;
+				profile.match += length;
+				break;
+
+			case X :
+				readPos += length;
+				refPos  += length;
+
+				profile.readBase += length;
+				profile.refBase += length;
+
+				profile.mismatch += length;
+				break;
+			default : throw new IllegalStateException("Case statement didn't deal with cigar op: " + e.getOperator());
+			}//case
+		}//for			
+
+		return profile;
+
+	}
+	
+	
+	public static void  identity(SAMRecord sam, double[] v){
+		List<AlignmentBlock> li = sam.getAlignmentBlocks();
+		int start = li.get(0).getReadStart();
+		int end = li.get(0).getLength()+start;
+		int start0 = start;
+		int read_gaps=0;
+		
+		int start_ref = li.get(0).getReferenceStart();
+		int start_ref0 = start_ref;
+		int end_ref = li.get(0).getLength()+start_ref;
+		int ref_gaps=0;
+		
+		
+		for(int i=1; i<li.size(); i++){
+			start=li.get(i).getReadStart();
+			int gap = li.get(i).getReadStart() - end;
+			end = start + li.get(i).getLength();
+			read_gaps+=gap;
+			
+			start_ref=li.get(i).getReferenceStart();
+			int gap_ref = li.get(i).getReferenceStart() - end_ref;
+			end_ref = start_ref + li.get(i).getLength();
+			ref_gaps+=gap_ref;
+			
+		}
+		AlignmentBlock last = li.get(li.size()-1);
+		int end0 = last.getReadStart()+last.getLength();
+		int end_ref0 = last.getReferenceStart()+last.getLength();
+//"read_gap_first\tread_gaps\tread_gap_last\tref_gaps\talignment_blocks\talignment_blocks_rel
+		v[0] = (double)start0/(double)sam.getReadLength();
+		v[1] = (double) read_gaps/(double)(end0 - start0);
+		v[2] = (double) (sam.getReadLength()-end0)/ (double) sam.getReadLength();
+		v[3] = (double) ref_gaps/(double)(end_ref0 - start_ref0);
+		v[4] = li.size();
+		v[5] = (double) li.size()/(double) sam.getReadLength();
+		
+	}
+	
+	
+	/**
+	 * Get the identity between a read sequence from a sam and a reference sequence
+	 * Note that this cannot distinguish match and mismatch  since reflen not available
+	 * @param seqLen
+	 * @param sam
+	 * @return
+	 */
+	public static IdentityProfile identity(int refLen, SAMRecord sam){
+		IdentityProfile profile = new IdentityProfile();
+		//Sequence readSeq = new Sequence(Alphabet.DNA16(),sam.getReadBases());
+
+		int readPos = 0;//start from 0					
+		int refPos = sam.getAlignmentStart() - 1;//convert to 0-based index				
+
+		profile.readClipped = 0;
+		profile.refClipped = sam.getAlignmentStart() + refLen - sam.getAlignmentEnd();
+		profile.baseDel = 0;
+		profile.baseIns = 0;
+		profile.numDel = 0;
+		profile.numIns = 0;
+		profile.match = 0;
+		profile.mismatch = 0;
+		profile.refBase = 0;
+		profile.readBase = 0;//the number of bases from ref and read
+
+		for (final CigarElement e : sam.getCigar().getCigarElements()) {
+			final int  length = e.getLength();
+			switch (e.getOperator()) {
+			case H :
+				//nothing todo
+				profile.readClipped += length;
+				break; // ignore hard clips
+			case P : 
+				profile.readClipped += length;
+				//pad is a kind of hard clipped ?? 					
+				break; // ignore pads	                
+			case S :
+				//advance on the reference
+				profile.readClipped += length;
+				readPos += length;
+				break; // soft clip read bases	                	
+			case N : 
+				refPos += length; 
+				profile.refClipped += length;
+				break;  // reference skip
+
+			case D ://deletion      	
+				refPos += length;
+				profile.refBase += length;
+
+				profile.baseDel += length;
+				profile.numDel ++;
+				break; 	
+
+			case I :	                	
+				readPos += length;
+				profile.readBase += length;
+
+				profile.baseIns += length;
+				profile.numIns ++;
+				break;
+			case M :
+				for (int i = 0; i < length && refPos + i < refLen; i++){
+					//if (refSeq.getBase(refPos + i) == readSeq.getBase(readPos + i))
+						profile.match ++;
+				//	else
+					//	profile.mismatch ++;
 				}
 				profile.readBase += length;
 				profile.refBase += length;
