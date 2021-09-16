@@ -118,8 +118,8 @@ static boolean saveSAM= true;
 	//	addString("reference", null, "Reference db if fastq is presented", false);
 	//	addString("indexFile", null,  "indexFile ",true);
 		addString("mm2Preset", "map-ont",  "mm2Preset ",false);
-		addString("mm2_path", "/sw/minimap2/current/minimap2",  "minimap2 path", false);
-		addString("abpoa_path", "/sw/abpoa/current/abpoa",  "abpoa path", false);
+		addString("mm2_path", "minimap2",  "minimap2 path", false);
+		addString("abpoa_path", "abpoa",  "abpoa path", false);
 
 		addString("readList", null,  "file with reads to include", false);
 		addInt("maxReads",Integer.MAX_VALUE, "max reads to process", false );
@@ -172,7 +172,7 @@ static boolean saveSAM= true;
 		}
 	}
 	
-	public static Iterator<SAMRecord>  getSamIteratorsFQ( File[] fastqFile, String readListSt, int maxReads,double q_thresh,	File refFile,Stack<File> keepBAM
+	public static Iterator<SAMRecord> [] getSamIteratorsFQ( File[] fastqFile, String readListSt, int maxReads,double q_thresh,	File refFile,Stack<File> keepBAM
 		
 			) throws IOException, FileNotFoundException, InterruptedException{
 		File[] files =  fastqFile;
@@ -201,7 +201,7 @@ static boolean saveSAM= true;
 	}
 
 	//public static boolean flipRefAndReadName = false;
-	public static Iterator<SAMRecord>  getSamIteratorsBam(File[] bamFile ,String readListSt, int maxReads,double q_thresh,
+	public static Iterator<SAMRecord>[]  getSamIteratorsBam(File[] bamFile ,String readListSt, int maxReads,double q_thresh,
 			List<SamReader> samReaders,File refFile, boolean flipRefAndReadName
 			) throws IOException, FileNotFoundException{
 		 System.err.println(Arrays.asList(bamFile));
@@ -237,7 +237,7 @@ static boolean saveSAM= true;
 				samIter = SequenceUtils.getFilteredIterator(samReader.iterator(), readList, maxReads, q_thresh, flipRefAndReadName);
 				iterators.add(samIter);
 		}
-		return SequenceUtils.getCombined(iterators.toArray(new Iterator[0]), false, true);
+		return iterators.toArray(new Iterator[0]);//SequenceUtils.getCombined(iterators.toArray(new Iterator[0]), false, true);
 	}
 	
 	
@@ -249,7 +249,7 @@ static boolean saveSAM= true;
 		SequenceUtils.mm2_path = cmdLine.getStringVal("mm2_path");
 		SequenceUtils.mm2Preset = cmdLine.getStringVal("mm2Preset");
 		SequenceUtils.mm2_splicing = null;//
-		SequenceUtils.apboa_path = cmdLine.getStringVal("abpoa_path");
+		SequenceUtils.abpoa_path = cmdLine.getStringVal("abpoa_path");
 		SequenceUtils.secondary = true;
 		RealtimeSpeciesTyping.removeLikelihoodThresh= cmdLine.getDoubleVal("removeLikelihoodThresh");
 		RealtimeSpeciesTyping.EMiterations = cmdLine.getIntVal("max_EM_iterations");
@@ -397,8 +397,9 @@ static boolean saveSAM= true;
 			boolean keepNames = true;
 			File[] exclfile = null;
 			File[] consensus_regions = null;
+			File[] consensus_regions1 = null;
 			File[] coverage_output = null;
-			File[] reads_output =  RealtimeSpeciesTyping.newF(outdir,"reads.txt.gz", false);
+			File[] reads_output =  null;
 
 			Stack<File> bamOut = null;
 			if(blast){
@@ -409,6 +410,8 @@ static boolean saveSAM= true;
 				for(int i=0; i<bamFiles.length; i++){
 					fastqFiles[i] = new File(bamFiles[i].getParentFile(), "consensus_output.fa");
 				}
+				coverage_output =  RealtimeSpeciesTyping.newF(outdir,"coverage_blast.zip", false);
+
 				File[][] outDs = speciesTyping(refDB,  outdir , readList,  bamFiles, fastqFiles, output,
 						out_fastq,  unmapped_reads,  exclfile, consensus_regions, coverage_output, reads_output, runAnalysis, bamOut, keepNames);
 				System.err.println(Arrays.asList(outDs));
@@ -423,6 +426,7 @@ static boolean saveSAM= true;
 			File[][] outDs;
 			exclfile = 			RealtimeSpeciesTyping.newF(outdir, exclfile_, false);
 			consensus_regions = RealtimeSpeciesTyping.newF(outdir, "consensus_regions.txt", false);
+			consensus_regions1 = RealtimeSpeciesTyping.newF(outdir, "consensus_regions1.txt", false);
 			File[] consensus_output =  RealtimeSpeciesTyping.newF(outdir,"consensus_output.fa", false);
 			coverage_output =  RealtimeSpeciesTyping.newF(outdir,"coverage.zip", false);
 
@@ -435,7 +439,7 @@ static boolean saveSAM= true;
 	
 outDs = speciesTyping(refDB, outdir , readList,  bamFiles, (File[]) null, output,
 		(List[]) null, (List[]) null, exclfile, consensus_regions, coverage_output,  false, null,  false);
-   File consensus = SequenceUtils.makeConsensus(new File(outDs[0][0], "fastqs"),4, true);
+  
   System.err.println("consensus "+consensus);
 }else{
 				// this is the first step, and it generates coverage.txt
@@ -443,14 +447,17 @@ outDs = speciesTyping(refDB, outdir , readList,  bamFiles, (File[]) null, output
 							out_fastq, unmapped_reads, exclfile, consensus_regions, coverage_output, true, bamOut, false);
 				
 		}*/
+boolean makeConsensus=false;
 if(consensus_output[0].exists()){
 	//third step
-	fastqFiles = null; 
+	fastqFiles = consensus_output; 
+	bamFiles = null;
+	
 	out_fastq = null;
 	unmapped_reads = null;
 	exclfile=null;
-	consensus_regions  = null ; 
-	coverage_output = null;
+	coverage_output =  RealtimeSpeciesTyping.newF(outdir,"coverage1.zip", false);
+	consensus_regions = RealtimeSpeciesTyping.newF(outdir, "consensus_regions1.txt", false);
 	bamOut = null;
 	output = "output1.dat";
 	keepNames = false;
@@ -461,15 +468,17 @@ if(consensus_output[0].exists()){
 	unmapped_reads = null; 
    runAnalysis = false; 
    keepNames = false;
+   makeConsensus=true;
+   reads_output = RealtimeSpeciesTyping.newF(outdir,"reads.txt.gz", false);
 }else{
 	System.err.println("first step");
 	// this if the first step
 }
-
-
 outDs = speciesTyping(refDB, outdir , readList,  bamFiles, fastqFiles, output,
 		out_fastq, unmapped_reads, exclfile, consensus_regions, coverage_output, reads_output,  runAnalysis, bamOut, keepNames);	
-
+if(makeConsensus){
+	File consensus = SequenceUtils.makeConsensus(new File(outDs[0][0], "fastqs"),4, true);
+}
 System.err.println(outDs[1][0]);
 System.err.println(outDs[0][0]);
 System.err.println("h");			
@@ -513,9 +522,10 @@ public static File[]  getFiles(File base, String str, String sp) {
 			System.err.println("running on "+Arrays.asList(fastqFile));
 		}
 			List<SamReader> readers =  new ArrayList<SamReader>();
-			Iterator<SAMRecord> samIter= 
+			Iterator<SAMRecord>[] samIter =
 					bamFile!=null ? 	RealtimeSpeciesTypingCmd.getSamIteratorsBam(bamFile,  readList, maxReads, q_thresh, readers,  refDB.refFile, flipName) : 
 						RealtimeSpeciesTypingCmd.getSamIteratorsFQ( fastqFile, readList, maxReads, q_thresh, refDB.refFile, keepBAM);
+		
 			String[] src_names =getSourceNames(bamFile!=null ? bamFile: fastqFile);
 				
 			//if(resdir==null) throw new RuntimeException("resdir is null");

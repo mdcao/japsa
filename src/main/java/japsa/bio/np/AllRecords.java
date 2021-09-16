@@ -57,6 +57,10 @@ public  class AllRecords{
 		
 		public void add(SAMRecord sam, int spec){
 			boolean secondary = sam.isSecondaryOrSupplementary();
+			int src_index1 = (Integer) sam.getAttribute(SequenceUtils.src_tag);
+			if(readnme!=null && src_index!=src_index1){
+				throw new RuntimeException("did not switch src_index");
+			}
 			if(!SequenceUtils.secondary  && secondary){
 				//only include supplementary alignments to same species
 				if(species.size()==0 || species.get(0)!=spec){
@@ -70,10 +74,11 @@ public  class AllRecords{
 				readnme=sam.getReadName();
 				sequence = sam.getReadString();
 				readLen = sam.getReadLength();
-				src_index = (Integer) sam.getAttribute(SequenceUtils.src_tag);
+				src_index = src_index1;;
 			}
 			else if(!readnme.equals(sam.getReadName())) {
-				throw new RuntimeException("!!");
+				String readnme1 = sam.getReadName();
+				throw new RuntimeException("!! "+this.src_index+ " "+readnme1+" "+readnme);
 			}
 			this.records.add(sam);
 			this.refs.add(sam.getReferenceName());

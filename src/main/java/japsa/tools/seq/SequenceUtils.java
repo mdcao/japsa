@@ -204,7 +204,7 @@ public class SequenceUtils {
 	
 public static void main(String[] args){
 	try{
-		SequenceUtils.apboa_path = "/home/lachlan/abPOA-v1.0.1/bin/abpoa";
+		SequenceUtils.abpoa_path = "/home/lachlan/abPOA-v1.0.1/bin/abpoa";
 		File f = new File("/home/lachlan/WORK/AQIP/japsa_species_typing/plasmids/aqip003.fastq/fastqs");
 		SequenceUtils.makeConsensus(f, 4, true);
 //		String refFile = "/home/lachlan/github/npTranscript/data/SARS-Cov2/VIC01/wuhan_coronavirus_australia.fasta.gz";
@@ -220,10 +220,14 @@ public static void main(String[] args){
 	}
 	}
 	
-	public static Iterator<SAMRecord> getSAMIteratorFromFastq(String[] url, String mm2Index, int maxReads, Collection<String>readsToInclude, 
+	public static Iterator<SAMRecord>[] getSAMIteratorFromFastq(String[] url, String mm2Index, int maxReads, Collection<String>readsToInclude, 
 			double q_thresh, Stack<File> bamOut) throws IOException{
-		FastqToSAMRecord it =  new FastqToSAMRecord(url, mm2Index,maxReads, readsToInclude, q_thresh , bamOut!=null);
-		if(bamOut!=null) bamOut.push(it.outputBAM);
+		FastqToSAMRecord[] it = new FastqToSAMRecord[url.length];
+		for(int i=0; i<it.length; i++){
+			it[i] = new FastqToSAMRecord(url[i], mm2Index,maxReads, readsToInclude, q_thresh , bamOut!=null);
+			if(bamOut!=null) bamOut.push(it[i].outputBAM);
+
+		}
 		return it;
 	}
 	
@@ -235,7 +239,7 @@ public static void main(String[] args){
 	public static String mm2_splicing="-un";
 	public static boolean secondary =true;
 	
-	public static String apboa_path="abpoa";
+	public static String abpoa_path="abpoa";
 	
 	public static void waitOnThreads(ExecutorService executor, int sleep) {
 		if(executor==null) return ;
@@ -349,7 +353,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 			@Override
 			public void run() {
 				try{
-					ProcessBuilder 	pb = new ProcessBuilder(apboa_path, 
+					ProcessBuilder 	pb = new ProcessBuilder(abpoa_path, 
 							in.getAbsolutePath()
 							);
 					printCommand(pb);
@@ -521,7 +525,7 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		SAMRecordIterator iterator;
 		final String mm2Index;
 		final double q_thresh;
-		final String[] input;
+		final String input;
 		int max_per_file;
 		int src_index=0;
 		final Collection<String> readsToInclude;
@@ -564,8 +568,8 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 			//ex1.shutdown();
 		}
 	//	final boolean deleteFile;
-		private void init(int k) {
-			this.src_index = k;
+		private void init() {
+			this.src_index = 0;
 			reader=null; iterator = null;
 			try{
 			ProcessBuilder pb;
@@ -589,20 +593,20 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 				SamReader samReader= null;
 				SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 				if(inputFile==null){
-					URL  url = new URL(input[k]);
+					URL  url = new URL(input);
 					URLConnection urlc = url.openConnection();
-					is= input[k].endsWith(".gz")  ? new GZIPInputStream(urlc.getInputStream()) : urlc.getInputStream();
-				}else if(input[k].endsWith(".bam") || input[k].endsWith(".sam")){
-					is=	new FileInputStream(inputFile[k]);
+					is= input.endsWith(".gz")  ? new GZIPInputStream(urlc.getInputStream()) : urlc.getInputStream();
+				}else if(input.endsWith(".bam") || input.endsWith(".sam")){
+					is=	new FileInputStream(inputFile);
 					bam = true;
 					samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(is));
 				}else{
-					if(!inputFile[k].exists()) throw new RuntimeException("!!! does not exists");
-					boolean gz = input[k].endsWith(".gz");
-					fasta = input[k].endsWith(".fa") || input[k].endsWith(".fasta") || input[k].endsWith(".fa.gz") || input[k].endsWith(".fasta.gz");
+					if(!inputFile.exists()) throw new RuntimeException("!!! does not exists");
+					boolean gz = input.endsWith(".gz");
+					fasta = input.endsWith(".fa") || input.endsWith(".fasta") || input.endsWith(".fa.gz") || input.endsWith(".fasta.gz");
 
-					is= gz   ? new GZIPInputStream(new FileInputStream(inputFile[k])) : new FileInputStream(inputFile[k]);
-					System.err.println("input file "+input[k]+" "+fasta);
+					is= gz   ? new GZIPInputStream(new FileInputStream(inputFile)) : new FileInputStream(inputFile);
+					System.err.println("input file "+input+" "+fasta);
 
 				}
 				Iterator<FastqRecord> fastqIt1 = bam ? 
@@ -671,31 +675,26 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 
 
 		//	static int id = 
-		 File[] inputFile = null;
+		 File inputFile = null;
 		 
 		
 		 public int count=0;
 		 File outputBAM;
-		public FastqToSAMRecord(String[] input, String mm2Index, int maxReads,Collection<String>readsToInclude, double q_thresh, boolean keepBam) throws IOException{
+		public FastqToSAMRecord(String input, String mm2Index, int maxReads,Collection<String>readsToInclude, double q_thresh, boolean keepBam) throws IOException{
 			this.mm2Index = mm2Index;
 			this.q_thresh = q_thresh;
 			this.readsToInclude = readsToInclude;
 			 max_per_file = maxReads;
 			if(max_per_file <0) max_per_file = Integer.MAX_VALUE;
 		
-			if(input[0].startsWith("ftp://")  || input[0].startsWith("file:/")){
+			if(input.startsWith("ftp://")  || input.startsWith("file:/")){
 				 this.input = input;
 			}else{
-				inputFile = new File[input.length];
-				this.input = new String[input.length];
-				for(int k=0; k<input.length; k++) {
-					inputFile[k] = new File(input[k]);;
-					this.input[k] = "file:/"+(inputFile[k]).getAbsolutePath();	
-				}
-			     
+				inputFile = new File(input);
+				this.input =  "file:/"+(inputFile).getAbsolutePath();	
 			}
 			if(keepBam){
-				this.outputBAM = new File(inputFile[0]+"."+System.currentTimeMillis()+".sam");
+				this.outputBAM = new File(inputFile+"."+System.currentTimeMillis()+".sam");
 
 				outputBAM.deleteOnExit();
 			
@@ -714,8 +713,9 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 		
 		@Override
 		public boolean hasNext() {
+			if(curr_index <1) return true;
 			// if its null it has not been initialised
-			boolean res = this.curr_index< this.input.length || iterator.hasNext();
+			boolean res =  iterator.hasNext();
 			if(!res) {
 				this.close();
 			}
@@ -731,8 +731,8 @@ public static File makeConsensus(File file, int threads, boolean deleteFa) {
 			if(iterator !=null && !iterator.hasNext()){
 				refresh();
 			}
-			if(iterator==null && curr_index < this.input.length) {
-				init(curr_index);
+			if(iterator==null && curr_index < 1) {
+				init();
 				curr_index++;
 			}
 			//System.err.println(iterator.hasNext());

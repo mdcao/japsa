@@ -611,7 +611,9 @@ public class RealtimeSpeciesTyping {
 		//	System.err.println(sams.size()+" "+getAlignedFrac(sams.get(0)));
 			if(sams.size()==0) return;
 			int src_index1 = (Integer) sams.get(0).getAttribute(SequenceUtils.src_tag);
-			if(src_index1!=src_index) throw new RuntimeException("!!");
+			if(src_index1!=src_index) {
+				throw new RuntimeException("!!");
+			}
 			int len = inclSuppl ? sams.size(): 1;
 			for(int i=0; i<len; i++){
 				SAMRecord sam= sams.get(i);
@@ -951,10 +953,13 @@ public static List<String> speciesToIgnore = null;
 			}
 	
 		System.err.println(consensus_list);
-		ZipFile[] zf= new ZipFile[this.cov_file_out.length];
-		for(int i=0; i<zf.length; i++){
-			if(cov_file_out[i]!=null && cov_file_out[i].exists()){
-				zf[i] = new ZipFile(cov_file_out[i]);
+		ZipFile[] zf= null;
+		if(cov_file_out!=null){
+			zf = new ZipFile[this.cov_file_out.length];
+			for(int i=0; i<zf.length; i++){
+				if(cov_file_out[i]!=null && cov_file_out[i].exists()){
+					zf[i] = new ZipFile(cov_file_out[i]);
+				}
 			}
 		}
 		for(int i=0; i<refDB.speciesList.size(); i++){
@@ -965,8 +970,10 @@ public static List<String> speciesToIgnore = null;
 				Node n =refDB.getNode(sp);
 				species2ReadList.add(getCoverage(sp,n, 	fastqdir, writeSep1, hierarchical, fastaOutput, separateIntoContigs, zf));			
 		}
-		for(int i=0; i<zf.length; i++){
-		if(zf[i]!=null) 	zf[i].close();
+		if(zf!=null){
+			for(int i=0; i<zf.length; i++){
+			if(zf[i]!=null) 	zf[i].close();
+			}
 		}
 	//	tree.makeTrees();
 		
@@ -982,7 +989,7 @@ public static List<String> speciesToIgnore = null;
 			boolean fastaOutput2, boolean separateIntoContigs2, ZipFile[] zf) {
 		Coverage[] cov = new Coverage[fastqdir2.length];
 		for(int i=0; i<cov.length; i++){
-			cov[i] = new Coverage(sp,n, 	fastqdir[i], writeSep1, hierarchical, fastaOutput, separateIntoContigs, zf[i]);
+			cov[i] = new Coverage(sp,n, 	fastqdir[i], writeSep1, hierarchical, fastaOutput, separateIntoContigs, zf==null ? null : zf[i]);
 		}
 		return cov;
 	}
@@ -1000,7 +1007,7 @@ public static List<String> speciesToIgnore = null;
 		this.twoDOnly = twoOnly;
 	}
 
-	public void typing(String bamFile, int readNumber, int timeNumber, List<String> species, boolean runAnalysis) throws IOException, InterruptedException {
+	/*public void typing(String bamFile, int readNumber, int timeNumber, List<String> species, boolean runAnalysis) throws IOException, InterruptedException {
 		InputStream bamInputStream;
 
 		if ("-".equals(bamFile))
@@ -1009,7 +1016,7 @@ public static List<String> speciesToIgnore = null;
 			bamInputStream = new FileInputStream(bamFile);
 
 		typing(bamInputStream, readNumber, timeNumber, species, runAnalysis);
-	}
+	}*/
 
 	/**\
 	 * @param filter the species keywords list (separated by comma) to excluded
@@ -1024,17 +1031,17 @@ public static List<String> speciesToIgnore = null;
 		}
 		
 	}
-	public void typing(InputStream bamInputStream, int readNumber, int timeNumber, List<String> species, boolean runAnalysis) throws IOException, InterruptedException{
+	/*public void typing(InputStream bamInputStream, int readNumber, int timeNumber, List<String> species, boolean runAnalysis) throws IOException, InterruptedException{
 		SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamInputStream));
 		SAMRecordIterator samIter = samReader.iterator();
 		typing(samIter, readNumber, timeNumber,  runAnalysis);
 		samReader.close();
-	}
+	}*/
 	final int num_sources;
 	public static boolean realtimeAnalysis = false;
 	SparseVectorCollection all_reads = null ;
-	public void typing(Iterator<SAMRecord> samIter, int readNumber, 
+	public void typing(Iterator<SAMRecord>[] samIters, int readNumber, 
 			int timeNumber,  boolean runAnalysis) throws IOException, InterruptedException{
 		//if (readNumber <= 0)
 		//	readNumber = 1;		
@@ -1044,7 +1051,7 @@ public static List<String> speciesToIgnore = null;
 		typer.setTimePeriod(timeNumber * 1000);
 		LOG.info("Species typing ready at " + new Date());
 		String readName = "", refName = "";
-
+	//	int src_index = -1;
 		
 		if(realtimeAnalysis && runAnalysis){
 			Thread thread = new Thread(typer);
@@ -1056,11 +1063,15 @@ public static List<String> speciesToIgnore = null;
 		//String prevReadName = "";
 		//String prevRefName= "";
 		AllRecords records = new AllRecords(this.outdir); // for supplementary alignemnts to same reference
+		for(int jk=0; jk<samIters.length; jk++){
+			final int src_index = jk;
+		Iterator<SAMRecord> samIter = samIters[jk];
 		//Interval interval = new Interval();
 		outer: while (samIter.hasNext()){
 			try{
 			SAMRecord sam = samIter.next();
-			
+		//	int src_index0 = (Integer) sam.getAttribute(SequenceUtils.src_tag);
+			sam.setAttribute(SequenceUtils.src_tag, src_index);
 			if(sam==null) {
 				System.err.println("warning sam record is null");
 				break;
@@ -1068,12 +1079,13 @@ public static List<String> speciesToIgnore = null;
 			if (this.twoDOnly && !sam.getReadName().contains("twodim")){
 				continue;
 			}
-			if (!sam.getReadName().equals(readName)){
+			if (!sam.getReadName().equals(readName) ){
 				readName = sam.getReadName();
-				
+				//src_index = src_index0;
 				synchronized(this){
 					if(records.size()>0){
-						int src_index = records.transferReads(species2ReadList, all_reads,currentReadCount, currentBaseCount);
+						int src_index1 = records.transferReads(species2ReadList, all_reads,currentReadCount, currentBaseCount);
+						if(src_index1!=src_index) throw new RuntimeException("!!");
 						//int  records.src_index;
 						//if(src_index>=0){
 						currentReadCount[src_index] ++;
@@ -1084,22 +1096,6 @@ public static List<String> speciesToIgnore = null;
 			} 
 			
 			{
-			/*	List attr = sam.getAttributes();
-			int len = sam.getAlignmentEnd()-sam.getAlignmentStart();
-			int len1 = sam.getLengthOnReference();
-			int st = sam.getAlignmentStart();
-			int end = sam.getAlignmentEnd();
-			int st1 = sam.getReferencePositionAtReadPosition(st);
-			int end1 = sam.getReferencePositionAtReadPosition(end);
-			int readLen = sam.getReadLength();
-			String refnme = sam.getReferenceName();
-			int unc_end = sam.getUnclippedEnd();
-			int unc_start = sam.getUnclippedStart();
-			String read = sam.getReadString();
-		//	sam.getReferen
-			sam.getLengthOnReference();
-			String nme1 = sam.getReferenceName();
-			String nme2 = sam.getReadName();*/
 				if(start_thresh > 0){
 			if(sam.getStart()>start_thresh * sam.getLengthOnReference()){
 				continue ;
@@ -1108,7 +1104,7 @@ public static List<String> speciesToIgnore = null;
 /*		System.err.println(len +" "+len1+" "+st+","+end+" "+st1+","+end1+  "   "+readLen+ " "+unc_start+" "+unc_end);
 		System.err.println("h");*/
 			}
-			Integer src_index = (Integer)sam.getAttribute(SequenceUtils.src_tag);
+		//	Integer src_index = (Integer)sam.getAttribute(SequenceUtils.src_tag);
 			 refName = sam.getReferenceName();
 			if (sam.getReadUnmappedFlag()){
 				LOG.debug("failed unmapped check");
@@ -1189,14 +1185,16 @@ public static List<String> speciesToIgnore = null;
 		//
 			records.transferReads(species2ReadList, all_reads, currentReadCount, currentBaseCount);
 		records.close();
+		
 
-			for(int src_index=0; src_index < num_sources; src_index++){
+		//	for(int src_index1=0; src_index1 < num_sources; src_index1++){
 				if(this.reads_out!=null) reads_out[src_index].close();
-			if(fqw_filtered!=null) this.fqw_filtered.close();
+			
 			if(fqw_unmapped!=null && fqw_unmapped[src_index]!=null) {
 				this.fqw_unmapped[src_index].close();
 			}
-	}
+	}// samIters
+		if(fqw_filtered!=null) this.fqw_filtered.close();
 			//boolean hasnext = samIter.hasNext();
 		typer.stopWaiting();//Tell typer to stop
 		if(runAnalysis){ // This is the E-M step
@@ -1471,6 +1469,8 @@ public static List<String> speciesToIgnore = null;
 									regions_to_exclude.println(spec_name+"\t"+cov.contig_names.get(j)+"\t"+ iv.start+"\t"+iv.end+"\t"+iv.coverage);
 								 }
 							  }
+							 if(regions_to_use!=null){
+								 //print out regions to use
 							List<Integer> keys = new ArrayList<Integer>(covMap.keySet());
 							Collections.sort(keys);
 							for(int jk=keys.size()-1; jk>=0; jk--){
@@ -1481,7 +1481,7 @@ public static List<String> speciesToIgnore = null;
 									  Collections.sort(intervals, compar_len);
 									  int maxlength = intervals.get(0).length();
 									
-									  if(maxlength>=minlength){
+									  if( maxlength>=minlength){
 										 
 										  int ik=0;
 										  while(ik<intervals.size() && intervals.get(ik).length()>=minlength) ik++;
@@ -1498,6 +1498,7 @@ public static List<String> speciesToIgnore = null;
 							  }
 							  
 							}
+							 }
 						  }
 						  tot_bases+= stats[0];
 						  if(stats[0] >max){
